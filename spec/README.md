@@ -29,6 +29,31 @@ release.
 
 The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 
+## The requirement index
+
+[`../requirements.json`](../requirements.json) is the machine-readable form: every identifier, the
+part it belongs to, the chapter it lives in, its first sentence, and whether it is withdrawn. A
+withdrawn one also carries its withdrawal note and, where it has a successor, that identifier —
+because the obligation is what makes a permanent identifier recognisable, and the withdrawal
+preamble sits in front of it. It is
+generated from the chapters and committed, and CI fails if the committed copy has drifted.
+
+**A version per part, not one for the file.** Core and each module version independently
+([`SPS-CORE-005`](core/index.md#SPS-CORE-005)), so `versions` carries all of them and every
+requirement names its `part` rather than repeating a number that could then disagree with it.
+`specVersion` remains core's, because that is what a consumer pins to say which specification it
+implements. The module set comes from the chapters in [`modules/`](modules/) rather than from a
+list, and CI fails if a module has no version or a version has no module — two registries that must
+agree are two registries somebody keeps in step by remembering to. They are all equal today, which is exactly why the shape is settled now: adding the
+field after somebody has vendored the file is a change every consumer has to absorb.
+
+It exists for the consumer that is another repository. The reference implementation vendors it, so a
+note in its code citing `SPS-GRANT-007` can be checked without a network call — and upgrading to a
+newer specification arrives there as a reviewable diff rather than as a build that starts failing.
+
+It deliberately carries no URL and no timestamp. A URL would pin a branch or a tag and the consumer
+is the one who knows which it wants; a timestamp would turn every regeneration into a diff.
+
 ## Core
 
 Every sempods implementation provides all of it. There is no opt-out and no partial core.
