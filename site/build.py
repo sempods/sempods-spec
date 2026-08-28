@@ -211,71 +211,119 @@ ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
 POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 
 
-def server_line_span(text: str) -> list:
-    """Half-open line ranges of every real `servers:` value, asked of the parser.
+# The only two values the substitution is allowed to change. Everything else in a description,
+# a server variable's own `description` and `enum` included, has to survive staging untouched.
+REWRITABLE = ("origin", "pod")
 
-    Indentation alone cannot tell a key from prose. A description that documents YAML — and an
-    OpenAPI description explaining a pod's shape is a plausible place for one — can contain an
-    indented `servers:` line inside a block scalar, and a line-based matcher would take that
-    prose for a declaration and rewrite whatever `default:` followed it. The parser knows the
-    difference; nothing that reads lines does.
+
+def rewritable_default_lines(text: str) -> set:
+    """The lines holding the `default:` values this build may change, and no others.
+
+    Asked of the parser, node by node, rather than derived from indentation or from the span of
+    a `servers:` value. Both of those were tried and both were too coarse: indentation reads an
+    indented `servers:` inside a block scalar as a declaration, and a whole-span match rewrites a
+    server variable's own `description` when it quotes the placeholder it is describing.
+
+    What comes back is the position of two scalars per server — the defaults of `origin` and
+    `pod` — so prose anywhere, including inside `variables`, is left as it was written.
     """
     import yaml
 
-    spans = []
+    lines: set = set()
+
+    def from_servers(node) -> None:
+        if not isinstance(node, yaml.SequenceNode):
+            return
+        for server in node.value:
+            if not isinstance(server, yaml.MappingNode):
+                continue
+            for key, value in server.value:
+                if getattr(key, "value", None) != "variables":
+                    continue
+                if not isinstance(value, yaml.MappingNode):
+                    continue
+                for name, variable in value.value:
+                    if getattr(name, "value", None) not in REWRITABLE:
+                        continue
+                    if not isinstance(variable, yaml.MappingNode):
+                        continue
+                    for field, content in variable.value:
+                        if getattr(field, "value", None) == "default":
+                            lines.add(content.start_mark.line)
 
     def walk(node) -> None:
         if isinstance(node, yaml.MappingNode):
             for key, value in node.value:
-                if isinstance(key, yaml.ScalarNode) and key.value == "servers":
-                    spans.append((value.start_mark.line, value.end_mark.line + 1))
+                if getattr(key, "value", None) == "servers":
+                    from_servers(value)
                 walk(value)
         elif isinstance(node, yaml.SequenceNode):
             for item in node.value:
                 walk(item)
 
     walk(yaml.compose(text))
-    return spans
+    return lines
 
 
 def with_demo_pod(yaml_text: str) -> str:
     """Point a staged description's server variables at the demo pod.
 
-    Confined to the lines the parser says belong to a `servers:` value. Applied more widely it
-    would rewrite a schema default or an example that legitimately says `alice`, and the address
-    check would not notice, because that only ever looks at servers.
+    Confined to the exact lines the parser puts the two rewritable defaults on. Applied more
+    widely it would rewrite a schema default, an example, or a server variable's own description
+    that legitimately says `alice` — and the address check would not notice, because that only
+    ever looks at what the servers resolve to.
 
     Substitution rather than a YAML round-trip: parsing and re-emitting would reformat
     hand-written files whose layout and comments are part of how they read. What guards the
     difference between the two is `unchanged_outside_servers` below, which compares the parsed
     documents and refuses any edit that reached something else.
     """
-    spans = server_line_span(yaml_text)
     lines = yaml_text.splitlines(keepends=True)
-    for first, last in spans:
-        for index in range(first, min(last, len(lines))):
+    for index in rewritable_default_lines(yaml_text):
+        if index < len(lines):
             line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", lines[index])
             lines[index] = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
     return "".join(lines)
 
 
-def without_server_variables(document):
-    """A document with every server variable default blanked, so the rest can be compared."""
+def without_rewritable_defaults(document):
+    """A document with `servers[].variables.{origin,pod}.default` blanked, and nothing else.
+
+    Masking the whole `variables` mapping would be simpler and would hide the case this exists
+    to catch: a variable's `description` is a scalar like any other, and a block scalar
+    documenting the placeholder contains the very text the substitution looks for. Blank the
+    mapping and that rewritten prose compares equal to itself.
+    """
     if isinstance(document, dict):
         pruned = {}
         for key, value in document.items():
             if key == "servers" and isinstance(value, list):
-                pruned[key] = [
-                    {k: (None if k == "variables" else without_server_variables(v))
-                     for k, v in server.items()} if isinstance(server, dict) else server
-                    for server in value
-                ]
+                pruned[key] = [_masked_server(server) for server in value]
             else:
-                pruned[key] = without_server_variables(value)
+                pruned[key] = without_rewritable_defaults(value)
         return pruned
     if isinstance(document, list):
-        return [without_server_variables(item) for item in document]
+        return [without_rewritable_defaults(item) for item in document]
     return document
+
+
+def _masked_server(server):
+    if not isinstance(server, dict):
+        return server
+    masked = {}
+    for key, value in server.items():
+        if key == "variables" and isinstance(value, dict):
+            masked[key] = {
+                name: {
+                    field: (None if field == "default" and name in REWRITABLE
+                            else without_rewritable_defaults(content))
+                    for field, content in variable.items()
+                } if isinstance(variable, dict) else variable
+                for name, variable in value.items()
+            }
+        else:
+            masked[key] = without_rewritable_defaults(value)
+    return masked
 
 
 def unchanged_outside_servers(before: str, after: str) -> bool:
@@ -286,7 +334,7 @@ def unchanged_outside_servers(before: str, after: str) -> bool:
     pattern was present, whether a placeholder was left — and each passed while shipping
     something wrong. This one compares the two documents and answers about the result.
     """
-    return without_server_variables(load(before)) == without_server_variables(load(after))
+    return without_rewritable_defaults(load(before)) == without_rewritable_defaults(load(after))
 
 
 def load(staged: str) -> object:
@@ -431,9 +479,9 @@ def check() -> int:
         else:
             if not unchanged_outside_servers(text, with_demo_pod(text)):
                 problems.append(
-                    f"{src.relative_to(ROOT)} would stage with an edit outside its servers "
-                    f"blocks. Only server variables may be rewritten; anything else means the "
-                    f"try-it page shows a contract nobody wrote")
+                    f"{src.relative_to(ROOT)} would stage with an edit somewhere other than the "
+                    f"`origin` and `pod` defaults of a server. Nothing else may be rewritten; "
+                    f"anything else means the try-it page shows a contract nobody wrote")
             addresses = server_addresses(with_demo_pod(text))
             if not addresses:
                 problems.append(
