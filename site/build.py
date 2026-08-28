@@ -12,6 +12,7 @@ Run `python3 site/build.py` from anywhere; `--serve` rebuilds and watches instea
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import posixpath
 import re
@@ -216,52 +217,88 @@ POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 REWRITABLE = ("origin", "pod")
 
 
+# Where OpenAPI 3.1 permits a `servers` field, and nowhere else: the document root, a Path
+# Item Object, and an Operation Object. Path Items reach the document through `paths`, through
+# `webhooks`, and through `components.pathItems`.
+#
+# Named here rather than found by searching for the key, because a `servers` key can also occur
+# in a schema, an example or any other payload a description happens to document — and rewriting
+# somebody's example data would publish a contract nobody wrote.
+METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
+PATH_ITEM_CONTAINERS = ("paths", "webhooks")
+
+
+def server_declarations(document, mapping_items, mapping_get):
+    """Every `servers` value at a level OpenAPI allows one, as whatever `entry` returns.
+
+    Written once against two shapes: a parsed document, where a mapping is a `dict`, and a
+    composed node tree, where it is a `MappingNode`. The traversal is the same and only the two
+    accessors differ, so there is one description of where a server may live rather than two
+    that can drift apart.
+    """
+    found = []
+
+    def at_level(node) -> None:
+        servers = mapping_get(node, "servers")
+        if servers is not None:
+            found.append(servers)
+
+    def at_path_item(item) -> None:
+        at_level(item)
+        for key, operation in mapping_items(item):
+            if key in METHODS:
+                at_level(operation)
+
+    at_level(document)
+    for container in PATH_ITEM_CONTAINERS:
+        for _, item in mapping_items(mapping_get(document, container)):
+            at_path_item(item)
+    components = mapping_get(document, "components")
+    for _, item in mapping_items(mapping_get(components, "pathItems")):
+        at_path_item(item)
+    return found
+
+
+def _node_items(node):
+    import yaml
+    if not isinstance(node, yaml.MappingNode):
+        return []
+    return [(getattr(key, "value", None), value) for key, value in node.value]
+
+
+def _node_get(node, key):
+    for name, value in _node_items(node):
+        if name == key:
+            return value
+    return None
+
+
 def rewritable_default_lines(text: str) -> set:
     """The lines holding the `default:` values this build may change, and no others.
 
-    Asked of the parser, node by node, rather than derived from indentation or from the span of
-    a `servers:` value. Both of those were tried and both were too coarse: indentation reads an
-    indented `servers:` inside a block scalar as a declaration, and a whole-span match rewrites a
-    server variable's own `description` when it quotes the placeholder it is describing.
+    Located node by node, at the levels a server may be declared. Earlier versions narrowed by
+    indentation and then by the span of a `servers:` value; both were too coarse, because what
+    has to be found is a node and lines know nothing of nodes. Searching the node tree for the
+    key was too coarse in the other direction, because a `servers` key in an example is not a
+    server declaration.
 
-    What comes back is the position of two scalars per server — the defaults of `origin` and
-    `pod` — so prose anywhere, including inside `variables`, is left as it was written.
+    What comes back is the position of two scalars per declared server — the defaults of
+    `origin` and `pod` — so prose and payloads anywhere are left as they were written.
     """
     import yaml
 
     lines: set = set()
-
-    def from_servers(node) -> None:
-        if not isinstance(node, yaml.SequenceNode):
-            return
-        for server in node.value:
-            if not isinstance(server, yaml.MappingNode):
-                continue
-            for key, value in server.value:
-                if getattr(key, "value", None) != "variables":
+    for servers in server_declarations(yaml.compose(text), _node_items, _node_get):
+        if not isinstance(servers, yaml.SequenceNode):
+            continue
+        for server in servers.value:
+            variables = _node_get(server, "variables")
+            for name, variable in _node_items(variables):
+                if name not in REWRITABLE:
                     continue
-                if not isinstance(value, yaml.MappingNode):
-                    continue
-                for name, variable in value.value:
-                    if getattr(name, "value", None) not in REWRITABLE:
-                        continue
-                    if not isinstance(variable, yaml.MappingNode):
-                        continue
-                    for field, content in variable.value:
-                        if getattr(field, "value", None) == "default":
-                            lines.add(content.start_mark.line)
-
-    def walk(node) -> None:
-        if isinstance(node, yaml.MappingNode):
-            for key, value in node.value:
-                if getattr(key, "value", None) == "servers":
-                    from_servers(value)
-                walk(value)
-        elif isinstance(node, yaml.SequenceNode):
-            for item in node.value:
-                walk(item)
-
-    walk(yaml.compose(text))
+                for field, content in _node_items(variable):
+                    if field == "default":
+                        lines.add(content.start_mark.line)
     return lines
 
 
@@ -286,44 +323,34 @@ def with_demo_pod(yaml_text: str) -> str:
     return "".join(lines)
 
 
+def _dict_items(value):
+    return value.items() if isinstance(value, dict) else []
+
+
+def _dict_get(value, key):
+    return value.get(key) if isinstance(value, dict) else None
+
+
 def without_rewritable_defaults(document):
-    """A document with `servers[].variables.{origin,pod}.default` blanked, and nothing else.
+    """A copy with `servers[].variables.{origin,pod}.default` blanked, and nothing else.
 
-    Masking the whole `variables` mapping would be simpler and would hide the case this exists
-    to catch: a variable's `description` is a scalar like any other, and a block scalar
-    documenting the placeholder contains the very text the substitution looks for. Blank the
-    mapping and that rewritten prose compares equal to itself.
+    Masking every `servers` the document contains would hide the case this exists to catch, in
+    both directions: a variable's own `description` is a scalar like any other, and a `servers`
+    key inside an example is not a server at all. So the same traversal that decides what may be
+    rewritten decides what is excused from the comparison — one description of where a server
+    lives, used by both halves.
     """
-    if isinstance(document, dict):
-        pruned = {}
-        for key, value in document.items():
-            if key == "servers" and isinstance(value, list):
-                pruned[key] = [_masked_server(server) for server in value]
-            else:
-                pruned[key] = without_rewritable_defaults(value)
-        return pruned
-    if isinstance(document, list):
-        return [without_rewritable_defaults(item) for item in document]
-    return document
-
-
-def _masked_server(server):
-    if not isinstance(server, dict):
-        return server
-    masked = {}
-    for key, value in server.items():
-        if key == "variables" and isinstance(value, dict):
-            masked[key] = {
-                name: {
-                    field: (None if field == "default" and name in REWRITABLE
-                            else without_rewritable_defaults(content))
-                    for field, content in variable.items()
-                } if isinstance(variable, dict) else variable
-                for name, variable in value.items()
-            }
-        else:
-            masked[key] = without_rewritable_defaults(value)
-    return masked
+    pruned = copy.deepcopy(document)
+    for servers in server_declarations(pruned, _dict_items, _dict_get):
+        if not isinstance(servers, list):
+            continue
+        for server in servers:
+            variables = _dict_get(server, "variables")
+            for name in REWRITABLE:
+                variable = _dict_get(variables, name)
+                if isinstance(variable, dict) and "default" in variable:
+                    variable["default"] = None
+    return pruned
 
 
 def unchanged_outside_servers(before: str, after: str) -> bool:
@@ -347,44 +374,36 @@ def load(staged: str) -> object:
     return yaml.safe_load(staged)
 
 
-def server_addresses(staged: str) -> list[tuple[str, str, dict]]:
-    """Every server in a description as (template, resolved address, its variables).
+def server_addresses(staged: str) -> list:
+    """Every declared server as (template, resolved address, its variables).
 
-    Walked recursively rather than read from `doc["servers"]`: a description may declare
-    servers at the document, path or operation level, and `sempods-core.yaml` does — a pod base
-    at the top and a `{origin}/.well-known` further down.
+    Uses the same traversal as the substitution and the comparison. It has to: a `servers` key
+    inside an example is not a server, and a check that walked the whole document would refuse a
+    description for pointing its own sample payload at `example.org` — which is exactly what a
+    sample payload should say.
 
-    Resolved, not just collected. Checking that the *defaults* are the demo values says nothing
+    Resolved, not just collected. Checking that the defaults are the demo values says nothing
     about what they are composed into: `{pod}/{origin}` and a literal `https://example.org/{pod}`
-    both leave the defaults untouched and send the reader somewhere else. The address is what
-    Scalar dials, so the address is what gets asserted.
+    both leave the defaults untouched and send the reader elsewhere. The address is what Scalar
+    dials, so the address is what gets asserted.
     """
-    found: list[tuple[str, str, dict]] = []
-
-    def walk(node: object) -> None:
-        if isinstance(node, dict):
-            servers = node.get("servers")
-            if isinstance(servers, list):
-                for server in servers:
-                    if not isinstance(server, dict):
-                        continue
-                    template = str(server.get("url", ""))
-                    variables = {
-                        name: variable.get("default")
-                        for name, variable in (server.get("variables") or {}).items()
-                        if isinstance(variable, dict)
-                    }
-                    resolved = template
-                    for name, value in variables.items():
-                        resolved = resolved.replace("{" + name + "}", str(value))
-                    found.append((template, resolved, variables))
-            for value in node.values():
-                walk(value)
-        elif isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    walk(load(staged))
+    found = []
+    for servers in server_declarations(load(staged), _dict_items, _dict_get):
+        if not isinstance(servers, list):
+            continue
+        for server in servers:
+            if not isinstance(server, dict):
+                continue
+            template = str(server.get("url", ""))
+            variables = {
+                name: variable.get("default")
+                for name, variable in _dict_items(server.get("variables"))
+                if isinstance(variable, dict)
+            }
+            resolved = template
+            for name, value in variables.items():
+                resolved = resolved.replace("{" + name + "}", str(value))
+            found.append((template, resolved, variables))
     return found
 
 
