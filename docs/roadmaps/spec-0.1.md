@@ -69,9 +69,10 @@ equally urgent and the announce waits on all of them.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
       scanning and push protection, Dependabot alerts and security updates, private vulnerability
       reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker. The
-      ruleset requires four status checks **by name** — `check` (DCO), `lychee` (links),
-      `requirements` and `openapi` — so renaming any of those jobs silently blocks every pull
-      request until the ruleset is updated with it.
+      ruleset requires status checks **by name**, so renaming any of those jobs silently blocks
+      every pull request until the ruleset is updated with it. Which checks it requires is asked of
+      the ruleset and not written down beside it: a copy of that list is a second inventory, and the
+      one nobody edits is the one somebody audits from.
 - [x] 8 — The org code-security configuration `sempods baseline` is `enforced` here. Nothing was
       done to achieve it: the configuration is the organisation default for new repositories, so it
       attached at creation. Worth recording rather than re-doing — attaching it by hand needs
@@ -179,9 +180,8 @@ equally urgent and the announce waits on all of them.
       Built by `site/build.py`, which stages the normative tree rather than editing it: MkDocs
       refuses a docs directory containing its own configuration, and pointing one at the repository
       root would publish the agent instructions. Pages is enabled with the workflow as its source,
-      the DNS record is in place, and **`build` is now the fifth required status check** — without
-      that last one the strict render was advisory, in exactly the way this file warns about under
-      item 7.
+      the DNS record is in place, and **`build` was added to the ruleset's required status checks**
+      — without that the strict render was advisory, in exactly the way item 7 warns about.
 - [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.
