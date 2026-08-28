@@ -108,8 +108,13 @@ equally urgent and the announce waits on all of them.
       in `context7.json` and not in the documentation were verified against
       `PodContextPermissionResolver` before being written down: `write`/`manage` imply `read`, and
       a `#manage` root expands only over *registered* contexts.
-- [ ] 16 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
-      The three client-identity shapes are the part an implementer gets wrong first.
+- [x] 16 — `auth` (`AUTH`) — `SPS-AUTH-001`…`048`, from `docs/auth/oauth.md` and
+      `service-clients.md`. `oauth-errors.md` deliberately did **not** move: it is per-code recovery
+      guidance for a client, which is documentation and not a contract. The error *codes* are
+      normative and appear in the flow requirements.
+      Left behind as deployment choices rather than contract: the rate-limit numbers and their
+      environment variables, the OIDC leg timeouts, the audit-log retention, and the storage
+      shapes.
 - [ ] 17 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
       specification-shaped already.
 - [ ] 18 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
