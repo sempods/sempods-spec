@@ -66,6 +66,7 @@ tags:
 # that work either way list both.
 security:
   - bearerAuth: []
+  - oauth2: []
 
 paths:
 
@@ -747,6 +748,37 @@ components:
       type: http
       scheme: basic
       description: A service client's credentials, at the token endpoint only.
+    oauth2:
+      type: oauth2
+      description: |
+        The same pod-issued token as `bearerAuth`, described by how a browser client obtains it.
+        Authorization Code is the only user-facing flow a pod offers (`SPS-AUTH-001`), against the
+        pod's own endpoints (`SPS-AUTH-021`, `SPS-AUTH-027`) — there is no separate authorization
+        server, a pod issues and signs its own tokens. PKCE is RECOMMENDED rather than required
+        for a `did:web:` client (`SPS-AUTH-023`) — a browser client should send it anyway, and
+        `S256` is the only method a pod accepts (`SPS-AUTH-022`).
+
+        The scopes here are **feature scopes**, which is all a `scope` claim may carry
+        (`SPS-AUTH-029`). Access to a context is a *grant*, resolved server-side per request from
+        durable policy (`SPS-GRANT-001`, `SPS-GRANT-002`); it is requested at consent time and
+        never appears in this list.
+
+        A client with a stable HTTPS origin identifies as `did:web:<origin>`. The pod parses that
+        identifier and never dereferences it (`SPS-AUTH-003`), and the `redirect_uri` has to match
+        the identifier's host and port (`SPS-AUTH-004`).
+      flows:
+        authorizationCode:
+          # Relative, resolved against the selected server — the pod base. Writing them absolute
+          # would name one deployment in a description that is supposed to fit any pod.
+          authorizationUrl: _system/auth/authorize
+          tokenUrl: _system/auth/token
+          refreshUrl: _system/auth/token
+          scopes:
+            public-read: >-
+              Read whatever the pod currently exposes as public, in addition to the caller's own
+              grants. Refused a refresh token (`SPS-AUTH-035`).
+            openid: An identity token alongside the access token.
+            offline_access: A refresh token.
 
   parameters:
 

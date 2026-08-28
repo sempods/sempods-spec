@@ -36,6 +36,10 @@ STAGE = SITE / "_stage"
 DEMO_ORIGIN = "https://sempods.org"
 DEMO_POD = "aaltra"
 
+# What the try-it page identifies as when a reader logs in. A `did:web:` client is its origin and
+# registers nothing, so this is the site's own address and changes only if the site moves.
+DEMO_CLIENT = "did:web:spec.sempods.org"
+
 # Every address a staged description is allowed to resolve a server to. A closed list rather
 # than "anything on the demo origin": `{origin}/wrong` is on the origin too, and Scalar would
 # send every request in that description to a base the pod does not serve.
@@ -54,6 +58,7 @@ ALLOWED_ADDRESSES = {
 # Chapters, in reading order. The nav in `mkdocs.yml` repeats this order; a chapter added
 # here and forgotten there is caught by `--check`.
 SOURCES_MARKER = "/* SOURCES */"
+AUTH_MARKER = "/* AUTH */"
 
 # Where the repository is read when a staged document points at something the site does not
 # publish. Only the staged copies get these; the files themselves stay ref-relative, so a
@@ -454,11 +459,29 @@ def try_it_page() -> str:
            ", default: true" if index == 0 else "")
         for index, (name, title) in enumerate(descriptions()))
 
+    authentication = """    authentication: {
+      preferredSecurityScheme: 'oauth2',
+      securitySchemes: {
+        oauth2: {
+          flows: {
+            authorizationCode: {
+              'x-scalar-client-id': %s,
+              authorizationUrl: %s,
+              tokenUrl: %s,
+            },
+          },
+        },
+      },
+    },""" % (json.dumps(DEMO_CLIENT),
+             json.dumps(f"{DEMO_ORIGIN}/{DEMO_POD}/_system/auth/authorize"),
+             json.dumps(f"{DEMO_ORIGIN}/{DEMO_POD}/_system/auth/token"))
+
     page = (SITE / "api" / "index.html").read_text()
-    if SOURCES_MARKER not in page:
-        raise SystemExit(f"error: site/api/index.html no longer contains {SOURCES_MARKER!r}, "
-                         f"so the try-it page would render an empty source list")
-    return page.replace(SOURCES_MARKER, sources)
+    for marker, what in ((SOURCES_MARKER, "source list"), (AUTH_MARKER, "authentication block")):
+        if marker not in page:
+            raise SystemExit(f"error: site/api/index.html no longer contains {marker!r}, so the "
+                             f"try-it page would render without its {what}")
+    return page.replace(SOURCES_MARKER, sources).replace(AUTH_MARKER, authentication)
 
 
 def check() -> int:
