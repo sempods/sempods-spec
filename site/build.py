@@ -213,6 +213,8 @@ def stage() -> None:
             raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
+PLACEHOLDER_POD = "https://example.org/alice"
+
 ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
 POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 
@@ -325,7 +327,50 @@ def with_demo_pod(yaml_text: str) -> str:
         if index < len(lines):
             line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", lines[index])
             lines[index] = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
+
+    # The OAuth flow URLs name the same placeholder pod the `servers` block defaults to, and have
+    # to move with it — a staged description saying `sempods.org/aaltra` under `servers` and
+    # `example.org/alice` under `securitySchemes` would send the try-it login somewhere the rest
+    # of the page never talks to. They are plain strings rather than server variables, so they are
+    # substituted by value here; `flow_url_lines` says which lines may be touched.
+    for index in flow_url_lines(yaml_text):
+        if index < len(lines):
+            lines[index] = lines[index].replace(PLACEHOLDER_POD, f"{DEMO_ORIGIN}/{DEMO_POD}")
     return "".join(lines)
+
+
+def flow_urls(staged: str) -> list:
+    """Every OAuth flow endpoint in a staged description, as (scheme, flow, field, url)."""
+    found = []
+    document = load(staged)
+    schemes = _dict_get(_dict_get(document, "components"), "securitySchemes")
+    for scheme_name, scheme in _dict_items(schemes):
+        for flow_name, flow in _dict_items(_dict_get(scheme, "flows")):
+            for field, url in _dict_items(flow):
+                if field in ("authorizationUrl", "tokenUrl", "refreshUrl"):
+                    found.append((scheme_name, flow_name, field, str(url)))
+    return found
+
+
+def flow_url_lines(text: str) -> set:
+    """The lines holding an OAuth flow's endpoint URLs, asked of the parser.
+
+    Located by walking to `components.securitySchemes.*.flows.*` rather than by matching the
+    placeholder anywhere, for the reason the server substitution has: a description may quote
+    that URL in prose or in an example, and rewriting it there publishes a contract nobody wrote.
+    """
+    import yaml
+
+    lines: set = set()
+    root = yaml.compose(text)
+    schemes = _node_get(_node_get(root, "components"), "securitySchemes")
+    for _, scheme in _node_items(schemes):
+        for _, flows in [(k, v) for k, v in _node_items(scheme) if k == "flows"]:
+            for _, flow in _node_items(flows):
+                for field, value in _node_items(flow):
+                    if field in ("authorizationUrl", "tokenUrl", "refreshUrl"):
+                        lines.add(value.start_mark.line)
+    return lines
 
 
 def _dict_items(value):
@@ -346,6 +391,14 @@ def without_rewritable_defaults(document):
     lives, used by both halves.
     """
     pruned = copy.deepcopy(document)
+
+    schemes = _dict_get(_dict_get(pruned, "components"), "securitySchemes")
+    for _, scheme in _dict_items(schemes):
+        for _, flow in _dict_items(_dict_get(scheme, "flows")):
+            for field in ("authorizationUrl", "tokenUrl", "refreshUrl"):
+                if isinstance(flow, dict) and field in flow:
+                    flow[field] = None
+
     for servers in server_declarations(pruned, _dict_items, _dict_get):
         if not isinstance(servers, list):
             continue
@@ -459,22 +512,18 @@ def try_it_page() -> str:
            ", default: true" if index == 0 else "")
         for index, (name, title) in enumerate(descriptions()))
 
+    # Only the client identity. The endpoints come from the staged description, which names the
+    # demo pod because `with_demo_pod` moved them there with everything else.
     authentication = """    authentication: {
       preferredSecurityScheme: 'oauth2',
       securitySchemes: {
         oauth2: {
           flows: {
-            authorizationCode: {
-              'x-scalar-client-id': %s,
-              authorizationUrl: %s,
-              tokenUrl: %s,
-            },
+            authorizationCode: { 'x-scalar-client-id': %s },
           },
         },
       },
-    },""" % (json.dumps(DEMO_CLIENT),
-             json.dumps(f"{DEMO_ORIGIN}/{DEMO_POD}/_system/auth/authorize"),
-             json.dumps(f"{DEMO_ORIGIN}/{DEMO_POD}/_system/auth/token"))
+    },""" % json.dumps(DEMO_CLIENT)
 
     page = (SITE / "api" / "index.html").read_text()
     for marker, what in ((SOURCES_MARKER, "source list"), (AUTH_MARKER, "authentication block")):
@@ -524,7 +573,21 @@ def check() -> int:
                     f"{src.relative_to(ROOT)} would stage with an edit somewhere other than the "
                     f"`origin` and `pod` defaults of a server. Nothing else may be rewritten; "
                     f"anything else means the try-it page shows a contract nobody wrote")
-            addresses = server_addresses(with_demo_pod(text))
+            # The flow URLs are excused from the comparison above, so this is what stands in
+            # its place: after staging they must be on the demo pod, the way a server must.
+            # Without it an endpoint edited to a foreign host would stage untouched — the
+            # substitution replaces one exact string and silently does nothing to any other —
+            # and the try-it login would carry a reader there.
+            staged = with_demo_pod(text)
+            pod_base = f"{DEMO_ORIGIN}/{DEMO_POD}/"
+            for scheme, flow, field, url in flow_urls(staged):
+                if not url.startswith(pod_base):
+                    problems.append(
+                        f"{src.relative_to(ROOT)} would stage {scheme}.{flow}.{field} as {url!r}, "
+                        f"which is not on the demo pod. A reader logging in from the try-it page "
+                        f"would be sent there")
+
+            addresses = server_addresses(staged)
             if not addresses:
                 problems.append(
                     f"{src.relative_to(ROOT)} declares no server, so the try-it page has no "

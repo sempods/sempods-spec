@@ -91,7 +91,7 @@ paths:
     get:
       tags: [contexts]
       operationId: listContexts
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The contexts visible to the caller, with effective permissions.
       description: |
         The authoritative client-visible view of effective context permissions. A token's `scope`
@@ -110,7 +110,7 @@ paths:
     get:
       tags: [contexts]
       operationId: getContext
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: What the registry holds for this context.
       description: |
         Ask this route what a context **is**. What anyone has *said about* the same IRI is a
@@ -172,7 +172,7 @@ paths:
     get:
       tags: [resources]
       operationId: getResource
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Dereference a resource.
       parameters:
         - $ref: '#/components/parameters/ReadContext'
@@ -186,7 +186,7 @@ paths:
     head:
       tags: [resources]
       operationId: headResource
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of a dereference, with no body.
       x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029]
       responses:
@@ -195,7 +195,7 @@ paths:
     options:
       tags: [resources]
       operationId: optionsResource
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The verbs available to this caller on this resource.
       x-sps-requirements: [SPS-CRUD-018]
       responses:
@@ -280,7 +280,7 @@ paths:
     get:
       tags: [resources]
       operationId: getResourceByIri
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Dereference any IRI's statements held by this pod.
       parameters:
         - $ref: '#/components/parameters/ReadContext'
@@ -293,7 +293,7 @@ paths:
     head:
       tags: [resources]
       operationId: headResourceByIri
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of that dereference, with no body.
       x-sps-requirements: [SPS-CRUD-040]
       responses:
@@ -302,7 +302,7 @@ paths:
     options:
       tags: [resources]
       operationId: optionsResourceByIri
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The verbs available to this caller on this IRI.
       x-sps-requirements: [SPS-CRUD-040]
       responses:
@@ -375,7 +375,7 @@ paths:
     get:
       tags: [slots]
       operationId: getSlot
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: All values of this slot.
       description: |
         An unordered set. Array order is not meaningful and may differ between calls. An entity tag
@@ -504,7 +504,7 @@ paths:
     post:
       tags: [query]
       operationId: sparqlQuery
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Run a read-only SPARQL query inside the caller's sandbox.
       description: |
         Read-only. Every Update form is rejected, and so is `SERVICE` anywhere in the query,
@@ -551,7 +551,7 @@ paths:
     get:
       tags: [retrieval]
       operationId: findGet
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Text in, a context-sandboxed subgraph out.
       parameters:
         - name: text
@@ -578,7 +578,7 @@ paths:
     post:
       tags: [retrieval]
       operationId: findPost
-      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The same operation, for a request that no longer fits in a URL.
       description: The body is parsed strictly — an unknown member is rejected, never ignored.
       x-sps-requirements: [SPS-FIND-004, SPS-FIND-013]
@@ -758,27 +758,41 @@ components:
         for a `did:web:` client (`SPS-AUTH-023`) — a browser client should send it anyway, and
         `S256` is the only method a pod accepts (`SPS-AUTH-022`).
 
-        The scopes here are **feature scopes**, which is all a `scope` claim may carry
-        (`SPS-AUTH-029`). Access to a context is a *grant*, resolved server-side per request from
-        durable policy (`SPS-GRANT-001`, `SPS-GRANT-002`); it is requested at consent time and
-        never appears in this list.
+        A `scope` claim carries **feature scopes** only (`SPS-AUTH-029`). Access to a context is a
+        *grant*, resolved server-side per request from durable policy (`SPS-GRANT-001`,
+        `SPS-GRANT-002`); it is requested at consent time and never appears in this list.
+
+        `public-read` is the only feature scope this version specifies. `grants.md` names `openid`
+        and `offline_access` as scopes in shape, but nothing here requires a pod to accept them or
+        says what it would return — so they are not advertised as capabilities a client may rely
+        on. A pod may accept further feature scopes; none is promised.
 
         A client with a stable HTTPS origin identifies as `did:web:<origin>`. The pod parses that
         identifier and never dereferences it (`SPS-AUTH-003`), and the `redirect_uri` has to match
         the identifier's host and port (`SPS-AUTH-004`).
+      # Absolute, on the same placeholder pod the `servers` block defaults to, and substituted
+      # together with it when this description is staged for the try-it page.
+      #
+      # Not relative, which was the first attempt and is wrong here: RFC 3986 resolves
+      # `_system/auth/authorize` against `https://example.org/alice` to
+      # `https://example.org/_system/auth/authorize` — the pod segment is the base's last segment
+      # and gets replaced. Every pod is path-scoped (`SPS-CORE-007`), so relative loses the pod on
+      # all of them. OpenAPI has no way to template these the way `servers` templates its URL;
+      # a consumer substitutes its own pod here as it does there.
       flows:
         authorizationCode:
-          # Relative, resolved against the selected server — the pod base. Writing them absolute
-          # would name one deployment in a description that is supposed to fit any pod.
-          authorizationUrl: _system/auth/authorize
-          tokenUrl: _system/auth/token
-          refreshUrl: _system/auth/token
+          authorizationUrl: 'https://example.org/alice/_system/auth/authorize'
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          refreshUrl: 'https://example.org/alice/_system/auth/token'
           scopes:
             public-read: >-
               Read whatever the pod currently exposes as public, in addition to the caller's own
               grants. Refused a refresh token (`SPS-AUTH-035`).
-            openid: An identity token alongside the access token.
-            offline_access: A refresh token.
+        # Service clients, which the same token endpoint has to accept (`SPS-AUTH-002`,
+        # `SPS-AUTH-027`). No scopes: a service client's reach is its grants, not a scope list.
+        clientCredentials:
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          scopes: {}
 
   parameters:
 

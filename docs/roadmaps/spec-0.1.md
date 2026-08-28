@@ -205,7 +205,8 @@ equally urgent and the announce waits on all of them.
       Verified in a browser against the built page: the client is `did:web:spec.sempods.org`, the
       endpoints are the demo pod's, and the redirect Scalar computes is the page itself — which
       satisfies `SPS-AUTH-004`, since it shares the identifier's host and port. **Nobody has
-      completed a login yet**; what is verified is that the flow is aimed correctly.- [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
+      completed a login yet**; what is verified is that the flow is aimed correctly.
+- [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself. **The repository half is done**; the website half is deliberately last, after this
       specification and the reference implementation are finished, so that every outbound link and
       every constraint is known before the page is written once rather than edited three times.
