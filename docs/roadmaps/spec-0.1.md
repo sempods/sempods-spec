@@ -69,9 +69,9 @@ equally urgent and the announce waits on all of them.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
       scanning and push protection, Dependabot alerts and security updates, private vulnerability
       reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker. The
-      ruleset requires two status checks by name — `check` from the DCO workflow and `lychee` from
-      the link workflow — so renaming either job silently blocks every pull request until the
-      ruleset is updated with it.
+      ruleset requires four status checks **by name** — `check` (DCO), `lychee` (links),
+      `requirements` and `openapi` — so renaming any of those jobs silently blocks every pull
+      request until the ruleset is updated with it.
 - [x] 8 — The org code-security configuration `sempods baseline` is `enforced` here. Nothing was
       done to achieve it: the configuration is the organisation default for new repositories, so it
       attached at creation. Worth recording rather than re-doing — attaching it by hand needs
@@ -171,7 +171,7 @@ equally urgent and the announce waits on all of them.
       that is not the pod — a description would be the re-explanation the writing rules forbid.
       The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
       defines, which is the only drift a hand-written description can be guarded against locally.
-      **Add `requirements` and `openapi` to the ruleset's required checks.**
+      Both new jobs are in the ruleset's required checks, so neither is advisory.
 - [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
       — chosen over Redoc because it has a built-in API client, which is the whole point of putting
       it there.
