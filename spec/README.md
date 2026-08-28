@@ -1,12 +1,11 @@
 # The specification
 
-The normative text lives in this directory. **It is empty today** — the chapters are being extracted
-from the reference implementation one at a time, and a chapter appears here when it is written
-rather than as a stub that promises it will be.
+The normative text lives in this directory: six core chapters and three modules, 290 requirements.
+A chapter appears here when it is written rather than as a stub that promises it will be, so the
+tables below are the state of the specification rather than a plan for it.
 
-The table below is therefore the honest state of the specification, and
-[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is the order the work is being done
-in.
+[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is what remains before the `0.1`
+release.
 
 ## How to read a chapter
 
