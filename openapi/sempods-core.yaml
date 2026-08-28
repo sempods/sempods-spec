@@ -1,0 +1,1070 @@
+openapi: 3.1.0
+
+# The core HTTP surface of a sempods pod. Hand-written and part of the contract — not generated
+# from any implementation, because a generated description specifies whatever one implementation
+# happens to do, and an implementer in another language would read its choices as obligations.
+#
+# What this file cannot carry is the reason it is not the specification on its own: grant
+# resolution, the context sandbox and the SPARQL sandbox decide what a request may see, and no
+# schema language expresses them. Every operation therefore names the requirements it realises in
+# `x-sps-requirements`, and those are where the behaviour lives.
+
+info:
+  title: sempods — core
+  version: '0.1'
+  summary: The HTTP surface every sempods implementation provides.
+  description: |
+    The routes a conformant implementation must serve. Behaviour is specified in the core chapters
+    of the sempods specification; each operation below names the requirement identifiers it
+    realises.
+
+    **This description is not sufficient to implement a pod.** What a caller may see is decided by
+    grants resolved server-side per request, by the context sandbox on every read and write, and by
+    the SPARQL sandbox on every query. None of that is expressible here.
+  license:
+    name: CC BY 4.0
+    identifier: CC-BY-4.0
+  contact:
+    name: sempods
+    url: https://github.com/sempods/sempods-spec
+
+externalDocs:
+  description: The specification
+  url: https://github.com/sempods/sempods-spec/blob/main/spec/README.md
+
+servers:
+  - url: '{origin}/{pod}'
+    description: A pod. Every route below is relative to the pod base URL.
+    variables:
+      origin:
+        default: https://example.org
+        description: The origin the deployment is publicly known by. Pod IRIs are minted from it.
+      pod:
+        default: alice
+        description: The pod identifier within the deployment.
+
+tags:
+  - name: conformance
+    description: What this implementation provides.
+  - name: contexts
+    description: The permission boundary — creation, deletion, discovery.
+  - name: resources
+    description: RDF CRUD, at the resource's own IRI and at its operations address.
+  - name: slots
+    description: Triple-granular CRUD on one `(subject, predicate)` pair.
+  - name: query
+    description: The read-only SPARQL surface.
+  - name: retrieval
+    description: Text in, a subgraph out.
+  - name: auth
+    description: OAuth 2.1, registration, keys, metadata.
+
+# Bearer by default. Anonymous is a supported mode on this pod — SPS-MCP-005 and the public-read
+# flow depend on it — but it is a property of specific *read* operations, not of the surface, and
+# declaring it at the root advertised every mutation as reachable without a token. The operations
+# that genuinely take no credential override this with `security: [{}]`, and the read operations
+# that work either way list both.
+security:
+  - bearerAuth: []
+
+paths:
+
+  /_system/conformance:
+    get:
+      tags: [conformance]
+      operationId: getConformance
+      summary: The specification version and the modules this pod provides.
+      description: |
+        Unauthenticated on purpose: a client has to be able to ask what it is talking to before it
+        knows whether it can authenticate.
+      security: [{}]
+      x-sps-requirements: [SPS-CORE-010, SPS-CORE-011, SPS-CORE-012, SPS-CORE-013]
+      responses:
+        '200':
+          description: The conformance claim.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conformance' }
+
+  /_system/contexts:
+    get:
+      tags: [contexts]
+      operationId: listContexts
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The contexts visible to the caller, with effective permissions.
+      description: |
+        The authoritative client-visible view of effective context permissions. A token's `scope`
+        claim is not a context catalogue, and a client never constructs a context IRI itself.
+      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023]
+      responses:
+        '200':
+          description: Visible contexts, and which of them are writable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContextList' }
+
+  /_system/contexts/{contextPath}:
+    parameters:
+      - $ref: '#/components/parameters/ContextPath'
+    get:
+      tags: [contexts]
+      operationId: getContext
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: What the registry holds for this context.
+      description: |
+        Ask this route what a context **is**. What anyone has *said about* the same IRI is a
+        different question, answered by the resource routes.
+      x-sps-requirements: [SPS-CTX-024, SPS-CTX-026]
+      responses:
+        '200':
+          description: The context.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Context' }
+        '404':
+          $ref: '#/components/responses/NotFoundOrNotVisible'
+    put:
+      tags: [contexts]
+      operationId: putContext
+      summary: Create a context, idempotently.
+      x-sps-requirements: [SPS-CTX-005, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContextCreate' }
+      responses:
+        '200':
+          description: The context already existed and was not altered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Context' }
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Context' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [contexts]
+      operationId: deleteContext
+      summary: Remove a context and the state that rested on it.
+      description: |
+        Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
+        **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
+        before existence, so a caller outside their sandbox gets `403` rather than a `404` that
+        would confirm the context exists.
+      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020]
+      responses:
+        '204': { description: Removed. }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+
+  /{resourcePath}:
+    description: |
+      The LOD layer. `resourcePath` is everything after the pod segment and **may contain slashes**
+      — OpenAPI path templating has no multi-segment parameter, so tooling will show it as one
+      segment. A path equal to `_system` or beginning `_system/` is not addressable here.
+    parameters:
+      - $ref: '#/components/parameters/ResourcePath'
+    get:
+      tags: [resources]
+      operationId: getResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: Dereference a resource.
+      parameters:
+        - $ref: '#/components/parameters/ReadContext'
+        - $ref: '#/components/parameters/IncludeContexts'
+      x-sps-requirements: [SPS-CRUD-014, SPS-CRUD-015, SPS-CRUD-017, SPS-CRUD-020, SPS-CRUD-021, SPS-CRUD-022, SPS-CRUD-026, SPS-CRUD-027, SPS-CRUD-029]
+      responses:
+        '200': { $ref: '#/components/responses/ResourceRepresentation' }
+        '304': { description: Not modified. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+    head:
+      tags: [resources]
+      operationId: headResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The headers of a dereference, with no body.
+      x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029]
+      responses:
+        '200': { description: Headers only. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    options:
+      tags: [resources]
+      operationId: optionsResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The verbs available to this caller on this resource.
+      x-sps-requirements: [SPS-CRUD-018]
+      responses:
+        '204':
+          description: Allowed methods.
+          headers:
+            Allow: { schema: { type: string } }
+    put:
+      tags: [resources]
+      operationId: putResource
+      summary: Replace the resource's outgoing statements in one context.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      x-sps-requirements: [SPS-CRUD-007, SPS-CRUD-008, SPS-CRUD-010, SPS-CRUD-011, SPS-CRUD-012, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-033, SPS-CRUD-034]
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema: { $ref: '#/components/schemas/CanonicalResource' }
+          application/n-quads:
+            schema: { type: string }
+      responses:
+        '200': { description: Replaced. }
+        '201':
+          description: Created.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '204': { description: Replaced, no body. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+    patch:
+      tags: [resources]
+      operationId: patchResource
+      summary: RFC 7396 merge patch on the canonical representation.
+      description: |
+        JSON Merge Patch, not a JSON-LD processing mode. Absolute IRI keys only; `@context`,
+        `@graph` and every other keyword except `@id` and `@type` are rejected. Arrays are replaced
+        wholesale — adding one value to a multivalued property is a slot operation.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-CRUD-038]
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { type: object }
+      responses:
+        '200': { description: Patched. }
+        '204': { description: Patched, no body. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+    delete:
+      tags: [resources]
+      operationId: deleteResource
+      summary: Remove the resource's outgoing statements in one context.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-039]
+      responses:
+        '204': { description: Removed. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+
+  /_system/resources/{resourceIri}:
+    description: |
+      The same resource, addressed by base64url-encoded IRI. For a pod-owned IRI this behaves
+      identically to the LOD path — same body, same entity tag, same rules. For an IRI outside the
+      pod namespace it is the only route that exists.
+    parameters:
+      - $ref: '#/components/parameters/ResourceIri'
+    get:
+      tags: [resources]
+      operationId: getResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: Dereference any IRI's statements held by this pod.
+      parameters:
+        - $ref: '#/components/parameters/ReadContext'
+        - $ref: '#/components/parameters/IncludeContexts'
+      x-sps-requirements: [SPS-CRUD-001, SPS-CRUD-002, SPS-CRUD-003, SPS-CRUD-005, SPS-CRUD-006]
+      responses:
+        '200': { $ref: '#/components/responses/ResourceRepresentation' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+    head:
+      tags: [resources]
+      operationId: headResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The headers of that dereference, with no body.
+      x-sps-requirements: [SPS-CRUD-040]
+      responses:
+        '200': { description: Headers only. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    options:
+      tags: [resources]
+      operationId: optionsResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The verbs available to this caller on this IRI.
+      x-sps-requirements: [SPS-CRUD-040]
+      responses:
+        '204':
+          description: Allowed methods.
+          headers:
+            Allow: { schema: { type: string } }
+    put:
+      tags: [resources]
+      operationId: putResourceByIri
+      summary: Replace any IRI's statements in one context.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043]
+      requestBody:
+        required: true
+        description: |
+          The same media types as the LOD path — SPS-CRUD-002 requires the two addresses to behave
+          identically, and this is the *only* write address for an IRI outside the pod namespace.
+        content:
+          application/ld+json:
+            schema: { $ref: '#/components/schemas/CanonicalResource' }
+          application/n-quads:
+            schema: { type: string }
+      responses:
+        '200': { description: Replaced. }
+        '201':
+          description: Created.
+          headers:
+            Location: { schema: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+    patch:
+      tags: [resources]
+      operationId: patchResourceByIri
+      summary: Merge patch any IRI's statements in one context.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037]
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { type: object }
+      responses:
+        '200': { description: Patched. }
+        '204': { description: Patched, no body. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    delete:
+      tags: [resources]
+      operationId: deleteResourceByIri
+      summary: Remove any IRI's statements in one context.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-039]
+      responses:
+        '204': { description: Removed. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+
+  /_system/resources/{subjectIri}/{predicateIri}:
+    description: A slot — every value of one `(subject, predicate)` pair within one context.
+    parameters:
+      - $ref: '#/components/parameters/SubjectIri'
+      - $ref: '#/components/parameters/PredicateIri'
+    get:
+      tags: [slots]
+      operationId: getSlot
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: All values of this slot.
+      description: |
+        An unordered set. Array order is not meaningful and may differ between calls. An entity tag
+        is emitted only where the read resolves to exactly one context — a union of several
+        snapshots is not something a single tag can validate.
+      parameters:
+        - $ref: '#/components/parameters/ReadContext'
+        - $ref: '#/components/parameters/IncludeContexts'
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-046, SPS-CRUD-050, SPS-CRUD-051, SPS-CRUD-057]
+      responses:
+        '200':
+          description: The slot's values.
+          content:
+            application/ld+json:
+              schema: { $ref: '#/components/schemas/SlotValues' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    put:
+      tags: [slots]
+      operationId: putSlot
+      summary: Replace the slot's contents; an empty array clears it.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IfNoneMatchSlot'
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-048, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054]
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema: { $ref: '#/components/schemas/SlotValues' }
+      responses:
+        '200':
+          description: Replaced. Carries the slot's new entity tag.
+          headers:
+            ETag: { schema: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+    post:
+      tags: [slots]
+      operationId: addSlotValue
+      summary: Add a value to the slot.
+      description: |
+        Idempotent in practice — adding a statement that already exists is a no-op under RDF set
+        semantics — so a client may retry without a conditional header. The verb stays `POST`
+        because it means *extend*, not *replace*. `Location` is the unambiguous signal that a new
+        edge was created.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054]
+      requestBody:
+        required: true
+        description: One value, or several — SPS-CRUD-041 defines the verb as adding the given value or values.
+        content:
+          application/ld+json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/SlotValue'
+                - $ref: '#/components/schemas/SlotValues'
+      responses:
+        '200':
+          description: |
+            The value was already present. Carries the slot's tag like any other successful slot
+            mutation, so a client can chain a conditional write without an intervening `GET` — the
+            no-op outcome is the ordinary one for an "ensure this triple exists" pattern.
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Outcome' }
+        '201':
+          description: A new edge was created.
+          headers:
+            Location: { schema: { type: string } }
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Outcome' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [slots]
+      operationId: clearSlot
+      summary: Empty the slot.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+        - $ref: '#/components/parameters/IfMatch'
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-044, SPS-CRUD-052]
+      responses:
+        '200':
+          description: '`cleared`, or `already_empty`. Carries the post-clear entity tag.'
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Outcome' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /_system/resources/{subjectIri}/{predicateIri}/{targetIri}:
+    description: One edge. Available only where the target is an IRI — a literal has no path encoding.
+    parameters:
+      - $ref: '#/components/parameters/SubjectIri'
+      - $ref: '#/components/parameters/PredicateIri'
+      - $ref: '#/components/parameters/TargetIri'
+    delete:
+      tags: [slots]
+      operationId: removeEdge
+      summary: Remove exactly one edge, leaving the slot's other values in place.
+      description: |
+        Idempotent, and `If-Match` is ignored: the operation names a statement by identity, so the
+        outcome is the same whether or not it was there. Safe to retry, and safe for
+        "ensure this triple does not exist" without a prior read.
+      parameters:
+        - $ref: '#/components/parameters/WriteContext'
+      x-sps-requirements: [SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054]
+      responses:
+        '200':
+          description: '`removed`, or `already_absent`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Outcome' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /_system/sparql/query:
+    post:
+      tags: [query]
+      operationId: sparqlQuery
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: Run a read-only SPARQL query inside the caller's sandbox.
+      description: |
+        Read-only. Every Update form is rejected, and so is `SERVICE` anywhere in the query,
+        including inside a subquery. A malformed query and an Update are refused identically — an
+        implementation cannot reliably tell them apart, and reporting the difference tells a prober
+        which one they wrote.
+
+        `default-graph-uri` and `named-graph-uri` narrow the query and can never widen it. A
+        present-but-empty parameter resolves to the empty set; it does **not** fall back to the
+        caller's full readable set.
+      parameters:
+        - name: default-graph-uri
+          in: query
+          required: false
+          schema: { type: array, items: { type: string, format: uri } }
+          explode: true
+        - name: named-graph-uri
+          in: query
+          required: false
+          schema: { type: array, items: { type: string, format: uri } }
+          explode: true
+      x-sps-requirements: [SPS-SPARQL-001, SPS-SPARQL-002, SPS-SPARQL-003, SPS-SPARQL-004, SPS-SPARQL-005, SPS-SPARQL-007, SPS-SPARQL-008, SPS-SPARQL-011, SPS-SPARQL-012, SPS-SPARQL-013, SPS-SPARQL-015, SPS-SPARQL-016, SPS-SPARQL-017, SPS-SPARQL-018]
+      requestBody:
+        required: true
+        content:
+          application/sparql-query:
+            schema: { type: string }
+      responses:
+        '200':
+          description: |
+            `SELECT` and `ASK` answer SPARQL results JSON; `CONSTRUCT` and `DESCRIBE` answer RDF. An
+            empty result is a well-formed document, not an error.
+          content:
+            application/sparql-results+json:
+              schema: { type: object }
+            application/ld+json:
+              schema: { type: object }
+            application/n-quads:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+
+  /_system/find:
+    get:
+      tags: [retrieval]
+      operationId: findGet
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: Text in, a context-sandboxed subgraph out.
+      parameters:
+        - name: text
+          in: query
+          required: true
+          schema: { type: string }
+          description: Terms or a natural-language question. How it is interpreted is the implementation's business.
+        - name: type
+          in: query
+          required: false
+          schema: { type: array, items: { type: string, format: uri } }
+          explode: true
+          description: Constrains the hits' `rdf:type`. Repeatable, OR-combined, matched exactly — no subclass reasoning.
+        - $ref: '#/components/parameters/ReadContext'
+        - $ref: '#/components/parameters/IncludeContexts'
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-005, SPS-FIND-006, SPS-FIND-007, SPS-FIND-008, SPS-FIND-009, SPS-FIND-010, SPS-FIND-011, SPS-FIND-012, SPS-FIND-014, SPS-FIND-015, SPS-FIND-016, SPS-FIND-018, SPS-FIND-019, SPS-FIND-020, SPS-FIND-021]
+      responses:
+        '200': { $ref: '#/components/responses/FindGraph' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    post:
+      tags: [retrieval]
+      operationId: findPost
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
+      summary: The same operation, for a request that no longer fits in a URL.
+      description: The body is parsed strictly — an unknown member is rejected, never ignored.
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-013]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FindRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/FindGraph' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /_system/auth/authorize:
+    get:
+      tags: [auth]
+      operationId: authorize
+      summary: OAuth 2.1 authorization request.
+      description: |
+        The standard delegation flow takes no `scope` naming contexts — the authorizing person
+        selects them at consent. `scope=public-read` is the exception.
+      security: [{}]
+      parameters:
+        - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
+        - { name: client_id, in: query, required: true, schema: { type: string } }
+        - { name: redirect_uri, in: query, required: true, schema: { type: string, format: uri } }
+        - { name: state, in: query, required: false, schema: { type: string } }
+        - { name: code_challenge, in: query, required: false, schema: { type: string } }
+        - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
+        - { name: scope, in: query, required: false, schema: { type: string } }
+        - { name: prompt, in: query, required: false, schema: { type: string } }
+      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044]
+      responses:
+        '302':
+          description: Redirect carrying `code` and `state`, or `error` and `error_description`.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '200': { description: The consent screen. }
+
+  /_system/auth/token:
+    post:
+      tags: [auth]
+      operationId: token
+      summary: Exchange a code, refresh a token, or obtain a service token.
+      security: [{}, { basicAuth: [] }]
+      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-035, SPS-AUTH-036, SPS-AUTH-037, SPS-AUTH-038]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/TokenRequest' }
+      responses:
+        '200':
+          description: The token response.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400':
+          description: An OAuth error — including `invalid_scope` for a `scope` on `client_credentials`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+        '429':
+          description: Rate limited.
+          headers:
+            Retry-After: { schema: { type: integer } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+
+  /_system/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: RFC 7591 dynamic client registration.
+      description: |
+        Issues a `dyn:` identifier. Such a client registers with no token-endpoint authentication,
+        so PKCE is required of it, and it always sees the consent screen. Re-registering with the
+        same stable metadata returns the existing identifier rather than minting a new one.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-019, SPS-AUTH-020]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201':
+          description: The registration.
+          content:
+            application/json:
+              schema: { type: object }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /_system/auth/jwks.json:
+    get:
+      tags: [auth]
+      operationId: jwks
+      summary: The pod's public signing keys.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-030]
+      responses:
+        '200':
+          description: A JWK Set.
+          content:
+            application/json:
+              schema: { type: object }
+
+  # The host-rooted form RFC 9728 §3.1 constructs, which is what a generic OAuth client probes.
+  # It sits at the origin rather than under the pod, so the path item overrides the document's
+  # server — OpenAPI has one prefix per document and this address is outside it.
+  /oauth-protected-resource/{pod}:
+    servers:
+      - url: '{origin}/.well-known'
+        variables:
+          origin:
+            default: 'https://example.org'
+    parameters:
+      - name: pod
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [auth]
+      operationId: protectedResourceMetadataHostRooted
+      summary: The same metadata, at the address RFC 9728 constructs.
+      description: |
+        Identical document to the append form below. Both are required: this one is what a client
+        driving RFC 9728 discovery asks for, and the append form is what a `WWW-Authenticate`
+        `resource_metadata` hint points at. Neither replaces the other.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047, SPS-AUTH-056]
+      responses:
+        '200':
+          description: The metadata document.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
+
+  /.well-known/oauth-protected-resource:
+    get:
+      tags: [auth]
+      operationId: protectedResourceMetadata
+      summary: RFC 9728 Protected Resource Metadata.
+      description: |
+        Never enumerates the pod's public context IRIs — a count may be advertised, the URIs would
+        be a topology leak on an unauthenticated route.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047]
+      responses:
+        '200':
+          description: The metadata document.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        A pod-issued access token. Its `scope` claim carries feature scopes only — per-context
+        grants never travel in a token and are resolved server-side on every request.
+    basicAuth:
+      type: http
+      scheme: basic
+      description: A service client's credentials, at the token endpoint only.
+
+  parameters:
+
+    ContextPath:
+      name: contextPath
+      in: path
+      required: true
+      schema: { type: string }
+      description: |
+        The context IRI's path, and the same string as the IRI's own. May contain slashes.
+
+    ResourcePath:
+      name: resourcePath
+      in: path
+      required: true
+      schema: { type: string }
+      description: Everything after the pod segment. May contain slashes.
+
+    ResourceIri:
+      name: resourceIri
+      in: path
+      required: true
+      schema: { type: string }
+      description: An absolute IRI at any scheme, base64url-encoded without padding.
+
+    SubjectIri:
+      name: subjectIri
+      in: path
+      required: true
+      schema: { type: string }
+      description: base64url without padding.
+
+    PredicateIri:
+      name: predicateIri
+      in: path
+      required: true
+      schema: { type: string }
+      description: base64url without padding.
+
+    TargetIri:
+      name: targetIri
+      in: path
+      required: true
+      schema: { type: string }
+      description: base64url without padding. IRI targets only.
+
+    WriteContext:
+      name: context
+      in: query
+      required: true
+      schema: { type: string, format: uri }
+      description: |
+        Exactly one, on every write. Missing or repeated is `400` — and repetition is judged on the
+        parameter's occurrence count, so `?context=valid&context=` is repeated. An unregistered
+        context is `404`; a registered one the caller may not write is `403`.
+
+    ReadContext:
+      name: context
+      in: query
+      required: false
+      schema: { type: array, items: { type: string, format: uri } }
+      explode: true
+      description: |
+        A downscope filter. Absent means the union of everything the caller may read. Repeat the
+        parameter for several — a comma-separated list is not accepted, because a context IRI may
+        legally contain a comma. A requested context the caller cannot read is dropped in silence.
+
+    IncludeContexts:
+      name: include_contexts
+      in: query
+      required: false
+      schema: { type: boolean, default: false }
+      description: |
+        Switches the representation to named-graph form grouped by source context. Changes the
+        shape only — never which contexts are readable.
+
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      schema: { type: string }
+
+    IfNoneMatchSlot:
+      name: If-None-Match
+      in: header
+      required: false
+      schema: { type: string, const: '*' }
+      description: |
+        Create-or-fail. Succeeds when the slot holds no statement for `(subject, predicate)` in the
+        write context — **not** "the subject does not exist", which would break both an external
+        subject and a subject that already has other predicates.
+
+  responses:
+
+    ResourceRepresentation:
+      description: |
+        The resource's statements in the selected contexts. Two JSON-LD shapes, selected by
+        `include_contexts`: the merged canonical object by default, and a named-graph array grouped
+        by source context when it is `true`. N-Quads is graph-aware by format and unaffected.
+      headers:
+        ETag: { schema: { type: string } }
+        Vary: { schema: { type: string } }
+      content:
+        application/ld+json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/CanonicalResource'
+              - $ref: '#/components/schemas/NamedGraphArray'
+        application/n-quads:
+          schema: { type: string }
+
+    FindGraph:
+      description: |
+        A subgraph the caller merges and traverses. Flat by default: no ordering, no score, and no
+        marker separating a hit from its expansion. An empty result is `200`, not `404` — a search
+        that matched nothing is an answer.
+      content:
+        application/ld+json:
+          schema: { type: object }
+        application/n-quads:
+          schema: { type: string }
+
+    NotFoundOrNotVisible:
+      description: |
+        Does not exist, or the caller may not see that it does. The two are deliberately
+        indistinguishable.
+
+    UnknownContext:
+      description: The named context is not registered.
+
+    BadRequest:
+      description: Malformed request.
+
+    Forbidden:
+      description: Authenticated, but lacking the grant or scope the operation requires.
+
+    NotAcceptable:
+      description: The `Accept` header cannot be satisfied.
+
+    Conflict:
+      description: Well formed and authorized on arrival; the state changed underneath it.
+
+    PreconditionFailed:
+      description: A conditional header did not hold.
+
+  schemas:
+
+    Conformance:
+      type: object
+      required: [specVersion, modules]
+      properties:
+        specVersion: { type: string, examples: ['0.1'] }
+        modules:
+          type: array
+          items:
+            type: object
+            required: [id, version]
+            properties:
+              id: { type: string, format: uri }
+              version: { type: string }
+      description: A client must tolerate unknown module identifiers and unknown members.
+
+    ContextList:
+      type: object
+      properties:
+        podBaseUrl: { type: string, format: uri }
+        authenticated: { type: boolean }
+        contexts:
+          type: array
+          items: { $ref: '#/components/schemas/Context' }
+        writableContexts:
+          type: array
+          items: { type: string, format: uri }
+
+    Context:
+      type: object
+      properties:
+        contextUri: { type: string, format: uri }
+        label: { type: string }
+        description: { type: string }
+        public: { type: boolean }
+        permissions:
+          type: array
+          items: { type: string, enum: [read, write, manage] }
+          description: Collapsed — `write` and `manage` imply `read`.
+
+    ContextCreate:
+      type: object
+      properties:
+        label: { type: string }
+        description: { type: string }
+        public: { type: boolean }
+
+    CanonicalResource:
+      type: object
+      description: |
+        The canonical JSON-LD shape: `@id` equal to the resource IRI, absolute IRI predicate keys,
+        values as arrays of JSON-LD value objects. No top-level `@context`, no compact terms.
+      required: ['@id']
+      properties:
+        '@id': { type: string, format: uri }
+        '@type': {}
+      additionalProperties:
+        type: array
+        items: { $ref: '#/components/schemas/SlotValue' }
+
+    NamedGraphArray:
+      type: array
+      description: |
+        What `include_contexts=true` returns: one entry per source context, each carrying the
+        statements that came from it. Only the representation changes — never which contexts are
+        readable.
+      items:
+        type: object
+        required: ['@id', '@graph']
+        properties:
+          '@id':
+            type: string
+            format: uri
+            description: The context IRI the statements came from.
+          '@graph':
+            type: array
+            items: { $ref: '#/components/schemas/CanonicalResource' }
+
+    SlotValues:
+      type: array
+      items: { $ref: '#/components/schemas/SlotValue' }
+
+    SlotValue:
+      oneOf:
+        - type: object
+          required: ['@id']
+          properties:
+            '@id': { type: string, format: uri }
+        - type: object
+          required: ['@value']
+          properties:
+            '@value': {}
+            '@language': { type: string }
+            '@type': { type: string, format: uri }
+
+    Outcome:
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [created, already_present, cleared, already_empty, removed, already_absent]
+      description: |
+        The distinction an idempotent status code cannot carry. The same words appear on the
+        agent-facing surface, so both report an event identically.
+
+    FindRequest:
+      type: object
+      required: [text]
+      additionalProperties: false
+      properties:
+        text: { type: string }
+        type: { type: array, items: { type: string, format: uri } }
+        contexts: { type: array, items: { type: string, format: uri } }
+        include_contexts: { type: boolean, default: false }
+        limit: { type: integer, minimum: 1 }
+
+    TokenRequest:
+      type: object
+      required: [grant_type]
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code, refresh_token, client_credentials]
+        code: { type: string }
+        redirect_uri: { type: string, format: uri }
+        client_id: { type: string }
+        code_verifier: { type: string }
+        refresh_token: { type: string }
+        scope:
+          type: string
+          description: |
+            On a refresh, may only narrow the feature scopes. On `client_credentials` it is
+            rejected with `invalid_scope`.
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: Bearer }
+        expires_in: { type: integer }
+        refresh_token:
+          type: string
+          description: Absent for a `public-read` token and for a service token.
+        scope: { type: string }
+
+    OAuthError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        error_description: { type: string }
+        error_uri:
+          type: string
+          format: uri
+          description: Optional. A client must treat it as optional.
+
+    ProtectedResourceMetadata:
+      type: object
+      required: [resource, authorization_servers, bearer_methods_supported]
+      properties:
+        resource: { type: string, format: uri }
+        authorization_servers: { type: array, items: { type: string, format: uri } }
+        bearer_methods_supported: { type: array, items: { type: string } }
+        name: { type: string }
+        public_contexts:
+          type: integer
+          description: A count. Never the URIs.

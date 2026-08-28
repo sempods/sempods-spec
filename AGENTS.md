@@ -97,7 +97,11 @@ one of them is refused rather than debated.
 
 - **Core**: `contexts`, `grants`, `auth`, `lod-crud`, `sparql`, `find`.
 - **Modules**: `oidc`, `media`, `mcp`.
-- OpenAPI is **not** a module. It is a view: one description file per core chapter and per module.
+- OpenAPI is **not** a module. It is a view: one description for core, and one per module that adds
+  an HTTP surface of its own. Not one per chapter — the core chapters share the context rule, the
+  canonical representation, the conditional-write semantics and the error model, and splitting them
+  would duplicate those components across files a reader then has to merge. See
+  [`openapi/README.md`](openapi/README.md).
 
 "Optional" is only real if a client can discover it, so conformance discovery is part of core, not a
 nicety. Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's scope
@@ -128,12 +132,20 @@ Front door and governance:
   from descriptive to prescriptive, how a change is made and who decides
 - [`NOTICE`](NOTICE) — the licence summary and the trademark position, including the two reserved
   conformance terms that mean nothing until the suite exists
+- [`docs/brand/`](docs/brand/) — canonical project logo assets, attribution and downstream copy
+  rules
 
 The specification:
 
-- [`spec/README.md`](spec/README.md) — how to read a chapter, and the chapter table with a status
-  per chapter and the source each is being extracted from. The chapters themselves do not exist yet;
-  that table is the honest state of the specification and is what a visitor reads first
+- [`openapi/README.md`](openapi/README.md) — the hand-written OpenAPI descriptions, why they are
+  hand-written, and what they structurally cannot say
+- [`vocabulary/README.md`](vocabulary/README.md) — the RDF terms published under
+  `https://schema.sempods.org/` and the stability guarantees they carry. Normative, and versioned
+  with the specification rather than with any implementation
+- [`spec/README.md`](spec/README.md) — how to read a chapter, the requirement-identifier scheme, and
+  the chapter tables. Six core chapters and three modules are present; the tables say which source
+  each was extracted from, and are what a visitor reads first
+- [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
 
 Agent instructions — [`docs/agents/`](docs/agents/):
 
@@ -172,11 +184,15 @@ here rather than copied.
 
 ## Before you commit
 
-1. Every relative link resolves. CI runs [lychee](https://github.com/lycheeverse/lychee); locally:
+1. Both checks pass. CI runs them; locally:
 
    ```bash
    lychee --offline --include-fragments --no-progress .
+   .github/scripts/check-requirements.py origin/main
    ```
+
+   **Pass the base ref.** Without it the disappearance check does not run at all — which is the
+   half CI runs and the half a local run is most likely to skip.
 
 2. Documentation is current *in this same change* — new chapters reachable from an `AGENTS.md`, the
    roadmap item ticked, requirement IDs consistent.
@@ -190,9 +206,19 @@ here rather than copied.
 
 ## What this repository deliberately does not have
 
-**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand and
-checked by one link checker. Gradle arrives with the conformance suite and not before — a build file
-that exists to run nothing is a dependency to maintain for no return.
+**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand.
+Gradle arrives with the conformance suite and not before — a build file that exists to run nothing
+is a dependency to maintain for no return.
+
+Two checks, both in CI and both runnable by hand:
+
+```bash
+lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
+.github/scripts/check-requirements.py origin/main      # the identifier promises
+```
+
+The second one exists because `SPS-CORE-003` — an identifier is never reassigned, renumbered or
+deleted — is a promise no link checker can see, and deleting a requirement looks like tidying.
 
 **No stub chapters.** See the working rules above.
 

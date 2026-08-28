@@ -20,15 +20,19 @@ one of them and is linked from the others.
 
 ## Status
 
-**Pre-`0.1`, and the specification is being extracted rather than invented.** The contract exists
-today as documentation inside the reference implementation, and it is being lifted here chapter by
-chapter. Until the `0.1` release the reference implementation is the source of truth; from `0.1` on
-that reverses and this repository is. [`GOVERNANCE.md`](GOVERNANCE.md) states the switch, and why it
-is a dated event rather than a mood.
+**Pre-`0.1`, and the specification was extracted rather than invented.** All six core chapters and
+all three modules are written — 313 requirements — together with hand-written OpenAPI descriptions
+of the HTTP surface. What is not done is the `0.1` release itself, the conformance suite, and
+removing the second copy of this material from the reference implementation.
 
-What that means concretely: **do not implement against this repository yet.** There is nothing
-normative in it. [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) is what is being worked
-on and in which order.
+Until the `0.1` tag the reference implementation is the source of truth; from `0.1` on that reverses
+and this repository is. [`GOVERNANCE.md`](GOVERNANCE.md) states the switch, and why it is a dated
+event rather than a mood.
+
+What that means concretely: **you can implement against this repository, and you cannot yet prove
+you did.** The requirements are stable enough to build against and their identifiers are permanent;
+what does not exist is the suite that would check an implementation against them.
+[`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) is what remains, and in which order.
 
 ## What a specification is here
 
@@ -45,6 +49,10 @@ The requirement IDs are the load-bearing part: a conformance test, a note in the
 implementation and an OpenAPI operation all point at `SPS-CRUD-011` rather than at a file and a
 heading. Chapters may then be split, renamed or moved without breaking anything that cites them.
 [`spec/README.md`](spec/README.md) has the scheme and the chapter map.
+
+Project brand assets live under [`docs/brand/`](docs/brand/). They are not part of the normative
+specification, but this repository is their source of truth so the website, organisation profile
+and applications all copy the same files.
 
 ## Core and modules
 

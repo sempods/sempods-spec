@@ -1,12 +1,11 @@
 # The specification
 
-The normative text lives in this directory. **It is empty today** — the chapters are being extracted
-from the reference implementation one at a time, and a chapter appears here when it is written
-rather than as a stub that promises it will be.
+The normative text lives in this directory: six core chapters and three modules, 313 requirements.
+A chapter appears here when it is written rather than as a stub that promises it will be, so the
+tables below are the state of the specification rather than a plan for it.
 
-The table below is therefore the honest state of the specification, and
-[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is the order the work is being done
-in.
+[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is what remains before the `0.1`
+release.
 
 ## How to read a chapter
 
@@ -36,18 +35,19 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 
 | Chapter | Area | Status | Source being extracted from |
 |---|---|---|---|
-| `core/index.md` — conformance, requirement scheme, module discovery | — | planned | new |
-| `core/contexts.md` — the context as the permission boundary, the `_system/contexts` namespace | `CTX` | planned | `docs/auth/authorization.md` |
-| `core/grants.md` — `#read` / `#write` / `#manage`, resolution, the `#manage` subtree rule | `GRANT` | planned | `docs/auth/authorization.md` |
-| `core/auth.md` — OAuth 2.1, PKCE, the three client-identity shapes, anonymous access | `AUTH` | planned | `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md` |
-| `core/lod-crud.md` — the LOD layer and the system layer, `?context=`, base64url addressing | `CRUD` | planned | `docs/lod-crud/` |
-| `core/sparql.md` — the read-only query surface and the server-enforced sandbox | `SPARQL` | planned | **nothing** — scattered today, has to be written |
-| `core/find.md` — retrieval: what a hit is, what metadata it carries | `FIND` | planned | `docs/concepts/graph-retrieval.md`, partly |
+| [`core/index.md`](core/index.md) — conformance, addressing, discovery, the error model | `CORE` | **present** | new |
+| [`core/contexts.md`](core/contexts.md) — the context as the permission boundary, the `_system/contexts` namespace, lifecycle and discovery | `CTX` | **present** | `docs/auth/authorization.md` |
+| [`core/grants.md`](core/grants.md) — `#read` / `#write` / `#manage`, resolution, delegation, revocation, the `#manage` subtree rule | `GRANT` | **present** | `docs/auth/authorization.md` |
+| [`core/auth.md`](core/auth.md) — OAuth 2.1, PKCE, the three client-identity shapes, consent, refresh rotation, discovery | `AUTH` | **present** | `docs/auth/oauth.md`, `service-clients.md` |
+| [`core/lod-crud.md`](core/lod-crud.md) — the LOD layer and the system layer, `?context=`, base64url addressing, slots and edges | `CRUD` | **present** | `docs/lod-crud/` |
+| [`core/sparql.md`](core/sparql.md) — the read-only query surface and the server-enforced sandbox | `SPARQL` | **present** | **new writing** — was scattered across three documents |
+| [`core/find.md`](core/find.md) — retrieval: the request, the sandbox, the response graph | `FIND` | **present** | **new writing** — existed only as a concept |
 
-Two of these do not exist as documents anywhere yet. `sparql` is specified in fragments across three
-files in the reference implementation, and the one document that should hold it says so explicitly —
-its LOD chapter defers to a "SPARQL surface" document that was never written. `find` exists only as
-a concept. Both are new writing, not a move.
+Two of these were new writing rather than a move. `sparql` existed only as fragments across three
+files in the reference implementation — whose LOD chapter deferred to a "SPARQL surface" document
+that was never written — and `find` existed only as a concept, which mixes what is built with what
+is planned. Both chapters therefore carry more than any single source did, and both were checked
+against the implementation rather than against the prose.
 
 ## Modules
 
@@ -57,16 +57,20 @@ got has no contract.
 
 | Module | Area | Status | Source being extracted from |
 |---|---|---|---|
-| `modules/oidc.md` — the OIDC bridge and WebID identities | `OIDC` | planned | `docs/auth/identity.md` |
-| `modules/media.md` — pod-owned binaries, the context-bound registry | `MEDIA` | planned | `docs/media.md` |
-| `modules/mcp.md` — the per-pod MCP endpoint and its tool catalogue | `MCP` | planned | `docs/mcp/` |
+| [`modules/oidc.md`](modules/oidc.md) — the OIDC bridge: identity assertions, how a pod obtains one, federation | `OIDC` | **present** | `docs/auth/identity.md`, split |
+| [`modules/media.md`](modules/media.md) — pod-owned binaries: content addressing, the context-bound registry, delivery, lifecycle | `MEDIA` | **present** | `docs/media.md` |
+| [`modules/mcp.md`](modules/mcp.md) — the per-pod MCP endpoint, authentication modes, the tool catalogue, closed schemas | `MCP` | **present** | `docs/mcp/endpoint.md`, `tools.md`, `authentication.md` |
 
 ## OpenAPI
 
-`openapi/` will hold one hand-written OpenAPI 3.1 description per core chapter and per module.
-Hand-written and part of the contract, not generated from any implementation: a generated
-description specifies whatever the reference implementation happens to do, and an implementer in
-another language would read one implementation's choices as obligations.
+[`../openapi/`](../openapi/) holds hand-written OpenAPI 3.1 descriptions — one for the whole of
+core, one per module that has an HTTP surface of its own. Hand-written and part of the contract, not
+generated from any implementation: a generated description specifies whatever the reference
+implementation happens to do, and an implementer in another language would read one
+implementation's choices as obligations.
+
+Every operation names the requirements it realises, and a citation pointing at an identifier no
+chapter defines fails CI.
 
 What OpenAPI cannot carry is the reason it is not the specification on its own: grant resolution,
 the context sandbox, the SPARQL sandbox — the behaviour that decides what a request is allowed to
@@ -74,9 +78,14 @@ see. That lives in the chapters.
 
 ## Vocabulary
 
-`vocabulary/` will hold the RDF terms published under `https://schema.sempods.org/`, together with
-the stability guarantees they carry. It lives here rather than with an implementation because the
-terms are normative and versioned with the specification. It has not moved yet.
+[`../vocabulary/`](../vocabulary/) holds the RDF terms published under
+`https://schema.sempods.org/`, together with the stability guarantees they carry — the strongest
+promise this project makes: an IRI never changes, a meaning never narrows, and a retired term is
+deprecated for at least twelve months rather than deleted.
+
+It lives here rather than with an implementation because the terms are normative and versioned with
+the specification, and because a term ends up inside other people's stored data — which is the same
+reason a requirement identifier is permanent.
 
 ## Conformance
 

@@ -28,3 +28,15 @@ Licensing summary:
     passing the conformance suite at a stated profile and version. That suite
     does not exist yet, so nobody can pass it and the terms say nothing today.
     Write "implements the sempods specification" and document your deviations.
+
+Brand assets:
+
+  * The transitional sempods logo in docs/brand/ is based on the Google
+    Material Icons "Webhook" glyph, licensed under the Apache License,
+    Version 2.0.
+
+    Source: https://github.com/google/material-design-icons
+
+    The sempods wrapper assets modify the SVG structure, labels, colour
+    handling, padding and app-icon background. The glyph shape is intentionally
+    left unchanged for this transitional version.

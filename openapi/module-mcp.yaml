@@ -1,0 +1,121 @@
+openapi: 3.1.0
+
+# The MCP module's HTTP surface: one JSON-RPC route.
+#
+# There is little for OpenAPI to say here, and that is the honest shape of it — the contract is in
+# the methods, the tool catalogue and the authentication modes, none of which a path-and-schema
+# description can express. What this file pins is the envelope, the challenge, and the pointer at
+# the requirements that carry the rest.
+
+info:
+  title: sempods — MCP module
+  version: '0.1'
+  summary: The per-pod agent-facing endpoint.
+  description: |
+    Binds only an implementation advertising `https://schema.sempods.org/module/mcp` at the
+    conformance endpoint.
+
+    Every tool is a projection of an HTTP surface the core chapters define; the endpoint adds no
+    authority, no sandbox and no write path of its own. A hosted multi-pod MCP service is a
+    different thing and is not this module — it has no anonymous mode, and toward a pod it is an
+    ordinary OAuth client.
+  license:
+    name: CC BY 4.0
+    identifier: CC-BY-4.0
+
+externalDocs:
+  description: The module chapter
+  url: https://github.com/sempods/sempods-spec/blob/main/spec/modules/mcp.md
+
+servers:
+  - url: '{origin}/{pod}'
+    variables:
+      origin: { default: 'https://example.org' }
+      pod: { default: alice }
+
+security:
+  - {}
+  - bearerAuth: []
+
+paths:
+
+  /_system/mcp:
+    post:
+      operationId: mcp
+      summary: JSON-RPC 2.0 — initialize, list tools, call a tool.
+      description: |
+        Anonymous is a supported mode: with no bearer a caller may initialize, list tools, and use
+        the read tools against the pod's public contexts. Write tools require a bearer. An invalid
+        bearer is rejected rather than downgraded to anonymous.
+
+        Tool schemas are closed and the closure is **enforced**: a call carrying an argument the
+        tool does not declare is refused before dispatch, never silently dropped. The caller is a
+        language model, and ignoring an invented argument executes a different operation than the
+        one it asked for — broader on a read, wrong on a write — and returns success.
+      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonRpcRequest' }
+      responses:
+        '200':
+          description: |
+            A JSON-RPC response. A tool that failed reports it inside the result rather than as a
+            transport error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+        '202':
+          description: A notification, which carries no id and gets no response body.
+        '401':
+          description: |
+            The bearer was rejected, or the operation needs one. The challenge names the pod's realm
+            and its Protected Resource Metadata URL — the pod is the protected resource for an MCP
+            caller exactly as for an HTTP caller.
+          headers:
+            WWW-Authenticate:
+              schema: { type: string }
+              example: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+        '404':
+          description: The pod segment names no pod.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+
+components:
+
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  schemas:
+    JsonRpcRequest:
+      type: object
+      required: [jsonrpc, method]
+      properties:
+        jsonrpc: { type: string, const: '2.0' }
+        id: { description: Absent on a notification. }
+        method:
+          type: string
+          enum: [initialize, notifications/initialized, tools/list, tools/call, resources/list, prompts/list]
+        params: { type: object }
+    JsonRpcResponse:
+      type: object
+      required: [jsonrpc]
+      properties:
+        jsonrpc: { type: string, const: '2.0' }
+        id: {}
+        result: { type: object }
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              description: |
+                Parse error, invalid request, method or tool not found, invalid params, internal
+                error — plus a distinct code for a rejected bearer, paired with HTTP 401, and one
+                for an unknown pod, paired with HTTP 404.
+            message: { type: string }

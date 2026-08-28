@@ -21,6 +21,18 @@ concept will be written for the first chapter whose *content* needs one.
 
 ---
 
+## How the work lands
+
+**One branch here, one pull request at the end — and the same in the reference implementation, once
+this repository's first version is done.** The first attempt at the reference implementation's side
+(sempods-kotlin#52) was closed for this reason: while the chapters do not exist, every sentence
+there has to describe a half-state — "the specification lives at that address, but not yet", "read
+it, but not for the contract" — and each of those sentences is rewritten the moment a chapter lands.
+Three review rounds went into prose with a known expiry date.
+
+So the order is: finish the normative text and the OpenAPI here, *then* rewire the reference
+implementation once, against a state that is real. S7 is deliberately not started early.
+
 ## What gates the announce
 
 The launch checklist that owns this milestone from the outside is the private go-public roadmap —
@@ -57,9 +69,9 @@ equally urgent and the announce waits on all of them.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
       scanning and push protection, Dependabot alerts and security updates, private vulnerability
       reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker. The
-      ruleset requires two status checks by name — `check` from the DCO workflow and `lychee` from
-      the link workflow — so renaming either job silently blocks every pull request until the
-      ruleset is updated with it.
+      ruleset requires four status checks **by name** — `check` (DCO), `lychee` (links),
+      `requirements` and `openapi` — so renaming any of those jobs silently blocks every pull
+      request until the ruleset is updated with it.
 - [x] 8 — The org code-security configuration `sempods baseline` is `enforced` here. Nothing was
       done to achieve it: the configuration is the organisation default for new repositories, so it
       attached at creation. Worth recording rather than re-doing — attaching it by hand needs
@@ -70,50 +82,78 @@ equally urgent and the announce waits on all of them.
 
 ## S2 — The foundation every chapter rests on
 
-- [ ] 10 — `spec/core/index.md`: what conformance means, the RFC 2119 declaration, the requirement-ID
-      scheme as a normative statement rather than an authoring convention, the core/module model.
-- [ ] 11 — **Conformance discovery.** Specify the endpoint that makes "optional" real: an
-      implementation advertises its specification version and the module IRIs it provides. Draft
-      shape, to be settled in the chapter:
-
-      GET /{pod}/_system/conformance
-      → { "specVersion": "0.1", "modules": [ { "id": …, "version": "0.1" } ] }
-
-      Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's own
-      scope already anticipates by naming "conformance markers".
-- [ ] 12 — A CI guard for the ID promise: a requirement ID that disappears from a diff fails the
-      build unless it reappears as a withdrawal. The pull-request template asks for this by hand
-      today, and a promise that only a checklist enforces is a promise that survives exactly as long
-      as reviewers are attentive.
+- [x] 10 — `spec/core/index.md`: conformance, the RFC 2119 declaration, the requirement-ID scheme as
+      a normative statement rather than an authoring convention, the core/module model, pod
+      addressing, and the shared error model. `SPS-CORE-001`…`018`. A new area `CORE` was registered
+      for it.
+- [x] 11 — **Conformance discovery** settled in the chapter: `GET {pod}/_system/conformance`,
+      unauthenticated, carrying `specVersion` and a `modules` array of IRI plus version
+      (`SPS-CORE-010`…`013`). A module absent from the array counts as not provided, and a client
+      must tolerate entries it does not recognise.
+- [x] 12 — A CI guard for the ID promise: `.github/scripts/check-requirements.py`, run by the
+      `requirements` workflow. It checks that anchors match their identifiers, that none is used
+      twice, and that none disappeared against the pull request's base — comparing the paths that
+      existed *then*, so splitting a chapter does not read as a mass deletion. **Add `requirements`
+      to the ruleset's required checks**, or the guard is advisory.
 - [ ] 13 — Follow-up filed against the reference implementation: the endpoint does not exist there.
       This is the first place the new direction bites, and it is worth being the example.
 
 ## S3 — Core chapters
 
-- [ ] 14 — `contexts` (`CTX`) — extracted from `docs/auth/authorization.md`.
-- [ ] 15 — `grants` (`GRANT`) — same source. The `#manage` subtree rule is the one requirement most
-      likely to be implemented as a string-prefix check, so it needs its own requirement and its own
-      conformance test.
-- [ ] 16 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
-      The three client-identity shapes are the part an implementer gets wrong first.
-- [ ] 17 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
-      specification-shaped already.
-- [ ] 18 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
-      documents, and the LOD chapter openly defers to a SPARQL document that was never written.
-- [ ] 19 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.
+- [x] 14 — `contexts` (`CTX`) — `SPS-CTX-001`…`026`. The one thing the source did not state as a
+      rule: on `DELETE`, authorization is checked *before* existence, so an out-of-sandbox caller
+      gets `403` rather than a `404` that would confirm the context exists.
+- [x] 15 — `grants` (`GRANT`) — `SPS-GRANT-001`…`027`. The `#manage` subtree rule is
+      `SPS-GRANT-007` and says "if and only if" for the reason it exists. Two rules that were only
+      in `context7.json` and not in the documentation were verified against
+      `PodContextPermissionResolver` before being written down: `write`/`manage` imply `read`, and
+      a `#manage` root expands only over *registered* contexts.
+- [x] 16 — `auth` (`AUTH`) — `SPS-AUTH-001`…`048`, from `docs/auth/oauth.md` and
+      `service-clients.md`. `oauth-errors.md` deliberately did **not** move: it is per-code recovery
+      guidance for a client, which is documentation and not a contract. The error *codes* are
+      normative and appear in the flow requirements.
+      Left behind as deployment choices rather than contract: the rate-limit numbers and their
+      environment variables, the OIDC leg timeouts, the audit-log retention, and the storage
+      shapes.
+- [x] 17 — `lod-crud` (`CRUD`) — `SPS-CRUD-001`…`056`, from all three files in
+      `docs/lod-crud/`. The largest move and the one that was most nearly specification-shaped
+      already. Two limitations became requirements rather than caveats, because an implementation
+      differing on either produces data another one reads wrongly: predicate IRIs are never
+      canonicalised, and there is no atomic multi-context write anywhere. The TOCTOU gap on
+      conditional writes stayed prose — it is an implementation limitation, not a contract.
+- [x] 18 — `sparql` (`SPARQL`) — `SPS-SPARQL-001`…`020`, written from the fragments and from
+      `SparqlQueryService` / `SparqlEndpoint`. Two rules came from the code and from no document:
+      a malformed query and an Update are refused *identically*, so a prober cannot learn which it
+      wrote; and a present-but-empty dataset parameter fails closed to the empty set rather than
+      falling back to the full readable set. The second is a privilege escalation if implemented
+      the other way round.
+- [x] 19 — `find` (`FIND`) — `SPS-FIND-001`…`023`, from the concept's IST half plus the endpoint.
+      **Finding: the three `sps:` vocabulary terms appear nowhere in the Kotlin code.** `NAMESPACE.md`
+      describes them in the present tense as "the metadata a `find` response carries about each
+      hit", and no implementation emits them. The chapter therefore specifies the flat graph as the
+      contract and records the terms as reserved-but-not-emitted, so nobody mints a competing set.
+      **`NAMESPACE.md` needs correcting when it moves in S5** — see the open decisions.
 
 ## S4 — Modules
 
-- [ ] 20 — `oidc` (`OIDC`) — from `docs/auth/identity.md`, split from the identity service's own
-      internals, which stay with the implementation.
-- [ ] 21 — `media` (`MEDIA`) — from `docs/media.md`.
-- [ ] 22 — `mcp` (`MCP`) — from `docs/mcp/`. `clients.md` stays behind: observed client behaviour is
-      operational knowledge, not a contract.
+- [x] 20 — `oidc` (`OIDC`) — `SPS-OIDC-001`…`013`. The split ran differently than planned: what a
+      pod stores about a person holds with or without an identity service, so it became
+      `SPS-AUTH-049`…`054` in **core**, and the module carries only how a person arrives.
+- [x] 21 — `media` (`MEDIA`) — `SPS-MEDIA-001`…`025`. The SSRF requirement lists its five parts
+      separately because each closes a distinct bypass and four of five is none.
+- [x] 22 — `mcp` (`MCP`) — `SPS-MCP-001`…`028`. `clients.md` stayed behind as planned: observed
+      client behaviour is operational knowledge, not a contract. The hosted multi-pod service is
+      explicitly **not** in the module — it is a different thing with no anonymous mode, and the
+      chapter says so rather than leaving it to be assumed.
 
 ## S5 — Vocabulary
 
-- [ ] 23 — `NAMESPACE.md` and `vocabulary/sempods.ttl` move here, and the reference implementation
-      links instead of holding them.
+- [x] 23 — `NAMESPACE.md` and `vocabulary/sempods.ttl` moved, as `vocabulary/README.md` and
+      `vocabulary/sempods.ttl`. Two corrections on the way: the document said the three terms
+      describe "the metadata a `find` response carries" in the present tense and that they were
+      adopted because "an implementation needed them, used them" — neither is true, and it now says
+      so and says why publishing them anyway is still right. Removing them from the reference
+      implementation is S7.
 - [ ] 24 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
       while every ontology IRI points at it. Deliberately **after** the chapters settle which terms
       are normative: the first stability guarantee says an IRI never changes, so publishing early
@@ -121,9 +161,17 @@ equally urgent and the announce waits on all of them.
 
 ## S6 — OpenAPI and the rendered specification
 
-- [ ] 25 — One hand-written OpenAPI 3.1 description per core chapter, each operation carrying the
-      requirement IDs it realises.
-- [ ] 26 — Descriptions for the modules.
+- [x] 25 — `openapi/sempods-core.yaml` — 14 paths, 28 operations, each naming the requirements it
+      realises. **One file for the whole of core rather than one per chapter**, against the original
+      plan: the chapters share the context rule, the canonical representation, the conditional-write
+      semantics and the error model, so five files would have to duplicate or cross-reference the
+      shared components and a reader would have to merge them before anything was usable.
+- [x] 26 — `openapi/module-media.yaml` and `openapi/module-mcp.yaml`. **No file for `oidc`**: its
+      pod-side surface is one callback route and the rest is standard OpenID Connect at a service
+      that is not the pod — a description would be the re-explanation the writing rules forbid.
+      The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
+      defines, which is the only drift a hand-written description can be guarded against locally.
+      Both new jobs are in the ruleset's required checks, so neither is advisory.
 - [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
       — chosen over Redoc because it has a built-in API client, which is the whole point of putting
       it there.
@@ -155,6 +203,33 @@ equally urgent and the announce waits on all of them.
 ---
 
 ## Open decisions
+
+- **Seven OpenAPI fidelity items are deferred, deliberately.** Review found the descriptions lagging
+  the chapters in seven places that change no obligation: media `security` still admitting anonymous
+  mutations, the content response fixed to `octet-stream`, `If-None-Match` missing from reads, `204`
+  missing from the system-layer `PUT`, the SPARQL dataset parameters advertised as universal though
+  `SPS-SPARQL-011` makes them optional, `@context` refused on a `PUT` body that
+  `SPS-CRUD-012` treats as advisory, and `ContextList` carrying no `required` list. They ride into
+  the S6 rendering work, where the descriptions get another pass against a renderer rather than
+  against a reader.
+
+
+- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
+  On a write, an unregistered context answers `404` and a registered one the caller may not write
+  answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.
+  It is what the reference implementation does and the specification is descriptive, so it is
+  recorded rather than silently corrected — but it contradicts the security stance in `AGENTS.md`,
+  which calls a requirement leaking context topology a defect. The shape of the fix is already in
+  the specification: authorize **before** testing existence, the way context deletion does
+  ([`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020)). Changing it means a matching change in
+  the reference implementation, which is why it is a decision and not a text edit.
+
+- **`NAMESPACE.md` overstates what the vocabulary is used for.** It says the three `sps:` terms are
+  "the metadata a `find` response carries about each hit" and that they were adopted because "an
+  implementation needed them, used them". Neither is true today: the terms appear in no Kotlin
+  source. Correcting it is part of S5, and it changes what D6 is for — publishing a namespace whose
+  terms nothing emits is still worth doing for the deprecation promise, but it is not the "it is
+  already in use" argument the document currently makes.
 
 - **What the conformance suite is written in (S8).** The JVM is cheapest — the reference client
   already exists — but a suite meant to test a non-JVM implementation probably wants to be a
