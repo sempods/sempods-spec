@@ -31,7 +31,7 @@ it, but not for the contract" — and each of those sentences is rewritten the m
 Three review rounds went into prose with a known expiry date.
 
 So the order is: finish the normative text and the OpenAPI here, *then* rewire the reference
-implementation once, against a state that is real. S7 is deliberately not started early.
+implementation once, against a state that is real. S7 comes last for that reason.
 
 ## What gates the announce
 
@@ -166,9 +166,12 @@ equally urgent and the announce waits on all of them.
       plan: the chapters share the context rule, the canonical representation, the conditional-write
       semantics and the error model, so five files would have to duplicate or cross-reference the
       shared components and a reader would have to merge them before anything was usable.
-- [x] 26 — `openapi/module-media.yaml` and `openapi/module-mcp.yaml`. **No file for `oidc`**: its
-      pod-side surface is one callback route and the rest is standard OpenID Connect at a service
-      that is not the pod — a description would be the re-explanation the writing rules forbid.
+- [x] 26 — `openapi/module-media.yaml`, `openapi/module-mcp.yaml` and `openapi/module-oidc.yaml`.
+      The `oidc` file is one path long and says so in its own summary: the module's pod-side surface
+      is a single callback route, and the rest is standard OpenID Connect at a service that is not
+      the pod, which a description here would only re-explain. It exists rather than being omitted
+      because the callback's *path* is fixed nowhere else — `SPS-OIDC-014` requires the route and
+      `SPS-OIDC-011`/`SPS-OIDC-015` fix its behaviour, but none of them says where it sits.
       The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
       defines, which is the only drift a hand-written description can be guarded against locally.
       Both new jobs are in the ruleset's required checks, so neither is advisory.
@@ -183,7 +186,7 @@ equally urgent and the announce waits on all of them.
 
 ## S7 — Retire the second copy in the reference implementation
 
-- [ ] 30 — Delete every document that moved, and replace its inbound links with requirement-ID links.
+- [x] 30 — Delete every document that moved, and replace its inbound links with requirement-ID links.
 - [x] 31 — Publish a generated `requirements.json`. **Shape decided differently from the sketch
       here**: identifier → chapter → first sentence → withdrawn, and deliberately **no URL** — one
       would have to pin a branch or a tag, and the consumer is who knows which it wants. No
@@ -191,10 +194,15 @@ equally urgent and the announce waits on all of them.
       committed, and verified: a drifted or missing copy fails the build. The reference
       implementation vendors it and extends `checkDocLinks` to validate citations against it, so
       there is no network in CI and a specification upgrade arrives there as a reviewable diff.
-- [ ] 32 — Declare the implemented specification version in `gradle.properties` and in the README.
-- [ ] 33 — Correct the reference implementation's README: "a standalone specification document" is
+- [x] 32 — Declare the implemented specification version in `gradle.properties`. **The README
+      points at that declaration rather than repeating the number**, against the sketch here: two
+      copies of a version is one copy that goes stale, and the same argument this file already
+      makes about tracking issues holds for a number. What the README carries instead is the
+      rule that makes the claim checkable — `checkDocLinks` fails if the declaration drifts from
+      the vendored index.
+- [x] 33 — Correct the reference implementation's README: "a standalone specification document" is
       listed there as something that does not exist yet.
-- [ ] 34 — Re-read `context7.json` in the reference implementation. Its `rules` array asserts facts
+- [x] 34 — Re-read `context7.json` in the reference implementation. Its `rules` array asserts facts
       about grants, contexts, SPARQL and client identity that this milestone restates — and it is
       served to agents outside the project.
 
