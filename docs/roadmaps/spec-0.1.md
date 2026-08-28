@@ -56,15 +56,23 @@ equally urgent and the announce waits on all of them.
       new writing rather than a move.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
       scanning and push protection, Dependabot alerts and security updates, private vulnerability
-      reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker.
-- [ ] 8 — The org code-security configuration `sempods baseline` applied to this repository, and the
-      repository pinned on the org profile. Both need `admin:org` and therefore the web UI.
+      reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker. The
+      ruleset requires two status checks by name — `check` from the DCO workflow and `lychee` from
+      the link workflow — so renaming either job silently blocks every pull request until the
+      ruleset is updated with it.
+- [x] 8 — The org code-security configuration `sempods baseline` is `enforced` here. Nothing was
+      done to achieve it: the configuration is the organisation default for new repositories, so it
+      attached at creation. Worth recording rather than re-doing — attaching it by hand needs
+      `admin:org`, which the maintainer's usual token does not carry.
+- [ ] 9 — Pin the repository on the organisation profile alongside sempods-kotlin and the website.
+      Needs `admin:org` and therefore the web UI; the website is still private, so the pin set is
+      not complete anyway.
 
 ## S2 — The foundation every chapter rests on
 
-- [ ] 9 — `spec/core/index.md`: what conformance means, the RFC 2119 declaration, the requirement-ID
+- [ ] 10 — `spec/core/index.md`: what conformance means, the RFC 2119 declaration, the requirement-ID
       scheme as a normative statement rather than an authoring convention, the core/module model.
-- [ ] 10 — **Conformance discovery.** Specify the endpoint that makes "optional" real: an
+- [ ] 11 — **Conformance discovery.** Specify the endpoint that makes "optional" real: an
       implementation advertises its specification version and the module IRIs it provides. Draft
       shape, to be settled in the chapter:
 
@@ -73,76 +81,76 @@ equally urgent and the announce waits on all of them.
 
       Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's own
       scope already anticipates by naming "conformance markers".
-- [ ] 11 — A CI guard for the ID promise: a requirement ID that disappears from a diff fails the
+- [ ] 12 — A CI guard for the ID promise: a requirement ID that disappears from a diff fails the
       build unless it reappears as a withdrawal. The pull-request template asks for this by hand
       today, and a promise that only a checklist enforces is a promise that survives exactly as long
       as reviewers are attentive.
-- [ ] 12 — Follow-up filed against the reference implementation: the endpoint does not exist there.
+- [ ] 13 — Follow-up filed against the reference implementation: the endpoint does not exist there.
       This is the first place the new direction bites, and it is worth being the example.
 
 ## S3 — Core chapters
 
-- [ ] 13 — `contexts` (`CTX`) — extracted from `docs/auth/authorization.md`.
-- [ ] 14 — `grants` (`GRANT`) — same source. The `#manage` subtree rule is the one requirement most
+- [ ] 14 — `contexts` (`CTX`) — extracted from `docs/auth/authorization.md`.
+- [ ] 15 — `grants` (`GRANT`) — same source. The `#manage` subtree rule is the one requirement most
       likely to be implemented as a string-prefix check, so it needs its own requirement and its own
       conformance test.
-- [ ] 15 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
+- [ ] 16 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
       The three client-identity shapes are the part an implementer gets wrong first.
-- [ ] 16 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
+- [ ] 17 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
       specification-shaped already.
-- [ ] 17 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
+- [ ] 18 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
       documents, and the LOD chapter openly defers to a SPARQL document that was never written.
-- [ ] 18 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.
+- [ ] 19 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.
 
 ## S4 — Modules
 
-- [ ] 19 — `oidc` (`OIDC`) — from `docs/auth/identity.md`, split from the identity service's own
+- [ ] 20 — `oidc` (`OIDC`) — from `docs/auth/identity.md`, split from the identity service's own
       internals, which stay with the implementation.
-- [ ] 20 — `media` (`MEDIA`) — from `docs/media.md`.
-- [ ] 21 — `mcp` (`MCP`) — from `docs/mcp/`. `clients.md` stays behind: observed client behaviour is
+- [ ] 21 — `media` (`MEDIA`) — from `docs/media.md`.
+- [ ] 22 — `mcp` (`MCP`) — from `docs/mcp/`. `clients.md` stays behind: observed client behaviour is
       operational knowledge, not a contract.
 
 ## S5 — Vocabulary
 
-- [ ] 22 — `NAMESPACE.md` and `vocabulary/sempods.ttl` move here, and the reference implementation
+- [ ] 23 — `NAMESPACE.md` and `vocabulary/sempods.ttl` move here, and the reference implementation
       links instead of holding them.
-- [ ] 23 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
+- [ ] 24 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
       while every ontology IRI points at it. Deliberately **after** the chapters settle which terms
       are normative: the first stability guarantee says an IRI never changes, so publishing early
       sets it in stone.
 
 ## S6 — OpenAPI and the rendered specification
 
-- [ ] 24 — One hand-written OpenAPI 3.1 description per core chapter, each operation carrying the
+- [ ] 25 — One hand-written OpenAPI 3.1 description per core chapter, each operation carrying the
       requirement IDs it realises.
-- [ ] 25 — Descriptions for the modules.
-- [ ] 26 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
+- [ ] 26 — Descriptions for the modules.
+- [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
       — chosen over Redoc because it has a built-in API client, which is the whole point of putting
       it there.
-- [ ] 27 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
+- [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.
-- [ ] 28 — `homepage` set on the repository, and the website links here instead of describing the
+- [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself.
 
 ## S7 — Retire the second copy in the reference implementation
 
-- [ ] 29 — Delete every document that moved, and replace its inbound links with requirement-ID links.
-- [ ] 30 — Publish a generated `requirements.json` per release: ID → title → URL. The reference
+- [ ] 30 — Delete every document that moved, and replace its inbound links with requirement-ID links.
+- [ ] 31 — Publish a generated `requirements.json` per release: ID → title → URL. The reference
       implementation vendors it and extends its own `checkDocLinks` to validate outbound
       specification links against it. No network in CI, and a specification upgrade becomes a visible
       diff rather than a silent drift.
-- [ ] 31 — Declare the implemented specification version in `gradle.properties` and in the README.
-- [ ] 32 — Correct the reference implementation's README: "a standalone specification document" is
+- [ ] 32 — Declare the implemented specification version in `gradle.properties` and in the README.
+- [ ] 33 — Correct the reference implementation's README: "a standalone specification document" is
       listed there as something that does not exist yet.
-- [ ] 33 — Re-read `context7.json` in the reference implementation. Its `rules` array asserts facts
+- [ ] 34 — Re-read `context7.json` in the reference implementation. Its `rules` array asserts facts
       about grants, contexts, SPARQL and client identity that this milestone restates — and it is
       served to agents outside the project.
 
 ## S8 — After 0.1
 
-- [ ] 34 — The conformance suite, cited by requirement ID.
-- [ ] 35 — `tools/` — a checker an implementer can point at a running pod.
+- [ ] 35 — The conformance suite, cited by requirement ID.
+- [ ] 36 — `tools/` — a checker an implementer can point at a running pod.
 
 ---
 
