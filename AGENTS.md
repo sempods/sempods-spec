@@ -205,8 +205,13 @@ here rather than copied.
    ```bash
    lychee --offline --include-fragments --no-progress .
    .github/scripts/check-requirements.py origin/main
-   python3 site/build.py --check
+   python3 site/build.py
    ```
+
+   The third one is the full render, not `--check`. `site/index.md` is the one published page
+   written by hand, its links are written against the staged layout, and lychee is told to skip
+   that directory for exactly that reason — so the strict build is the only thing here that
+   reads them. `--check` returns before staging and would not.
 
    Adding or withdrawing a requirement also regenerates the index, which is committed:
 
@@ -241,7 +246,7 @@ Three checks, all in CI and all runnable by hand:
 ```bash
 lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
 .github/scripts/check-requirements.py origin/main      # the identifier promises
-python3 site/build.py --check                          # what the rendered site assumes
+python3 site/build.py                                  # the site's inputs, then a strict render
 ```
 
 The **requirement checker** exists because `SPS-CORE-003` — an identifier is never reassigned,
@@ -250,12 +255,15 @@ tidying. The **site check** exists because the try-it page sends a reader's requ
 ones included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but
 the demo pod.
 
-Rendering the site, which is not a check:
+Two variants of that last one, neither of which replaces it:
 
 ```bash
-python3 site/build.py                                  # render to site/_site
-python3 site/build.py --serve                          # …and watch, on :8000
+python3 site/build.py --check                          # the inputs only, no render
+python3 site/build.py --serve                          # render and watch, on :8000
 ```
+
+`--check` is the fast half and skips the strict render, so it does not read the staged links.
+Run the plain form before committing.
 
 **No stub chapters.** See the working rules above.
 

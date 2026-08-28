@@ -45,15 +45,14 @@ jobs:
       - name: Install the locked renderer
         run: pip install --require-hashes -r site/requirements.txt
 
-      # Fails on a chapter that exists but is in no navigation list, and on a description whose
-      # `servers` block stopped matching what the demo-pod substitution looks for — the case
-      # where the try-it button would quietly send a reader's requests to example.org.
-      - name: Check what the build assumes
-        run: python3 site/build.py --check
-
-      # `--strict` inside: a link that resolves nowhere fails the build rather than printing a
-      # warning into a log nobody reads.
-      - name: Build
+      # One step, because the build runs the checks itself before it renders anything. Splitting
+      # `--check` out ahead of it reads like two gates and is one: there is no input the first
+      # would reject that the second accepts.
+      #
+      # What it refuses: a chapter that exists but is in no navigation list, a description whose
+      # servers resolve anywhere but the demo pod, a try-it page whose source list was not
+      # generated — and then, with `--strict`, any link that resolves nowhere.
+      - name: Check the inputs, then render
         run: python3 site/build.py
 
       - uses: actions/upload-pages-artifact@v4
