@@ -17,6 +17,13 @@ Three of them, and none is checkable by a link checker:
 Run with no arguments to check the working tree. Pass a git ref to also compare against it:
 
     .github/scripts/check-requirements.py origin/main
+
+One rule runs through all of it, and it is the one this script kept getting wrong: **an expected
+artefact that is missing is a failure, not a skip.** A guard that quietly does nothing when its
+input is absent reports success at exactly the moment it had nothing to say — and the states that
+make it absent (a deleted directory, a dropped file) are the ones worth catching. So a missing
+`spec/`, a missing `openapi/` and a missing `requirements.json` each stop the run rather than
+shrinking what it examines.
 """
 import json
 import re
@@ -107,6 +114,18 @@ def self_test():
     return True
 
 
+def require(path, what):
+    """Fail rather than examine less. See the rule in the module docstring."""
+    if not path.exists():
+        print(
+            f"error: {path} is missing — {what}. Refusing to report success on a smaller set than "
+            f"this check exists to cover.",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
 def openapi_citations():
     """Every identifier cited from an `x-sps-requirements` list, with the file citing it.
 
@@ -116,7 +135,7 @@ def openapi_citations():
     have to be malformed YAML too, which the workflow's own parse step catches.
     """
     out = []
-    for path in sorted(Path("openapi").rglob("*.yaml")) if Path("openapi").is_dir() else []:
+    for path in sorted(Path("openapi").rglob("*.yaml")):
         text = path.read_text()
         for match in re.finditer(r"x-sps-requirements:\s*\[([^\]]*)\]", text):
             for ident in re.findall(r"SPS-[A-Z]+-\d{3}", match.group(1)):
@@ -165,7 +184,24 @@ def main():
     if not self_test():
         return 3
 
+    writing = "--write-index" in sys.argv
+    checks = [
+        require(SPEC, "the chapters are what everything else is checked against"),
+        require(Path("openapi"), "its citations are half of what this checks"),
+        # Not required when this run is the one creating it.
+        writing or require(INDEX, "downstream repositories vendor it"),
+    ]
+    if not all(checks):
+        return 5
+
     current, problems = collect(lambda p: p.read_text())
+    if not current:
+        print(
+            f"error: {SPEC} defines no requirements at all. That is either a parsing failure or a "
+            f"deletion; neither is something to pass.",
+            file=sys.stderr,
+        )
+        return 5
 
     # The OpenAPI description is hand-written and normative, so nothing regenerates it when a
     # chapter moves. A citation pointing at an identifier that no longer exists is the way that
@@ -232,7 +268,7 @@ def main():
     if "--write-index" in sys.argv:
         INDEX.write_text(index)
         print(f"wrote {INDEX} — {len(current)} requirements")
-    elif INDEX.exists() and INDEX.read_text() != index:
+    elif INDEX.read_text() != index:
         print(
             f"error: {INDEX} is out of date. Regenerate it:\n"
             f"    .github/scripts/check-requirements.py --write-index",
