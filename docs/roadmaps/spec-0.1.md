@@ -96,8 +96,11 @@ equally urgent and the announce waits on all of them.
       twice, and that none disappeared against the pull request's base — comparing the paths that
       existed *then*, so splitting a chapter does not read as a mass deletion. **Add `requirements`
       to the ruleset's required checks**, or the guard is advisory.
-- [ ] 13 — Follow-up filed against the reference implementation: the endpoint does not exist there.
+- [x] 13 — Follow-up filed against the reference implementation: the endpoint does not exist there.
       This is the first place the new direction bites, and it is worth being the example.
+      `sempods/sempods-kotlin#54`. What the issue turns on is not the route but what advertising a
+      module asserts — `SPS-CORE-006` makes it a claim that every `MUST` in that chapter holds,
+      which is a claim the conformance suite is what can check.
 
 ## S3 — Core chapters
 
@@ -155,10 +158,16 @@ equally urgent and the announce waits on all of them.
       adopted because "an implementation needed them, used them" — neither is true, and it now says
       so and says why publishing them anyway is still right. Removing them from the reference
       implementation is S7.
-- [ ] 24 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
-      while every ontology IRI points at it. Deliberately **after** the chapters settle which terms
-      are normative: the first stability guarantee says an IRI never changes, so publishing early
-      sets it in stone.
+- [x] 24 — Serve `https://schema.sempods.org/` with content negotiation. Deliberately **after** the
+      chapters settled which terms are normative: the first stability guarantee says an IRI never
+      changes, so publishing early sets it in stone.
+      It serves no files. Caddy negotiates and redirects; the vocabulary document and the module
+      chapters are the ones this site already publishes, with the content types they need, so there
+      is no second copy to keep true. Turtle at the namespace or at any term IRI reaches the
+      document, a browser reaches the readable page, and `/module/<name>` reaches that module's
+      chapter — those identifiers are conformance markers rather than terms.
+      **JSON-LD is not served** — item 37. The routing is complete; what is missing is a document
+      to route to, which is a change to this repository's build rather than to the namespace.
 
 ## S6 — OpenAPI and the rendered specification
 
@@ -223,6 +232,13 @@ equally urgent and the announce waits on all of them.
 
 - [ ] 35 — The conformance suite, cited by requirement ID.
 - [ ] 36 — `tools/` — a checker an implementer can point at a running pod.
+- [ ] 37 — Publish the vocabulary as JSON-LD and serve it. `vocabulary/README.md` names it beside
+      Turtle and HTML as what the namespace should answer; today an explicit request for it gets a
+      406, which is honest but not the stated intent. Generating it from the Turtle needs an RDF
+      library in the site build, so it is a dependency decision as much as a routing one — and the
+      routing is already there, waiting for a document to point at.
+      Here rather than in S5 because nothing in `0.1` claims it: an IRI is an identifier before it
+      is a URL, and Turtle plus HTML is a complete answer for a consumer that dereferences at all.
 
 ---
 
