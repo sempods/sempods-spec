@@ -191,7 +191,11 @@ equally urgent and the announce waits on all of them.
       been exercised is the authenticated leg — nobody has yet logged in from the docs origin, so
       the `did:web` claim above is still a claim.
 - [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
-      API itself.
+      API itself. **The repository half is done**; the website half is deliberately last, after this
+      specification and the reference implementation are finished, so that every outbound link and
+      every constraint is known before the page is written once rather than edited three times.
+      What it has to correct is a sentence that is now false: the site says the specification
+      repository "is being prepared and will carry the formal specification and OpenAPI contract".
 
 ## S7 — Retire the second copy in the reference implementation
 
