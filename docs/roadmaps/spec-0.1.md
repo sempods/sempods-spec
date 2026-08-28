@@ -191,21 +191,24 @@ equally urgent and the announce waits on all of them.
       root would publish the agent instructions. Pages is enabled with the workflow as its source,
       the DNS record is in place, and **`build` was added to the ruleset's required status checks**
       — without that the strict render was advisory, in exactly the way item 7 warns about.
-- [x] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
+- [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.
-      The anonymous half was live first; the authenticated half needed an `oauth2` security scheme,
-      which the core description did not have. It has one now, and it belongs there on its own
-      merit: the chapters specify the OAuth surface and the description was silent about how a
+      **The anonymous half is live.** The authenticated half needed an `oauth2` security scheme,
+      which the core description did not have; it has one now, and it belongs there on its own
+      merit — the chapters specify the OAuth surface and the description was silent about how a
       token is obtained.
-      **The endpoints are relative in the description and absolute on the page.** Relative is what
-      fits any pod, and OpenAPI resolves such a URL against the selected server — but Scalar sends
-      it as written, so a login would have gone to the docs origin. `site/build.py` supplies the
-      demo pod's absolute endpoints and the client identifier, from the one place that names them.
-      Verified in a browser against the built page: the client is `did:web:spec.sempods.org`, the
-      endpoints are the demo pod's, and the redirect Scalar computes is the page itself — which
-      satisfies `SPS-AUTH-004`, since it shares the identifier's host and port. **Nobody has
-      completed a login yet**; what is verified is that the flow is aimed correctly.
+      **Open until a login actually succeeds.** What is verified is that the flow is *aimed*
+      correctly: the client is `did:web:spec.sempods.org`, the endpoints are the demo pod's, and
+      the redirect Scalar computes is the page itself, which satisfies `SPS-AUTH-004` by sharing
+      the identifier's host and port. None of that exercises consent, the code exchange, PKCE,
+      CORS on the token endpoint, or an authenticated read. Ticking it on displayed strings would
+      record an assumption as a result.
+      The endpoint URLs are absolute on a placeholder pod in the description and on the demo pod in
+      the staged copy, `site/build.py` moving them with the `servers` defaults. Relative was tried
+      and is wrong — it resolves away the pod segment — and `{origin}/{pod}` was tried and is
+      worse: Scalar drops the flow entirely rather than substituting. The description states the
+      residue, that a consumer substitutes its pod here as well as in `servers`.
 - [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself. **The repository half is done**; the website half is deliberately last, after this
       specification and the reference implementation are finished, so that every outbound link and

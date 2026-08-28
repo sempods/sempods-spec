@@ -770,15 +770,17 @@ components:
         A client with a stable HTTPS origin identifies as `did:web:<origin>`. The pod parses that
         identifier and never dereferences it (`SPS-AUTH-003`), and the `redirect_uri` has to match
         the identifier's host and port (`SPS-AUTH-004`).
-      # Absolute, on the same placeholder pod the `servers` block defaults to, and substituted
-      # together with it when this description is staged for the try-it page.
-      #
-      # Not relative, which was the first attempt and is wrong here: RFC 3986 resolves
-      # `_system/auth/authorize` against `https://example.org/alice` to
-      # `https://example.org/_system/auth/authorize` — the pod segment is the base's last segment
-      # and gets replaced. Every pod is path-scoped (`SPS-CORE-007`), so relative loses the pod on
-      # all of them. OpenAPI has no way to template these the way `servers` templates its URL;
-      # a consumer substitutes its own pod here as it does there.
+
+        **The endpoint URLs below name the same placeholder pod as `servers`, and do not follow it.**
+        OpenAPI has no way to template them the way a server URL is templated: changing the `origin`
+        and `pod` variables moves the operations and leaves these where they are. Substitute your
+        pod here as well. Relative URLs are not the answer — `_system/auth/authorize` resolves
+        against `https://example.org/alice` to `https://example.org/_system/auth/authorize`, losing
+        the pod, because a pod base is path-scoped (`SPS-CORE-007`).
+      # The trade is stated in the description above, where a consumer can read it. For an author:
+      # `site/build.py` substitutes these together with the `servers` defaults when staging, so the
+      # published copy names one pod throughout. Writing `{origin}/{pod}` here instead was tried —
+      # Scalar drops the whole flow rather than substituting, so the try-it page loses its login.
       flows:
         authorizationCode:
           authorizationUrl: 'https://example.org/alice/_system/auth/authorize'
