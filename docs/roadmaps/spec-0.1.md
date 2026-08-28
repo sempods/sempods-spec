@@ -82,21 +82,19 @@ equally urgent and the announce waits on all of them.
 
 ## S2 — The foundation every chapter rests on
 
-- [ ] 10 — `spec/core/index.md`: what conformance means, the RFC 2119 declaration, the requirement-ID
-      scheme as a normative statement rather than an authoring convention, the core/module model.
-- [ ] 11 — **Conformance discovery.** Specify the endpoint that makes "optional" real: an
-      implementation advertises its specification version and the module IRIs it provides. Draft
-      shape, to be settled in the chapter:
-
-      GET /{pod}/_system/conformance
-      → { "specVersion": "0.1", "modules": [ { "id": …, "version": "0.1" } ] }
-
-      Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's own
-      scope already anticipates by naming "conformance markers".
-- [ ] 12 — A CI guard for the ID promise: a requirement ID that disappears from a diff fails the
-      build unless it reappears as a withdrawal. The pull-request template asks for this by hand
-      today, and a promise that only a checklist enforces is a promise that survives exactly as long
-      as reviewers are attentive.
+- [x] 10 — `spec/core/index.md`: conformance, the RFC 2119 declaration, the requirement-ID scheme as
+      a normative statement rather than an authoring convention, the core/module model, pod
+      addressing, and the shared error model. `SPS-CORE-001`…`018`. A new area `CORE` was registered
+      for it.
+- [x] 11 — **Conformance discovery** settled in the chapter: `GET {pod}/_system/conformance`,
+      unauthenticated, carrying `specVersion` and a `modules` array of IRI plus version
+      (`SPS-CORE-010`…`013`). A module absent from the array counts as not provided, and a client
+      must tolerate entries it does not recognise.
+- [x] 12 — A CI guard for the ID promise: `.github/scripts/check-requirements.py`, run by the
+      `requirements` workflow. It checks that anchors match their identifiers, that none is used
+      twice, and that none disappeared against the pull request's base — comparing the paths that
+      existed *then*, so splitting a chapter does not read as a mass deletion. **Add `requirements`
+      to the ruleset's required checks**, or the guard is advisory.
 - [ ] 13 — Follow-up filed against the reference implementation: the endpoint does not exist there.
       This is the first place the new direction bites, and it is worth being the example.
 

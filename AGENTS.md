@@ -172,10 +172,11 @@ here rather than copied.
 
 ## Before you commit
 
-1. Every relative link resolves. CI runs [lychee](https://github.com/lycheeverse/lychee); locally:
+1. Both checks pass. CI runs them; locally:
 
    ```bash
    lychee --offline --include-fragments --no-progress .
+   .github/scripts/check-requirements.py origin/main
    ```
 
 2. Documentation is current *in this same change* — new chapters reachable from an `AGENTS.md`, the
@@ -190,9 +191,19 @@ here rather than copied.
 
 ## What this repository deliberately does not have
 
-**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand and
-checked by one link checker. Gradle arrives with the conformance suite and not before — a build file
-that exists to run nothing is a dependency to maintain for no return.
+**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand.
+Gradle arrives with the conformance suite and not before — a build file that exists to run nothing
+is a dependency to maintain for no return.
+
+Two checks, both in CI and both runnable by hand:
+
+```bash
+lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
+.github/scripts/check-requirements.py origin/main      # the identifier promises
+```
+
+The second one exists because `SPS-CORE-003` — an identifier is never reassigned, renumbered or
+deleted — is a promise no link checker can see, and deleting a requirement looks like tidying.
 
 **No stub chapters.** See the working rules above.
 

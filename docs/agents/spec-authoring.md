@@ -58,6 +58,7 @@ Registered areas:
 
 | Area | Chapter | Part of |
 |---|---|---|
+| `CORE` | conformance, addressing, discovery, the error model | core |
 | `CTX` | contexts | core |
 | `GRANT` | grants | core |
 | `AUTH` | authorization and client identity | core |

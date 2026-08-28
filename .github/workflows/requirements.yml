@@ -1,0 +1,44 @@
+name: Requirements
+
+# `SPS-CORE-003` promises that a requirement identifier is never reassigned, never renumbered and
+# never deleted — a retired one is marked withdrawn and keeps its text. That promise is the reason
+# an identifier is safe to cite from a conformance suite, an implementation note, or a test report
+# this project never sees.
+#
+# It is also exactly the kind of promise a reviewer stops noticing after the third pull request,
+# and deleting a requirement looks like tidying. The pull-request template asks for the check by
+# hand; a promise that only a checklist enforces survives precisely as long as reviewers are
+# attentive.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  requirements:
+    runs-on: ubuntu-latest
+    steps:
+
+      # The base of the pull request has to be present locally to diff identifiers against it, so
+      # a full clone rather than the default shallow one.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Identifiers are consistent, and none disappeared
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # On a push to `main` there is no pull-request base; the consistency half still runs,
+          # and the disappearance half has nothing to compare against by then anyway.
+          if [ -n "${BASE:-}" ]; then
+            .github/scripts/check-requirements.py "$BASE"
+          else
+            .github/scripts/check-requirements.py
+          fi

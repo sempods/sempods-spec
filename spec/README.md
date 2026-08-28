@@ -36,7 +36,7 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 
 | Chapter | Area | Status | Source being extracted from |
 |---|---|---|---|
-| `core/index.md` — conformance, requirement scheme, module discovery | — | planned | new |
+| [`core/index.md`](core/index.md) — conformance, addressing, discovery, the error model | `CORE` | **present** | new |
 | `core/contexts.md` — the context as the permission boundary, the `_system/contexts` namespace | `CTX` | planned | `docs/auth/authorization.md` |
 | `core/grants.md` — `#read` / `#write` / `#manage`, resolution, the `#manage` subtree rule | `GRANT` | planned | `docs/auth/authorization.md` |
 | `core/auth.md` — OAuth 2.1, PKCE, the three client-identity shapes, anonymous access | `AUTH` | planned | `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md` |
