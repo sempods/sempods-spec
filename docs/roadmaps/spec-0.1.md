@@ -253,6 +253,6 @@ equally urgent and the announce waits on all of them.
   planned.
 - `grep -rho 'SPS-[A-Z]*-[0-9]\{3\}' spec/ | sort -u` yields no duplicate and no gap that came from
   a renumbering.
-- `lychee --offline --include-fragments --no-progress .` passes.
+- `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
 - No document that moved here still exists in the reference implementation.
 - `0.1` is tagged, and `GOVERNANCE.md`'s switch has therefore happened.

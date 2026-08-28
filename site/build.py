@@ -12,6 +12,7 @@ Run `python3 site/build.py` from anywhere; `--serve` rebuilds and watches instea
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
@@ -150,7 +151,7 @@ def stage() -> None:
         raise SystemExit(f"error: the staged try-it page still holds {SOURCES_MARKER!r}; its "
                          f"source list was never generated")
     for name, _ in descriptions():
-        if f"url: '{name}'" not in staged_page:
+        if f"url: {json.dumps(name)}" not in staged_page:
             raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
@@ -164,15 +165,38 @@ ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
 POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 
 
+SERVERS_KEY = re.compile(r"^(\s*)servers:")
+
+
 def with_demo_pod(yaml: str) -> str:
     """Point a staged description's server variables at the demo pod.
 
-    Regex on the `default:` key rather than a YAML round-trip: parsing and re-emitting would
-    reformat a hand-written file whose layout and comments are part of how it reads.
+    Line-scoped to `servers:` blocks. Applied to the whole document it would also rewrite a
+    schema default or an example that legitimately says `alice` — the staged description would
+    then show a contract nobody wrote, and the address check below would not notice, because it
+    only ever looks at servers.
+
+    Regex rather than a YAML round-trip: parsing and re-emitting would reformat hand-written
+    files whose layout and comments are part of how they read. The risk that comes with that —
+    a servers block spelled in a way these lines do not recognise — lands on the safe side:
+    the substitution misses, the address still says `example.org`, and `check()` refuses it.
     """
-    yaml = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", yaml)
-    yaml = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, yaml)
-    return yaml
+    out = []
+    indent_of_block = None
+    for line in yaml.splitlines(keepends=True):
+        text = line.rstrip("\n")
+        if indent_of_block is not None and text.strip():
+            indent = len(text) - len(text.lstrip())
+            if indent <= indent_of_block:
+                indent_of_block = None
+        match = SERVERS_KEY.match(text)
+        if match:
+            indent_of_block = len(match.group(1))
+        if indent_of_block is not None:
+            line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", line)
+            line = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
+        out.append(line)
+    return "".join(out)
 
 
 def load(staged: str) -> object:
@@ -244,9 +268,13 @@ def descriptions() -> list[tuple[str, str]]:
 
 def try_it_page() -> str:
     """`site/api/index.html` with its source list generated from the descriptions on disk."""
+    # `json.dumps` per value rather than quoting by hand. A title is whatever the description
+    # says it is — YAML allows it folded over several lines, and a newline or a backslash
+    # written straight into a quoted JavaScript string breaks the whole initialiser, which no
+    # check here would see because the page is never parsed.
     sources = ",\n".join(
-        "      { url: '%s', title: '%s', slug: '%s'%s }"
-        % (name, title.replace("'", "\\'"), Path(name).stem,
+        "      { url: %s, title: %s, slug: %s%s }"
+        % (json.dumps(name), json.dumps(title), json.dumps(Path(name).stem),
            ", default: true" if index == 0 else "")
         for index, (name, title) in enumerate(descriptions()))
     page = (SITE / "api" / "index.html").read_text()

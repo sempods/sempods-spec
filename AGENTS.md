@@ -203,7 +203,7 @@ here rather than copied.
 1. All three checks pass. CI runs them; locally:
 
    ```bash
-   lychee --offline --include-fragments --no-progress .
+   lychee --offline --include-fragments --no-progress --exclude-path site .
    .github/scripts/check-requirements.py origin/main
    python3 site/build.py
    ```
@@ -244,7 +244,7 @@ tree of its own. Nothing under `spec/` depends on it, and the specification is c
 Three checks, all in CI and all runnable by hand:
 
 ```bash
-lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
+lychee --offline --include-fragments --no-progress --exclude-path site .   # links, and requirement anchors
 .github/scripts/check-requirements.py origin/main      # the identifier promises
 python3 site/build.py                                  # the site's inputs, then a strict render
 ```
