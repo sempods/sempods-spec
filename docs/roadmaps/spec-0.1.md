@@ -115,8 +115,12 @@ equally urgent and the announce waits on all of them.
       Left behind as deployment choices rather than contract: the rate-limit numbers and their
       environment variables, the OIDC leg timeouts, the audit-log retention, and the storage
       shapes.
-- [ ] 17 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
-      specification-shaped already.
+- [x] 17 — `lod-crud` (`CRUD`) — `SPS-CRUD-001`…`056`, from all three files in
+      `docs/lod-crud/`. The largest move and the one that was most nearly specification-shaped
+      already. Two limitations became requirements rather than caveats, because an implementation
+      differing on either produces data another one reads wrongly: predicate IRIs are never
+      canonicalised, and there is no atomic multi-context write anywhere. The TOCTOU gap on
+      conditional writes stayed prose — it is an implementation limitation, not a contract.
 - [ ] 18 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
       documents, and the LOD chapter openly defers to a SPARQL document that was never written.
 - [ ] 19 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.

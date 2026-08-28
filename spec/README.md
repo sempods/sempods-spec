@@ -40,7 +40,7 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 | [`core/contexts.md`](core/contexts.md) — the context as the permission boundary, the `_system/contexts` namespace, lifecycle and discovery | `CTX` | **present** | `docs/auth/authorization.md` |
 | [`core/grants.md`](core/grants.md) — `#read` / `#write` / `#manage`, resolution, delegation, revocation, the `#manage` subtree rule | `GRANT` | **present** | `docs/auth/authorization.md` |
 | [`core/auth.md`](core/auth.md) — OAuth 2.1, PKCE, the three client-identity shapes, consent, refresh rotation, discovery | `AUTH` | **present** | `docs/auth/oauth.md`, `service-clients.md` |
-| `core/lod-crud.md` — the LOD layer and the system layer, `?context=`, base64url addressing | `CRUD` | planned | `docs/lod-crud/` |
+| [`core/lod-crud.md`](core/lod-crud.md) — the LOD layer and the system layer, `?context=`, base64url addressing, slots and edges | `CRUD` | **present** | `docs/lod-crud/` |
 | `core/sparql.md` — the read-only query surface and the server-enforced sandbox | `SPARQL` | planned | **nothing** — scattered today, has to be written |
 | `core/find.md` — retrieval: what a hit is, what metadata it carries | `FIND` | planned | `docs/concepts/graph-retrieval.md`, partly |
 
