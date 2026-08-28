@@ -344,6 +344,27 @@ them would make the isolation depend on the deployment layout.
 `GET {pod}/.well-known/oauth-protected-resource`, without authentication, carrying at least
 `resource`, `authorization_servers` and `bearer_methods_supported`.
 
+<a id="SPS-AUTH-056"></a>
+**`SPS-AUTH-056`** — An implementation MUST **also** serve the metadata at the host-rooted form RFC
+9728 §3.1 constructs, by inserting `/.well-known/oauth-protected-resource` between the authority and
+the pod's path: `{origin}/.well-known/oauth-protected-resource/{pod}`. Both addresses MUST return
+the same document.
+
+Serving only the append form is the failure this requirement exists for, and it is invisible until a
+client that follows the RFC arrives. A generic OAuth client — anything driving RFC 9728 discovery
+rather than following a `WWW-Authenticate` hint — constructs the host-rooted address and finds
+nothing there. The append form is what a `resource_metadata` hint points at and is equally
+necessary; neither replaces the other.
+
+<a id="SPS-AUTH-057"></a>
+**`SPS-AUTH-057`** — Where an implementation advertises RFC 8414 Authorization Server Metadata, it
+MUST serve it at the host-rooted form for its issuer as well as at the append form, and both MUST
+return the same document.
+
+The same split, one layer up: a client that reads `authorization_servers[0]` out of the resource
+metadata and then probes the host-rooted path for it gets nothing from an implementation that serves
+only the append form.
+
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.
 A count MAY be advertised.

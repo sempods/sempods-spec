@@ -64,9 +64,18 @@ path and a transfer turns each of those IRIs into a lie — and `SPS-CTX-002` ha
 that the IRI is the identity, so it cannot be rewritten afterwards.
 
 <a id="SPS-CTX-008"></a>
-**`SPS-CTX-008`** — A guest's context path MAY name the guest, as `users/<webid>/…`. This is the
-deliberate exception to `SPS-CTX-007`: a guest's access is bound to them personally, so their
-identity in the path says something that stays true.
+**`SPS-CTX-008`** — The delegation type `users` is reserved for guest contexts. This version of the
+specification does **not** define the path shape below it, and an implementation MUST NOT mint one.
+
+The intent is recorded so the name is not taken by something else: a guest's access is bound to them
+personally, so naming them in the path would say something that stays true — the deliberate
+exception to `SPS-CTX-007`, where the pod owner must never appear because ownership transfers.
+
+What is not settled is how an identity URI occupies a path segment. A WebID such as
+`https://id.example/alice#me` carries a scheme, an empty segment and a fragment, every one of which
+[`SPS-CTX-013`](#SPS-CTX-013) refuses — so the shape cannot simply be written down, and specifying
+an encoding for it before any implementation needs one is how a specification acquires a rule nobody
+can check. It waits for a guest implementation.
 
 ## 3. What a context may be called
 

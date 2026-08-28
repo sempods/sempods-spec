@@ -65,6 +65,20 @@ so an implementation with nowhere to carry one would have to sniff, and sniffing
 `SPS-MEDIA-016` disables on the way out. `application/octet-stream` is the honest answer and the
 allowlist serves it as an attachment.
 
+<a id="SPS-MEDIA-029"></a>
+**`SPS-MEDIA-029`** — An implementation providing this module MUST serve exactly these addresses,
+with these verbs:
+
+| Route | Verbs |
+|---|---|
+| `{pod}/_system/media` | `POST` — upload |
+| `{pod}/_system/media/{id}` | `GET`, `HEAD` — metadata · `PUT` — assign · `DELETE` — unassign |
+| `{pod}/_system/media/{id}/content` | `GET`, `HEAD` — the bytes |
+
+Without this the requirements below would constrain each verb once implemented while leaving an
+implementation free to put it somewhere else — and `SPS-MEDIA-013` fixes the content address, which
+only works if the others are fixed too.
+
 <a id="SPS-MEDIA-006"></a>
 **`SPS-MEDIA-006`** — `POST`, `PUT` and `DELETE` MUST each resolve exactly one write context, with
 the rules of [`SPS-CRUD-007`](../core/lod-crud.md#SPS-CRUD-007).

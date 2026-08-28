@@ -204,6 +204,16 @@ equally urgent and the announce waits on all of them.
 
 ## Open decisions
 
+- **Seven OpenAPI fidelity items are deferred, deliberately.** Review found the descriptions lagging
+  the chapters in seven places that change no obligation: media `security` still admitting anonymous
+  mutations, the content response fixed to `octet-stream`, `If-None-Match` missing from reads, `204`
+  missing from the system-layer `PUT`, the SPARQL dataset parameters advertised as universal though
+  `SPS-SPARQL-011` makes them optional, `@context` refused on a `PUT` body that
+  `SPS-CRUD-012` treats as advisory, and `ContextList` carrying no `required` list. They ride into
+  the S6 rendering work, where the descriptions get another pass against a renderer rather than
+  against a reader.
+
+
 - **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
   On a write, an unregistered context answers `404` and a registered one the caller may not write
   answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.

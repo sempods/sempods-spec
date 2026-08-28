@@ -129,8 +129,18 @@ with what the authorizing person **effectively holds**:
 granted = requested ∩ person's effective permissions
 ```
 
-An implementation MUST NOT grant an application more than the person effectively holds, and MUST NOT
-require the application to be "installed" first, or the person to be the owner.
+<a id="SPS-GRANT-029"></a>
+**`SPS-GRANT-029`** — An implementation MUST NOT grant an application more than the authorizing
+person effectively holds.
+
+<a id="SPS-GRANT-030"></a>
+**`SPS-GRANT-030`** — An implementation MUST NOT require an application to be installed or
+pre-registered with the pod before a person may delegate to it, and MUST NOT require the authorizing
+person to be the pod owner.
+
+Anyone who holds grants can delegate a subset of them. Making delegation conditional on the owner,
+or on an installation step, would put the pod between a person and their own access — and there is
+nothing an install could establish that the intersection does not already enforce.
 
 <a id="SPS-GRANT-028"></a>
 **`SPS-GRANT-028`** — "Effectively holds" MUST be the person's grants **after** expanding

@@ -157,10 +157,20 @@ so that a later version of this chapter can specify them without a migration. Un
 `SPS-FIND-018` is the contract: the response is flat.
 
 <a id="SPS-FIND-022"></a>
-**`SPS-FIND-022`** — An implementation MAY emit per-hit metadata using the reserved vocabulary terms.
-Where it does, that metadata is **transient**: it MUST NOT be written to the store, it MUST NOT
-appear in the named-graph grouping that `include_contexts=true` produces, and a caller MUST NOT
-expect to retrieve it again.
+**`SPS-FIND-022`** — Per-hit metadata MUST NOT appear in the default response. An implementation MAY
+emit it only in a representation the client explicitly asked for, and this version of the
+specification defines no such request.
+
+The reserved terms link a matched resource to its metadata node, and that link *is* a marker
+separating a hit from an expansion — exactly what [`SPS-FIND-018`](#SPS-FIND-018) forbids. A `MAY`
+that could be exercised in the default response would therefore have contradicted the flat-graph
+contract rather than extended it. The terms stay reserved; what has to arrive before they can be
+emitted is a negotiated representation to emit them in.
+
+<a id="SPS-FIND-024"></a>
+**`SPS-FIND-024`** — Where such metadata is emitted, it is **transient**: it MUST NOT be written to
+the store, it MUST NOT appear in the named-graph grouping that `include_contexts=true` produces, and
+a caller MUST NOT expect to retrieve it again.
 
 This does not weaken [`SPS-CTX-001`](contexts.md#SPS-CTX-001), and the distinction is worth being
 exact about because the two look like they collide. That invariant governs **statements a pod

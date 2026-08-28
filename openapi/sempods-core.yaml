@@ -685,6 +685,37 @@ paths:
             application/json:
               schema: { type: object }
 
+  # The host-rooted form RFC 9728 §3.1 constructs, which is what a generic OAuth client probes.
+  # It sits at the origin rather than under the pod, so the path item overrides the document's
+  # server — OpenAPI has one prefix per document and this address is outside it.
+  /oauth-protected-resource/{pod}:
+    servers:
+      - url: '{origin}/.well-known'
+        variables:
+          origin:
+            default: 'https://example.org'
+    parameters:
+      - name: pod
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [auth]
+      operationId: protectedResourceMetadataHostRooted
+      summary: The same metadata, at the address RFC 9728 constructs.
+      description: |
+        Identical document to the append form below. Both are required: this one is what a client
+        driving RFC 9728 discovery asks for, and the append form is what a `WWW-Authenticate`
+        `resource_metadata` hint points at. Neither replaces the other.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047, SPS-AUTH-056]
+      responses:
+        '200':
+          description: The metadata document.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
+
   /.well-known/oauth-protected-resource:
     get:
       tags: [auth]

@@ -80,10 +80,24 @@ has to be visible before the caller has any access at all.
 `SPS-MCP-009`. Calling it with a context-granted bearer and no re-authorization request MUST be an
 idempotent acknowledgement.
 
+<a id="SPS-MCP-029"></a>
+**`SPS-MCP-029`** — The `authorize` tool MUST declare exactly one argument, a boolean
+`reauthorize`, OPTIONAL and defaulting to false. Its schema is closed like every other
+([`SPS-MCP-024`](#SPS-MCP-024)).
+
+<a id="SPS-MCP-030"></a>
+**`SPS-MCP-030`** — Its acknowledgement result MUST be an object naming the pod and the contexts the
+caller may write. A challenge is not a result: it is the `401` of
+[`SPS-MCP-009`](#SPS-MCP-009), not a tool error.
+
+The tool is synthetic — it projects no HTTP operation — so a client cannot infer its shape from
+anywhere else. Left undefined, each implementation invents a flag and the flow that exists to
+recover access stops working across implementations, which is the one thing it cannot afford.
+
 <a id="SPS-MCP-012"></a>
-**`SPS-MCP-012`** — Where the caller explicitly requests re-authorization, the implementation MUST
-issue the challenge even for a bearer that would otherwise suffice, and MUST revoke the refresh
-tokens of the affected `(pod, client, subject)`.
+**`SPS-MCP-012`** — Where `reauthorize` is true, the implementation MUST issue the challenge even
+for a bearer that would otherwise suffice, and MUST revoke the refresh tokens of the affected
+`(pod, client, subject)`.
 
 An explicit re-authorization means *review the current consent*. Leaving parallel sessions able to
 rotate around the consent screen would make the review cosmetic.
@@ -100,6 +114,21 @@ challenge loop.
 
 <a id="SPS-MCP-014"></a>
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
+
+<a id="SPS-MCP-031"></a>
+**`SPS-MCP-031`** — Some clients treat the MCP URL itself as the protected-resource identifier. An
+implementation MUST therefore serve Protected Resource Metadata for that URL too — at the host-rooted
+form RFC 9728 §3.1 constructs from it, and at the append form on the MCP URL. Both MUST return the
+**pod-level** document.
+
+The MCP URL is an alternative spelling of the same protected resource, not a resource of its own:
+the pod stays the unit of access control ([`SPS-AUTH-045`](../core/auth.md#SPS-AUTH-045)).
+
+<a id="SPS-MCP-032"></a>
+**`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
+
+The MCP URL is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves
+to match the URL it was fetched from. There is no document that could satisfy both.
 
 ## 4. Client registration
 
