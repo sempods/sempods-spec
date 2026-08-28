@@ -223,6 +223,9 @@ Two checks, both in CI and both runnable by hand:
 
 ```bash
 lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
+python3 site/build.py --check                        # the rendered site's inputs
+python3 site/build.py                                # render it to site/_site
+python3 site/build.py --serve                        # …and watch, on :8000
 .github/scripts/check-requirements.py origin/main      # the identifier promises
 ```
 

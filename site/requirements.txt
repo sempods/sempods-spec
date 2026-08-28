@@ -1,0 +1,5 @@
+# Pinned exactly, and updated by Dependabot rather than by a floating range. The rendered
+# specification is a published artefact: a theme that changes under it between two builds
+# changes what readers see without a commit saying so.
+mkdocs==1.6.1
+mkdocs-material==9.7.7

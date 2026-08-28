@@ -1,1 +1,5 @@
 .DS_Store
+
+# Staged and rendered by `site/build.py`; neither is committed.
+site/_stage/
+_site/

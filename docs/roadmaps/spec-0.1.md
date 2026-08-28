@@ -172,9 +172,11 @@ equally urgent and the announce waits on all of them.
       The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
       defines, which is the only drift a hand-written description can be guarded against locally.
       Both new jobs are in the ruleset's required checks, so neither is advisory.
-- [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
-      — chosen over Redoc because it has a built-in API client, which is the whole point of putting
-      it there.
+- [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**.
+      Built by `site/build.py`, which stages the normative tree rather than editing it: MkDocs
+      refuses a docs directory containing its own configuration, and pointing one at the repository
+      root would publish the agent instructions. Remaining: enable Pages on the repository and point
+      the DNS record at it — neither is doable from a pull request.
 - [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.

@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sempods — HTTP surface</title>
+
+<!--
+  Rendered outside MkDocs on purpose. This page is an application, not a chapter, and wrapping
+  it in the documentation theme would put two navigation trees and two scroll containers on
+  screen at once.
+
+  The bundle is pinned to an exact version and carries an integrity hash. A bare
+  `@scalar/api-reference` URL resolves to whatever the CDN publishes at load time, which for a
+  page that can send authenticated requests to a reader's own pod is a third party silently
+  changing the client. `crossorigin` is required for the browser to check the hash at all.
+
+  The `servers` defaults below arrive substituted: the descriptions in `openapi/` say
+  `example.org`, and `site/build.py` rewrites the staged copies to the demo pod. That file is
+  the one place the demo pod is named.
+-->
+<style>
+  body { margin: 0 }
+</style>
+
+<div id="app"></div>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.66.1/dist/browser/standalone.js"
+  integrity="sha384-RkhHYpdjsrJH9sH8RmczPchxNiHEhmW300QwMB/8yg6feduTZu9FBN4W0DJnp50Z"
+  crossorigin="anonymous"></script>
+
+<script>
+  Scalar.createApiReference('#app', {
+    sources: [
+      { url: 'sempods-core.yaml', title: 'Core', slug: 'core', default: true },
+      { url: 'module-media.yaml', title: 'Media module', slug: 'media' },
+      { url: 'module-mcp.yaml', title: 'MCP module', slug: 'mcp' },
+      { url: 'module-oidc.yaml', title: 'OIDC module', slug: 'oidc' },
+    ],
+    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    hideClientButton: true,
+  })
+</script>
