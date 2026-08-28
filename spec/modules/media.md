@@ -106,6 +106,16 @@ exactly this file* — for a caller who already has the file and only wants to k
 
 ## 4. Delivery
 
+<a id="SPS-MEDIA-027"></a>
+**`SPS-MEDIA-027`** — Where the same bytes carry different declared types across several
+assignments, the type used for a content response MUST be chosen deterministically from the
+assignments **the caller may read** — by the lowest context IRI among them.
+
+Content addressing deduplicates by bytes, and the declared type hangs off the assignment, so the
+same media identifier can legitimately carry `image/png` in one context and
+`application/octet-stream` in another. The content route names no context, so without a rule two
+implementations answer differently and `SPS-MEDIA-017` picks a different disposition from each.
+
 <a id="SPS-MEDIA-013"></a>
 **`SPS-MEDIA-013`** — The content URL MUST always be `{pod}/_system/media/{id}/content`.
 
@@ -114,11 +124,16 @@ a signed storage URL changes what the server *answers* there, never what the sto
 it is an optimisation rather than a migration of everyone's `schema:contentUrl` values.
 
 <a id="SPS-MEDIA-014"></a>
-**`SPS-MEDIA-014`** — The entity tag on content MUST be the content hash, and `If-None-Match` MUST
-be honoured.
+**`SPS-MEDIA-014`** — The entity tag on a content response MUST be derived from the content hash and
+from the declared type of the assignment the response was built from
+([`SPS-MEDIA-027`](#SPS-MEDIA-027)). `If-None-Match` MUST be honoured.
 
-It is a strong validator by construction rather than by convention: the identifier already is the
-digest.
+It is a strong validator by construction rather than by convention — the identifier already is the
+digest of the bytes. The type has to be in it because two callers with different read access may
+receive different declared types, and so different representations, at the same URL. A tag over the
+bytes alone would let a conditional request or a cache carry one caller's representation to the
+other, which is also why `SPS-MEDIA-015` requires the response to be private and to vary on the
+credential.
 
 <a id="SPS-MEDIA-015"></a>
 **`SPS-MEDIA-015`** — Metadata and content responses MUST be marked private and MUST vary on the

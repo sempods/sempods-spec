@@ -279,6 +279,24 @@ paths:
         '200': { $ref: '#/components/responses/ResourceRepresentation' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
         '406': { $ref: '#/components/responses/NotAcceptable' }
+    head:
+      tags: [resources]
+      operationId: headResourceByIri
+      summary: The headers of that dereference, with no body.
+      x-sps-requirements: [SPS-CRUD-040]
+      responses:
+        '200': { description: Headers only. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    options:
+      tags: [resources]
+      operationId: optionsResourceByIri
+      summary: The verbs available to this caller on this IRI.
+      x-sps-requirements: [SPS-CRUD-040]
+      responses:
+        '204':
+          description: Allowed methods.
+          headers:
+            Allow: { schema: { type: string } }
     put:
       tags: [resources]
       operationId: putResourceByIri

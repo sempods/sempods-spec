@@ -97,7 +97,11 @@ one of them is refused rather than debated.
 
 - **Core**: `contexts`, `grants`, `auth`, `lod-crud`, `sparql`, `find`.
 - **Modules**: `oidc`, `media`, `mcp`.
-- OpenAPI is **not** a module. It is a view: one description file per core chapter and per module.
+- OpenAPI is **not** a module. It is a view: one description for core, and one per module that adds
+  an HTTP surface of its own. Not one per chapter — the core chapters share the context rule, the
+  canonical representation, the conditional-write semantics and the error model, and splitting them
+  would duplicate those components across files a reader then has to merge. See
+  [`openapi/README.md`](openapi/README.md).
 
 "Optional" is only real if a client can discover it, so conformance discovery is part of core, not a
 nicety. Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's scope

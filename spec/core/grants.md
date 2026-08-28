@@ -113,14 +113,25 @@ or granted.
 
 <a id="SPS-GRANT-013"></a>
 **`SPS-GRANT-013`** — What an application receives MUST be the intersection of what it requested
-with what the authorizing person holds:
+with what the authorizing person **effectively holds**:
 
 ```
-granted = requested ∩ person's grants
+granted = requested ∩ person's effective permissions
 ```
 
-An implementation MUST NOT grant an application more than the person holds, and MUST NOT require the
-application to be "installed" first, or the person to be the owner.
+An implementation MUST NOT grant an application more than the person effectively holds, and MUST NOT
+require the application to be "installed" first, or the person to be the owner.
+
+<a id="SPS-GRANT-028"></a>
+**`SPS-GRANT-028`** — "Effectively holds" MUST be the person's grants **after** expanding
+`#manage` roots over the registered contexts they cover ([`SPS-GRANT-007`](#SPS-GRANT-007)) and
+after applying the implications of [`SPS-GRANT-009`](#SPS-GRANT-009). An implementation MUST NOT
+compute the intersection over the stored grant strings.
+
+The distinction is the difference between working and not. A person holding `R#manage` who is asked
+for `R/sub#write` does hold that authority — but the two strings are different, so a literal
+intersection is empty and the flow answers `consent_required` for an ordinary descendant. The
+expansion is not an optimisation; it is what the earlier requirements already promised.
 
 <a id="SPS-GRANT-014"></a>
 **`SPS-GRANT-014`** — Where that intersection is empty and no public context is available, the

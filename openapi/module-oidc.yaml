@@ -52,21 +52,32 @@ paths:
         A `state` this pod did not park is rejected, and each one is consumed exactly once.
       security: [{}]
       parameters:
-        - name: code
-          in: query
-          required: true
-          schema: { type: string }
-          description: Single-use. Exchanged for the assertion over a back channel.
+        # Two shapes arrive here, and `state` is the only parameter common to both — so neither
+        # `code` nor `error` may be marked required, or the other shape fails validation and a
+        # generated handler rejects a callback the issuer is entitled to send.
+        #
+        #   success   state + code
+        #   failure   state + error, optionally error_description
+        #
         - name: state
           in: query
           required: true
           schema: { type: string }
-          description: Names the parked request. Rejected if this pod did not park it.
+          description: |
+            Names the parked request, and is present on both shapes. Rejected if this pod did not
+            park it, and consumed exactly once.
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+          description: |
+            The success shape. Single-use, exchanged for the assertion over a back channel. Absent
+            when the issuer reports a failure.
         - name: error
           in: query
           required: false
           schema: { type: string }
-          description: Present instead of `code` where the sign-in failed at the issuer.
+          description: The failure shape. Present instead of `code` where the sign-in failed at the issuer.
         - name: error_description
           in: query
           required: false

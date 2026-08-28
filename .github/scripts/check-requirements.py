@@ -143,6 +143,18 @@ def main():
         listing = subprocess.run(
             ["git", "ls-tree", "-r", "--name-only", base, "spec/"], capture_output=True, text=True
         )
+        # A ref this repository does not have makes `ls-tree` fail with an empty stdout, which is
+        # indistinguishable from "the base had no chapters" — so the disappearance check would be
+        # skipped and the script would still exit 0, reporting consistency it never established.
+        # A typo in a local invocation is exactly how that happens.
+        if listing.returncode != 0:
+            print(
+                f"error: cannot read '{base}' — {listing.stderr.strip() or 'unknown ref'}.\n"
+                f"The disappearance check needs a base that exists; refusing to report success "
+                f"without running it.",
+                file=sys.stderr,
+            )
+            return 2
         old_paths = [Path(line) for line in listing.stdout.splitlines() if line.endswith(".md")]
         before, _ = collect(at_base, old_paths)
 
