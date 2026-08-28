@@ -71,7 +71,13 @@ jobs:
           python3 - <<'PY'
           import pathlib, sys, yaml
           bad = []
-          for path in sorted(pathlib.Path("openapi").glob("*.yaml")):
+          found = sorted(pathlib.Path("openapi").glob("*.yaml"))
+          # An empty glob is a passing loop, and this job's name would then be a lie: every
+          # description could be deleted and both required checks would stay green.
+          if not found:
+              print("error: openapi/ holds no descriptions to parse", file=sys.stderr)
+              sys.exit(1)
+          for path in found:
               try:
                   doc = yaml.safe_load(path.read_text())
               except yaml.YAMLError as e:

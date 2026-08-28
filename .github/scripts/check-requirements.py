@@ -114,12 +114,25 @@ def self_test():
     return True
 
 
-def require(path, what):
-    """Fail rather than examine less. See the rule in the module docstring."""
+def require(path, what, contains=None):
+    """Fail rather than examine less. See the rule in the module docstring.
+
+    `contains` is a glob the directory must still match something for. Requiring the container and
+    not its contents is the same mistake one level up: `openapi/` keeps existing because it holds a
+    README, so every description could be deleted and this would go on passing. A guard that
+    watches the box rather than what is in it is a guard that survives the theft.
+    """
     if not path.exists():
         print(
             f"error: {path} is missing — {what}. Refusing to report success on a smaller set than "
             f"this check exists to cover.",
+            file=sys.stderr,
+        )
+        return False
+    if contains is not None and not any(path.glob(contains)):
+        print(
+            f"error: {path} matches no {contains} — {what}. The directory surviving is not the "
+            f"same as its contents surviving.",
             file=sys.stderr,
         )
         return False
@@ -187,7 +200,7 @@ def main():
     writing = "--write-index" in sys.argv
     checks = [
         require(SPEC, "the chapters are what everything else is checked against"),
-        require(Path("openapi"), "its citations are half of what this checks"),
+        require(Path("openapi"), "its citations are half of what this checks", contains="*.yaml"),
         # Not required when this run is the one creating it.
         writing or require(INDEX, "downstream repositories vendor it"),
     ]
