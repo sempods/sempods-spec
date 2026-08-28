@@ -32,8 +32,15 @@ The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/s
 ## The requirement index
 
 [`../requirements.json`](../requirements.json) is the machine-readable form: every identifier, the
-chapter it lives in, its first sentence, and whether it is withdrawn. It is generated from the
-chapters and committed, and CI fails if the committed copy has drifted.
+part it belongs to, the chapter it lives in, its first sentence, and whether it is withdrawn. It is
+generated from the chapters and committed, and CI fails if the committed copy has drifted.
+
+**A version per part, not one for the file.** Core and each module version independently
+([`SPS-CORE-005`](core/index.md#SPS-CORE-005)), so `versions` carries all of them and every
+requirement names its `part` rather than repeating a number that could then disagree with it.
+`specVersion` remains core's, because that is what a consumer pins to say which specification it
+implements. They are all equal today, which is exactly why the shape is settled now: adding the
+field after somebody has vendored the file is a change every consumer has to absorb.
 
 It exists for the consumer that is another repository. The reference implementation vendors it, so a
 note in its code citing `SPS-GRANT-007` can be checked without a network call — and upgrading to a

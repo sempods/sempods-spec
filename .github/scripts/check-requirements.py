@@ -45,6 +45,21 @@ INDEX = Path("requirements.json")
 # exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
 SPEC_VERSION = "0.1-dev"
 
+# A module versions independently of core (`SPS-CORE-005`, GOVERNANCE.md §"Versioning"), so one
+# number over the whole index would be a claim the model does not make: a consumer reading a MEDIA
+# requirement could not tell which media version it belongs to. They are all equal today and that
+# is exactly why the shape is fixed now — adding the field after somebody vendors the file is a
+# change every consumer has to absorb.
+MODULE_VERSIONS = {
+    "oidc": "0.1-dev",
+    "media": "0.1-dev",
+    "mcp": "0.1-dev",
+}
+
+# Which part an area belongs to. The registry is `docs/agents/spec-authoring.md`; this is the same
+# split in the form the index needs.
+MODULE_AREAS = {"OIDC": "oidc", "MEDIA": "media", "MCP": "mcp"}
+
 
 def requirements(text):
     """Every `(identifier, body)` a document opens, in order — a LIST, not a mapping.
@@ -179,11 +194,18 @@ def build_index(found):
     regeneration and turn a no-op into a diff.
     """
     return {
+        # Core's version. Kept under this name because it is what a consumer pins to say which
+        # specification it implements, and core is the part that has no opt-out.
         "specVersion": SPEC_VERSION,
+        # Every part with a version of its own, core included, so a consumer never has to know
+        # which key holds which. A requirement names its part rather than repeating the number,
+        # so the two cannot drift.
+        "versions": {"core": SPEC_VERSION, **MODULE_VERSIONS},
         "repository": "https://github.com/sempods/sempods-spec",
         "requirements": [
             {
                 "id": ident,
+                "part": MODULE_AREAS.get(ident.split("-")[1], "core"),
                 "chapter": str(path).replace("\\", "/"),
                 "summary": summarise(body),
                 "withdrawn": bool(WITHDRAWN.search(body)),
