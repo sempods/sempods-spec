@@ -82,14 +82,26 @@ The definitions live in [`sempods.ttl`](sempods.ttl).
 
 ## Dereferencing
 
-**Today the vocabulary document is the file in this repository**, and
-`https://schema.sempods.org/` does not yet serve it. Nothing breaks — an RDF term
-is an identifier first and a URL second — but it is a gap, and stating it is
-better than implying otherwise.
+`https://schema.sempods.org/` resolves. It negotiates on `Accept` and redirects
+with 303 — the namespace IRI names a vocabulary, not a document, and 303 is what
+says "here is a document about it instead":
 
-The intent is that the namespace IRI resolves to the vocabulary document with
-content negotiation for Turtle, JSON-LD and HTML, and that each term IRI resolves
-to its definition within it. Until then, cite the file.
+| asked for | reaches |
+|---|---|
+| `text/turtle` | [`sempods.ttl`](sempods.ttl) as published by this site |
+| a browser, or no preference | this page |
+
+A term IRI is a slash away from the namespace and answers the same way, because a
+term resolves to its definition *within* the document rather than to one of its
+own.
+
+**JSON-LD is not served.** An explicit request for it gets a 406 rather than a
+page it cannot parse. Publishing one means generating it from the Turtle, which
+this repository's build does not do yet.
+
+The file here stays the source. What the namespace serves is this repository's
+`main`, so an IRI cited from a tag resolves to the current document rather than
+the one that tag carried — cite the file where that distinction matters.
 
 ## Third parties: mint in your own namespace
 
