@@ -36,7 +36,7 @@ jobs:
           cache-dependency-path: site/requirements.txt
 
       - name: Install the pinned renderer
-        run: pip install --require-hashes=false -r site/requirements.txt
+        run: pip install -r site/requirements.txt
 
       # Fails on a chapter that exists but is in no navigation list, and on a description whose
       # `servers` block stopped matching what the demo-pod substitution looks for — the case
