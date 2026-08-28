@@ -175,8 +175,11 @@ equally urgent and the announce waits on all of them.
 - [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**.
       Built by `site/build.py`, which stages the normative tree rather than editing it: MkDocs
       refuses a docs directory containing its own configuration, and pointing one at the repository
-      root would publish the agent instructions. Remaining: enable Pages on the repository and point
-      the DNS record at it — neither is doable from a pull request.
+      root would publish the agent instructions. Remaining, and none of it doable from a pull
+      request: enable Pages on the repository, point the DNS record at it, and **add `build` to the
+      ruleset's required status checks**. Until that last one, the strict render is advisory — it
+      runs on every pull request and a failing one still satisfies every check the ruleset asks
+      for, which is the same trap item 7 records for the four already named there.
 - [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.

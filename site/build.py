@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import shutil
 import subprocess
@@ -70,7 +71,7 @@ CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
 MODULES = ["oidc", "media", "mcp"]
 
 
-def with_repository_links(text: str, source: Path) -> str:
+def with_repository_links(text: str, staged_at: str, published: set) -> str:
     """Point a staged document's off-site links at the repository.
 
     A chapter may link to the roadmap, the authoring rules or `requirements.json`, and none of
@@ -78,25 +79,24 @@ def with_repository_links(text: str, source: Path) -> str:
     file is also read on GitHub at a tag or a branch, where a hard-coded `main` silently mixes
     one revision's text with another's.
 
-    A link is left alone when it resolves to something `stage()` copies. A directory is not a
-    page, so a link to one leaves too.
+    Resolved against `staged_at` — where the file ends up — rather than against where it came
+    from. Those differ for exactly one file and it is the important one: `site/index.md` is
+    staged at the site root, so its `spec/core/auth.md` means the chapter, while resolving it
+    beside the source would mean `site/spec/core/auth.md`, which is nothing. An earlier version
+    did that and turned all ten of the landing page's links into repository URLs for paths that
+    do not exist — invisibly, because a strict build does not follow absolute links.
     """
     def rewrite(match: "re.Match[str]") -> str:
         target = match.group(1)
         path, _, fragment = target.partition("#")
         if not path:
             return match.group(0)
-        resolved = (source.parent / path).resolve()
-        try:
-            relative = resolved.relative_to(ROOT).as_posix()
-        except ValueError:
+        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(staged_at), path))
+        if resolved in published:
             return match.group(0)
-        staged = any(relative == root.rstrip("/") or relative.startswith(root) for root in STAGED)
-        if staged and resolved.is_file():
-            return match.group(0)
-        kind = "tree" if resolved.is_dir() else "blob"
+        kind = "tree" if (ROOT / resolved).is_dir() else "blob"
         suffix = f"#{fragment}" if fragment else ""
-        return f"]({REPOSITORY}/{kind}/main/{relative}{suffix})"
+        return f"]({REPOSITORY}/{kind}/main/{resolved}{suffix})"
 
     return RELATIVE_LINK.sub(rewrite, text)
 
@@ -112,55 +112,101 @@ def configure() -> None:
     shutil.copy(SITE / "mkdocs.yml", STAGE / "mkdocs.yml")
 
 
+def write_if_changed(path: Path, content: bytes) -> None:
+    """Write only when the bytes differ.
+
+    MkDocs watches the directory this stages into, so every write it does not need is a file
+    event, and every file event is another build that stages again. Rewriting the tree
+    unconditionally turns one saved chapter into a rebuild loop — measured at thirty-six builds
+    from a single edit before this existed.
+    """
+    if path.exists() and path.read_bytes() == content:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+
+
+def staged_content() -> dict:
+    """Everything the site is built from, as staged path -> bytes.
+
+    Assembled before anything is written, so `stage()` can compare, and so a file that stopped
+    having a source is recognised by its absence here rather than by deleting the tree.
+    """
+    copied = {}
+    for root in ("spec", "vocabulary"):
+        for source in sorted((ROOT / root).rglob("*")):
+            if source.is_file():
+                copied[f"{root}/{source.relative_to(ROOT / root).as_posix()}"] = source
+    copied["GOVERNANCE.md"] = ROOT / "GOVERNANCE.md"
+    copied["index.md"] = SITE / "index.md"
+
+    generated = {"api/index.html": try_it_page().encode()}
+    for source in sorted((ROOT / "openapi").glob("*.yaml")):
+        generated[f"api/{source.name}"] = with_demo_pod(source.read_text()).encode()
+
+    # The full set first: a link stays relative when it lands on something the site publishes,
+    # and that cannot be decided one file at a time. The generated pages count — the landing
+    # page links to the try-it page, which exists only here.
+    published = set(copied) | set(generated)
+
+    wanted = dict(generated)
+    for relative, source in copied.items():
+        if source.suffix == ".md":
+            wanted[relative] = with_repository_links(
+                source.read_text(), relative, published).encode()
+        else:
+            wanted[relative] = source.read_bytes()
+
+    wanted["CNAME"] = b"spec.sempods.org\n"
+    return wanted
+
+
 def stage() -> None:
-    """Copy the sources into the directory MkDocs renders.
+    """Bring the rendered directory in line with the sources.
 
     Called again before every rebuild while serving, through `hooks.py`: MkDocs watches the
     directory it renders and that directory is a copy, so without re-staging an edit to a
-    chapter changes nothing the server can see and the page keeps showing what was staged when
-    it started.
+    chapter changes nothing the server can see. It writes only what differs, for the reason
+    `write_if_changed` gives.
     """
     docs = STAGE / "docs"
-    if docs.exists():
-        shutil.rmtree(docs)
-    docs.mkdir(parents=True)
+    docs.mkdir(parents=True, exist_ok=True)
 
-    shutil.copytree(ROOT / "spec", docs / "spec")
-    shutil.copy(ROOT / "GOVERNANCE.md", docs / "GOVERNANCE.md")
-    shutil.copytree(ROOT / "vocabulary", docs / "vocabulary")
-    shutil.copy(SITE / "index.md", docs / "index.md")
+    wanted = staged_content()
+    for relative, content in wanted.items():
+        write_if_changed(docs / relative, content)
 
-    for staged in sorted(docs.rglob("*.md")):
-        source = ROOT / staged.relative_to(docs)
-        if source.is_file():
-            staged.write_text(with_repository_links(staged.read_text(), source))
+    for existing in sorted(docs.rglob("*"), reverse=True):
+        if existing.is_file() and existing.relative_to(docs).as_posix() not in wanted:
+            existing.unlink()
+        elif existing.is_dir() and not any(existing.iterdir()):
+            existing.rmdir()
 
-    api = docs / "api"
-    api.mkdir()
-    (api / "index.html").write_text(try_it_page())
-    for src in sorted((ROOT / "openapi").glob("*.yaml")):
-        (api / src.name).write_text(with_demo_pod(src.read_text()))
-
-    (docs / "CNAME").write_text("spec.sempods.org\n")
+    # Every repository URL this build wrote has to name something that is there. The rewriting
+    # resolves paths, and a resolution that goes wrong produces a well-formed link to nothing —
+    # which `--strict` cannot see, because it does not follow absolute URLs. Ten of them shipped
+    # that way once: the entire navigation of the landing page.
+    written = re.compile(re.escape(REPOSITORY) + r"/(?:blob|tree)/main/([^)#]+)")
+    for relative, content in wanted.items():
+        if relative.endswith(".md"):
+            for target in written.findall(content.decode()):
+                if not (ROOT / target).exists():
+                    raise SystemExit(
+                        f"error: {relative} was staged with a link to {target!r}, which this "
+                        f"repository does not hold — the rewriting resolved it wrongly")
 
     # Asserted on the staged file rather than on what `try_it_page()` returns. `check()` calls
-    # that function and would have been satisfied by it while `stage()` copied the template
-    # past it untouched — which is exactly what happened once. What ships is what gets checked.
-    staged_page = (api / "index.html").read_text()
+    # that function and would have been satisfied by it while `stage()` copied the template past
+    # it untouched — which is exactly what happened once. What ships is what gets checked.
+    staged_page = (docs / "api" / "index.html").read_text()
     if SOURCES_MARKER in staged_page:
         raise SystemExit(f"error: the staged try-it page still holds {SOURCES_MARKER!r}; its "
                          f"source list was never generated")
     for name, _ in descriptions():
-        if f"url: {json.dumps(name)}" not in staged_page:
+        if f"url: {as_script_literal(name)}" not in staged_page:
             raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
-# The placeholders a normative description carries, and what the staged copy says instead.
-# Matched on the `default:` key rather than on the value alone: `example.org` also appears in a
-# `WWW-Authenticate` example in the MCP module, where it is illustrating a header and must stay.
-# Quotes are optional on both sides because the four descriptions are hand-written and do not
-# spell their scalars the same way — which is exactly how the first version of this missed
-# `sempods-core.yaml`'s document-level server and pointed the core try-it at example.org.
 ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
 POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 
@@ -266,6 +312,24 @@ def descriptions() -> list[tuple[str, str]]:
     return found
 
 
+def as_script_literal(value: str) -> str:
+    """One value, safe inside a `<script>` element in an HTML document.
+
+    `json.dumps` handles what breaks a JavaScript string — a title is whatever the description
+    calls itself, and YAML lets that be folded across lines or carry a backslash. It does not
+    handle what breaks the surrounding *element*: an HTML parser ends a script at the first
+    `</script>` in the text, string literal or not, so a title documenting markup would close
+    the block and leave everything after it to be read as page content.
+
+    `<`, `>` and `&` therefore leave as escapes. They mean the same to JavaScript and nothing at
+    all to the HTML parser.
+    """
+    return (json.dumps(value)
+            .replace("<", "\\u003c")
+            .replace(">", "\\u003e")
+            .replace("&", "\\u0026"))
+
+
 def try_it_page() -> str:
     """`site/api/index.html` with its source list generated from the descriptions on disk."""
     # `json.dumps` per value rather than quoting by hand. A title is whatever the description
@@ -274,9 +338,11 @@ def try_it_page() -> str:
     # check here would see because the page is never parsed.
     sources = ",\n".join(
         "      { url: %s, title: %s, slug: %s%s }"
-        % (json.dumps(name), json.dumps(title), json.dumps(Path(name).stem),
+        % (as_script_literal(name), as_script_literal(title),
+           as_script_literal(Path(name).stem),
            ", default: true" if index == 0 else "")
         for index, (name, title) in enumerate(descriptions()))
+
     page = (SITE / "api" / "index.html").read_text()
     if SOURCES_MARKER not in page:
         raise SystemExit(f"error: site/api/index.html no longer contains {SOURCES_MARKER!r}, "
