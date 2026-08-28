@@ -189,8 +189,14 @@ expansion ([`SPS-CRUD-025`](../core/lod-crud.md#SPS-CRUD-025)).
 pod's own control-plane area ([`SPS-CRUD-011`](../core/lod-crud.md#SPS-CRUD-011)).
 
 <a id="SPS-MCP-023"></a>
-**`SPS-MCP-023`** — Where a tool wraps an idempotent operation, its result MUST carry the same
-outcome word as the HTTP operation it wraps ([`SPS-CRUD-044`](../core/lod-crud.md#SPS-CRUD-044)).
+**`SPS-MCP-023`** — Where a tool wraps one of the three operations for which
+[`SPS-CRUD-044`](../core/lod-crud.md#SPS-CRUD-044) defines an outcome word — adding a value to a
+slot, clearing a slot, removing an edge — its result MUST carry that same word. A tool wrapping any
+other write MUST NOT invent one.
+
+A wholesale replace has no second case to report, which is why `SPS-CRUD-044` gives it no word and
+why this requirement must not demand one: an implementation asked to mirror a word that does not
+exist has to make one up, and two implementations would make up different ones.
 
 An agent and a plain HTTP client reporting the same event in different words is a support burden
 that never ends, and the two surfaces have no reason to disagree.

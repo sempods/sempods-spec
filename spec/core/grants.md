@@ -200,6 +200,25 @@ they had revoked should not silently re-arm every application that once asked fo
 
 ## 7. `public-read`
 
+<a id="SPS-GRANT-031"></a>
+**`SPS-GRANT-031`** — A caller presenting **no credential at all** MUST be able to read the pod's
+public contexts, over every read surface this specification defines. An implementation MUST NOT
+require authentication for a public read.
+
+<a id="SPS-GRANT-032"></a>
+**`SPS-GRANT-032`** — An unauthenticated caller's readable set MUST be exactly the pod's public
+contexts — no more, and not empty because no token was presented.
+
+Anonymous is a supported mode, not a degraded one, and until now that claim lived in the module
+chapters and in prose rather than in a requirement. Without these two, an implementation reading only
+[`SPS-GRANT-020`](#SPS-GRANT-020) would conclude that public contexts are unioned in *only* when a
+token carries `public-read` — and a caller with no token has no scope, so it would see nothing. That
+is the opposite of the model: a pod's public data is Linked Open Data, dereferenceable by anyone,
+and that is the property the whole design exists to make ordinary.
+
+`public-read` is what an *authenticated* caller adds on top of its own grants
+([`SPS-GRANT-020`](#SPS-GRANT-020)); it is not what makes public data public.
+
 <a id="SPS-GRANT-020"></a>
 **`SPS-GRANT-020`** — `public-read` is a **scope**, not a grant. It MUST travel in the access token,
 and it MUST be additive: where present, the pod's currently public contexts are unioned into the

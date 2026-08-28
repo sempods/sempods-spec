@@ -38,9 +38,17 @@
 ## find — the semantic entry to the graph
 ##
 ## `find` answers with a context-sandboxed subgraph: the matching resources, each expanded with
-## its authoritative type and label, plus — per hit — one metadata node describing how the hit
-## was found. That node is transient: it belongs to the response, not to the store, and carries
-## no named graph.
+## its authoritative type and label. That answer is FLAT — no ordering, no score, and no marker
+## separating a hit from its expansion (SPS-FIND-018).
+##
+## The terms below describe a per-hit metadata node for a response that would carry one. They are
+## RESERVED, not present: no implementation emits them, and SPS-FIND-022 confines them to a
+## representation a client explicitly asks for — which this version of the specification does not
+## define. They are published so that the first implementation wanting per-hit metadata adopts
+## these names rather than minting its own, and a second one different names again.
+##
+## Where such a node is emitted, it is transient: it belongs to the response, not to the store, and
+## carries no named graph (SPS-FIND-024).
 ##
 
 sps:FindResult
@@ -48,9 +56,10 @@ sps:FindResult
   rdfs:isDefinedBy <https://schema.sempods.org/> ;
   rdfs:label      "Find result"@en ;
   rdfs:comment    """Metadata about one hit in a `find` response: which engine produced it,
-    where it ranked, and the excerpt that matched. Instances are produced per response and are
-    not part of the stored graph — a client may use them for ordering and display, and must not
-    expect to retrieve them again.
+    where it ranked, and the excerpt that matched. RESERVED — no implementation emits this today,
+    and the default `find` answer carries no such node. Where one is emitted, an instance is
+    produced per response and is not part of the stored graph: a client may use it for ordering and
+    display, and must not expect to retrieve it again.
 
     Authoritative facts about the hit itself (rdf:type, labels, timestamps) are never asserted
     here. They come from the store during expansion, because the store is what knows them."""@en .

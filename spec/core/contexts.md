@@ -131,6 +131,15 @@ context, whenever it was written.
 request body is OPTIONAL; where present it MAY carry a human-readable `label`, a `description`, and
 a `public` flag.
 
+<a id="SPS-CTX-027"></a>
+**`SPS-CTX-027`** — Where the `public` flag is absent — including on a request with no body at all —
+the context MUST be created **private**.
+
+The body is optional, so the quiet path is the one without it, and a default of public would make
+omission the dangerous choice. Pods are isolated by default
+(`AGENTS.md` §"Non-negotiable invariants"); a context becomes readable without a grant because
+somebody said so, never because they said nothing.
+
 <a id="SPS-CTX-016"></a>
 **`SPS-CTX-016`** — `PUT` MUST be idempotent. Creating a context that already exists MUST answer
 `200` with the existing context and MUST NOT alter it. A first creation MUST answer `201`.

@@ -80,9 +80,16 @@ therefore REQUIRED for it, and an implementation MUST reject an authorization re
 client that carries no `code_challenge`.
 
 <a id="SPS-AUTH-010"></a>
-**`SPS-AUTH-010`** — An implementation MUST render the consent screen for every `dyn:` authorization
-request, regardless of `prompt` and regardless of existing grants. Existing grants SHOULD arrive
-pre-selected, so that the common path is a single confirmation.
+**`SPS-AUTH-010`** — An implementation MUST render the consent screen for every **interactive**
+`dyn:` authorization request, regardless of existing grants and regardless of any `prompt` value
+other than `none`. Existing grants SHOULD arrive pre-selected, so that the common path is a single
+confirmation.
+
+`prompt=none` is the exception, and it has to be: it means *show nothing*
+([`SPS-AUTH-039`](#SPS-AUTH-039)), so "always show the screen" and "show no screen" cannot both hold.
+The resolution is already in [`SPS-AUTH-040`](#SPS-AUTH-040) — a `dyn:` client never auto-grants, so
+`prompt=none` from one is `consent_required`, which is the non-interactive way of saying what the
+screen would have asked.
 
 <a id="SPS-AUTH-011"></a>
 **`SPS-AUTH-011`** — An implementation MUST NOT issue a service token to a `dyn:` client. Dynamic
@@ -165,9 +172,14 @@ MUST NOT reject a `did:web:` authorization request solely because it carries no 
 contexts. The authorizing person selects contexts at consent time.
 
 <a id="SPS-AUTH-025"></a>
-**`SPS-AUTH-025`** — On success the implementation MUST redirect to the registered `redirect_uri`
-carrying `code` and `state`; on failure, carrying `error` and `error_description`, and OPTIONALLY
-`error_uri`. A client MUST treat `error_uri` as optional.
+**`SPS-AUTH-025`** — On success the implementation MUST redirect to the request's **validated**
+`redirect_uri` carrying `code` and `state`; on failure, carrying `error` and `error_description`, and
+OPTIONALLY `error_uri`. A client MUST treat `error_uri` as optional.
+
+"Validated" rather than "registered", because a `did:web:` client registers nothing
+([`SPS-AUTH-007`](#SPS-AUTH-007)) — its address is validated against the origin its identifier names
+(`SPS-AUTH-004`, `SPS-AUTH-005`). A `dyn:` client's address is validated against what it registered.
+Both are validated; only one is registered.
 
 <a id="SPS-AUTH-055"></a>
 **`SPS-AUTH-055`** — The response parameters MUST be **added to** the redirect URI's query
