@@ -284,7 +284,51 @@ tampered token becomes a successful request.
 **`SPS-AUTH-044`** — Where the pod has no public context, the implementation MUST answer
 `consent_required` rather than issue a token that can read nothing.
 
-## 9. Discovery
+## 9. Identity
+
+What a pod stores about a person, as opposed to how they signed in. How they signed in is the
+[`oidc`](../modules/oidc.md) module, and it is optional; this is not.
+
+<a id="SPS-AUTH-049"></a>
+**`SPS-AUTH-049`** — A pod MUST know a person only as a WebID URI. An implementation MUST NOT store
+a local user record as the identity a grant names, and MUST NOT accept a consumer's internal user
+identifier in place of one.
+
+<a id="SPS-AUTH-050"></a>
+**`SPS-AUTH-050`** — Where a person is introduced by an email address, the implementation MUST derive
+a deterministic identity URI from it and store that. The address itself MUST NOT become the
+identity.
+
+A deterministic derivation is what lets a pod address a person before any identity service exists,
+and lets the same person keep their grants when one appears.
+
+<a id="SPS-AUTH-051"></a>
+**`SPS-AUTH-051`** — Pod ownership MUST be decided by comparing the request's subject against the
+pod's recorded owner, not by a grant and not by a scope.
+
+This is what lets a pod with no contexts acquire its first one. An owner whose authority came from a
+grant would need a grant on a context that does not exist yet.
+
+<a id="SPS-AUTH-052"></a>
+**`SPS-AUTH-052`** — Where a person is known by several equivalent identity URIs, an implementation
+MUST apply the equivalence when a grant is **written**, and MUST NOT apply it when one is read.
+
+A request carries one identity URI. Resolving equivalences on the read path would put an identity
+join on every authenticated request and make the answer depend on state that changed since the
+grant was made.
+
+<a id="SPS-AUTH-053"></a>
+**`SPS-AUTH-053`** — An identity assertion MUST NOT be usable as a pod credential. An implementation
+MUST consume it once, at the login callback, and MUST NOT accept it as a bearer token afterwards.
+
+<a id="SPS-AUTH-054"></a>
+**`SPS-AUTH-054`** — A browser session established at a pod MUST be scoped to that pod. A sign-in at
+one pod MUST NOT be a sign-in at another, including where both are served from the same host.
+
+Pods are isolated tenants that may share a host on a path-scoped deployment. A session that spanned
+them would make the isolation depend on the deployment layout.
+
+## 10. Discovery
 
 <a id="SPS-AUTH-045"></a>
 **`SPS-AUTH-045`** — An implementation MUST serve RFC 9728 Protected Resource Metadata at
