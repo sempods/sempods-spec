@@ -25,8 +25,18 @@ MUST NOT place a grant inside an access token, and MUST NOT treat a token's cont
 authorization decision for a context.
 
 <a id="SPS-GRANT-002"></a>
-**`SPS-GRANT-002`** — An implementation MUST resolve a request's grants from durable storage, keyed
-by the requester's verified identity, on every request.
+**`SPS-GRANT-002`** — An implementation MUST resolve a request's grants from durable storage on
+every request, keyed by the **pair** of the verified client identifier and the verified subject.
+
+The client belongs in the key, and leaving it out is a privilege escalation between applications
+rather than an imprecision. A person may delegate broadly to one application and narrowly to
+another; resolving on the subject alone collapses every application that person uses into one
+principal, so the second inherits the first's access by presenting a token for the same person.
+[`SPS-MCP-008`](../modules/mcp.md#SPS-MCP-008) states the same pair for the agent surface.
+
+For a service token there is no person, and the subject **is** the client
+([`SPS-AUTH-017`](auth.md#SPS-AUTH-017)) — so the pair degenerates to one identity and the rule
+still holds without a special case.
 
 <a id="SPS-GRANT-003"></a>
 **`SPS-GRANT-003`** — A grant that is revoked MUST take effect on the caller's next request. An

@@ -54,7 +54,7 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026]
+      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026, SPS-MEDIA-028]
       requestBody:
         required: true
         description: |
@@ -149,8 +149,12 @@ paths:
         makes a later CDN an optimisation rather than a migration of everyone's stored
         `schema:contentUrl` values.
 
-        The entity tag *is* the content hash, so it is a strong validator by construction.
-      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-013, SPS-MEDIA-014, SPS-MEDIA-015, SPS-MEDIA-016, SPS-MEDIA-017, SPS-MEDIA-018]
+        The entity tag covers the content hash **and** the declared type of the assignment the
+        response was built from (SPS-MEDIA-014, SPS-MEDIA-027). The type has to be in it: two
+        callers with different read access legitimately receive different declared types, and so
+        different representations, at this one URL — a tag over the bytes alone would let a
+        conditional request or a cache carry one caller's representation to the other.
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-013, SPS-MEDIA-014, SPS-MEDIA-015, SPS-MEDIA-016, SPS-MEDIA-017, SPS-MEDIA-018, SPS-MEDIA-027]
       responses:
         '200':
           description: |

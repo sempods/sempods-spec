@@ -59,8 +59,12 @@ tags:
   - name: auth
     description: OAuth 2.1, registration, keys, metadata.
 
+# Bearer by default. Anonymous is a supported mode on this pod — SPS-MCP-005 and the public-read
+# flow depend on it — but it is a property of specific *read* operations, not of the surface, and
+# declaring it at the root advertised every mutation as reachable without a token. The operations
+# that genuinely take no credential override this with `security: [{}]`, and the read operations
+# that work either way list both.
 security:
-  - {}                      # anonymous is a supported mode, not a degraded one
   - bearerAuth: []
 
 paths:
@@ -86,6 +90,7 @@ paths:
     get:
       tags: [contexts]
       operationId: listContexts
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The contexts visible to the caller, with effective permissions.
       description: |
         The authoritative client-visible view of effective context permissions. A token's `scope`
@@ -104,6 +109,7 @@ paths:
     get:
       tags: [contexts]
       operationId: getContext
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: What the registry holds for this context.
       description: |
         Ask this route what a context **is**. What anyone has *said about* the same IRI is a
@@ -165,6 +171,7 @@ paths:
     get:
       tags: [resources]
       operationId: getResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: Dereference a resource.
       parameters:
         - $ref: '#/components/parameters/ReadContext'
@@ -178,6 +185,7 @@ paths:
     head:
       tags: [resources]
       operationId: headResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The headers of a dereference, with no body.
       x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029]
       responses:
@@ -186,6 +194,7 @@ paths:
     options:
       tags: [resources]
       operationId: optionsResource
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The verbs available to this caller on this resource.
       x-sps-requirements: [SPS-CRUD-018]
       responses:
@@ -270,6 +279,7 @@ paths:
     get:
       tags: [resources]
       operationId: getResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: Dereference any IRI's statements held by this pod.
       parameters:
         - $ref: '#/components/parameters/ReadContext'
@@ -282,6 +292,7 @@ paths:
     head:
       tags: [resources]
       operationId: headResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The headers of that dereference, with no body.
       x-sps-requirements: [SPS-CRUD-040]
       responses:
@@ -290,6 +301,7 @@ paths:
     options:
       tags: [resources]
       operationId: optionsResourceByIri
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The verbs available to this caller on this IRI.
       x-sps-requirements: [SPS-CRUD-040]
       responses:
@@ -308,9 +320,14 @@ paths:
       x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043]
       requestBody:
         required: true
+        description: |
+          The same media types as the LOD path — SPS-CRUD-002 requires the two addresses to behave
+          identically, and this is the *only* write address for an IRI outside the pod namespace.
         content:
           application/ld+json:
             schema: { $ref: '#/components/schemas/CanonicalResource' }
+          application/n-quads:
+            schema: { type: string }
       responses:
         '200': { description: Replaced. }
         '201':
@@ -357,6 +374,7 @@ paths:
     get:
       tags: [slots]
       operationId: getSlot
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: All values of this slot.
       description: |
         An unordered set. Array order is not meaningful and may differ between calls. An entity tag
@@ -410,12 +428,21 @@ paths:
       x-sps-requirements: [SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054]
       requestBody:
         required: true
+        description: One value, or several — SPS-CRUD-041 defines the verb as adding the given value or values.
         content:
           application/ld+json:
-            schema: { $ref: '#/components/schemas/SlotValue' }
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/SlotValue'
+                - $ref: '#/components/schemas/SlotValues'
       responses:
         '200':
-          description: The value was already present.
+          description: |
+            The value was already present. Carries the slot's tag like any other successful slot
+            mutation, so a client can chain a conditional write without an intervening `GET` — the
+            no-op outcome is the ordinary one for an "ensure this triple exists" pattern.
+          headers:
+            ETag: { schema: { type: string } }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Outcome' }
@@ -476,6 +503,7 @@ paths:
     post:
       tags: [query]
       operationId: sparqlQuery
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: Run a read-only SPARQL query inside the caller's sandbox.
       description: |
         Read-only. Every Update form is rejected, and so is `SERVICE` anywhere in the query,
@@ -522,6 +550,7 @@ paths:
     get:
       tags: [retrieval]
       operationId: findGet
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: Text in, a context-sandboxed subgraph out.
       parameters:
         - name: text
@@ -548,6 +577,7 @@ paths:
     post:
       tags: [retrieval]
       operationId: findPost
+      security: [{}, { bearerAuth: [] }]   # anonymous sees the pod's public contexts
       summary: The same operation, for a request that no longer fits in a URL.
       description: The body is parsed strictly — an unknown member is rejected, never ignored.
       x-sps-requirements: [SPS-FIND-004, SPS-FIND-013]
@@ -787,13 +817,19 @@ components:
   responses:
 
     ResourceRepresentation:
-      description: The resource's statements in the selected contexts.
+      description: |
+        The resource's statements in the selected contexts. Two JSON-LD shapes, selected by
+        `include_contexts`: the merged canonical object by default, and a named-graph array grouped
+        by source context when it is `true`. N-Quads is graph-aware by format and unaffected.
       headers:
         ETag: { schema: { type: string } }
         Vary: { schema: { type: string } }
       content:
         application/ld+json:
-          schema: { $ref: '#/components/schemas/CanonicalResource' }
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/CanonicalResource'
+              - $ref: '#/components/schemas/NamedGraphArray'
         application/n-quads:
           schema: { type: string }
 
@@ -891,6 +927,24 @@ components:
       additionalProperties:
         type: array
         items: { $ref: '#/components/schemas/SlotValue' }
+
+    NamedGraphArray:
+      type: array
+      description: |
+        What `include_contexts=true` returns: one entry per source context, each carrying the
+        statements that came from it. Only the representation changes — never which contexts are
+        readable.
+      items:
+        type: object
+        required: ['@id', '@graph']
+        properties:
+          '@id':
+            type: string
+            format: uri
+            description: The context IRI the statements came from.
+          '@graph':
+            type: array
+            items: { $ref: '#/components/schemas/CanonicalResource' }
 
     SlotValues:
       type: array

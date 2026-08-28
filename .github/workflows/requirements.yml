@@ -32,14 +32,26 @@ jobs:
 
       - name: Identifiers are consistent, and none disappeared
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
+          # A pull request compares against its base. A push compares against what `main` was
+          # immediately before it — otherwise the disappearance half never runs outside a pull
+          # request, and a direct push deleting a requirement passes a job whose name says it
+          # cannot. `before` is all zeros when a ref is created, which is the one case with
+          # nothing to compare against.
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          # On a push to `main` there is no pull-request base; the consistency half still runs,
-          # and the disappearance half has nothing to compare against by then anyway.
-          if [ -n "${BASE:-}" ]; then
+          BASE="${PR_BASE:-}"
+          if [ -z "$BASE" ] && [ -n "${PUSH_BEFORE:-}" ] &&
+             [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            BASE="$PUSH_BEFORE"
+          fi
+
+          if [ -n "$BASE" ]; then
+            echo "comparing identifiers against $BASE"
             .github/scripts/check-requirements.py "$BASE"
           else
+            echo "no base to compare against — consistency only"
             .github/scripts/check-requirements.py
           fi
 

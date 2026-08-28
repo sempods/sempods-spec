@@ -56,10 +56,14 @@ DELETE {pod}/_system/media/{id}?context=<ctx>     drop one assignment
 type. An implementation MUST record it, MUST return it as the assignment's content type, and MUST
 NOT infer it from the bytes.
 
-Delivery depends on it — `SPS-MEDIA-017` decides inline against attachment from the declared type —
-so an implementation with nowhere to carry it would have to sniff, and sniffing is the thing
-`SPS-MEDIA-016` disables on the way out. Where no type is declared, an implementation MUST treat the
-upload as `application/octet-stream`, which the allowlist serves as an attachment.
+<a id="SPS-MEDIA-028"></a>
+**`SPS-MEDIA-028`** — Where a raw upload declares no type, the implementation MUST record
+`application/octet-stream`. It MUST NOT reject the upload, and MUST NOT choose a type of its own.
+
+Delivery depends on the declared type — `SPS-MEDIA-017` decides inline against attachment from it —
+so an implementation with nowhere to carry one would have to sniff, and sniffing is exactly what
+`SPS-MEDIA-016` disables on the way out. `application/octet-stream` is the honest answer and the
+allowlist serves it as an attachment.
 
 <a id="SPS-MEDIA-006"></a>
 **`SPS-MEDIA-006`** — `POST`, `PUT` and `DELETE` MUST each resolve exactly one write context, with
