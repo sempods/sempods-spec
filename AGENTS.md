@@ -137,6 +137,9 @@ Front door and governance:
 
 The specification:
 
+- [`requirements.json`](requirements.json) — the generated machine-readable index of every
+  requirement, which the reference implementation vendors so it can check its own citations without
+  a network call. Regenerated with `--write-index`; CI fails if the committed copy has drifted
 - [`openapi/README.md`](openapi/README.md) — the hand-written OpenAPI descriptions, why they are
   hand-written, and what they structurally cannot say
 - [`vocabulary/README.md`](vocabulary/README.md) — the RDF terms published under
@@ -189,6 +192,12 @@ here rather than copied.
    ```bash
    lychee --offline --include-fragments --no-progress .
    .github/scripts/check-requirements.py origin/main
+   ```
+
+   Adding or withdrawing a requirement also regenerates the index, which is committed:
+
+   ```bash
+   .github/scripts/check-requirements.py --write-index
    ```
 
    **Pass the base ref.** Without it the disappearance check does not run at all — which is the

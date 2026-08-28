@@ -18,6 +18,7 @@ Run with no arguments to check the working tree. Pass a git ref to also compare 
 
     .github/scripts/check-requirements.py origin/main
 """
+import json
 import re
 import subprocess
 import sys
@@ -31,6 +32,11 @@ BOLD_ID_LINE = re.compile(r'^\*\*`(SPS-[A-Z]+-\d{3})`\*\*', re.M)
 WITHDRAWN = re.compile(r'\*Withdrawn\b', re.I)
 
 SPEC = Path("spec")
+INDEX = Path("requirements.json")
+
+# Until `0.1` is tagged the index says so, so nothing downstream can pin a version that does not
+# exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
+SPEC_VERSION = "0.1-dev"
 
 
 def requirements(text):
@@ -118,6 +124,43 @@ def openapi_citations():
     return out
 
 
+SUMMARY_END = re.compile(r'(?<=[.!?])\s')
+
+
+def summarise(body):
+    """The requirement's first sentence, flattened onto one line.
+
+    A consumer of the index — the reference implementation's link checker, a conformance report —
+    wants enough to recognise the requirement without fetching the chapter. The first sentence is
+    where the obligation lives; everything after it is qualification.
+    """
+    text = " ".join(body.replace("\n", " ").split()).lstrip("— ").strip()
+    parts = SUMMARY_END.split(text, 1)
+    return parts[0].strip() if parts else text
+
+
+def build_index(found):
+    """The published index: identifier → where it lives and what it obliges.
+
+    Deliberately carries no URL and no timestamp. A URL would pin a branch or a tag, and the
+    consumer is the one who knows which it wants; a timestamp would make the file churn on every
+    regeneration and turn a no-op into a diff.
+    """
+    return {
+        "specVersion": SPEC_VERSION,
+        "repository": "https://github.com/sempods/sempods-spec",
+        "requirements": [
+            {
+                "id": ident,
+                "chapter": str(path).replace("\\", "/"),
+                "summary": summarise(body),
+                "withdrawn": bool(WITHDRAWN.search(body)),
+            }
+            for ident, (path, body) in sorted(found.items())
+        ],
+    }
+
+
 def main():
     if not self_test():
         return 3
@@ -132,7 +175,8 @@ def main():
         if ident not in current:
             problems.append(f"{path}: cites {ident}, which no chapter defines")
 
-    base = sys.argv[1] if len(sys.argv) > 1 else None
+    refs = [a for a in sys.argv[1:] if not a.startswith("--")]
+    base = refs[0] if refs else None
     if base:
         def at_base(path):
             done = subprocess.run(["git", "show", f"{base}:{path}"], capture_output=True, text=True)
@@ -180,6 +224,22 @@ def main():
     if problems:
         print("\n" + "\n".join(problems), file=sys.stderr)
         return 1
+
+    # The index is generated, committed, and checked rather than built on demand: the consumer is
+    # another repository, which vendors it and must be able to see a specification upgrade as a
+    # diff rather than discovering one at build time.
+    index = json.dumps(build_index(current), indent=2, ensure_ascii=False) + "\n"
+    if "--write-index" in sys.argv:
+        INDEX.write_text(index)
+        print(f"wrote {INDEX} — {len(current)} requirements")
+    elif INDEX.exists() and INDEX.read_text() != index:
+        print(
+            f"error: {INDEX} is out of date. Regenerate it:\n"
+            f"    .github/scripts/check-requirements.py --write-index",
+            file=sys.stderr,
+        )
+        return 4
+
     print("\nrequirement identifiers are consistent")
     return 0
 

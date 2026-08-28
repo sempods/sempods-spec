@@ -29,6 +29,19 @@ release.
 
 The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 
+## The requirement index
+
+[`../requirements.json`](../requirements.json) is the machine-readable form: every identifier, the
+chapter it lives in, its first sentence, and whether it is withdrawn. It is generated from the
+chapters and committed, and CI fails if the committed copy has drifted.
+
+It exists for the consumer that is another repository. The reference implementation vendors it, so a
+note in its code citing `SPS-GRANT-007` can be checked without a network call — and upgrading to a
+newer specification arrives there as a reviewable diff rather than as a build that starts failing.
+
+It deliberately carries no URL and no timestamp. A URL would pin a branch or a tag and the consumer
+is the one who knows which it wants; a timestamp would turn every regeneration into a diff.
+
 ## Core
 
 Every sempods implementation provides all of it. There is no opt-out and no partial core.
