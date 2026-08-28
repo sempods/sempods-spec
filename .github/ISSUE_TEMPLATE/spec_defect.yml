@@ -1,0 +1,46 @@
+name: Specification defect
+description: The specification is wrong, ambiguous, contradictory, or cannot be implemented as written
+labels: ["defect"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        For a defect in the *specification text*. If the reference implementation behaves
+        wrongly but the specification is right, that issue belongs in sempods-kotlin.
+        If the two disagree and you cannot tell which is wrong, this is the right form —
+        say so below.
+
+  - type: input
+    id: requirement
+    attributes:
+      label: Requirement ID
+      description: The `SPS-…` identifier, if the defect is in a specific requirement. Leave empty for prose or a missing requirement.
+      placeholder: SPS-CRUD-011
+    validations:
+      required: false
+
+  - type: input
+    id: chapter
+    attributes:
+      label: Chapter
+      placeholder: spec/core/lod-crud.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+      description: Quote the sentence. Say which of the readings you took and which other reading is also defensible, if the defect is an ambiguity.
+    validations:
+      required: true
+
+  - type: textarea
+    id: consequence
+    attributes:
+      label: What it costs an implementer
+      description: >-
+        What did you build, or fail to build, because of this? A defect that costs nothing
+        is a wording preference, and those are welcome as a pull request rather than an issue.
+    validations:
+      required: true

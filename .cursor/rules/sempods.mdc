@@ -1,0 +1,17 @@
+---
+description: sempods specification rules — routes to the canonical instructions
+alwaysApply: true
+---
+
+The canonical guidance for this repository is the root `AGENTS.md`, reached through the shared hub
+`docs/agents/ai-instructions.md`. Read both before making a change.
+
+This is the specification repository, not the implementation. The source-of-truth rule is inverted
+here: the specification binds implementations, and an implementation that disagrees is the bug —
+with one dated exception that is live today and stated in `AGENTS.md`.
+
+No scoped `AGENTS.md` files exist yet; the root file governs every edit.
+
+Before editing any `*.md`, read `docs/agents/documentation-strategy.md`. Before editing anything
+under `spec/`, read `docs/agents/spec-authoring.md` as well — requirement IDs are permanent and a
+renumbering is a silent break.

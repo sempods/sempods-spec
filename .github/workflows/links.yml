@@ -1,0 +1,42 @@
+name: Links
+
+# A documentation set is a graph, and the one property of it that can be checked mechanically is
+# whether its edges still point at something. Nothing else in this repository reads the markdown,
+# so a link that rots survives every green run and is found by a reader — usually an agent, which
+# then follows it to nothing and invents the rest.
+#
+# This is the counterpart of `checkDocLinks` in the reference implementation, which is a Gradle
+# task because that repository already has Gradle. This one has no build system on purpose, so the
+# check is an action.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v7
+
+      - name: Every relative link and every anchor resolves
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # `--offline`: an external URL is somebody else's uptime, and checking it would make a
+          # pull request fail for a reason the author cannot fix. This repository cites a lot of
+          # RFCs, so the temptation is real and the answer is still no — a check that goes red for
+          # reasons nobody controls is a check people learn to merge past.
+          #
+          # `--include-fragments`: the reason this matters more here than in an ordinary
+          # documentation set. Every normative statement is addressed by an explicit anchor
+          # (`#SPS-CRUD-011`), and an anchor that does not match its requirement ID resolves to the
+          # top of the page instead of failing — a reader sees the wrong requirement and is given
+          # no sign of it. This is the only automated check that catches that.
+          args: --offline --include-fragments --no-progress .
+          fail: true

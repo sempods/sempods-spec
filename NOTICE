@@ -1,0 +1,30 @@
+sempods specification
+Copyright 2025-2026 Danilo Stein
+
+This is the specification of the sempods model (https://sempods.org). The
+Kotlin/JVM reference implementation is a separate repository,
+https://github.com/sempods/sempods-kotlin, and carries its own NOTICE.
+
+Licensing summary:
+
+  * The specification text and the RDF vocabulary published under
+    https://schema.sempods.org/ are licensed under the Creative Commons
+    Attribution 4.0 International License (CC BY 4.0). See the LICENSE file.
+
+    Using the vocabulary terms in your own data requires no licence, no
+    attribution and no permission — that is what a vocabulary is for.
+
+  * The conformance suite and tooling, once they exist, are licensed under the
+    Apache License, Version 2.0. See the LICENSE-CODE file.
+
+  * "sempods" is a trademark of Danilo Stein. The Apache License grants no
+    trademark rights (Apache-2.0 section 6), and neither does CC BY 4.0. What
+    you may call your own work is set out in TRADEMARKS.md in the reference
+    implementation, which is deliberately permissive: the name is regulated
+    only where it would suggest origin or endorsement.
+
+    Two terms are the exception and are reserved: "sempods conformant" and
+    "sempods certified" may be used only under a written licence granted on
+    passing the conformance suite at a stated profile and version. That suite
+    does not exist yet, so nobody can pass it and the terms say nothing today.
+    Write "implements the sempods specification" and document your deviations.

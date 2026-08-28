@@ -1,0 +1,59 @@
+name: Specification change
+description: Propose a new requirement, a changed one, or a new module
+labels: ["proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        A specification change moves slower than an implementation change and needs a
+        written rationale, because other implementations depend on it. Running code beats
+        a good argument: a proposal something already implements is adopted far more
+        readily than one nobody has tried.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of change
+      options:
+        - A new requirement in an existing chapter
+        - A change to an existing requirement
+        - Withdrawing a requirement
+        - A new module
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The change
+      description: State it as you would want it written — actor named, RFC 2119 keyword, one testable obligation.
+      placeholder: The server MUST reject a request that names more than one context, with 400.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: What breaks or stays broken without it. What you considered and rejected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: running
+    attributes:
+      label: Does anything already implement this?
+      description: Link it. "Not yet" is an acceptable answer and is worth stating rather than leaving blank.
+    validations:
+      required: false
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: What it breaks
+      description: >-
+        Which existing implementations stop being conformant, and what they would have to
+        change. The project is 0.x and breaking is allowed — it is never meant to be silent.
+    validations:
+      required: true

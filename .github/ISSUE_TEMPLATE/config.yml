@@ -1,0 +1,24 @@
+# Steer everything that is not a concrete defect or a concrete proposal away from the issue
+# tracker. `blank_issues_enabled: false` removes the "open a blank issue" escape hatch, so the
+# two forms and the contact links below are the only front doors.
+#
+# Discussions live in the implementation repository rather than here: one community in two
+# places is two half-empty forums, and the implementation is where people arrive first.
+blank_issues_enabled: false
+contact_links:
+  - name: Question, idea, or design discussion
+    url: https://github.com/sempods/sempods-kotlin/discussions
+    about: >-
+      Anything that is not a specific defect or a specific proposal — questions, ideas,
+      "should this…", roadmap. Discussions are held in the implementation repository.
+  - name: A bug in the reference implementation
+    url: https://github.com/sempods/sempods-kotlin/issues
+    about: >-
+      If the server behaves wrongly but the specification is right, the issue belongs
+      there. If they disagree and you cannot tell which is wrong, open a defect here and
+      say so.
+  - name: Security — do not open an issue
+    url: https://github.com/sempods/.github/blob/main/SECURITY.md
+    about: >-
+      Never report a vulnerability in a public issue. A specification vulnerability is a
+      rule that cannot be implemented safely; report it privately.

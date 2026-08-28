@@ -1,0 +1,170 @@
+# sempods specification 0.1 (SOLL)
+
+> Progress is tracked in place. Completed items stay in this file, marked done, until the whole
+> milestone is consolidated. Do not prune them individually — the roadmap documents progress, not
+> only remaining work.
+
+_Status: ☐ open · ◐ in progress · ☑ done_
+
+**Goal.** A stranger can implement a conformant pod from this repository alone, in a language of
+their choosing, and can tell whether they succeeded. Concretely: core is specified with requirement
+IDs, the HTTP surface has a hand-written OpenAPI description, the reference implementation's
+documentation no longer holds a second copy of any of it, and `0.1` is tagged — the point at which
+this repository stops following the implementation and starts binding it.
+
+**There is no concept file for this milestone.** The reasoning that a concept would carry is already
+permanent elsewhere and would only be duplicated here:
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and the descriptive→prescriptive switch,
+[`../../spec/README.md`](../../spec/README.md) for the core/module split and what a chapter is, and
+[`../agents/spec-authoring.md`](../agents/spec-authoring.md) for the requirement-ID scheme. A
+concept will be written for the first chapter whose *content* needs one.
+
+---
+
+## What gates the announce
+
+The launch checklist that owns this milestone from the outside is the private go-public roadmap —
+its workstream D. What it needs before the announce is **not** the whole of this file:
+
+- **S1** complete — the repository exists, is hardened, and is legible.
+- **S2** complete — the conformance model and the requirement scheme are settled, because every
+  later chapter depends on them.
+- **S3** far enough that the specification is not empty.
+- **S6** at least for core, so the OpenAPI description the announce claims actually exists.
+
+S4, S5, S7 and S8 may trail the announce. Saying so here is the point: without it, every phase looks
+equally urgent and the announce waits on all of them.
+
+---
+
+## S1 — Repository, hardening, instructions
+
+- [x] 1 — Repository `sempods/sempods-spec` created, public, described, topics set. `homepage`
+      deliberately **empty** until `spec.sempods.org` serves — a link into a 404 is worse than no
+      link, which the org profile already learned the hard way.
+- [x] 2 — Licences: `LICENSE` CC BY 4.0 for the text and the vocabulary, `LICENSE-CODE` Apache 2.0
+      for the conformance suite and tooling, `NOTICE` stating which is which and the trademark
+      position.
+- [x] 3 — Agent instructions carried over from the reference implementation and adapted:
+      `AGENTS.md`, the hub, the documentation strategy, the two procedures, the four tool pointers,
+      the two Claude skills.
+- [x] 4 — `spec-authoring.md`: RFC 2119 usage, the `SPS-<AREA>-<NNN>` scheme, the anchor convention,
+      the withdrawal rule, the area registry.
+- [x] 5 — `GOVERNANCE.md`: independent version line, module versions, the dated switch from
+      descriptive to prescriptive at the `0.1` tag, how a change is made.
+- [x] 6 — `spec/README.md`: the chapter map with a status per chapter, and the two chapters that are
+      new writing rather than a move.
+- [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
+      scanning and push protection, Dependabot alerts and security updates, private vulnerability
+      reporting, `CODEOWNERS`, issue forms, pull-request template, DCO workflow, link checker.
+- [ ] 8 — The org code-security configuration `sempods baseline` applied to this repository, and the
+      repository pinned on the org profile. Both need `admin:org` and therefore the web UI.
+
+## S2 — The foundation every chapter rests on
+
+- [ ] 9 — `spec/core/index.md`: what conformance means, the RFC 2119 declaration, the requirement-ID
+      scheme as a normative statement rather than an authoring convention, the core/module model.
+- [ ] 10 — **Conformance discovery.** Specify the endpoint that makes "optional" real: an
+      implementation advertises its specification version and the module IRIs it provides. Draft
+      shape, to be settled in the chapter:
+
+      GET /{pod}/_system/conformance
+      → { "specVersion": "0.1", "modules": [ { "id": …, "version": "0.1" } ] }
+
+      Module identity is an IRI under `https://schema.sempods.org/`, which the vocabulary's own
+      scope already anticipates by naming "conformance markers".
+- [ ] 11 — A CI guard for the ID promise: a requirement ID that disappears from a diff fails the
+      build unless it reappears as a withdrawal. The pull-request template asks for this by hand
+      today, and a promise that only a checklist enforces is a promise that survives exactly as long
+      as reviewers are attentive.
+- [ ] 12 — Follow-up filed against the reference implementation: the endpoint does not exist there.
+      This is the first place the new direction bites, and it is worth being the example.
+
+## S3 — Core chapters
+
+- [ ] 13 — `contexts` (`CTX`) — extracted from `docs/auth/authorization.md`.
+- [ ] 14 — `grants` (`GRANT`) — same source. The `#manage` subtree rule is the one requirement most
+      likely to be implemented as a string-prefix check, so it needs its own requirement and its own
+      conformance test.
+- [ ] 15 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
+      The three client-identity shapes are the part an implementer gets wrong first.
+- [ ] 16 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly
+      specification-shaped already.
+- [ ] 17 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
+      documents, and the LOD chapter openly defers to a SPARQL document that was never written.
+- [ ] 18 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.
+
+## S4 — Modules
+
+- [ ] 19 — `oidc` (`OIDC`) — from `docs/auth/identity.md`, split from the identity service's own
+      internals, which stay with the implementation.
+- [ ] 20 — `media` (`MEDIA`) — from `docs/media.md`.
+- [ ] 21 — `mcp` (`MCP`) — from `docs/mcp/`. `clients.md` stays behind: observed client behaviour is
+      operational knowledge, not a contract.
+
+## S5 — Vocabulary
+
+- [ ] 22 — `NAMESPACE.md` and `vocabulary/sempods.ttl` move here, and the reference implementation
+      links instead of holding them.
+- [ ] 23 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
+      while every ontology IRI points at it. Deliberately **after** the chapters settle which terms
+      are normative: the first stability guarantee says an IRI never changes, so publishing early
+      sets it in stone.
+
+## S6 — OpenAPI and the rendered specification
+
+- [ ] 24 — One hand-written OpenAPI 3.1 description per core chapter, each operation carrying the
+      requirement IDs it realises.
+- [ ] 25 — Descriptions for the modules.
+- [ ] 26 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
+      — chosen over Redoc because it has a built-in API client, which is the whole point of putting
+      it there.
+- [ ] 27 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
+      authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
+      so no dynamic registration step is needed in front of the login.
+- [ ] 28 — `homepage` set on the repository, and the website links here instead of describing the
+      API itself.
+
+## S7 — Retire the second copy in the reference implementation
+
+- [ ] 29 — Delete every document that moved, and replace its inbound links with requirement-ID links.
+- [ ] 30 — Publish a generated `requirements.json` per release: ID → title → URL. The reference
+      implementation vendors it and extends its own `checkDocLinks` to validate outbound
+      specification links against it. No network in CI, and a specification upgrade becomes a visible
+      diff rather than a silent drift.
+- [ ] 31 — Declare the implemented specification version in `gradle.properties` and in the README.
+- [ ] 32 — Correct the reference implementation's README: "a standalone specification document" is
+      listed there as something that does not exist yet.
+- [ ] 33 — Re-read `context7.json` in the reference implementation. Its `rules` array asserts facts
+      about grants, contexts, SPARQL and client identity that this milestone restates — and it is
+      served to agents outside the project.
+
+## S8 — After 0.1
+
+- [ ] 34 — The conformance suite, cited by requirement ID.
+- [ ] 35 — `tools/` — a checker an implementer can point at a running pod.
+
+---
+
+## Open decisions
+
+- **What the conformance suite is written in (S8).** The JVM is cheapest — the reference client
+  already exists — but a suite meant to test a non-JVM implementation probably wants to be a
+  container running HTTP tests. Decide once S3 shows how much of the contract is behaviour rather
+  than shape.
+- **What `sempods.org/` itself answers.** Already open on the launch checklist, and this milestone
+  adds two more hostnames to the question: `spec.sempods.org` and `schema.sempods.org`.
+- **Where `docs/vision.md` ends up.** It is the project's vision, not the implementation's, and its
+  "core capabilities" section is already specification-shaped. Moving it means the reference
+  implementation links rather than holds it. Not urgent, and it should not move before S3 has
+  settled what the core chapters say.
+
+## Acceptance
+
+- Every core chapter exists and carries requirement IDs; `spec/README.md` shows no core row as
+  planned.
+- `grep -rho 'SPS-[A-Z]*-[0-9]\{3\}' spec/ | sort -u` yields no duplicate and no gap that came from
+  a renumbering.
+- `lychee --offline --include-fragments --no-progress .` passes.
+- No document that moved here still exists in the reference implementation.
+- `0.1` is tagged, and `GOVERNANCE.md`'s switch has therefore happened.
