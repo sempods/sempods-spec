@@ -133,6 +133,9 @@ Front door and governance:
 
 The specification:
 
+- [`vocabulary/README.md`](vocabulary/README.md) — the RDF terms published under
+  `https://schema.sempods.org/` and the stability guarantees they carry. Normative, and versioned
+  with the specification rather than with any implementation
 - [`spec/README.md`](spec/README.md) — how to read a chapter, and the chapter table with a status
   per chapter and the source each is being extracted from. The chapters themselves do not exist yet;
   that table is the honest state of the specification and is what a visitor reads first

@@ -75,9 +75,14 @@ see. That lives in the chapters.
 
 ## Vocabulary
 
-`vocabulary/` will hold the RDF terms published under `https://schema.sempods.org/`, together with
-the stability guarantees they carry. It lives here rather than with an implementation because the
-terms are normative and versioned with the specification. It has not moved yet.
+[`../vocabulary/`](../vocabulary/) holds the RDF terms published under
+`https://schema.sempods.org/`, together with the stability guarantees they carry — the strongest
+promise this project makes: an IRI never changes, a meaning never narrows, and a retired term is
+deprecated for at least twelve months rather than deleted.
+
+It lives here rather than with an implementation because the terms are normative and versioned with
+the specification, and because a term ends up inside other people's stored data — which is the same
+reason a requirement identifier is permanent.
 
 ## Conformance
 

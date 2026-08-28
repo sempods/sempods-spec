@@ -148,8 +148,12 @@ equally urgent and the announce waits on all of them.
 
 ## S5 — Vocabulary
 
-- [ ] 23 — `NAMESPACE.md` and `vocabulary/sempods.ttl` move here, and the reference implementation
-      links instead of holding them.
+- [x] 23 — `NAMESPACE.md` and `vocabulary/sempods.ttl` moved, as `vocabulary/README.md` and
+      `vocabulary/sempods.ttl`. Two corrections on the way: the document said the three terms
+      describe "the metadata a `find` response carries" in the present tense and that they were
+      adopted because "an implementation needed them, used them" — neither is true, and it now says
+      so and says why publishing them anyway is still right. Removing them from the reference
+      implementation is S7.
 - [ ] 24 — Serve `https://schema.sempods.org/` with content negotiation. It has no DNS record today
       while every ontology IRI points at it. Deliberately **after** the chapters settle which terms
       are normative: the first stability guarantee says an IRI never changes, so publishing early
