@@ -1,0 +1,212 @@
+openapi: 3.1.0
+
+# The media module's HTTP surface. Optional: where the module is not provided these routes do not
+# exist, and an implementation must not answer them with something implying they are temporarily
+# unavailable.
+
+info:
+  title: sempods — media module
+  version: '0.1'
+  summary: Binaries a pod owns, addressed by content hash and bound to contexts.
+  description: |
+    Binds only an implementation advertising `https://schema.sempods.org/module/media` at the
+    conformance endpoint.
+
+    The identifier is the SHA-256 of the bytes, base64url without padding. That is why three
+    behaviours here look like quirks and are one rule: a media the caller may not read answers the
+    same `404` as one that does not exist, an upload always answers `201` even for bytes already
+    stored, and metadata lists only the assignments the caller may read. Any observable difference
+    would answer *does this pod hold exactly this file* for someone who already has it.
+  license:
+    name: CC BY 4.0
+    identifier: CC-BY-4.0
+
+externalDocs:
+  description: The module chapter
+  url: https://github.com/sempods/sempods-spec/blob/main/spec/modules/media.md
+
+servers:
+  - url: '{origin}/{pod}'
+    variables:
+      origin: { default: 'https://example.org' }
+      pod: { default: alice }
+
+security:
+  - {}
+  - bearerAuth: []
+
+paths:
+
+  /_system/media:
+    post:
+      operationId: uploadMedia
+      summary: Upload bytes and assign them to one context.
+      description: |
+        Writes no RDF. It returns a media URL; whoever wants a `schema:ImageObject` writes one.
+        Always `201`, never `200` — see the description above.
+
+        The source-descriptor body asks the server to fetch a URL, which is an SSRF surface. Where
+        an implementation offers it, every part of `SPS-MEDIA-019` holds together: scheme allowlist,
+        every resolved address validated, the validated address pinned for the connection, the whole
+        chain re-run per redirect hop, and a size cap enforced while streaming.
+      parameters:
+        - name: context
+          in: query
+          required: true
+          schema: { type: string, format: uri }
+      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020]
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+          application/vnd.sempods.media-source+json:
+            schema: { $ref: '#/components/schemas/MediaSource' }
+      responses:
+        '201':
+          description: Stored, or already stored — indistinguishable on purpose.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Media' }
+        '400': { description: Malformed request, or a source the address policy refuses. }
+        '403': { description: No write grant on the named context. }
+        '404': { description: The named context is not registered. }
+        '409': { description: The context was deleted while the upload was in flight. }
+
+  /_system/media/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MediaId'
+    get:
+      operationId: getMediaMetadata
+      summary: What this pod records about the bytes.
+      description: Lists only the assignments the caller may read.
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-012, SPS-MEDIA-015]
+      responses:
+        '200':
+          description: The metadata.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Media' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    head:
+      operationId: headMediaMetadata
+      summary: The metadata headers, with no body.
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010]
+      responses:
+        '200': { description: Headers only. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    put:
+      operationId: assignMedia
+      summary: Assign the media to a further context.
+      description: |
+        Needs **both** write on the target context and read on a context the media is already
+        assigned to. Write alone would let anyone attach an arbitrary media identifier — a content
+        hash — to a context they control, and then read the bytes.
+      parameters:
+        - name: context
+          in: query
+          required: true
+          schema: { type: string, format: uri }
+      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008]
+      responses:
+        '204': { description: Assigned, or already assigned. }
+        '403': { description: Missing write on the target, or read on an existing assignment. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    delete:
+      operationId: unassignMedia
+      summary: Drop one assignment.
+      description: |
+        Ensure-absent: dropping an assignment that is not there succeeds. Emptying the assignment
+        set marks the media unreferenced; the bytes are collected only after a grace period.
+      parameters:
+        - name: context
+          in: query
+          required: true
+          schema: { type: string, format: uri }
+      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-022, SPS-MEDIA-023]
+      responses:
+        '204': { description: The assignment is absent. }
+        '403': { description: No write grant on the named context. }
+
+  /_system/media/{id}/content:
+    parameters:
+      - $ref: '#/components/parameters/MediaId'
+    get:
+      operationId: getMediaContent
+      summary: The bytes.
+      description: |
+        The content URL is always this route, whatever a deployment does behind it — which is what
+        makes a later CDN an optimisation rather than a migration of everyone's stored
+        `schema:contentUrl` values.
+
+        The entity tag *is* the content hash, so it is a strong validator by construction.
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-013, SPS-MEDIA-014, SPS-MEDIA-015, SPS-MEDIA-016, SPS-MEDIA-017, SPS-MEDIA-018]
+      responses:
+        '200':
+          description: |
+            `Content-Disposition` is an allowlist — inline for a small set of known-safe image
+            types, attachment for everything else including unknown types. `image/svg+xml` and
+            `text/html` are always attachment: SVG carries script, and inline from the pod's own
+            origin makes an uploaded file same-origin code.
+          headers:
+            ETag: { schema: { type: string } }
+            Cache-Control: { schema: { type: string, examples: ['private, no-cache'] } }
+            Vary: { schema: { type: string, examples: ['Authorization'] } }
+            Content-Disposition: { schema: { type: string } }
+            X-Content-Type-Options: { schema: { type: string, const: nosniff } }
+            Content-Security-Policy: { schema: { type: string, examples: ['sandbox'] } }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '304': { description: Not modified. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+    head:
+      operationId: headMediaContent
+      summary: The content headers, with no body.
+      x-sps-requirements: [SPS-MEDIA-014, SPS-MEDIA-015]
+      responses:
+        '200': { description: Headers only. }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+
+components:
+
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    MediaId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: The SHA-256 of the bytes, base64url without padding.
+
+  responses:
+    NotFoundOrNotVisible:
+      description: |
+        No such media, or not readable by this caller. Deliberately indistinguishable — the
+        identifier is a content hash.
+
+  schemas:
+    Media:
+      type: object
+      properties:
+        id: { type: string }
+        size: { type: integer }
+        assignments:
+          type: array
+          description: Only those the caller may read.
+          items:
+            type: object
+            properties:
+              context: { type: string, format: uri }
+              contentType: { type: string }
+              filename: { type: string }
+    MediaSource:
+      type: object
+      required: [source_url]
+      properties:
+        source_url: { type: string, format: uri }
+        filename: { type: string }

@@ -64,10 +64,14 @@ got has no contract.
 
 ## OpenAPI
 
-`openapi/` will hold one hand-written OpenAPI 3.1 description per core chapter and per module.
-Hand-written and part of the contract, not generated from any implementation: a generated
-description specifies whatever the reference implementation happens to do, and an implementer in
-another language would read one implementation's choices as obligations.
+[`../openapi/`](../openapi/) holds hand-written OpenAPI 3.1 descriptions — one for the whole of
+core, one per module that has an HTTP surface of its own. Hand-written and part of the contract, not
+generated from any implementation: a generated description specifies whatever the reference
+implementation happens to do, and an implementer in another language would read one
+implementation's choices as obligations.
+
+Every operation names the requirements it realises, and a citation pointing at an identifier no
+chapter defines fails CI.
 
 What OpenAPI cannot carry is the reason it is not the specification on its own: grant resolution,
 the context sandbox, the SPARQL sandbox — the behaviour that decides what a request is allowed to

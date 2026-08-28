@@ -42,3 +42,35 @@ jobs:
           else
             .github/scripts/check-requirements.py
           fi
+
+  openapi:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v7
+
+      # The descriptions are hand-written, so nothing else parses them. A file that stopped being
+      # valid YAML would still pass every other check here and fail only in whatever tool a reader
+      # pointed at it.
+      - name: The descriptions are well-formed
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pyyaml
+          python3 - <<'PY'
+          import pathlib, sys, yaml
+          bad = []
+          for path in sorted(pathlib.Path("openapi").glob("*.yaml")):
+              try:
+                  doc = yaml.safe_load(path.read_text())
+              except yaml.YAMLError as e:
+                  bad.append(f"{path}: {e}")
+                  continue
+              if not str(doc.get("openapi", "")).startswith("3.1"):
+                  bad.append(f"{path}: not an OpenAPI 3.1 document")
+              if not doc.get("paths"):
+                  bad.append(f"{path}: no paths")
+              print(f"{path.name}: {len(doc.get('paths', {}))} paths")
+          if bad:
+              print("\n".join(bad), file=sys.stderr)
+              sys.exit(1)
+          PY

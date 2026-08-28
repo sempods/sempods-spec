@@ -64,8 +64,33 @@ def collect(read):
     return found, problems
 
 
+def openapi_citations():
+    """Every identifier cited from an `x-sps-requirements` list, with the file citing it.
+
+    Parsed with a regex rather than a YAML library: this repository has no build system and no
+    dependencies, and the citation form is one line of literal syntax that the OpenAPI files are
+    written to keep. A citation that does not match this shape is not silently skipped — it would
+    have to be malformed YAML too, which the workflow's own parse step catches.
+    """
+    out = []
+    for path in sorted(Path("openapi").rglob("*.yaml")) if Path("openapi").is_dir() else []:
+        text = path.read_text()
+        for match in re.finditer(r"x-sps-requirements:\s*\[([^\]]*)\]", text):
+            for ident in re.findall(r"SPS-[A-Z]+-\d{3}", match.group(1)):
+                out.append((ident, path))
+    return out
+
+
 def main():
     current, problems = collect(lambda p: p.read_text())
+
+    # The OpenAPI description is hand-written and normative, so nothing regenerates it when a
+    # chapter moves. A citation pointing at an identifier that no longer exists is the way that
+    # goes wrong, and it is invisible to every other check here.
+    cited = openapi_citations()
+    for ident, path in cited:
+        if ident not in current:
+            problems.append(f"{path}: cites {ident}, which no chapter defines")
 
     base = sys.argv[1] if len(sys.argv) > 1 else None
     if base:
@@ -99,6 +124,10 @@ def main():
         withdrawn = sum(1 for i, (_, b) in current.items() if i.startswith(f"SPS-{area}-") and WITHDRAWN.search(b))
         note = f", {withdrawn} withdrawn" if withdrawn else ""
         print(f"{area:7s} {len(numbers):3d} requirements, highest {max(numbers):3d}{note}")
+
+    if cited:
+        print(f"openapi {len(cited):3d} citations over {len({p for _, p in cited})} file(s), "
+              f"{len({i for i, _ in cited})} distinct requirements")
 
     if problems:
         print("\n" + "\n".join(problems), file=sys.stderr)

@@ -161,9 +161,17 @@ equally urgent and the announce waits on all of them.
 
 ## S6 — OpenAPI and the rendered specification
 
-- [ ] 25 — One hand-written OpenAPI 3.1 description per core chapter, each operation carrying the
-      requirement IDs it realises.
-- [ ] 26 — Descriptions for the modules.
+- [x] 25 — `openapi/sempods-core.yaml` — 14 paths, 28 operations, each naming the requirements it
+      realises. **One file for the whole of core rather than one per chapter**, against the original
+      plan: the chapters share the context rule, the canonical representation, the conditional-write
+      semantics and the error model, so five files would have to duplicate or cross-reference the
+      shared components and a reader would have to merge them before anything was usable.
+- [x] 26 — `openapi/module-media.yaml` and `openapi/module-mcp.yaml`. **No file for `oidc`**: its
+      pod-side surface is one callback route and the rest is standard OpenID Connect at a service
+      that is not the pod — a description would be the re-explanation the writing rules forbid.
+      The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
+      defines, which is the only drift a hand-written description can be guarded against locally.
+      **Add `requirements` and `openapi` to the ruleset's required checks.**
 - [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**
       — chosen over Redoc because it has a built-in API client, which is the whole point of putting
       it there.

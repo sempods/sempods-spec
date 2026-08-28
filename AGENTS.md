@@ -133,6 +133,8 @@ Front door and governance:
 
 The specification:
 
+- [`openapi/README.md`](openapi/README.md) — the hand-written OpenAPI descriptions, why they are
+  hand-written, and what they structurally cannot say
 - [`vocabulary/README.md`](vocabulary/README.md) — the RDF terms published under
   `https://schema.sempods.org/` and the stability guarantees they carry. Normative, and versioned
   with the specification rather than with any implementation
