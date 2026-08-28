@@ -160,6 +160,35 @@ def require(path, what, contains=None):
     return True
 
 
+def descriptions_match_chapters():
+    """Every module chapter has a description, and every description has a chapter.
+
+    Requiring the directory to hold *something* was still too loose: deleting one description left
+    three and passed. The fix is not a list of four filenames — a list is a thing to forget when a
+    module is added, and the check would then be enforcing yesterday's shape.
+
+    So the expectation is derived from the chapters, which is where a module comes into existence.
+    A module chapter without its description fails, and a description without a chapter fails too —
+    the second is what catches a rename that only moved one of the pair.
+
+    A module with no pod-side HTTP surface would make the first half wrong, and that is deliberate:
+    all three have one today, and deciding otherwise should cost somebody a visit to this function
+    rather than happening quietly.
+    """
+    modules = {p.stem for p in Path("spec/modules").glob("*.md")}
+    described = {p.stem.removeprefix("module-") for p in Path("openapi").glob("module-*.yaml")}
+
+    problems = [f"spec/modules/{m}.md has no openapi/module-{m}.yaml" for m in sorted(modules - described)]
+    problems += [f"openapi/module-{d}.yaml describes no spec/modules/{d}.md" for d in sorted(described - modules)]
+    if not Path("openapi/sempods-core.yaml").exists():
+        problems.append("openapi/sempods-core.yaml is missing — the core surface has no description")
+
+    if problems:
+        print("\n".join(f"error: {p}" for p in problems), file=sys.stderr)
+        return False
+    return True
+
+
 def openapi_citations():
     """Every identifier cited from an `x-sps-requirements` list, with the file citing it.
 
@@ -273,6 +302,7 @@ def main():
         require(Path("openapi"), "its citations are half of what this checks", contains="*.yaml"),
         # Not required when this run is the one creating it.
         writing or require(INDEX, "downstream repositories vendor it"),
+        descriptions_match_chapters(),
     ]
     if not all(checks):
         return 5

@@ -12,6 +12,10 @@ The cost of hand-writing is that nothing tells you when it drifts. Two things ar
 - **Every operation names the requirements it realises**, in `x-sps-requirements`. A citation
   pointing at an identifier no chapter defines fails CI
   ([`../.github/scripts/check-requirements.py`](../.github/scripts/check-requirements.py)).
+- **The set of files is derived from the chapters, not listed.** Every module chapter must have a
+  description and every description must have a chapter, so deleting one — or adding a module
+  without one — fails. A list of expected filenames would be a thing to forget the day a module is
+  added, and the check would then enforce yesterday's shape.
 - **Agreement with a running implementation is the conformance suite's job**, not a lint here. That
   suite does not exist yet; until it does, these files are checked against the chapters and not
   against any server.
