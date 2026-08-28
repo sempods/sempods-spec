@@ -58,6 +58,12 @@ MODULE_VERSIONS = {
 
 # Which part an area belongs to. The registry is `docs/agents/spec-authoring.md`; this is the same
 # split in the form the index needs.
+#
+# Both halves are listed, and an area in neither is an error rather than a default. Defaulting to
+# core is the dangerous direction: a mistyped area, or a module area added without touching this
+# map, would publish an optional obligation as one every implementation must satisfy — and
+# regenerating the index reproduces it, so nothing downstream would ever notice.
+CORE_AREAS = {"CORE", "CTX", "GRANT", "AUTH", "CRUD", "SPARQL", "FIND"}
 MODULE_AREAS = {"OIDC": "oidc", "MEDIA": "media", "MCP": "mcp"}
 
 
@@ -173,17 +179,52 @@ def openapi_citations():
 
 SUMMARY_END = re.compile(r'(?<=[.!?])\s')
 
+# The withdrawal preamble `spec-authoring.md` §"Withdraw, never delete" mandates, which sits in
+# front of the retained obligation: *Withdrawn in 0.3. Superseded by `SPS-X-NNN`.*
+PREAMBLE = re.compile(r'^\*Withdrawn\b(?P<note>[^*]*)\*\s*', re.I)
+SUCCESSOR = re.compile(r'Superseded by \[?`(SPS-[A-Z]+-\d{3})`')
+
 
 def summarise(body):
-    """The requirement's first sentence, flattened onto one line.
+    """The requirement's obligation in one sentence, and its withdrawal note if it has one.
 
-    A consumer of the index — the reference implementation's link checker, a conformance report —
+    A consumer of the index — the reference implementation's citation check, a conformance report —
     wants enough to recognise the requirement without fetching the chapter. The first sentence is
     where the obligation lives; everything after it is qualification.
+
+    A withdrawn requirement needs the preamble stepped over rather than summarised. Taking the
+    first sentence literally there yields `*Withdrawn in 0.3.` — no successor and no obligation,
+    which is precisely the case where recognising the identifier matters most, because it is
+    permanent and cited somewhere this project cannot see.
     """
     text = " ".join(body.replace("\n", " ").split()).lstrip("— ").strip()
-    parts = SUMMARY_END.split(text, 1)
-    return parts[0].strip() if parts else text
+
+    note = None
+    match = PREAMBLE.match(text)
+    if match:
+        note = ("Withdrawn" + match.group("note")).strip()
+        text = text[match.end():].strip()
+
+    first = SUMMARY_END.split(text, 1)
+    return (first[0].strip() if first else text), note
+
+
+def entry(ident, path, body):
+    """One requirement as the index publishes it."""
+    summary, note = summarise(body)
+    row = {
+        "id": ident,
+        "part": MODULE_AREAS.get(ident.split("-")[1], "core"),
+        "chapter": str(path).replace("\\", "/"),
+        "summary": summary,
+        "withdrawn": note is not None,
+    }
+    if note:
+        row["withdrawnNote"] = note
+        successor = SUCCESSOR.search(note)
+        if successor:
+            row["supersededBy"] = successor.group(1)
+    return row
 
 
 def build_index(found):
@@ -193,6 +234,19 @@ def build_index(found):
     consumer is the one who knows which it wants; a timestamp would make the file churn on every
     regeneration and turn a no-op into a diff.
     """
+    problems = []
+    for ident in found:
+        area = ident.split("-")[1]
+        if area not in CORE_AREAS and area not in MODULE_AREAS:
+            problems.append(
+                f"{ident} is in area '{area}', which is neither a core area nor a module. "
+                f"Register it in check-requirements.py and in docs/agents/spec-authoring.md, or "
+                f"fix the identifier."
+            )
+    if problems:
+        print("\n".join(problems), file=sys.stderr)
+        raise SystemExit(6)
+
     return {
         # Core's version. Kept under this name because it is what a consumer pins to say which
         # specification it implements, and core is the part that has no opt-out.
@@ -203,13 +257,7 @@ def build_index(found):
         "versions": {"core": SPEC_VERSION, **MODULE_VERSIONS},
         "repository": "https://github.com/sempods/sempods-spec",
         "requirements": [
-            {
-                "id": ident,
-                "part": MODULE_AREAS.get(ident.split("-")[1], "core"),
-                "chapter": str(path).replace("\\", "/"),
-                "summary": summarise(body),
-                "withdrawn": bool(WITHDRAWN.search(body)),
-            }
+            entry(ident, path, body)
             for ident, (path, body) in sorted(found.items())
         ],
     }

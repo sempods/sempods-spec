@@ -32,7 +32,10 @@ The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/s
 ## The requirement index
 
 [`../requirements.json`](../requirements.json) is the machine-readable form: every identifier, the
-part it belongs to, the chapter it lives in, its first sentence, and whether it is withdrawn. It is
+part it belongs to, the chapter it lives in, its first sentence, and whether it is withdrawn. A
+withdrawn one also carries its withdrawal note and, where it has a successor, that identifier —
+because the obligation is what makes a permanent identifier recognisable, and the withdrawal
+preamble sits in front of it. It is
 generated from the chapters and committed, and CI fails if the committed copy has drifted.
 
 **A version per part, not one for the file.** Core and each module version independently
