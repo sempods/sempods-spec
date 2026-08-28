@@ -1,0 +1,7 @@
+# What the site actually depends on. The lock beside this file is generated from it:
+#
+#     pip-compile --generate-hashes --output-file=site/requirements.txt site/requirements.in
+#
+# Edit this file, never the lock.
+mkdocs==1.6.1
+mkdocs-material==9.7.7

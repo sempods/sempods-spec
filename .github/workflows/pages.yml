@@ -31,12 +31,19 @@ jobs:
 
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          # The same version the lock was resolved on. A resolution can differ between
+          # interpreter versions, and a lock installed under one it was not built for is a lock
+          # that no longer describes what runs.
+          python-version: '3.14'
           cache: pip
           cache-dependency-path: site/requirements.txt
 
-      - name: Install the pinned renderer
-        run: pip install -r site/requirements.txt
+      # `--require-hashes` refuses anything whose artefact does not match the lock, transitive
+      # dependencies included. Without it the two roots are pinned and the twenty-seven packages
+      # underneath them — Jinja, Markdown, Pygments, the pymdown extensions — resolve to whatever
+      # is newest on each clean run, and those decide what the generated HTML looks like.
+      - name: Install the locked renderer
+        run: pip install --require-hashes -r site/requirements.txt
 
       # Fails on a chapter that exists but is in no navigation list, and on a description whose
       # `servers` block stopped matching what the demo-pod substitution looks for — the case

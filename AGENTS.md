@@ -150,6 +150,19 @@ The specification:
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
 
+The rendered site — [`site/`](site/):
+
+- [`site/index.md`](site/index.md) — the landing page at `spec.sempods.org`. Published content, and
+  the only page on that site not generated from the specification: it says what a pod is for a
+  reader who arrived without knowing, and warns that the text is not binding until `0.1`. Its links
+  are written against the staged layout and resolve nowhere in the repository, which is why lychee
+  skips this directory and the Pages build checks them instead.
+- [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
+  try-it page talks to, in the one place it is named, and refuses to build a page whose OpenAPI
+  descriptions would point somewhere else.
+- [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
+  purpose; the Scalar bundle is pinned with an integrity hash.
+
 Agent instructions — [`docs/agents/`](docs/agents/):
 
 - [`ai-instructions.md`](docs/agents/ai-instructions.md) — the hub: how instructions are discovered,

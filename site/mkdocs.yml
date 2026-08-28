@@ -7,6 +7,11 @@ repo_url: https://github.com/sempods/sempods-spec
 edit_uri: ""
 
 docs_dir: docs
+
+# Re-stages the sources before every build. Only load-bearing while serving — see `hooks.py`.
+hooks:
+  - ../hooks.py
+
 site_dir: ../_site
 
 theme:
