@@ -33,6 +33,21 @@ STAGE = SITE / "_stage"
 DEMO_ORIGIN = "https://sempods.org"
 DEMO_POD = "aaltra"
 
+# Every address a staged description is allowed to resolve a server to. A closed list rather
+# than "anything on the demo origin": `{origin}/wrong` is on the origin too, and Scalar would
+# send every request in that description to a base the pod does not serve.
+#
+# The second entry is the host-rooted well-known base `sempods-core.yaml` declares for protected
+# resource metadata, which is not under a pod and cannot be.
+#
+# A chapter that introduces a genuinely new server shape fails the build until it is added here.
+# That is the intent: this list decides where a reader's requests go, including authenticated
+# ones, so a new destination should be a decision somebody made rather than one that arrived.
+ALLOWED_ADDRESSES = {
+    f"{DEMO_ORIGIN}/{DEMO_POD}",
+    f"{DEMO_ORIGIN}/.well-known",
+}
+
 # Chapters, in reading order. The nav in `mkdocs.yml` repeats this order; a chapter added
 # here and forgotten there is caught by `--check`.
 SOURCES_MARKER = "/* SOURCES */"
@@ -238,10 +253,11 @@ def check() -> int:
                     problems.append(
                         f"{where} still holds an unresolved variable after staging "
                         f"({resolved!r}); it declares one it does not give a default")
-                elif resolved != DEMO_ORIGIN and not resolved.startswith(DEMO_ORIGIN + "/"):
+                elif resolved not in ALLOWED_ADDRESSES:
                     problems.append(
-                        f"{where} resolves to {resolved!r}, which is not on the demo pod's "
-                        f"origin. Whatever a reader presses on the try-it page goes there")
+                        f"{where} resolves to {resolved!r}, which is not one of the addresses "
+                        f"the demo pod serves ({', '.join(sorted(ALLOWED_ADDRESSES))}). "
+                        f"Whatever a reader presses in that description goes there")
                 for name, value in variables.items():
                     wanted = {"origin": DEMO_ORIGIN, "pod": DEMO_POD}.get(name)
                     if wanted is not None and value != wanted:

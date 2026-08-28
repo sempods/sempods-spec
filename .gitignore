@@ -3,3 +3,9 @@
 # Staged and rendered by `site/build.py`; neither is committed.
 site/_stage/
 _site/
+
+# `site/hooks.py` imports `site/build.py`, so running the site build leaves bytecode behind.
+# Nothing here was imported before that — `check-requirements.py` is only ever executed — which
+# is why this repository had no Python ignore rule until now.
+__pycache__/
+*.pyc
