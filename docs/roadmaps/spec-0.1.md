@@ -136,11 +136,15 @@ equally urgent and the announce waits on all of them.
 
 ## S4 — Modules
 
-- [ ] 20 — `oidc` (`OIDC`) — from `docs/auth/identity.md`, split from the identity service's own
-      internals, which stay with the implementation.
-- [ ] 21 — `media` (`MEDIA`) — from `docs/media.md`.
-- [ ] 22 — `mcp` (`MCP`) — from `docs/mcp/`. `clients.md` stays behind: observed client behaviour is
-      operational knowledge, not a contract.
+- [x] 20 — `oidc` (`OIDC`) — `SPS-OIDC-001`…`013`. The split ran differently than planned: what a
+      pod stores about a person holds with or without an identity service, so it became
+      `SPS-AUTH-049`…`054` in **core**, and the module carries only how a person arrives.
+- [x] 21 — `media` (`MEDIA`) — `SPS-MEDIA-001`…`025`. The SSRF requirement lists its five parts
+      separately because each closes a distinct bypass and four of five is none.
+- [x] 22 — `mcp` (`MCP`) — `SPS-MCP-001`…`028`. `clients.md` stayed behind as planned: observed
+      client behaviour is operational knowledge, not a contract. The hosted multi-pod service is
+      explicitly **not** in the module — it is a different thing with no anonymous mode, and the
+      chapter says so rather than leaving it to be assumed.
 
 ## S5 — Vocabulary
 

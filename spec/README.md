@@ -58,9 +58,9 @@ got has no contract.
 
 | Module | Area | Status | Source being extracted from |
 |---|---|---|---|
-| `modules/oidc.md` — the OIDC bridge and WebID identities | `OIDC` | planned | `docs/auth/identity.md` |
-| `modules/media.md` — pod-owned binaries, the context-bound registry | `MEDIA` | planned | `docs/media.md` |
-| `modules/mcp.md` — the per-pod MCP endpoint and its tool catalogue | `MCP` | planned | `docs/mcp/` |
+| [`modules/oidc.md`](modules/oidc.md) — the OIDC bridge: identity assertions, how a pod obtains one, federation | `OIDC` | **present** | `docs/auth/identity.md`, split |
+| [`modules/media.md`](modules/media.md) — pod-owned binaries: content addressing, the context-bound registry, delivery, lifecycle | `MEDIA` | **present** | `docs/media.md` |
+| [`modules/mcp.md`](modules/mcp.md) — the per-pod MCP endpoint, authentication modes, the tool catalogue, closed schemas | `MCP` | **present** | `docs/mcp/endpoint.md`, `tools.md`, `authentication.md` |
 
 ## OpenAPI
 
