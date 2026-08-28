@@ -158,8 +158,17 @@ so that a later version of this chapter can specify them without a migration. Un
 
 <a id="SPS-FIND-022"></a>
 **`SPS-FIND-022`** — An implementation MAY emit per-hit metadata using the reserved vocabulary terms.
-Where it does, that metadata is **transient**: it belongs to the response, MUST NOT be stored, MUST
-NOT carry a context, and a caller MUST NOT expect to retrieve it again.
+Where it does, that metadata is **transient**: it MUST NOT be written to the store, it MUST NOT
+appear in the named-graph grouping that `include_contexts=true` produces, and a caller MUST NOT
+expect to retrieve it again.
+
+This does not weaken [`SPS-CTX-001`](contexts.md#SPS-CTX-001), and the distinction is worth being
+exact about because the two look like they collide. That invariant governs **statements a pod
+stores** — every one of those belongs to exactly one context. A `find` response is a
+representation the server computes and hands over; the matched statements in it came from contexts
+and can be grouped by them, while a metadata node describes the *response* and was in no context to
+begin with. An implementation that stored one would be creating a statement with no context, which
+the invariant forbids — which is what `MUST NOT be written to the store` says.
 
 <a id="SPS-FIND-023"></a>
 **`SPS-FIND-023`** — Authoritative facts about a hit — its types, its labels, its timestamps — MUST

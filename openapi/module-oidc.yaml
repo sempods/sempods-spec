@@ -1,0 +1,85 @@
+openapi: 3.1.0
+
+# The OIDC module's pod-side HTTP surface, which is one route.
+#
+# That is the honest size of it, and the file exists for exactly that reason: the callback is the
+# only thing the module adds to a *pod*, and leaving it out of the description set meant a route
+# that is required and documented nowhere. Everything else the module specifies happens at an
+# identity service, as standard OpenID Connect — restating that here would be the re-explanation
+# the writing rules forbid, so it is named and linked instead.
+
+info:
+  title: sempods — OIDC module
+  version: '0.1'
+  summary: The pod's callback, and nothing else.
+  description: |
+    Binds only an implementation advertising `https://schema.sempods.org/module/oidc` at the
+    conformance endpoint.
+
+    A pod is an ordinary OpenID Connect relying party. It discovers the issuer through the issuer's
+    own discovery document, sends the browser to the issuer's authorization endpoint with PKCE, a
+    `state` and a `nonce`, and fetches the assertion over a back channel with a verifier that never
+    travelled through the browser. None of those are pod routes.
+
+    What the pod serves is the resumption point. The request the person was making is parked on the
+    server under the `state`; the redirect carries a single-use code and never the assertion itself.
+  license:
+    name: CC BY 4.0
+    identifier: CC-BY-4.0
+
+externalDocs:
+  description: The module chapter
+  url: https://github.com/sempods/sempods-spec/blob/main/spec/modules/oidc.md
+
+servers:
+  - url: '{origin}/{pod}'
+    variables:
+      origin: { default: 'https://example.org' }
+      pod: { default: alice }
+
+paths:
+
+  /_system/auth/oidc/callback:
+    get:
+      operationId: oidcCallback
+      summary: Resume the parked request once the issuer has named the person.
+      description: |
+        The redirect carries a single-use code, never the identity assertion. Delivering the
+        assertion to a redirect address in any browser-visible form is what
+        `SPS-OIDC-009` forbids — the shape that let any site collect a visitor's identity by
+        asking for it.
+
+        A `state` this pod did not park is rejected, and each one is consumed exactly once.
+      security: [{}]
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+          description: Single-use. Exchanged for the assertion over a back channel.
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+          description: Names the parked request. Rejected if this pod did not park it.
+        - name: error
+          in: query
+          required: false
+          schema: { type: string }
+          description: Present instead of `code` where the sign-in failed at the issuer.
+        - name: error_description
+          in: query
+          required: false
+          schema: { type: string }
+      x-sps-requirements: [SPS-OIDC-002, SPS-OIDC-004, SPS-OIDC-006, SPS-OIDC-007, SPS-OIDC-008, SPS-OIDC-009, SPS-OIDC-010, SPS-OIDC-011, SPS-OIDC-014, SPS-OIDC-015]
+      responses:
+        '302':
+          description: |
+            The parked request resumes — in the common case, back into the pod's own authorization
+            flow with the person now known.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '400':
+          description: |
+            A `state` this pod did not park, one already consumed, or an assertion that failed
+            validation. Issuer, audience, nonce, expiry and signature are checked together.

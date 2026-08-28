@@ -165,9 +165,18 @@ MUST NOT reject a `did:web:` authorization request solely because it carries no 
 contexts. The authorizing person selects contexts at consent time.
 
 <a id="SPS-AUTH-025"></a>
-**`SPS-AUTH-025`** — On success the implementation MUST redirect to
-`redirect_uri?code=…&state=…`. On failure it MUST redirect with `error` and `error_description`,
-and MAY include `error_uri`. A client MUST treat `error_uri` as optional.
+**`SPS-AUTH-025`** — On success the implementation MUST redirect to the registered `redirect_uri`
+carrying `code` and `state`; on failure, carrying `error` and `error_description`, and OPTIONALLY
+`error_uri`. A client MUST treat `error_uri` as optional.
+
+<a id="SPS-AUTH-055"></a>
+**`SPS-AUTH-055`** — The response parameters MUST be **added to** the redirect URI's query
+component per RFC 6749 §4.1.2, preserving any component it already carries. An implementation MUST
+NOT construct the redirect by appending `?` to the registered value.
+
+A registered address may legitimately carry a query — `https://app.example/cb?tenant=a` is an
+ordinary redirect URI. Appending `?code=…` to it produces a second `?`, which puts the
+authorization response inside the value of `tenant` and loses the code.
 
 ## 5. Consent
 

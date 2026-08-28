@@ -23,6 +23,7 @@ The cost of hand-writing is that nothing tells you when it drifts. Two things ar
 | [`sempods-core.yaml`](sempods-core.yaml) | the whole core HTTP surface — conformance, contexts, resources, slots, query, retrieval, auth |
 | [`module-media.yaml`](module-media.yaml) | the media module |
 | [`module-mcp.yaml`](module-mcp.yaml) | the MCP module |
+| [`module-oidc.yaml`](module-oidc.yaml) | the OIDC module — one route |
 
 **One file for the whole of core**, rather than one per chapter as first planned. The chapters share
 the context rule, the canonical representation, the conditional-write semantics and the error model;
@@ -30,9 +31,11 @@ split into five documents, a reader has to merge them before anything is usable,
 components have to be duplicated or referenced across files. A module is different — it is optional,
 so its description has to be separable, and it is.
 
-There is **no file for the OIDC module**. Its pod-side surface is one callback route, and everything
-else it specifies is standard OpenID Connect at an identity service that is not the pod. A
-description restating OIDC would be the re-explanation the writing rules rule out.
+**The OIDC file describes one route**, and that is the whole of what the module adds to a *pod*.
+Everything else it specifies happens at an identity service, as standard OpenID Connect; restating
+that here would be the re-explanation the writing rules rule out, so it is named and linked instead.
+A file for one route still earns its place — leaving it out meant a required route that no
+description mentioned, which is worse than a short document.
 
 ## What these files cannot say
 

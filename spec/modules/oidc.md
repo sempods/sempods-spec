@@ -82,6 +82,15 @@ That origin restriction is what stands in for a client secret. It is the same ru
 **`SPS-OIDC-011`** — The request the person was making MUST be parked on the server under the
 `state` and resumed at the callback. It MUST NOT be carried through the browser.
 
+<a id="SPS-OIDC-014"></a>
+**`SPS-OIDC-014`** — A pod providing this module MUST serve a callback route under its own
+control-plane prefix, and it is the **only** HTTP surface the module adds to a pod. Everything else
+this chapter specifies happens at the identity service.
+
+<a id="SPS-OIDC-015"></a>
+**`SPS-OIDC-015`** — The callback MUST reject a `state` it did not park, and MUST consume each one
+exactly once.
+
 ## 4. Federation
 
 <a id="SPS-OIDC-012"></a>

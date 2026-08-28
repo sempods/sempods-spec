@@ -51,6 +51,16 @@ PUT    {pod}/_system/media/{id}?context=<ctx>     assign to a further context
 DELETE {pod}/_system/media/{id}?context=<ctx>     drop one assignment
 ```
 
+<a id="SPS-MEDIA-026"></a>
+**`SPS-MEDIA-026`** — On a raw upload, the request's `Content-Type` header is the media's declared
+type. An implementation MUST record it, MUST return it as the assignment's content type, and MUST
+NOT infer it from the bytes.
+
+Delivery depends on it — `SPS-MEDIA-017` decides inline against attachment from the declared type —
+so an implementation with nowhere to carry it would have to sniff, and sniffing is the thing
+`SPS-MEDIA-016` disables on the way out. Where no type is declared, an implementation MUST treat the
+upload as `application/octet-stream`, which the allowlist serves as an attachment.
+
 <a id="SPS-MEDIA-006"></a>
 **`SPS-MEDIA-006`** — `POST`, `PUT` and `DELETE` MUST each resolve exactly one write context, with
 the rules of [`SPS-CRUD-007`](../core/lod-crud.md#SPS-CRUD-007).

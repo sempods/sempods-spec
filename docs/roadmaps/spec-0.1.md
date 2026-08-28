@@ -204,6 +204,16 @@ equally urgent and the announce waits on all of them.
 
 ## Open decisions
 
+- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
+  On a write, an unregistered context answers `404` and a registered one the caller may not write
+  answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.
+  It is what the reference implementation does and the specification is descriptive, so it is
+  recorded rather than silently corrected — but it contradicts the security stance in `AGENTS.md`,
+  which calls a requirement leaking context topology a defect. The shape of the fix is already in
+  the specification: authorize **before** testing existence, the way context deletion does
+  ([`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020)). Changing it means a matching change in
+  the reference implementation, which is why it is a decision and not a text edit.
+
 - **`NAMESPACE.md` overstates what the vocabulary is used for.** It says the three `sps:` terms are
   "the metadata a `find` response carries about each hit" and that they were adopted because "an
   implementation needed them, used them". Neither is true today: the terms appear in no Kotlin

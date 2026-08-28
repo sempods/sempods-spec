@@ -54,11 +54,19 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020]
+      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026]
       requestBody:
         required: true
+        description: |
+          On a raw upload the request's `Content-Type` **is** the media's declared type: it is
+          recorded, returned as the assignment's content type, and decides inline against
+          attachment on delivery. It is never inferred from the bytes. Any media type is accepted
+          here — `application/octet-stream` below stands for all of them, and is also the fallback
+          where none is declared.
+
+          The `…media-source+json` body is the other shape: it asks the server to fetch a URL.
         content:
-          application/octet-stream:
+          '*/*':
             schema: { type: string, format: binary }
           application/vnd.sempods.media-source+json:
             schema: { $ref: '#/components/schemas/MediaSource' }

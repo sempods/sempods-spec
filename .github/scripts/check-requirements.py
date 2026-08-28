@@ -6,7 +6,8 @@ Three of them, and none is checkable by a link checker:
 1. An identifier's anchor matches it exactly. A mismatched anchor makes a citation resolve to the
    top of the page instead of failing, so the reader sees the wrong requirement and gets no sign
    of it.
-2. No identifier is used twice.
+2. No identifier is used twice — including twice inside one chapter, which is the shape a
+   copy-paste produces and the one an identifier→body mapping used to swallow.
 3. No identifier disappears. `SPS-CORE-003` says an identifier is never reassigned, never
    renumbered and never deleted — a retired requirement is marked withdrawn and keeps its text.
    That promise is what makes an identifier safe to cite from a conformance suite this project
@@ -33,11 +34,17 @@ SPEC = Path("spec")
 
 
 def requirements(text):
-    """Identifier → the paragraph it opens, for one document."""
-    out = {}
-    for match in re.finditer(r'^\*\*`(SPS-[A-Z]+-\d{3})`\*\*(.*?)(?=\n\n|\Z)', text, re.M | re.S):
-        out[match.group(1)] = match.group(2)
-    return out
+    """Every `(identifier, body)` a document opens, in order — a LIST, not a mapping.
+
+    A mapping loses the case this guard exists for. Two paragraphs opening with the same
+    identifier in one chapter — the shape a copy-paste produces — would collapse into one entry
+    before anything counted them, and CI would report the identifiers as consistent while one of
+    them silently addressed the wrong text.
+    """
+    return [
+        (m.group(1), m.group(2))
+        for m in re.finditer(r'^\*\*`(SPS-[A-Z]+-\d{3})`\*\*(.*?)(?=\n\n|\Z)', text, re.M | re.S)
+    ]
 
 
 def collect(read):
@@ -57,11 +64,36 @@ def collect(read):
             above = lines[no - 1] if no else ""
             if f'<a id="{match.group(1)}">' not in above:
                 problems.append(f"{path}:{no + 1}: {match.group(1)} has no anchor line above it")
-        for ident, body in requirements(text).items():
+        for ident, body in requirements(text):
             if ident in found:
-                problems.append(f"{ident} appears in both {found[ident][0]} and {path}")
+                where = found[ident][0]
+                problems.append(
+                    f"{ident} appears twice in {path}" if where == path
+                    else f"{ident} appears in both {where} and {path}"
+                )
             found[ident] = (path, body)
     return found, problems
+
+
+def self_test():
+    """Prove the duplicate check before trusting it with a pull request.
+
+    The same shape the DCO workflow uses on its own predicate, and for the same reason: the
+    alternative is trusting a claim in a commit message, which protects nothing the next time this
+    function is touched. Both cases earn their place — a duplicate inside one document is the one a
+    mapping used to swallow, and the distinct pair is what must not be reported.
+    """
+    doc = (
+        '<a id="SPS-X-001"></a>\n**`SPS-X-001`** — first.\n\n'
+        '<a id="SPS-X-001"></a>\n**`SPS-X-001`** — a copy-paste of the same identifier.\n\n'
+        '<a id="SPS-X-002"></a>\n**`SPS-X-002`** — distinct.\n'
+    )
+    found = requirements(doc)
+    idents = [i for i, _ in found]
+    if idents != ["SPS-X-001", "SPS-X-001", "SPS-X-002"]:
+        print(f"error: self-test failed — requirements() returned {idents}", file=sys.stderr)
+        return False
+    return True
 
 
 def openapi_citations():
@@ -82,6 +114,9 @@ def openapi_citations():
 
 
 def main():
+    if not self_test():
+        return 3
+
     current, problems = collect(lambda p: p.read_text())
 
     # The OpenAPI description is hand-written and normative, so nothing regenerates it when a

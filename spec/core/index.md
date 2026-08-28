@@ -141,15 +141,24 @@ empty result then means is the chapter's business: a resource read answers `404`
 `find` answers success with nothing in it.
 
 <a id="SPS-CORE-018"></a>
-**`SPS-CORE-018`** — On a **write**, the two failures are distinguished: a context that is not
-registered MUST produce `404`, and a registered context the caller may not write MUST produce `403`.
+**`SPS-CORE-018`** — On a **write**, the two failures are currently distinguished: a context that is
+not registered produces `404`, and a registered context the caller may not write produces `403`.
 
-The asymmetry with `SPS-CORE-017` is deliberate and worth understanding rather than
-"fixing". A write names exactly one context, and the caller learned that name from the discovery
-route, which lists only what they may use. Naming one they were never told about does reveal that it
-exists — a much smaller surface than a read downscope, which accepts a list and would otherwise let
-a caller enumerate a pod's context tree by watching which entries changed the answer. A writer who
-cannot tell "no such context" from "not yours" also cannot act on either, and would retry forever.
+**This is a known defect, recorded rather than blessed.** It is what the reference implementation
+does, and while this specification is descriptive that is what it says — but the asymmetry with
+`SPS-CORE-017` is a context-enumeration oracle, not a design. A caller who can reach the write path
+learns which guessed context IRIs are registered by watching which answer comes back, and context
+names are freely chosen, so guessing is not hard.
+
+What makes it narrower than the read path, and only narrower: a write names one context per request
+rather than accepting a list, so enumeration costs one request per guess.
+
+What an implementation is asked to weigh, given that this requirement will change: answering `404`
+for both costs a caller the ability to tell "no such context" from "not yours", and a client that
+cannot tell them apart retries a permission problem forever. Checking authorization *before*
+existence — which context deletion already does ([`SPS-CTX-020`](contexts.md#SPS-CTX-020)) — gives
+`403` without confirming anything, and is the shape this should take. Closing it is on the
+specification's roadmap, before `0.1` becomes prescriptive.
 
 ## 6. Standards profiled
 
