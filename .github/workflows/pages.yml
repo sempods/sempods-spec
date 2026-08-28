@@ -27,9 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           # The same version the lock was resolved on. A resolution can differ between
           # interpreter versions, and a lock installed under one it was not built for is a lock
@@ -55,7 +55,7 @@ jobs:
       - name: Check the inputs, then render
         run: python3 site/build.py
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'
         with:
           path: site/_site
@@ -72,4 +72,4 @@ jobs:
       id-token: write
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
