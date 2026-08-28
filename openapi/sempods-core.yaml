@@ -383,7 +383,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-046, SPS-CRUD-050, SPS-CRUD-051]
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-046, SPS-CRUD-050, SPS-CRUD-051, SPS-CRUD-057]
       responses:
         '200':
           description: The slot's values.

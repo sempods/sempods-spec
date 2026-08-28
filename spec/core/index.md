@@ -121,8 +121,18 @@ The chapters that follow use these status codes with these meanings and do not r
 | `500` | Server error |
 
 <a id="SPS-CORE-015"></a>
-**`SPS-CORE-015`** — A missing bearer token and a rejected bearer token MUST produce the same
-response: `401` with `invalid_token`. An implementation MUST NOT let a caller distinguish the two.
+**`SPS-CORE-015`** — **On an operation that requires authentication**, a missing bearer token and a
+rejected bearer token MUST produce the same response: `401` with `invalid_token`. An implementation
+MUST NOT let a caller distinguish the two.
+
+The qualifier is load-bearing and was missing. A public read requires no authentication
+([`SPS-GRANT-031`](grants.md#SPS-GRANT-031)), so a request carrying no token is not a failed
+authentication there — it is a request by a caller who never claimed to be anyone.
+
+What does **not** depend on the operation: a token that was *presented* and rejected is always
+`401`, on every route, including one an anonymous caller could have used without any token at all.
+An implementation MUST NOT fall back to anonymous when a presented credential fails
+([`SPS-AUTH-043`](auth.md#SPS-AUTH-043)).
 
 <a id="SPS-CORE-016"></a>
 **`SPS-CORE-016`** — Where an operation is one an unauthenticated caller may perform, the absence of

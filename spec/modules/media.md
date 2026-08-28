@@ -187,6 +187,18 @@ to fetch. Where it does, all of the following MUST hold:
 - the whole chain is re-run for every redirect hop;
 - a size cap is enforced while streaming rather than after.
 
+<a id="SPS-MEDIA-030"></a>
+**`SPS-MEDIA-030`** — Where the server fetched the bytes, the declared type MUST be the
+`Content-Type` the fetched response carried. Where it carried none, or none that parses, the
+implementation MUST record `application/octet-stream`. It MUST NOT infer a type from the bytes or
+from a filename.
+
+`SPS-MEDIA-026` answers this for a raw upload and said nothing about the fetched path, which leaves
+the same media reachable under a different `Content-Type`, a different `ETag`
+([`SPS-MEDIA-014`](#SPS-MEDIA-014)) and a different disposition depending on which route stored it.
+Inferring from the filename is the tempting alternative and the worst one: the filename comes from
+the same untrusted source as the bytes.
+
 <a id="SPS-MEDIA-020"></a>
 **`SPS-MEDIA-020`** — The address policy MUST be derived from the IANA special-purpose address
 registries' *not globally reachable* column, not from a hand-written list of private ranges.
@@ -213,9 +225,17 @@ period after a media becomes unreferenced before removing its bytes.
 <a id="SPS-MEDIA-024"></a>
 **`SPS-MEDIA-024`** — Collection MUST delete the stored object before the registry entry.
 
-That order is the one whose interrupted state is harmless. An object with no entry is inert and
-discoverable by a reconciliation report; an entry with no object is a media that reads as present
-and fails on access.
+The reason is **retryability**, not the harmlessness of the interrupted state — and getting that
+backwards is easy, because the interrupted state of this order looks like the worse one.
+
+Interrupt it and an entry survives whose object is gone. That entry is still marked unreferenced and
+still past the grace period, so the next collection run finds it, deletes an object that is already
+gone, and completes. The damage is bounded by one sweep interval and repairs itself.
+
+Delete the entry first and the interruption leaves an object nothing points at — and nothing will
+ever retry, because the entry that drove the sweep is what went first. That is a permanent leak, and
+only reconciliation can even find it, which [`SPS-MEDIA-025`](#SPS-MEDIA-025) requires to report
+rather than repair.
 
 <a id="SPS-MEDIA-025"></a>
 **`SPS-MEDIA-025`** — A reconciliation facility, where offered, MUST report divergence and MUST NOT

@@ -94,8 +94,22 @@ site that asks the question — the read path, the write path and context manage
 the same answer.
 
 <a id="SPS-GRANT-008"></a>
-**`SPS-GRANT-008`** — A `#manage` grant MUST expand only over contexts that are **registered**. An
-implementation MUST NOT treat it as authority over a context that does not exist.
+**`SPS-GRANT-008`** — When a `#manage` grant is **expanded into a set of contexts** — to answer what
+a caller may read, to list what they may write, or to sweep delegations on revocation — the expansion
+MUST cover registered contexts only. An implementation MUST NOT report authority over a context that
+does not exist.
+
+<a id="SPS-GRANT-033"></a>
+**`SPS-GRANT-033`** — Expansion is not the same question as authorization of a single target. Where
+a request names one context, a `#manage` grant covering it under
+[`SPS-GRANT-007`](#SPS-GRANT-007) MUST authorize the request **whether or not that context is
+registered yet**.
+
+Without this split a manager could never create anything. Creating `R/sub` names a context that is
+by definition not registered at the moment of the request, so an implementation applying the
+expansion rule to the create check would refuse every creation inside the sandbox the grant exists
+to give — which is the whole mechanism a service client works through
+([`SPS-AUTH-014`](auth.md#SPS-AUTH-014)).
 
 ## 4. What implies what
 

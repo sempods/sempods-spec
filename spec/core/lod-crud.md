@@ -267,6 +267,15 @@ real HTTP resource: it has content, it answers `GET`, and it takes the standard 
 | `POST` | add the given value or values |
 | `DELETE` | empty the slot |
 
+<a id="SPS-CRUD-057"></a>
+**`SPS-CRUD-057`** — A slot `GET` MUST support `include_contexts` with the same meaning it has on a
+resource read ([`SPS-CRUD-022`](#SPS-CRUD-022)): default is the merged value array, and `true`
+switches to the named-graph form grouped by source context. It MUST change the representation only.
+
+Without this the parameter is offered on a route that has nothing to do with it. A slot read spans
+the same union of readable contexts a resource read does, so the same question — which context did
+this value come from — is the same question here.
+
 <a id="SPS-CRUD-042"></a>
 **`SPS-CRUD-042`** — The single-edge route MUST offer `DELETE`, removing exactly
 `(subject, predicate, target)` and leaving the slot's other values in place. It MUST be available

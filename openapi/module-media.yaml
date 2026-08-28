@@ -93,7 +93,14 @@ paths:
       x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-012, SPS-MEDIA-015]
       responses:
         '200':
-          description: The metadata.
+          description: |
+            The metadata. Private and credential-varying like the content response, and for a
+            sharper reason: the assignment list is *filtered to what this caller may read*
+            (SPS-MEDIA-012), so a shared cache serving it to a second caller discloses context
+            names the first one was trusted with and the second was not.
+          headers:
+            Cache-Control: { schema: { type: string, examples: ['private, no-store'] } }
+            Vary: { schema: { type: string, examples: ['Authorization'] } }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Media' }
