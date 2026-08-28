@@ -4,7 +4,7 @@ The normative text lives in this directory: six core chapters and three modules,
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 
-[the 0.1 roadmap](https://github.com/sempods/sempods-spec/blob/main/docs/roadmaps/spec-0.1.md) is what remains before the `0.1`
+[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is what remains before the `0.1`
 release.
 
 ## How to read a chapter
@@ -27,11 +27,11 @@ release.
 - **Prose is not normative.** The paragraphs around the requirements exist to make them readable.
   Where prose and a requirement seem to disagree, the requirement is what binds.
 
-The authoring rules are in [`../docs/agents/spec-authoring.md`](https://github.com/sempods/sempods-spec/blob/main/docs/agents/spec-authoring.md).
+The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 
 ## The requirement index
 
-[`../requirements.json`](https://github.com/sempods/sempods-spec/blob/main/requirements.json) is the machine-readable form: every identifier, the
+[`../requirements.json`](../requirements.json) is the machine-readable form: every identifier, the
 part it belongs to, the chapter it lives in, its first sentence, and whether it is withdrawn. A
 withdrawn one also carries its withdrawal note and, where it has a successor, that identifier —
 because the obligation is what makes a permanent identifier recognisable, and the withdrawal
@@ -42,7 +42,7 @@ generated from the chapters and committed, and CI fails if the committed copy ha
 ([`SPS-CORE-005`](core/index.md#SPS-CORE-005)), so `versions` carries all of them and every
 requirement names its `part` rather than repeating a number that could then disagree with it.
 `specVersion` remains core's, because that is what a consumer pins to say which specification it
-implements. The module set comes from the chapters in [`modules/`](https://github.com/sempods/sempods-spec/tree/main/spec/modules) rather than from a
+implements. The module set comes from the chapters in [`modules/`](modules/) rather than from a
 list, and CI fails if a module has no version or a version has no module — two registries that must
 agree are two registries somebody keeps in step by remembering to. They are all equal today, which is exactly why the shape is settled now: adding the
 field after somebody has vendored the file is a change every consumer has to absorb.
@@ -88,7 +88,7 @@ got has no contract.
 
 ## OpenAPI
 
-[`openapi/`](https://github.com/sempods/sempods-spec/tree/main/openapi) holds hand-written OpenAPI 3.1 descriptions — one for the whole of
+[`../openapi/`](../openapi/) holds hand-written OpenAPI 3.1 descriptions — one for the whole of
 core, one per module that has an HTTP surface of its own. Hand-written and part of the contract, not
 generated from any implementation: a generated description specifies whatever the reference
 implementation happens to do, and an implementer in another language would read one

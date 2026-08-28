@@ -52,8 +52,52 @@ ALLOWED_ADDRESSES = {
 # here and forgotten there is caught by `--check`.
 SOURCES_MARKER = "/* SOURCES */"
 
+# Where the repository is read when a staged document points at something the site does not
+# publish. Only the staged copies get these; the files themselves stay ref-relative, so a
+# reader on a tag follows links within that tag rather than being sent to whatever `main`
+# holds — which for `requirements.json` would mean reading one revision's requirements
+# alongside another revision's chapters.
+REPOSITORY = "https://github.com/sempods/sempods-spec"
+
+# The repository paths `stage()` copies. A link that lands inside one of these resolves on the
+# site and stays relative; anything else has to leave.
+STAGED = ("spec/", "vocabulary/", "GOVERNANCE.md")
+
+RELATIVE_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)]+)\)")
+
 CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
 MODULES = ["oidc", "media", "mcp"]
+
+
+def with_repository_links(text: str, source: Path) -> str:
+    """Point a staged document's off-site links at the repository.
+
+    A chapter may link to the roadmap, the authoring rules or `requirements.json`, and none of
+    those is published. Rewritten here rather than written absolutely in the file, because the
+    file is also read on GitHub at a tag or a branch, where a hard-coded `main` silently mixes
+    one revision's text with another's.
+
+    A link is left alone when it resolves to something `stage()` copies. A directory is not a
+    page, so a link to one leaves too.
+    """
+    def rewrite(match: "re.Match[str]") -> str:
+        target = match.group(1)
+        path, _, fragment = target.partition("#")
+        if not path:
+            return match.group(0)
+        resolved = (source.parent / path).resolve()
+        try:
+            relative = resolved.relative_to(ROOT).as_posix()
+        except ValueError:
+            return match.group(0)
+        staged = any(relative == root.rstrip("/") or relative.startswith(root) for root in STAGED)
+        if staged and resolved.is_file():
+            return match.group(0)
+        kind = "tree" if resolved.is_dir() else "blob"
+        suffix = f"#{fragment}" if fragment else ""
+        return f"]({REPOSITORY}/{kind}/main/{relative}{suffix})"
+
+    return RELATIVE_LINK.sub(rewrite, text)
 
 
 def configure() -> None:
@@ -84,6 +128,11 @@ def stage() -> None:
     shutil.copy(ROOT / "GOVERNANCE.md", docs / "GOVERNANCE.md")
     shutil.copytree(ROOT / "vocabulary", docs / "vocabulary")
     shutil.copy(SITE / "index.md", docs / "index.md")
+
+    for staged in sorted(docs.rglob("*.md")):
+        source = ROOT / staged.relative_to(docs)
+        if source.is_file():
+            staged.write_text(with_repository_links(staged.read_text(), source))
 
     api = docs / "api"
     api.mkdir()

@@ -18,4 +18,13 @@ _spec.loader.exec_module(_module)
 
 
 def on_pre_build(config, **kwargs):  # noqa: ARG001 - MkDocs passes more than this needs
+    # Checked here and not only at startup. A served rebuild is triggered by editing a source,
+    # and an edited OpenAPI description is exactly the thing the address check exists for — a
+    # server URL changed while the preview is open would otherwise reach the try-it page
+    # unvalidated, and that page sends a maintainer's real bearer token wherever it points.
+    #
+    # Raising rather than exiting: MkDocs catches this, keeps serving what it already built, and
+    # prints the reason. Killing the server on a typo would be worse than showing stale content.
+    if _module.check():
+        raise RuntimeError("the site's inputs are not in a state that can be served — see above")
     _module.stage()

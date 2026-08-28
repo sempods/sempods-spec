@@ -200,11 +200,12 @@ here rather than copied.
 
 ## Before you commit
 
-1. Both checks pass. CI runs them; locally:
+1. All three checks pass. CI runs them; locally:
 
    ```bash
    lychee --offline --include-fragments --no-progress .
    .github/scripts/check-requirements.py origin/main
+   python3 site/build.py --check
    ```
 
    Adding or withdrawing a requirement also regenerates the index, which is committed:
@@ -228,22 +229,33 @@ here rather than copied.
 
 ## What this repository deliberately does not have
 
-**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand.
-Gradle arrives with the conformance suite and not before — a build file that exists to run nothing
-is a dependency to maintain for no return.
+**No build system for the specification.** No Gradle, no npm, no formatter, no linter. Markdown is
+written by hand, and a chapter is a file somebody wrote. Gradle arrives with the conformance suite
+and not before — a build file that exists to run nothing is a dependency to maintain for no return.
 
-Two checks, both in CI and both runnable by hand:
+`site/` is the exception and stays one: it renders the published site and has a locked dependency
+tree of its own. Nothing under `spec/` depends on it, and the specification is complete without it.
+
+Three checks, all in CI and all runnable by hand:
 
 ```bash
 lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
-python3 site/build.py --check                        # the rendered site's inputs
-python3 site/build.py                                # render it to site/_site
-python3 site/build.py --serve                        # …and watch, on :8000
 .github/scripts/check-requirements.py origin/main      # the identifier promises
+python3 site/build.py --check                          # what the rendered site assumes
 ```
 
-The second one exists because `SPS-CORE-003` — an identifier is never reassigned, renumbered or
-deleted — is a promise no link checker can see, and deleting a requirement looks like tidying.
+The **requirement checker** exists because `SPS-CORE-003` — an identifier is never reassigned,
+renumbered or deleted — is a promise no link checker can see, and deleting a requirement looks like
+tidying. The **site check** exists because the try-it page sends a reader's requests, authenticated
+ones included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but
+the demo pod.
+
+Rendering the site, which is not a check:
+
+```bash
+python3 site/build.py                                  # render to site/_site
+python3 site/build.py --serve                          # …and watch, on :8000
+```
 
 **No stub chapters.** See the working rules above.
 
