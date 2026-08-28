@@ -175,17 +175,21 @@ equally urgent and the announce waits on all of them.
       The checker now fails on an `x-sps-requirements` citation naming an identifier no chapter
       defines, which is the only drift a hand-written description can be guarded against locally.
       Both new jobs are in the ruleset's required checks, so neither is advisory.
-- [ ] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**.
+- [x] 27 — `spec.sempods.org` on GitHub Pages, rendering the chapters and the OpenAPI with **Scalar**.
       Built by `site/build.py`, which stages the normative tree rather than editing it: MkDocs
       refuses a docs directory containing its own configuration, and pointing one at the repository
-      root would publish the agent instructions. Remaining, and none of it doable from a pull
-      request: enable Pages on the repository, point the DNS record at it, and **add `build` to the
-      ruleset's required status checks**. Until that last one, the strict render is advisory — it
-      runs on every pull request and a failing one still satisfies every check the ruleset asks
-      for, which is the same trap item 7 records for the four already named there.
+      root would publish the agent instructions. Pages is enabled with the workflow as its source,
+      the DNS record is in place, and **`build` is now the fifth required status check** — without
+      that last one the strict render was advisory, in exactly the way this file warns about under
+      item 7.
 - [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.
+      **The anonymous half is live and verified**: the page loads, its source list is generated from
+      `openapi/`, and the demo pod answers a cross-origin request from this site
+      (`access-control-allow-origin: *`, with `WWW-Authenticate` and `ETag` exposed). What has not
+      been exercised is the authenticated leg — nobody has yet logged in from the docs origin, so
+      the `did:web` claim above is still a claim.
 - [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself.
 
