@@ -41,13 +41,14 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 | [`core/grants.md`](core/grants.md) — `#read` / `#write` / `#manage`, resolution, delegation, revocation, the `#manage` subtree rule | `GRANT` | **present** | `docs/auth/authorization.md` |
 | [`core/auth.md`](core/auth.md) — OAuth 2.1, PKCE, the three client-identity shapes, consent, refresh rotation, discovery | `AUTH` | **present** | `docs/auth/oauth.md`, `service-clients.md` |
 | [`core/lod-crud.md`](core/lod-crud.md) — the LOD layer and the system layer, `?context=`, base64url addressing, slots and edges | `CRUD` | **present** | `docs/lod-crud/` |
-| `core/sparql.md` — the read-only query surface and the server-enforced sandbox | `SPARQL` | planned | **nothing** — scattered today, has to be written |
-| `core/find.md` — retrieval: what a hit is, what metadata it carries | `FIND` | planned | `docs/concepts/graph-retrieval.md`, partly |
+| [`core/sparql.md`](core/sparql.md) — the read-only query surface and the server-enforced sandbox | `SPARQL` | **present** | **new writing** — was scattered across three documents |
+| [`core/find.md`](core/find.md) — retrieval: the request, the sandbox, the response graph | `FIND` | **present** | **new writing** — existed only as a concept |
 
-Two of these do not exist as documents anywhere yet. `sparql` is specified in fragments across three
-files in the reference implementation, and the one document that should hold it says so explicitly —
-its LOD chapter defers to a "SPARQL surface" document that was never written. `find` exists only as
-a concept. Both are new writing, not a move.
+Two of these were new writing rather than a move. `sparql` existed only as fragments across three
+files in the reference implementation — whose LOD chapter deferred to a "SPARQL surface" document
+that was never written — and `find` existed only as a concept, which mixes what is built with what
+is planned. Both chapters therefore carry more than any single source did, and both were checked
+against the implementation rather than against the prose.
 
 ## Modules
 

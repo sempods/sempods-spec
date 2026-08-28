@@ -121,9 +121,18 @@ equally urgent and the announce waits on all of them.
       differing on either produces data another one reads wrongly: predicate IRIs are never
       canonicalised, and there is no atomic multi-context write anywhere. The TOCTOU gap on
       conditional writes stayed prose — it is an implementation limitation, not a contract.
-- [ ] 18 — `sparql` (`SPARQL`) — **new writing.** It exists today only in fragments across three
-      documents, and the LOD chapter openly defers to a SPARQL document that was never written.
-- [ ] 19 — `find` (`FIND`) — **new writing.** Exists as a concept, not as a contract.
+- [x] 18 — `sparql` (`SPARQL`) — `SPS-SPARQL-001`…`020`, written from the fragments and from
+      `SparqlQueryService` / `SparqlEndpoint`. Two rules came from the code and from no document:
+      a malformed query and an Update are refused *identically*, so a prober cannot learn which it
+      wrote; and a present-but-empty dataset parameter fails closed to the empty set rather than
+      falling back to the full readable set. The second is a privilege escalation if implemented
+      the other way round.
+- [x] 19 — `find` (`FIND`) — `SPS-FIND-001`…`023`, from the concept's IST half plus the endpoint.
+      **Finding: the three `sps:` vocabulary terms appear nowhere in the Kotlin code.** `NAMESPACE.md`
+      describes them in the present tense as "the metadata a `find` response carries about each
+      hit", and no implementation emits them. The chapter therefore specifies the flat graph as the
+      contract and records the terms as reserved-but-not-emitted, so nobody mints a competing set.
+      **`NAMESPACE.md` needs correcting when it moves in S5** — see the open decisions.
 
 ## S4 — Modules
 
@@ -178,6 +187,13 @@ equally urgent and the announce waits on all of them.
 ---
 
 ## Open decisions
+
+- **`NAMESPACE.md` overstates what the vocabulary is used for.** It says the three `sps:` terms are
+  "the metadata a `find` response carries about each hit" and that they were adopted because "an
+  implementation needed them, used them". Neither is true today: the terms appear in no Kotlin
+  source. Correcting it is part of S5, and it changes what D6 is for — publishing a namespace whose
+  terms nothing emits is still worth doing for the deprecation promise, but it is not the "it is
+  already in use" argument the document currently makes.
 
 - **What the conformance suite is written in (S8).** The JVM is cheapest — the reference client
   already exists — but a suite meant to test a non-JVM implementation probably wants to be a
