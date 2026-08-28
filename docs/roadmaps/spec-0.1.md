@@ -30,9 +30,8 @@ there has to describe a half-state — "the specification lives at that address,
 it, but not for the contract" — and each of those sentences is rewritten the moment a chapter lands.
 Three review rounds went into prose with a known expiry date.
 
-So the order was: finish the normative text and the OpenAPI here, *then* rewire the reference
-implementation once, against a state that is real. S7 ran last, and in one pass — the rewiring
-landed as a single pull request against chapters that already existed.
+So the order is: finish the normative text and the OpenAPI here, *then* rewire the reference
+implementation once, against a state that is real. S7 comes last for that reason.
 
 ## What gates the announce
 
@@ -188,9 +187,6 @@ equally urgent and the announce waits on all of them.
 ## S7 — Retire the second copy in the reference implementation
 
 - [x] 30 — Delete every document that moved, and replace its inbound links with requirement-ID links.
-      Landed as sempods-kotlin#53: four documents deleted outright, three reduced to what is
-      genuinely that implementation's, and 97 references rewritten — of which only 9 were
-      markdown links and 58 were KDoc prose, which is why the identifier had to be the anchor.
 - [x] 31 — Publish a generated `requirements.json`. **Shape decided differently from the sketch
       here**: identifier → chapter → first sentence → withdrawn, and deliberately **no URL** — one
       would have to pin a branch or a tag, and the consumer is who knows which it wants. No
