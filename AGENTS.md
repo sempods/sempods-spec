@@ -186,6 +186,9 @@ here rather than copied.
    .github/scripts/check-requirements.py origin/main
    ```
 
+   **Pass the base ref.** Without it the disappearance check does not run at all — which is the
+   half CI runs and the half a local run is most likely to skip.
+
 2. Documentation is current *in this same change* — new chapters reachable from an `AGENTS.md`, the
    roadmap item ticked, requirement IDs consistent.
    [`docs/agents/documentation-sync.md`](docs/agents/documentation-sync.md) is the procedure.

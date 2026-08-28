@@ -47,10 +47,15 @@ def requirements(text):
     ]
 
 
-def collect(read):
-    """Identifier → (path, body) across the spec tree, via a `read` that may hit git."""
+def collect(read, paths=None):
+    """Identifier → (path, body) across a set of documents, via a `read` that may hit git.
+
+    Both the working tree and a git ref go through here. They used to unpack `requirements()`
+    separately, which is how a change to its return type left one of the two broken while every
+    local run stayed green — the base comparison only executes when a ref is passed.
+    """
     found, problems = {}, []
-    for path in sorted(SPEC.rglob("*.md")):
+    for path in sorted(paths if paths is not None else SPEC.rglob("*.md")):
         text = read(path)
         if text is None:
             continue
@@ -139,11 +144,7 @@ def main():
             ["git", "ls-tree", "-r", "--name-only", base, "spec/"], capture_output=True, text=True
         )
         old_paths = [Path(line) for line in listing.stdout.splitlines() if line.endswith(".md")]
-        before = {}
-        for path in old_paths:
-            text = at_base(path)
-            if text:
-                before.update({i: (path, b) for i, b in requirements(text).items()})
+        before, _ = collect(at_base, old_paths)
 
         for ident, (path, _) in sorted(before.items()):
             if ident not in current:
