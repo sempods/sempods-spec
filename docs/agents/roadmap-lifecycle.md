@@ -76,7 +76,7 @@ roadmap that owns it.
   row in the chapter table, and that table is what a visitor reads first.
 - Check whether the reference implementation still points at documentation this milestone moved
   here. That sweep crosses a repository boundary, so nothing local will catch it.
-- Run `lychee --offline --include-fragments --no-progress .`.
+- Run `lychee --offline --include-fragments --no-progress --exclude-path site .`.
 
 ## 6. Report — do not commit
 

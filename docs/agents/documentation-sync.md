@@ -93,7 +93,7 @@ place; the roadmap is dissolved as a whole, later.
   means one of them is wrong.
 
 ```bash
-lychee --offline --include-fragments --no-progress .
+lychee --offline --include-fragments --no-progress --exclude-path site .
 ```
 
 ## 8. Report

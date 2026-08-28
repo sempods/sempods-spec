@@ -124,5 +124,5 @@ A change to the specification is not finished until, **in the same change**:
 
 [`documentation-sync.md`](documentation-sync.md) is the procedure that walks this list.
 
-`lychee --offline --include-fragments --no-progress .` checks the mechanical half. The rest is a judgement, which is why
+`lychee --offline --include-fragments --no-progress --exclude-path site .` checks the mechanical half. The rest is a judgement, which is why
 it is written down here rather than automated.

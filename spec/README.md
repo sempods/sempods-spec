@@ -103,7 +103,7 @@ see. That lives in the chapters.
 
 ## Vocabulary
 
-[`../vocabulary/`](../vocabulary/) holds the RDF terms published under
+[`../vocabulary/`](../vocabulary/README.md) holds the RDF terms published under
 `https://schema.sempods.org/`, together with the stability guarantees they carry — the strongest
 promise this project makes: an IRI never changes, a meaning never narrows, and a retired term is
 deprecated for at least twelve months rather than deleted.

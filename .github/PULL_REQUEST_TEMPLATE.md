@@ -22,7 +22,7 @@
 - [ ] The OpenAPI description moved with the chapter, if the HTTP surface moved
 - [ ] `spec/README.md`'s chapter table still reflects reality
 - [ ] The roadmap item is ticked, in this same change
-- [ ] `lychee --offline --include-fragments --no-progress .` passes
+- [ ] `lychee --offline --include-fragments --no-progress --exclude-path site .` passes
 
 <!-- Is this a breaking change to the contract? Say so here. The project is 0.x and
      breaking is allowed — it is just never meant to be accidental or silent. -->

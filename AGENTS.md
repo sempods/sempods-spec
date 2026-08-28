@@ -150,6 +150,19 @@ The specification:
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
 
+The rendered site — [`site/`](site/):
+
+- [`site/index.md`](site/index.md) — the landing page at `spec.sempods.org`. Published content, and
+  the only page on that site not generated from the specification: it says what a pod is for a
+  reader who arrived without knowing, and warns that the text is not binding until `0.1`. Its links
+  are written against the staged layout and resolve nowhere in the repository, which is why lychee
+  skips this directory and the Pages build checks them instead.
+- [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
+  try-it page talks to, in the one place it is named, and refuses to build a page whose OpenAPI
+  descriptions would point somewhere else.
+- [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
+  purpose; the Scalar bundle is pinned with an integrity hash.
+
 Agent instructions — [`docs/agents/`](docs/agents/):
 
 - [`ai-instructions.md`](docs/agents/ai-instructions.md) — the hub: how instructions are discovered,
@@ -187,12 +200,18 @@ here rather than copied.
 
 ## Before you commit
 
-1. Both checks pass. CI runs them; locally:
+1. All three checks pass. CI runs them; locally:
 
    ```bash
-   lychee --offline --include-fragments --no-progress .
+   lychee --offline --include-fragments --no-progress --exclude-path site .
    .github/scripts/check-requirements.py origin/main
+   python3 site/build.py
    ```
+
+   The third one is the full render, not `--check`. `site/index.md` is the one published page
+   written by hand, its links are written against the staged layout, and lychee is told to skip
+   that directory for exactly that reason — so the strict build is the only thing here that
+   reads them. `--check` returns before staging and would not.
 
    Adding or withdrawing a requirement also regenerates the index, which is committed:
 
@@ -215,19 +234,36 @@ here rather than copied.
 
 ## What this repository deliberately does not have
 
-**No build system.** No Gradle, no npm, no formatter, no linter. Markdown is written by hand.
-Gradle arrives with the conformance suite and not before — a build file that exists to run nothing
-is a dependency to maintain for no return.
+**No build system for the specification.** No Gradle, no npm, no formatter, no linter. Markdown is
+written by hand, and a chapter is a file somebody wrote. Gradle arrives with the conformance suite
+and not before — a build file that exists to run nothing is a dependency to maintain for no return.
 
-Two checks, both in CI and both runnable by hand:
+`site/` is the exception and stays one: it renders the published site and has a locked dependency
+tree of its own. Nothing under `spec/` depends on it, and the specification is complete without it.
+
+Three checks, all in CI and all runnable by hand:
 
 ```bash
-lychee --offline --include-fragments --no-progress .   # links, and requirement anchors
+lychee --offline --include-fragments --no-progress --exclude-path site .   # links, and requirement anchors
 .github/scripts/check-requirements.py origin/main      # the identifier promises
+python3 site/build.py                                  # the site's inputs, then a strict render
 ```
 
-The second one exists because `SPS-CORE-003` — an identifier is never reassigned, renumbered or
-deleted — is a promise no link checker can see, and deleting a requirement looks like tidying.
+The **requirement checker** exists because `SPS-CORE-003` — an identifier is never reassigned,
+renumbered or deleted — is a promise no link checker can see, and deleting a requirement looks like
+tidying. The **site check** exists because the try-it page sends a reader's requests, authenticated
+ones included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but
+the demo pod.
+
+Two variants of that last one, neither of which replaces it:
+
+```bash
+python3 site/build.py --check                          # the inputs only, no render
+python3 site/build.py --serve                          # render and watch, on :8000
+```
+
+`--check` is the fast half and skips the strict render, so it does not read the staged links.
+Run the plain form before committing.
 
 **No stub chapters.** See the working rules above.
 

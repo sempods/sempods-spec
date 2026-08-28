@@ -1,0 +1,72 @@
+# Rendered by `site/build.py`, which stages the specification next to this file. Paths below
+# are relative to that staging directory, not to the repository.
+site_name: sempods specification
+site_description: The contract a sempods pod implements — contexts, grants, auth, CRUD, SPARQL and find.
+site_url: https://spec.sempods.org/
+repo_url: https://github.com/sempods/sempods-spec
+edit_uri: ""
+
+docs_dir: docs
+
+# Re-stages the sources before every build. Only load-bearing while serving — see `hooks.py`.
+hooks:
+  - ../hooks.py
+
+site_dir: ../_site
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: indigo
+      toggle: { icon: material/weather-night, name: Dark }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle: { icon: material/weather-sunny, name: Light }
+
+markdown_extensions:
+  - tables
+  - attr_list
+  - md_in_html
+  - admonition
+  - toc:
+      # Requirements carry explicit `<a id="SPS-…">` anchors, which is what every citation
+      # from another repository points at. Heading slugs are a separate namespace and must
+      # not be allowed to collide with them.
+      permalink: true
+  - pymdownx.superfences
+
+nav:
+  - Start here: index.md
+  - The specification: spec/README.md
+  - Core:
+      - spec/core/index.md
+      - spec/core/contexts.md
+      - spec/core/grants.md
+      - spec/core/auth.md
+      - spec/core/lod-crud.md
+      - spec/core/sparql.md
+      - spec/core/find.md
+  - Modules:
+      - spec/modules/oidc.md
+      - spec/modules/media.md
+      - spec/modules/mcp.md
+  - Vocabulary: vocabulary/README.md
+  - Governance: GOVERNANCE.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sempods/sempods-spec

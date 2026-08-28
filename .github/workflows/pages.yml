@@ -1,0 +1,75 @@
+name: Pages
+
+# Renders the specification to https://spec.sempods.org.
+#
+# It runs on pull requests too, and that is the half that matters day to day: a build that only
+# runs after merge reports a broken specification page to nobody, on a branch nobody is looking
+# at any more. On a pull request it builds and stops; only `main` deploys.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never two deployments at once, and a superseded run on `main` is pointless work. Pull
+  # request runs cancel their own predecessors; a `main` run is allowed to finish, because
+  # cancelling mid-deployment is how a site is left half-published.
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          # The same version the lock was resolved on. A resolution can differ between
+          # interpreter versions, and a lock installed under one it was not built for is a lock
+          # that no longer describes what runs.
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: site/requirements.txt
+
+      # `--require-hashes` refuses anything whose artefact does not match the lock, transitive
+      # dependencies included. Without it the two roots are pinned and the twenty-seven packages
+      # underneath them — Jinja, Markdown, Pygments, the pymdown extensions — resolve to whatever
+      # is newest on each clean run, and those decide what the generated HTML looks like.
+      - name: Install the locked renderer
+        run: pip install --require-hashes -r site/requirements.txt
+
+      # One step, because the build runs the checks itself before it renders anything. Splitting
+      # `--check` out ahead of it reads like two gates and is one: there is no input the first
+      # would reject that the second accepts.
+      #
+      # What it refuses: a chapter that exists but is in no navigation list, a description whose
+      # servers resolve anywhere but the demo pod, a try-it page whose source list was not
+      # generated — and then, with `--strict`, any link that resolves nowhere.
+      - name: Check the inputs, then render
+        run: python3 site/build.py
+
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site/_site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

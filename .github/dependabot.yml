@@ -2,18 +2,29 @@
 version: 2
 
 updates:
-  # The workflow and action `uses:` pins, and nothing else — this repository has no build
-  # system and therefore no package ecosystem to watch. A pinned action is still a
-  # supply-chain dependency, and nothing but this bumps it.
-  #
-  # A second ecosystem block belongs here the day the conformance suite arrives with a
-  # build file, and not before: an entry pointing at a manifest that does not exist is a
-  # daily failed run that teaches everyone to ignore the tab.
+  # A pinned action is a supply-chain dependency, and nothing but this bumps it.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
       github-actions:
+        patterns:
+          - "*"
+
+  # The renderer behind spec.sempods.org, locked with hashes in `site/requirements.txt`. That
+  # lock is what makes the published page reproducible, and it is also what makes the packages
+  # invisible to a human reader — twenty-nine of them, pinned to the version that was current
+  # the day the site was written and frozen there until something moves them. This is what
+  # moves them.
+  #
+  # Grouped, because a lock is regenerated as a whole: twenty-nine separate pull requests to
+  # raise one transitive dependency would each conflict with the last.
+  - package-ecosystem: "pip"
+    directory: "/site"
+    schedule:
+      interval: "weekly"
+    groups:
+      renderer:
         patterns:
           - "*"

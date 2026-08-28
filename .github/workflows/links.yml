@@ -38,5 +38,14 @@ jobs:
           # (`#SPS-CRUD-011`), and an anchor that does not match its requirement ID resolves to the
           # top of the page instead of failing — a reader sees the wrong requirement and is given
           # no sign of it. This is the only automated check that catches that.
-          args: --offline --include-fragments --no-progress .
+          # `site/` is excluded because its links are not resolvable where the files sit.
+          # `site/index.md` is written against the layout `site/build.py` stages — `spec/core/…`
+          # from the site root, not `../spec/core/…` from the repository — so lychee reading it
+          # in place would resolve every one of them against a directory that does not exist.
+          #
+          # They are checked, and in the only layout where they mean anything: the Pages workflow
+          # builds with `mkdocs --strict`, which fails on a link resolving nowhere. Deleting this
+          # exclusion does not gain coverage, it just moves those links to a checker that cannot
+          # see what they point at.
+          args: --offline --include-fragments --no-progress --exclude-path site .
           fail: true

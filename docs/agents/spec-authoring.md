@@ -131,7 +131,7 @@ doubt: if an implementation that passed before could now fail, it is a new ID.
   them.
 - If the HTTP surface moved, the OpenAPI description moved with it in the same commit.
 - The roadmap item is ticked.
-- `lychee --offline --include-fragments --no-progress .` passes.
+- `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
 
 ## Pitfalls
 

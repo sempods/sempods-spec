@@ -80,7 +80,7 @@ Full rules: [`docs/agents/documentation-strategy.md`](../docs/agents/documentati
 ## Checks
 
 ```bash
-lychee --offline --include-fragments --no-progress .
+lychee --offline --include-fragments --no-progress --exclude-path site .
 ```
 
 ## Commits
