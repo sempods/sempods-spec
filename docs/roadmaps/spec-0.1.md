@@ -166,10 +166,8 @@ equally urgent and the announce waits on all of them.
       is no second copy to keep true. Turtle at the namespace or at any term IRI reaches the
       document, a browser reaches the readable page, and `/module/<name>` reaches that module's
       chapter — those identifiers are conformance markers rather than terms.
-      **JSON-LD is not served.** `vocabulary/README.md` names it alongside Turtle and HTML as the
-      intent; producing a JSON-LD document is a change to this repository's build, not to routing,
-      and a redirect to a file that does not exist would be worse than the 406 an explicit request
-      gets today.
+      **JSON-LD is not served** — item 37. The routing is complete; what is missing is a document
+      to route to, which is a change to this repository's build rather than to the namespace.
 
 ## S6 — OpenAPI and the rendered specification
 
@@ -234,6 +232,13 @@ equally urgent and the announce waits on all of them.
 
 - [ ] 35 — The conformance suite, cited by requirement ID.
 - [ ] 36 — `tools/` — a checker an implementer can point at a running pod.
+- [ ] 37 — Publish the vocabulary as JSON-LD and serve it. `vocabulary/README.md` names it beside
+      Turtle and HTML as what the namespace should answer; today an explicit request for it gets a
+      406, which is honest but not the stated intent. Generating it from the Turtle needs an RDF
+      library in the site build, so it is a dependency decision as much as a routing one — and the
+      routing is already there, waiting for a document to point at.
+      Here rather than in S5 because nothing in `0.1` claims it: an IRI is an identifier before it
+      is a URL, and Turtle plus HTML is a complete answer for a consumer that dereferences at all.
 
 ---
 
