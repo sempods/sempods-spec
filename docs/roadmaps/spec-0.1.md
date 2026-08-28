@@ -21,6 +21,18 @@ concept will be written for the first chapter whose *content* needs one.
 
 ---
 
+## How the work lands
+
+**One branch here, one pull request at the end — and the same in the reference implementation, once
+this repository's first version is done.** The first attempt at the reference implementation's side
+(sempods-kotlin#52) was closed for this reason: while the chapters do not exist, every sentence
+there has to describe a half-state — "the specification lives at that address, but not yet", "read
+it, but not for the contract" — and each of those sentences is rewritten the moment a chapter lands.
+Three review rounds went into prose with a known expiry date.
+
+So the order is: finish the normative text and the OpenAPI here, *then* rewire the reference
+implementation once, against a state that is real. S7 is deliberately not started early.
+
 ## What gates the announce
 
 The launch checklist that owns this milestone from the outside is the private go-public roadmap —
