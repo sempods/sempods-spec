@@ -100,10 +100,14 @@ equally urgent and the announce waits on all of them.
 
 ## S3 — Core chapters
 
-- [ ] 14 — `contexts` (`CTX`) — extracted from `docs/auth/authorization.md`.
-- [ ] 15 — `grants` (`GRANT`) — same source. The `#manage` subtree rule is the one requirement most
-      likely to be implemented as a string-prefix check, so it needs its own requirement and its own
-      conformance test.
+- [x] 14 — `contexts` (`CTX`) — `SPS-CTX-001`…`026`. The one thing the source did not state as a
+      rule: on `DELETE`, authorization is checked *before* existence, so an out-of-sandbox caller
+      gets `403` rather than a `404` that would confirm the context exists.
+- [x] 15 — `grants` (`GRANT`) — `SPS-GRANT-001`…`027`. The `#manage` subtree rule is
+      `SPS-GRANT-007` and says "if and only if" for the reason it exists. Two rules that were only
+      in `context7.json` and not in the documentation were verified against
+      `PodContextPermissionResolver` before being written down: `write`/`manage` imply `read`, and
+      a `#manage` root expands only over *registered* contexts.
 - [ ] 16 — `auth` (`AUTH`) — from `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md`.
       The three client-identity shapes are the part an implementer gets wrong first.
 - [ ] 17 — `lod-crud` (`CRUD`) — from `docs/lod-crud/`. The largest move and the most nearly

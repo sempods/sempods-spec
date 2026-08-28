@@ -37,8 +37,8 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 | Chapter | Area | Status | Source being extracted from |
 |---|---|---|---|
 | [`core/index.md`](core/index.md) — conformance, addressing, discovery, the error model | `CORE` | **present** | new |
-| `core/contexts.md` — the context as the permission boundary, the `_system/contexts` namespace | `CTX` | planned | `docs/auth/authorization.md` |
-| `core/grants.md` — `#read` / `#write` / `#manage`, resolution, the `#manage` subtree rule | `GRANT` | planned | `docs/auth/authorization.md` |
+| [`core/contexts.md`](core/contexts.md) — the context as the permission boundary, the `_system/contexts` namespace, lifecycle and discovery | `CTX` | **present** | `docs/auth/authorization.md` |
+| [`core/grants.md`](core/grants.md) — `#read` / `#write` / `#manage`, resolution, delegation, revocation, the `#manage` subtree rule | `GRANT` | **present** | `docs/auth/authorization.md` |
 | `core/auth.md` — OAuth 2.1, PKCE, the three client-identity shapes, anonymous access | `AUTH` | planned | `docs/auth/oauth.md`, `oauth-errors.md`, `service-clients.md` |
 | `core/lod-crud.md` — the LOD layer and the system layer, `?context=`, base64url addressing | `CRUD` | planned | `docs/lod-crud/` |
 | `core/sparql.md` — the read-only query surface and the server-enforced sandbox | `SPARQL` | planned | **nothing** — scattered today, has to be written |
