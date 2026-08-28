@@ -35,6 +35,8 @@ DEMO_POD = "aaltra"
 
 # Chapters, in reading order. The nav in `mkdocs.yml` repeats this order; a chapter added
 # here and forgotten there is caught by `--check`.
+SOURCES_MARKER = "/* SOURCES */"
+
 CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
 MODULES = ["oidc", "media", "mcp"]
 
@@ -70,11 +72,22 @@ def stage() -> None:
 
     api = docs / "api"
     api.mkdir()
-    shutil.copy(SITE / "api" / "index.html", api / "index.html")
+    (api / "index.html").write_text(try_it_page())
     for src in sorted((ROOT / "openapi").glob("*.yaml")):
         (api / src.name).write_text(with_demo_pod(src.read_text()))
 
     (docs / "CNAME").write_text("spec.sempods.org\n")
+
+    # Asserted on the staged file rather than on what `try_it_page()` returns. `check()` calls
+    # that function and would have been satisfied by it while `stage()` copied the template
+    # past it untouched — which is exactly what happened once. What ships is what gets checked.
+    staged_page = (api / "index.html").read_text()
+    if SOURCES_MARKER in staged_page:
+        raise SystemExit(f"error: the staged try-it page still holds {SOURCES_MARKER!r}; its "
+                         f"source list was never generated")
+    for name, _ in descriptions():
+        if f"url: '{name}'" not in staged_page:
+            raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
 # The placeholders a normative description carries, and what the staged copy says instead.
@@ -98,46 +111,85 @@ def with_demo_pod(yaml: str) -> str:
     return yaml
 
 
-def server_defaults(staged: str) -> list[tuple[str, object]]:
-    """Every server-variable default in a description, at whatever level it is declared.
-
-    Walked recursively rather than reading `doc["servers"]`, because a description may set
-    servers at the document, path or operation level, and `sempods-core.yaml` does exactly
-    that — a document-level one and another further down.
-
-    Parsed rather than pattern-matched. This is the post-condition, and the two versions of
-    it that were written by pattern both passed while shipping a broken page: the first asked
-    whether the input contained a spelling, which one occurrence satisfies for a whole file,
-    and the second asked whether a known placeholder was left, which says nothing about a
-    default that was changed to some third host. Asking the document what its servers
-    actually point at is the only form that cannot be satisfied by the wrong thing.
-    """
+def load(staged: str) -> object:
     try:
         import yaml
     except ImportError:  # pragma: no cover - the workflow installs it with the renderer
         raise SystemExit(
-            "error: PyYAML is needed to verify the staged server URLs.\n"
+            "error: PyYAML is needed to read the staged descriptions.\n"
             "       pip install -r site/requirements.txt")
+    return yaml.safe_load(staged)
 
-    found: list[tuple[str, object]] = []
+
+def server_addresses(staged: str) -> list[tuple[str, str, dict]]:
+    """Every server in a description as (template, resolved address, its variables).
+
+    Walked recursively rather than read from `doc["servers"]`: a description may declare
+    servers at the document, path or operation level, and `sempods-core.yaml` does — a pod base
+    at the top and a `{origin}/.well-known` further down.
+
+    Resolved, not just collected. Checking that the *defaults* are the demo values says nothing
+    about what they are composed into: `{pod}/{origin}` and a literal `https://example.org/{pod}`
+    both leave the defaults untouched and send the reader somewhere else. The address is what
+    Scalar dials, so the address is what gets asserted.
+    """
+    found: list[tuple[str, str, dict]] = []
 
     def walk(node: object) -> None:
         if isinstance(node, dict):
             servers = node.get("servers")
             if isinstance(servers, list):
                 for server in servers:
-                    variables = (server or {}).get("variables") if isinstance(server, dict) else None
-                    for name, variable in (variables or {}).items():
-                        if isinstance(variable, dict):
-                            found.append((name, variable.get("default")))
+                    if not isinstance(server, dict):
+                        continue
+                    template = str(server.get("url", ""))
+                    variables = {
+                        name: variable.get("default")
+                        for name, variable in (server.get("variables") or {}).items()
+                        if isinstance(variable, dict)
+                    }
+                    resolved = template
+                    for name, value in variables.items():
+                        resolved = resolved.replace("{" + name + "}", str(value))
+                    found.append((template, resolved, variables))
             for value in node.values():
                 walk(value)
         elif isinstance(node, list):
             for value in node:
                 walk(value)
 
-    walk(yaml.safe_load(staged))
+    walk(load(staged))
     return found
+
+
+def descriptions() -> list[tuple[str, str]]:
+    """The OpenAPI files as (filename, the title they give themselves), core first.
+
+    Read from disk rather than listed anywhere, so the try-it page cannot name a description
+    that was renamed away or miss one that was added — `stage()` copies whatever is in
+    `openapi/`, and a hand-kept list beside it drifts silently into a 404.
+    """
+    found = []
+    for path in sorted((ROOT / "openapi").glob("*.yaml")):
+        document = load(path.read_text()) or {}
+        title = ((document.get("info") or {}).get("title") or path.stem)
+        found.append((path.name, str(title)))
+    found.sort(key=lambda entry: (not entry[0].startswith("sempods-"), entry[0]))
+    return found
+
+
+def try_it_page() -> str:
+    """`site/api/index.html` with its source list generated from the descriptions on disk."""
+    sources = ",\n".join(
+        "      { url: '%s', title: '%s', slug: '%s'%s }"
+        % (name, title.replace("'", "\\'"), Path(name).stem,
+           ", default: true" if index == 0 else "")
+        for index, (name, title) in enumerate(descriptions()))
+    page = (SITE / "api" / "index.html").read_text()
+    if SOURCES_MARKER not in page:
+        raise SystemExit(f"error: site/api/index.html no longer contains {SOURCES_MARKER!r}, "
+                         f"so the try-it page would render an empty source list")
+    return page.replace(SOURCES_MARKER, sources)
 
 
 def check() -> int:
@@ -163,23 +215,38 @@ def check() -> int:
     descriptions = sorted((ROOT / "openapi").glob("*.yaml"))
     if not descriptions:
         problems.append("openapi/ holds no description; the try-it page would render nothing")
+    # There is deliberately no check that the try-it page's source list matches these files.
+    # The list is generated from them, so a comparison would be asking whether they equal
+    # themselves — which passes for the same reason it means nothing. What can go wrong is the
+    # generation failing to happen, and that is asserted in `stage()`, on the staged file.
+    if SOURCES_MARKER not in (SITE / "api" / "index.html").read_text():
+        problems.append("site/api/index.html no longer marks where its source list goes, so "
+                        "the try-it page would render with none")
     for src in descriptions:
         text = src.read_text()
         if "servers:" not in text:
             problems.append(f"{src.relative_to(ROOT)} has no servers block to point at a pod")
         else:
-            expected = {DEMO_ORIGIN, DEMO_POD}
-            defaults = server_defaults(with_demo_pod(text))
-            if not defaults:
+            addresses = server_addresses(with_demo_pod(text))
+            if not addresses:
                 problems.append(
-                    f"{src.relative_to(ROOT)} declares servers with no variables to point at "
-                    f"a pod, so the try-it button has no address to send anything to")
-            for name, value in defaults:
-                if value not in expected:
+                    f"{src.relative_to(ROOT)} declares no server, so the try-it page has no "
+                    f"address to send its requests to")
+            for template, resolved, variables in addresses:
+                where = f"{src.relative_to(ROOT)} server {template!r}"
+                if "{" in resolved:
                     problems.append(
-                        f"{src.relative_to(ROOT)} would stage with server variable {name!r} "
-                        f"set to {value!r}. Every one of them has to end up at the demo pod; "
-                        f"this description's requests would go somewhere nobody operates")
+                        f"{where} still holds an unresolved variable after staging "
+                        f"({resolved!r}); it declares one it does not give a default")
+                elif resolved != DEMO_ORIGIN and not resolved.startswith(DEMO_ORIGIN + "/"):
+                    problems.append(
+                        f"{where} resolves to {resolved!r}, which is not on the demo pod's "
+                        f"origin. Whatever a reader presses on the try-it page goes there")
+                for name, value in variables.items():
+                    wanted = {"origin": DEMO_ORIGIN, "pod": DEMO_POD}.get(name)
+                    if wanted is not None and value != wanted:
+                        problems.append(
+                            f"{where} sets {name!r} to {value!r} rather than {wanted!r}")
 
     nav = (SITE / "mkdocs.yml").read_text()
     for name in CORE:
