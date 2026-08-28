@@ -211,38 +211,82 @@ ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
 POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
 
 
-SERVERS_KEY = re.compile(r"^(\s*)servers:")
+def server_line_span(text: str) -> list:
+    """Half-open line ranges of every real `servers:` value, asked of the parser.
+
+    Indentation alone cannot tell a key from prose. A description that documents YAML — and an
+    OpenAPI description explaining a pod's shape is a plausible place for one — can contain an
+    indented `servers:` line inside a block scalar, and a line-based matcher would take that
+    prose for a declaration and rewrite whatever `default:` followed it. The parser knows the
+    difference; nothing that reads lines does.
+    """
+    import yaml
+
+    spans = []
+
+    def walk(node) -> None:
+        if isinstance(node, yaml.MappingNode):
+            for key, value in node.value:
+                if isinstance(key, yaml.ScalarNode) and key.value == "servers":
+                    spans.append((value.start_mark.line, value.end_mark.line + 1))
+                walk(value)
+        elif isinstance(node, yaml.SequenceNode):
+            for item in node.value:
+                walk(item)
+
+    walk(yaml.compose(text))
+    return spans
 
 
-def with_demo_pod(yaml: str) -> str:
+def with_demo_pod(yaml_text: str) -> str:
     """Point a staged description's server variables at the demo pod.
 
-    Line-scoped to `servers:` blocks. Applied to the whole document it would also rewrite a
-    schema default or an example that legitimately says `alice` — the staged description would
-    then show a contract nobody wrote, and the address check below would not notice, because it
-    only ever looks at servers.
+    Confined to the lines the parser says belong to a `servers:` value. Applied more widely it
+    would rewrite a schema default or an example that legitimately says `alice`, and the address
+    check would not notice, because that only ever looks at servers.
 
-    Regex rather than a YAML round-trip: parsing and re-emitting would reformat hand-written
-    files whose layout and comments are part of how they read. The risk that comes with that —
-    a servers block spelled in a way these lines do not recognise — lands on the safe side:
-    the substitution misses, the address still says `example.org`, and `check()` refuses it.
+    Substitution rather than a YAML round-trip: parsing and re-emitting would reformat
+    hand-written files whose layout and comments are part of how they read. What guards the
+    difference between the two is `unchanged_outside_servers` below, which compares the parsed
+    documents and refuses any edit that reached something else.
     """
-    out = []
-    indent_of_block = None
-    for line in yaml.splitlines(keepends=True):
-        text = line.rstrip("\n")
-        if indent_of_block is not None and text.strip():
-            indent = len(text) - len(text.lstrip())
-            if indent <= indent_of_block:
-                indent_of_block = None
-        match = SERVERS_KEY.match(text)
-        if match:
-            indent_of_block = len(match.group(1))
-        if indent_of_block is not None:
-            line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", line)
-            line = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
-        out.append(line)
-    return "".join(out)
+    spans = server_line_span(yaml_text)
+    lines = yaml_text.splitlines(keepends=True)
+    for first, last in spans:
+        for index in range(first, min(last, len(lines))):
+            line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", lines[index])
+            lines[index] = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
+    return "".join(lines)
+
+
+def without_server_variables(document):
+    """A document with every server variable default blanked, so the rest can be compared."""
+    if isinstance(document, dict):
+        pruned = {}
+        for key, value in document.items():
+            if key == "servers" and isinstance(value, list):
+                pruned[key] = [
+                    {k: (None if k == "variables" else without_server_variables(v))
+                     for k, v in server.items()} if isinstance(server, dict) else server
+                    for server in value
+                ]
+            else:
+                pruned[key] = without_server_variables(value)
+        return pruned
+    if isinstance(document, list):
+        return [without_server_variables(item) for item in document]
+    return document
+
+
+def unchanged_outside_servers(before: str, after: str) -> bool:
+    """Whether substitution touched anything but a server variable.
+
+    The post-condition for over-reach, and the reason the substitution is allowed to be textual
+    at all. Every earlier version of this guard asked something about the *input* — whether a
+    pattern was present, whether a placeholder was left — and each passed while shipping
+    something wrong. This one compares the two documents and answers about the result.
+    """
+    return without_server_variables(load(before)) == without_server_variables(load(after))
 
 
 def load(staged: str) -> object:
@@ -385,6 +429,11 @@ def check() -> int:
         if "servers:" not in text:
             problems.append(f"{src.relative_to(ROOT)} has no servers block to point at a pod")
         else:
+            if not unchanged_outside_servers(text, with_demo_pod(text)):
+                problems.append(
+                    f"{src.relative_to(ROOT)} would stage with an edit outside its servers "
+                    f"blocks. Only server variables may be rewritten; anything else means the "
+                    f"try-it page shows a contract nobody wrote")
             addresses = server_addresses(with_demo_pod(text))
             if not addresses:
                 problems.append(
