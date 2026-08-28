@@ -50,21 +50,48 @@ SPEC_VERSION = "0.1-dev"
 # requirement could not tell which media version it belongs to. They are all equal today and that
 # is exactly why the shape is fixed now — adding the field after somebody vendors the file is a
 # change every consumer has to absorb.
+#
+# This is the *only* place a module is enumerated, and even here it is checked against the
+# chapters rather than trusted. Two independent maps — one from area to module, one from module to
+# version — is a pair that has to be kept in step by somebody remembering to, and the failure is
+# silent: a module in one and not the other publishes a part with no version behind it. So the
+# module set comes from `spec/modules/`, where a module actually comes into existence, and its
+# area is that name upper-cased.
 MODULE_VERSIONS = {
     "oidc": "0.1-dev",
     "media": "0.1-dev",
     "mcp": "0.1-dev",
 }
 
-# Which part an area belongs to. The registry is `docs/agents/spec-authoring.md`; this is the same
-# split in the form the index needs.
+# The core areas, from the registry in `docs/agents/spec-authoring.md`. Listed rather than derived
+# because a core area is not a file — several share one chapter, and `index.md` carries `CORE`.
 #
-# Both halves are listed, and an area in neither is an error rather than a default. Defaulting to
-# core is the dangerous direction: a mistyped area, or a module area added without touching this
-# map, would publish an optional obligation as one every implementation must satisfy — and
-# regenerating the index reproduces it, so nothing downstream would ever notice.
+# An area in neither half is an error rather than a default. Defaulting to core is the dangerous
+# direction: a mistyped area would publish an optional obligation as one every implementation must
+# satisfy, and regenerating the index reproduces it, so nothing downstream would ever notice.
 CORE_AREAS = {"CORE", "CTX", "GRANT", "AUTH", "CRUD", "SPARQL", "FIND"}
-MODULE_AREAS = {"OIDC": "oidc", "MEDIA": "media", "MCP": "mcp"}
+
+
+def modules():
+    """Module name → area, derived from the chapters that define them."""
+    return {p.stem: p.stem.upper() for p in sorted(Path("spec/modules").glob("*.md"))}
+
+
+def module_areas():
+    """Area → module name, the direction the index needs."""
+    return {area: name for name, area in modules().items()}
+
+
+def versions_cover_modules():
+    """Every module a chapter defines has a version, and every version has a chapter."""
+    declared = set(MODULE_VERSIONS)
+    actual = set(modules())
+    problems = [f"spec/modules/{m}.md has no version in MODULE_VERSIONS" for m in sorted(actual - declared)]
+    problems += [f"MODULE_VERSIONS names '{m}', which no chapter defines" for m in sorted(declared - actual)]
+    if problems:
+        print("\n".join(f"error: {p}" for p in problems), file=sys.stderr)
+        return False
+    return True
 
 
 def requirements(text):
@@ -243,7 +270,7 @@ def entry(ident, path, body):
     summary, note = summarise(body)
     row = {
         "id": ident,
-        "part": MODULE_AREAS.get(ident.split("-")[1], "core"),
+        "part": module_areas().get(ident.split("-")[1], "core"),
         "chapter": str(path).replace("\\", "/"),
         "summary": summary,
         "withdrawn": note is not None,
@@ -266,7 +293,7 @@ def build_index(found):
     problems = []
     for ident in found:
         area = ident.split("-")[1]
-        if area not in CORE_AREAS and area not in MODULE_AREAS:
+        if area not in CORE_AREAS and area not in module_areas():
             problems.append(
                 f"{ident} is in area '{area}', which is neither a core area nor a module. "
                 f"Register it in check-requirements.py and in docs/agents/spec-authoring.md, or "
@@ -303,6 +330,7 @@ def main():
         # Not required when this run is the one creating it.
         writing or require(INDEX, "downstream repositories vendor it"),
         descriptions_match_chapters(),
+        versions_cover_modules(),
     ]
     if not all(checks):
         return 5

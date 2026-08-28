@@ -42,7 +42,9 @@ generated from the chapters and committed, and CI fails if the committed copy ha
 ([`SPS-CORE-005`](core/index.md#SPS-CORE-005)), so `versions` carries all of them and every
 requirement names its `part` rather than repeating a number that could then disagree with it.
 `specVersion` remains core's, because that is what a consumer pins to say which specification it
-implements. They are all equal today, which is exactly why the shape is settled now: adding the
+implements. The module set comes from the chapters in [`modules/`](modules/) rather than from a
+list, and CI fails if a module has no version or a version has no module — two registries that must
+agree are two registries somebody keeps in step by remembering to. They are all equal today, which is exactly why the shape is settled now: adding the
 field after somebody has vendored the file is a change every consumer has to absorb.
 
 It exists for the consumer that is another repository. The reference implementation vendors it, so a
