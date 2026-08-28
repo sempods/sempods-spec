@@ -128,6 +128,8 @@ Front door and governance:
   from descriptive to prescriptive, how a change is made and who decides
 - [`NOTICE`](NOTICE) — the licence summary and the trademark position, including the two reserved
   conformance terms that mean nothing until the suite exists
+- [`docs/brand/`](docs/brand/) — canonical project logo assets, attribution and downstream copy
+  rules
 
 The specification:
 

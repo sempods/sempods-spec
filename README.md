@@ -46,6 +46,10 @@ implementation and an OpenAPI operation all point at `SPS-CRUD-011` rather than 
 heading. Chapters may then be split, renamed or moved without breaking anything that cites them.
 [`spec/README.md`](spec/README.md) has the scheme and the chapter map.
 
+Project brand assets live under [`docs/brand/`](docs/brand/). They are not part of the normative
+specification, but this repository is their source of truth so the website, organisation profile
+and applications all copy the same files.
+
 ## Core and modules
 
 **Core** is what every sempods implementation must provide: contexts, grants, authorization,
