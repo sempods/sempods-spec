@@ -34,6 +34,7 @@ servers:
 security:
   - {}
   - bearerAuth: []
+  - oauth2: []
 
 paths:
 
@@ -193,6 +194,30 @@ components:
 
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    oauth2:
+      type: oauth2
+      description: |
+        The same pod-issued token the core surface uses, obtained the same way — this module adds
+        no authorization surface of its own. `spec/core/auth.md` is where the flow is specified.
+        It is repeated here because an OpenAPI description stands alone: a client that authorized
+        against the core description holds a credential this one has to name before it may be
+        attached, and without that its operations stay anonymous.
+
+        The endpoint URLs name the same placeholder pod as `servers` and do not follow it —
+        substitute your pod here as well as there. The core description says why.
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://example.org/alice/_system/auth/authorize'
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          refreshUrl: 'https://example.org/alice/_system/auth/token'
+          scopes:
+            public-read: >-
+              The pod's currently public contexts, unioned into the caller's readable set on top of
+              the grants resolved from storage (`SPS-GRANT-020`). A token issued for it carries no
+              refresh token (`SPS-AUTH-035`).
+        clientCredentials:
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          scopes: {}
 
   parameters:
     MediaId:

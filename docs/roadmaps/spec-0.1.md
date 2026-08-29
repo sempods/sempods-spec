@@ -194,11 +194,21 @@ equally urgent and the announce waits on all of them.
 - [ ] 28 — Try-it against a public demo pod. Anonymous reads and SPARQL need no token at all. For
       authenticated calls the docs origin is itself a client identity — `did:web:spec.sempods.org` —
       so no dynamic registration step is needed in front of the login.
-      **The anonymous half is live and verified**: the page loads, its source list is generated from
-      `openapi/`, and the demo pod answers a cross-origin request from this site
-      (`access-control-allow-origin: *`, with `WWW-Authenticate` and `ETag` exposed). What has not
-      been exercised is the authenticated leg — nobody has yet logged in from the docs origin, so
-      the `did:web` claim above is still a claim.
+      **The anonymous half is live.** The authenticated half needed an `oauth2` security scheme,
+      which the core description did not have; it has one now, and it belongs there on its own
+      merit — the chapters specify the OAuth surface and the description was silent about how a
+      token is obtained.
+      **Open until a login actually succeeds.** What is verified is that the flow is *aimed*
+      correctly: the client is `did:web:spec.sempods.org`, the endpoints are the demo pod's, and
+      the redirect Scalar computes is the page itself, which satisfies `SPS-AUTH-004` by sharing
+      the identifier's host and port. None of that exercises consent, the code exchange, PKCE,
+      CORS on the token endpoint, or an authenticated read. Ticking it on displayed strings would
+      record an assumption as a result.
+      The endpoint URLs are absolute on a placeholder pod in the description and on the demo pod in
+      the staged copy, `site/build.py` moving them with the `servers` defaults. Relative was tried
+      and is wrong — it resolves away the pod segment — and `{origin}/{pod}` was tried and is
+      worse: Scalar drops the flow entirely rather than substituting. The description states the
+      residue, that a consumer substitutes its pod here as well as in `servers`.
 - [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself. **The repository half is done**; the website half is deliberately last, after this
       specification and the reference implementation are finished, so that every outbound link and
@@ -253,6 +263,38 @@ equally urgent and the announce waits on all of them.
   the S6 rendering work, where the descriptions get another pass against a renderer rather than
   against a reader.
 
+
+- **`SPS-CORE-007` fixes a pod's address as `{origin}/{pod}`, and not every deployment has that
+  shape.** A single-pod deployment, a pod that *is* a host (`pod.sempods.org`), and this project's
+  own plan for `schema.sempods.org` to become a pod eventually all break the two-part form. Today
+  it is a `MUST`, so each of those is non-conformant on a point that has nothing to do with
+  behaviour.
+  The shape of the fix is to say what actually matters — a pod has a base URL, every resource,
+  context and control-plane route lives under it — and stop prescribing how that URL decomposes.
+  The rest of the specification already reads that way: `SPS-CORE-010` and its neighbours write
+  `{pod}/_system/…`, meaning *relative to the pod base*, which holds either way.
+  It also reaches the OpenAPI, where all four descriptions template `{origin}/{pod}` as two server
+  variables. One `podBaseUrl` variable would fit every deployment and is simpler.
+  **Before `0.1`.** After the tag this is a breaking change to a `MUST`; before it, it is an edit.
+
+- **How an implementation's version relates to the specification's, and what a pre-release looks
+  like.** `GOVERNANCE.md` says the specification's line is independent of any implementation, and
+  gives the reason — the implementation must not force a specification release. The proposal on the
+  table points the other way and is compatible with that: an implementation *follows*, so spec
+  `0.1` gives sempods-kotlin `0.1.<n>`, counting up. A second implementation would do the same.
+  What is undecided, and wanted before the project is public:
+  - Whether a tagged `0.1` can still move at all, or whether every change after the tag is `0.2`.
+    The current text implies the latter — the switch to prescriptive happens *at* the tag — and the
+    `0.x` promise already allows breaking between minors, which makes frequent minors cheap.
+  - Whether the specification gets pre-release versions of its own (`0.2.0-SNAPSHOT` or similar)
+    so a change can be worked on while `0.1` stays fixed, and what an implementation declares while
+    tracking one. `specVersion` is a free-form string today (`SPS-CORE-011`), and the reference
+    implementation already declares `0.1-dev` — so the question is not whether it is expressible
+    but what it is allowed to mean.
+  - What "pulling a version" is as a procedure: what gets tagged, in what order the two
+    repositories move, and what the conformance endpoint reports in between.
+  This is `GOVERNANCE.md`'s subject, not a roadmap item — but it has to be settled before `0.1`,
+  because the tag is what makes all of it binding.
 
 - **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
   On a write, an unregistered context answers `404` and a registered one the caller may not write
