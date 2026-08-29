@@ -9,6 +9,10 @@ name: Requirements
 # and deleting a requirement looks like tidying. The pull-request template asks for the check by
 # hand; a promise that only a checklist enforces survives precisely as long as reviewers are
 # attentive.
+#
+# Until `0.1` is tagged the deletion half is a notice rather than a failure — GOVERNANCE.md
+# §"Deleting and renumbering, before `0.1`". The script decides that, not this file, and it closes
+# the window on its own at the tag.
 
 on:
   pull_request:

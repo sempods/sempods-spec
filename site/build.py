@@ -29,30 +29,32 @@ STAGE = SITE / "_stage"
 #
 # It is deliberately not in the OpenAPI descriptions: those are normative, and a
 # specification that names one operator's deployment has confused the contract with an
-# instance of it. Their `servers` block stays on `example.org`/`alice`, and the staged copy
-# rendered for the try-it page gets these values substituted in.
+# instance of it. Their `servers` block stays on `example.org/alice`, and the staged copy
+# rendered for the try-it page gets this value substituted in.
 #
-# Switching to a different demo pod is an edit to these two strings.
-DEMO_ORIGIN = "https://sempods.org"
-DEMO_POD = "aaltra"
+# One string, because a pod has one base URL and the specification does not prescribe how it
+# decomposes (`SPS-CORE-007`). Switching to a different demo pod is an edit to this line —
+# including to a demo pod that is a host of its own rather than a path.
+DEMO_POD_BASE_URL = "https://sempods.org/aaltra"
 
 # What the try-it page identifies as when a reader logs in. A `did:web:` client is its origin and
 # registers nothing, so this is the site's own address and changes only if the site moves.
 DEMO_CLIENT = "did:web:spec.sempods.org"
 
 # Every address a staged description is allowed to resolve a server to. A closed list rather
-# than "anything on the demo origin": `{origin}/wrong` is on the origin too, and Scalar would
-# send every request in that description to a base the pod does not serve.
+# than "anything on the demo origin": `https://sempods.org/wrong` is on the origin too, and
+# Scalar would send every request in that description to a base the pod does not serve.
 #
-# The second entry is the host-rooted well-known base `sempods-core.yaml` declares for protected
-# resource metadata, which is not under a pod and cannot be.
+# One entry, and that is the point of the change that made it one. It used to hold a second, the
+# host-rooted well-known base `sempods-core.yaml` declared for protected resource metadata — a
+# route on the origin that no single pod can serve, which is why the requirement behind it was
+# deleted rather than kept.
 #
 # A chapter that introduces a genuinely new server shape fails the build until it is added here.
 # That is the intent: this list decides where a reader's requests go, including authenticated
 # ones, so a new destination should be a decision somebody made rather than one that arrived.
 ALLOWED_ADDRESSES = {
-    f"{DEMO_ORIGIN}/{DEMO_POD}",
-    f"{DEMO_ORIGIN}/.well-known",
+    DEMO_POD_BASE_URL,
 }
 
 # Chapters, in reading order. The nav in `mkdocs.yml` repeats this order; a chapter added
@@ -213,15 +215,19 @@ def stage() -> None:
             raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
+# The pod every description is written against, and the only string the staging substitution
+# looks for. It is one value on both sides now: a server variable's default and an OAuth flow URL
+# both name the pod by its base URL, so both are the same replacement.
 PLACEHOLDER_POD = "https://example.org/alice"
 
-ORIGIN_DEFAULT = re.compile(r"""(default:\s*)['"]?https://example\.org['"]?""")
-POD_DEFAULT = re.compile(r"""(default:\s*)['"]?alice['"]?(?![\w-])""")
+POD_BASE_URL_DEFAULT = re.compile(
+    r"""(default:\s*)['"]?https://example\.org/alice['"]?(?![\w/-])"""
+)
 
 
-# The only two values the substitution is allowed to change. Everything else in a description,
-# a server variable's own `description` and `enum` included, has to survive staging untouched.
-REWRITABLE = ("origin", "pod")
+# The only value the substitution is allowed to change. Everything else in a description, a
+# server variable's own `description` and `enum` included, has to survive staging untouched.
+REWRITABLE = ("podBaseUrl",)
 
 
 # Where OpenAPI 3.1 permits a `servers` field, and nowhere else: the document root, a Path
@@ -289,8 +295,8 @@ def rewritable_default_lines(text: str) -> set:
     key was too coarse in the other direction, because a `servers` key in an example is not a
     server declaration.
 
-    What comes back is the position of two scalars per declared server — the defaults of
-    `origin` and `pod` — so prose and payloads anywhere are left as they were written.
+    What comes back is the position of one scalar per declared server — the default of
+    `podBaseUrl` — so prose and payloads anywhere are left as they were written.
     """
     import yaml
 
@@ -312,10 +318,10 @@ def rewritable_default_lines(text: str) -> set:
 def with_demo_pod(yaml_text: str) -> str:
     """Point a staged description's server variables at the demo pod.
 
-    Confined to the exact lines the parser puts the two rewritable defaults on. Applied more
-    widely it would rewrite a schema default, an example, or a server variable's own description
-    that legitimately says `alice` — and the address check would not notice, because that only
-    ever looks at what the servers resolve to.
+    Confined to the exact lines the parser puts the rewritable default on. Applied more widely
+    it would rewrite a schema default, an example, or a server variable's own description that
+    legitimately says `alice` — and the address check would not notice, because that only ever
+    looks at what the servers resolve to.
 
     Substitution rather than a YAML round-trip: parsing and re-emitting would reformat
     hand-written files whose layout and comments are part of how they read. What guards the
@@ -325,8 +331,9 @@ def with_demo_pod(yaml_text: str) -> str:
     lines = yaml_text.splitlines(keepends=True)
     for index in rewritable_default_lines(yaml_text):
         if index < len(lines):
-            line = ORIGIN_DEFAULT.sub(lambda m: m.group(1) + f"'{DEMO_ORIGIN}'", lines[index])
-            lines[index] = POD_DEFAULT.sub(lambda m: m.group(1) + DEMO_POD, line)
+            lines[index] = POD_BASE_URL_DEFAULT.sub(
+                lambda m: m.group(1) + f"'{DEMO_POD_BASE_URL}'", lines[index]
+            )
 
     # The OAuth flow URLs name the same placeholder pod the `servers` block defaults to, and have
     # to move with it — a staged description saying `sempods.org/aaltra` under `servers` and
@@ -335,7 +342,7 @@ def with_demo_pod(yaml_text: str) -> str:
     # substituted by value here; `flow_url_lines` says which lines may be touched.
     for index in flow_url_lines(yaml_text):
         if index < len(lines):
-            lines[index] = lines[index].replace(PLACEHOLDER_POD, f"{DEMO_ORIGIN}/{DEMO_POD}")
+            lines[index] = lines[index].replace(PLACEHOLDER_POD, DEMO_POD_BASE_URL)
     return "".join(lines)
 
 
@@ -351,7 +358,7 @@ def on_demo_pod(url: str) -> bool:
     """
     from urllib.parse import urlsplit
 
-    base = urlsplit(f"{DEMO_ORIGIN}/{DEMO_POD}")
+    base = urlsplit(DEMO_POD_BASE_URL)
     target = urlsplit(url)
     if (target.scheme, target.netloc) != (base.scheme, base.netloc):
         return False
@@ -468,10 +475,10 @@ def server_addresses(staged: str) -> list:
     description for pointing its own sample payload at `example.org` — which is exactly what a
     sample payload should say.
 
-    Resolved, not just collected. Checking that the defaults are the demo values says nothing
-    about what they are composed into: `{pod}/{origin}` and a literal `https://example.org/{pod}`
-    both leave the defaults untouched and send the reader elsewhere. The address is what Scalar
-    dials, so the address is what gets asserted.
+    Resolved, not just collected. Checking that the default is the demo value says nothing about
+    what it is composed into: `{podBaseUrl}/wrong` and a literal `https://example.org/alice` both
+    leave the default untouched and send the reader elsewhere. The address is what Scalar dials,
+    so the address is what gets asserted.
     """
     found = []
     for servers in server_declarations(load(staged), _dict_items, _dict_get):
@@ -598,8 +605,8 @@ def check() -> int:
         else:
             if not unchanged_outside_servers(text, with_demo_pod(text)):
                 problems.append(
-                    f"{src.relative_to(ROOT)} would stage with an edit somewhere other than the "
-                    f"`origin` and `pod` defaults of a server. Nothing else may be rewritten; "
+                    f"{src.relative_to(ROOT)} would stage with an edit somewhere other than a "
+                    f"server's `podBaseUrl` default. Nothing else may be rewritten; "
                     f"anything else means the try-it page shows a contract nobody wrote")
             # The flow URLs are excused from the comparison above, so this is what stands in
             # its place: after staging they must be on the demo pod, the way a server must.
@@ -631,7 +638,7 @@ def check() -> int:
                         f"the demo pod serves ({', '.join(sorted(ALLOWED_ADDRESSES))}). "
                         f"Whatever a reader presses in that description goes there")
                 for name, value in variables.items():
-                    wanted = {"origin": DEMO_ORIGIN, "pod": DEMO_POD}.get(name)
+                    wanted = {"podBaseUrl": DEMO_POD_BASE_URL}.get(name)
                     if wanted is not None and value != wanted:
                         problems.append(
                             f"{where} sets {name!r} to {value!r} rather than {wanted!r}")

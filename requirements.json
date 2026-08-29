@@ -394,20 +394,6 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-056",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "An implementation MUST **also** serve the metadata at the host-rooted form RFC 9728 §3.1 constructs, by inserting `/.well-known/oauth-protected-resource` between the authority and the pod's path: `{origin}/.well-known/oauth-protected-resource/{pod}`.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-AUTH-057",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "Where an implementation advertises RFC 8414 Authorization Server Metadata, it MUST serve it at the host-rooted form for its issuer as well as at the append form, and both MUST return the same document.",
-      "withdrawn": false
-    },
-    {
       "id": "SPS-CORE-001",
       "part": "core",
       "chapter": "spec/core/index.md",
@@ -453,7 +439,7 @@
       "id": "SPS-CORE-007",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "A pod is addressed under a base URL of the form `{origin}/{pod}`, where `{pod}` is the pod's identifier within the deployment.",
+      "summary": "A pod is addressed under a base URL.",
       "withdrawn": false
     },
     {
@@ -1769,7 +1755,7 @@
       "id": "SPS-MEDIA-004",
       "part": "media",
       "chapter": "spec/modules/media.md",
-      "summary": "Content addressing MUST deduplicate within a pod and MUST NOT deduplicate across pods.",
+      "summary": "Content addressing MUST deduplicate within a pod.",
       "withdrawn": false
     },
     {

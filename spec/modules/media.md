@@ -26,11 +26,12 @@ implementation MUST NOT answer them with an error that implies they are temporar
 padding.
 
 <a id="SPS-MEDIA-004"></a>
-**`SPS-MEDIA-004`** — Content addressing MUST deduplicate within a pod and MUST NOT deduplicate
-across pods.
+**`SPS-MEDIA-004`** — Content addressing MUST deduplicate within a pod. A stored object MUST NOT be
+shared outside the pod that holds it.
 
-Sharing one stored object between two pods makes one pod's deletion depend on the other's, which is
-a tenancy boundary crossed for a storage saving.
+A pod's stored bytes are the pod's. An object shared with anything outside it makes this pod's
+deletion wait on something this pod does not control, which is a boundary crossed for a storage
+saving.
 
 <a id="SPS-MEDIA-005"></a>
 **`SPS-MEDIA-005`** — An upload MUST NOT write RDF. It returns a media URL; whoever wants a

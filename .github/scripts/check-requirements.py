@@ -14,6 +14,10 @@ Three of them, and none is checkable by a link checker:
    never sees, and it is exactly the kind of promise a reviewer stops noticing after the third
    pull request. Hence a check.
 
+   Until `0.1` is tagged the third one is a notice rather than a failure, because there is no
+   conformance suite yet to protect — GOVERNANCE.md §"Deleting and renumbering, before `0.1`".
+   The exception closes itself; see `window_open`.
+
 Run with no arguments to check the working tree. Pass a git ref to also compare against it:
 
     .github/scripts/check-requirements.py origin/main
@@ -44,6 +48,9 @@ INDEX = Path("requirements.json")
 # Until `0.1` is tagged the index says so, so nothing downstream can pin a version that does not
 # exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
 SPEC_VERSION = "0.1-dev"
+
+# The tag that ends the window in which a requirement may be deleted or an identifier renumbered.
+RELEASE_TAG = "0.1"
 
 # A module versions independently of core (`SPS-CORE-005`, GOVERNANCE.md §"Versioning"), so one
 # number over the whole index would be a claim the model does not make: a consumer reading a MEDIA
@@ -92,6 +99,27 @@ def versions_cover_modules():
         print("\n".join(f"error: {p}" for p in problems), file=sys.stderr)
         return False
     return True
+
+
+def window_open(spec_version, is_tagged):
+    """Whether a requirement may still be deleted or an identifier renumbered.
+
+    GOVERNANCE.md §"Deleting and renumbering, before `0.1`" opens this until the tag and closes it
+    forever after. Two conditions rather than one, because each alone fails in the permissive
+    direction: a checkout without tags — a shallow clone, an archive export — reads as untagged,
+    and a `SPEC_VERSION` nobody remembered to move reads as pre-release. Both have to say
+    pre-release, so either one closes the window on its own.
+
+    Pure, so the self-test can prove the polarity. An inverted condition here does not fail — it
+    permits, and permitting silently is the whole failure mode this file exists to prevent.
+    """
+    return spec_version.endswith("-dev") and not is_tagged
+
+
+def tagged(name=RELEASE_TAG):
+    """Whether this checkout carries the release tag."""
+    done = subprocess.run(["git", "tag", "--list", name], capture_output=True, text=True)
+    return done.returncode == 0 and bool(done.stdout.strip())
 
 
 def requirements(text):
@@ -159,6 +187,18 @@ def self_test():
     if idents != ["SPS-X-001", "SPS-X-001", "SPS-X-002"]:
         print(f"error: self-test failed — requirements() returned {idents}", file=sys.stderr)
         return False
+
+    # All four combinations, because the one that matters is the one that never fails loudly: a
+    # window wrongly open lets a deletion through with a note that reads like approval.
+    cases = {("0.1-dev", False): True, ("0.1-dev", True): False,
+             ("0.1", False): False, ("0.1", True): False}
+    for (version, is_tagged), wanted in cases.items():
+        if window_open(version, is_tagged) is not wanted:
+            print(
+                f"error: self-test failed — window_open({version!r}, {is_tagged}) is not {wanted}",
+                file=sys.stderr,
+            )
+            return False
     return True
 
 
@@ -336,6 +376,7 @@ def main():
         return 5
 
     current, problems = collect(lambda p: p.read_text())
+    notices = []
     if not current:
         print(
             f"error: {SPEC} defines no requirements at all. That is either a parsing failure or a "
@@ -379,12 +420,23 @@ def main():
         old_paths = [Path(line) for line in listing.stdout.splitlines() if line.endswith(".md")]
         before, _ = collect(at_base, old_paths)
 
+        # Reported either way. A deletion inside the window is still the kind of change that has to
+        # be seen to be reviewed — the failure this guard was written for is a deletion that reads
+        # as tidying, and silence is what makes it read that way.
+        open_window = window_open(SPEC_VERSION, tagged())
         for ident, (path, _) in sorted(before.items()):
             if ident not in current:
-                problems.append(
-                    f"{ident} was in {path} at {base} and is gone. An identifier is never deleted — "
-                    f"mark it withdrawn and keep its text (SPS-CORE-003)."
-                )
+                if open_window:
+                    notices.append(
+                        f"{ident} was in {path} at {base} and is gone. Deleting is allowed until "
+                        f"{RELEASE_TAG} is tagged — GOVERNANCE.md §\"Deleting and renumbering, "
+                        f"before `0.1`\". Say in the change which identifier went, and why."
+                    )
+                else:
+                    problems.append(
+                        f"{ident} was in {path} at {base} and is gone. An identifier is never "
+                        f"deleted — mark it withdrawn and keep its text (SPS-CORE-003)."
+                    )
 
     by_area = {}
     for ident in current:
@@ -397,6 +449,9 @@ def main():
     if cited:
         print(f"openapi {len(cited):3d} citations over {len({p for _, p in cited})} file(s), "
               f"{len({i for i, _ in cited})} distinct requirements")
+
+    if notices:
+        print("\n" + "\n".join(f"notice: {n}" for n in notices))
 
     if problems:
         print("\n" + "\n".join(problems), file=sys.stderr)

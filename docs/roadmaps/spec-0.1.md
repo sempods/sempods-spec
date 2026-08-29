@@ -101,6 +101,30 @@ equally urgent and the announce waits on all of them.
       `sempods/sempods-kotlin#54`. What the issue turns on is not the route but what advertising a
       module asserts — `SPS-CORE-006` makes it a claim that every `MUST` in that chapter holds,
       which is a claim the conformance suite is what can check.
+- [x] 38 — **One pod, one base URL.** Numbered after the items already issued rather than inserted,
+      because it settles what S2 owns and was decided late. `SPS-CORE-007` now says a pod has a base
+      URL and stops prescribing how it decomposes; `spec/core/index.md` §2 states that the subject of
+      this specification is one pod, and `spec-authoring.md` §1 makes *can a single pod satisfy this
+      on its own?* the first question an author answers — the boundary existed and was nowhere
+      written, which is how two requirements got past it.
+      `SPS-AUTH-056` and `SPS-AUTH-057` are **deleted rather than withdrawn**: both obliged a pod to
+      answer on a route above its own base, which a pod cannot serve and a host can. That needed
+      `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" first, and the requirements checker
+      carries the matching exception — it reports such a deletion as a notice, and closes the window
+      by itself at the tag. `SPS-MEDIA-004` says the same thing it said, as a pod rather than by
+      naming other pods.
+      All four OpenAPI descriptions template one `podBaseUrl`, the host-rooted metadata path item is
+      gone with the requirement behind it, and `site/build.py` holds one `DEMO_POD_BASE_URL` where it
+      held an origin and a pod name.
+      `SPS-MCP-031` was the fourth requirement past the line and was not in the sweep, so it is here
+      rather than in it: it demanded the metadata at an MCP URL's host-rooted form *and* at the
+      append form on that URL, and only the first is above the pod base. It **keeps its identifier
+      and loses that half** — the same treatment `SPS-MEDIA-004` got, because a requirement whose
+      satisfiable half is being used is narrowed rather than deleted. Deletion is for a statement
+      that should never have been written; half of this one should have been.
+      **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery
+      no longer finds a path-scoped pod, at the pod level or at an MCP URL. What that leans on is an
+      open decision below.
 
 ## S3 — Core chapters
 
@@ -206,8 +230,8 @@ equally urgent and the announce waits on all of them.
       record an assumption as a result.
       The endpoint URLs are absolute on a placeholder pod in the description and on the demo pod in
       the staged copy, `site/build.py` moving them with the `servers` defaults. Relative was tried
-      and is wrong — it resolves away the pod segment — and `{origin}/{pod}` was tried and is
-      worse: Scalar drops the flow entirely rather than substituting. The description states the
+      and is wrong — it resolves away the pod segment — and templating them with the `servers`
+      variable was tried and is worse: Scalar drops the flow entirely rather than substituting. The description states the
       residue, that a consumer substitutes its pod here as well as in `servers`.
 - [ ] 29 — `homepage` set on the repository, and the website links here instead of describing the
       API itself. **The repository half is done**; the website half is deliberately last, after this
@@ -264,18 +288,25 @@ equally urgent and the announce waits on all of them.
   against a reader.
 
 
-- **`SPS-CORE-007` fixes a pod's address as `{origin}/{pod}`, and not every deployment has that
-  shape.** A single-pod deployment, a pod that *is* a host (`pod.sempods.org`), and this project's
-  own plan for `schema.sempods.org` to become a pod eventually all break the two-part form. Today
-  it is a `MUST`, so each of those is non-conformant on a point that has nothing to do with
-  behaviour.
-  The shape of the fix is to say what actually matters — a pod has a base URL, every resource,
-  context and control-plane route lives under it — and stop prescribing how that URL decomposes.
-  The rest of the specification already reads that way: `SPS-CORE-010` and its neighbours write
-  `{pod}/_system/…`, meaning *relative to the pod base*, which holds either way.
-  It also reaches the OpenAPI, where all four descriptions template `{origin}/{pod}` as two server
-  variables. One `podBaseUrl` variable would fit every deployment and is simpler.
-  **Before `0.1`.** After the tag this is a breaking change to a `MUST`; before it, it is an edit.
+- **Item 38 left two holes in `auth` §10 where deleted requirements used to speak.** Both are the
+  same shape — a `MUST` went, and what replaced it is convention — and both are cheap, one `AUTH`
+  requirement each. **Before `0.1`.**
+  - **The `resource_metadata` hint that discovery now depends on is not required.** With the
+    host-rooted address gone there is one address for Protected Resource Metadata, the append form,
+    and no standard way to find it: a client makes an unauthenticated request and reads
+    `resource_metadata` out of the `401`'s `WWW-Authenticate`.
+    [`SPS-MCP-009`](../../spec/modules/mcp.md#SPS-MCP-009) requires that header of a pod providing
+    the MCP module and nothing requires it of one that does not — which is the "invisible until a
+    real client arrives" failure the deleted requirement was written against, moved one layer down.
+    The chapter's prose already names this as an acknowledged gap.
+  - **Nothing says where RFC 8414 Authorization Server Metadata lives.** `SPS-AUTH-057` carried
+    both its addresses, so deleting it took the pod-relative one with the host-rooted one.
+    `spec/core/auth.md` still declares it profiles RFC 8414 and
+    [`SPS-AUTH-048`](../../spec/core/auth.md#SPS-AUTH-048) still constrains the document's contents,
+    but the address is unstated — and RFC 8414's own is host-rooted, so the standard the chapter
+    profiles names a place a path-scoped pod cannot serve. Unlike the hint above this is not a
+    reinstatement: the append form was never the standard's, and requiring it is a decision about
+    blessing a convention rather than about writing down what everyone already does.
 
 - **How an implementation's version relates to the specification's, and what a pre-release looks
   like.** `GOVERNANCE.md` says the specification's line is independent of any implementation, and
@@ -328,8 +359,12 @@ equally urgent and the announce waits on all of them.
 
 - Every core chapter exists and carries requirement IDs; `spec/README.md` shows no core row as
   planned.
-- `grep -rho 'SPS-[A-Z]*-[0-9]\{3\}' spec/ | sort -u` yields no duplicate and no gap that came from
-  a renumbering.
+- `grep -rho 'SPS-[A-Z]*-[0-9]\{3\}' spec/ | sort -u` yields no duplicate, and every gap in it is
+  one the roadmap accounts for. There is none today: item 38 deleted the two highest `AUTH` numbers
+  while `GOVERNANCE.md`'s pre-`0.1` window was open, so 056 and 057 are back in the pool rather than
+  missing from a sequence. From the tag on, a gap can only come from a withdrawal, a renumbering
+  cannot happen at all, and the highest ever issued parts company with the highest still in the
+  chapters.
 - `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
 - No document that moved here still exists in the reference implementation.
 - `0.1` is tagged, and `GOVERNANCE.md`'s switch has therefore happened.

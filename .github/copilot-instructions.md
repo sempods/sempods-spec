@@ -57,7 +57,9 @@ Every normative statement carries one, and it is permanent:
   `OIDC`, `MEDIA`, `MCP` (modules).
 - **Never reused, never renumbered, never deleted.** A requirement that is no longer wanted is
   marked *withdrawn*, keeps its ID and its original text, and names its successor. IDs are cited in
-  conformance suites and in other people's test reports.
+  conformance suites and in other people's test reports. One dated exception, live today: until
+  `0.1` is tagged a requirement may be deleted and identifiers renumbered — `GOVERNANCE.md` states
+  when that ends, and it ends for good.
 - RFC 2119 as clarified by RFC 8174: only the uppercase keywords bind. Name the actor — "the server
   MUST…", not "it MUST be…".
 - A statement without an ID is not normative.

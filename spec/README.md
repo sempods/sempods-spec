@@ -1,6 +1,6 @@
 # The specification
 
-The normative text lives in this directory: six core chapters and three modules, 313 requirements.
+The normative text lives in this directory: six core chapters and three modules, 311 requirements.
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 
@@ -18,9 +18,11 @@ release.
   SPS-CRUD-011      →   spec/core/lod-crud.md#SPS-CRUD-011
   ```
 
-  IDs are permanent. They are never reused, never renumbered, and a requirement that is dropped is
-  marked **withdrawn** rather than deleted — the same promise the vocabulary makes for RDF terms,
-  because an ID ends up in other people's test suites the way a term ends up in other people's data.
+  IDs are permanent from the `0.1` tag on. They are never reused, never renumbered, and a
+  requirement that is dropped is marked **withdrawn** rather than deleted — the same promise the
+  vocabulary makes for RDF terms, because an ID ends up in other people's test suites the way a term
+  ends up in other people's data. Before the tag there are no such test suites, and
+  [`../GOVERNANCE.md`](../GOVERNANCE.md) states the window that follows from that.
 - **Standards are named, not re-explained.** A chapter states which RFCs it profiles and specifies
   the deviations. If a behaviour follows the profiled standard exactly, the chapter is silent about
   it on purpose.

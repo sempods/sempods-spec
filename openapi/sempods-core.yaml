@@ -33,15 +33,16 @@ externalDocs:
   url: https://github.com/sempods/sempods-spec/blob/main/spec/README.md
 
 servers:
-  - url: '{origin}/{pod}'
-    description: A pod. Every route below is relative to the pod base URL.
+  - url: '{podBaseUrl}'
+    description: A pod. Every route below is relative to it.
     variables:
-      origin:
-        default: https://example.org
-        description: The origin the deployment is publicly known by. Pod IRIs are minted from it.
-      pod:
-        default: alice
-        description: The pod identifier within the deployment.
+      podBaseUrl:
+        default: https://example.org/alice
+        description: >-
+          The pod's base URL, and the address the pod is publicly known by — its resource IRIs are
+          minted from it. One variable rather than an origin and a pod name, because `SPS-CORE-007`
+          does not prescribe how the URL decomposes: a path under a shared origin, a host of the
+          pod's own, and an origin that is a single pod are the same pod here.
 
 tags:
   - name: conformance
@@ -686,37 +687,10 @@ paths:
             application/json:
               schema: { type: object }
 
-  # The host-rooted form RFC 9728 §3.1 constructs, which is what a generic OAuth client probes.
-  # It sits at the origin rather than under the pod, so the path item overrides the document's
-  # server — OpenAPI has one prefix per document and this address is outside it.
-  /oauth-protected-resource/{pod}:
-    servers:
-      - url: '{origin}/.well-known'
-        variables:
-          origin:
-            default: 'https://example.org'
-    parameters:
-      - name: pod
-        in: path
-        required: true
-        schema: { type: string }
-    get:
-      tags: [auth]
-      operationId: protectedResourceMetadataHostRooted
-      summary: The same metadata, at the address RFC 9728 constructs.
-      description: |
-        Identical document to the append form below. Both are required: this one is what a client
-        driving RFC 9728 discovery asks for, and the append form is what a `WWW-Authenticate`
-        `resource_metadata` hint points at. Neither replaces the other.
-      security: [{}]
-      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047, SPS-AUTH-056]
-      responses:
-        '200':
-          description: The metadata document.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
-
+  # The append form, and the only Protected Resource Metadata address this specification requires.
+  # The host-rooted form RFC 9728 §3.1 constructs is a route on the origin, outside any one pod's
+  # base URL, so a pod cannot serve it and nothing here asks it to. A deployment that hosts many
+  # pods can, as an extension of its own.
   /.well-known/oauth-protected-resource:
     get:
       tags: [auth]
@@ -725,6 +699,11 @@ paths:
       description: |
         Never enumerates the pod's public context IRIs — a count may be advertised, the URIs would
         be a topology leak on an unauthenticated route.
+
+        A client that has not been told this address reaches it the ordinary way: an
+        unauthenticated request, a `401`, and the `resource_metadata` hint in `WWW-Authenticate`.
+        Pre-flight RFC 9728 discovery against the host-rooted address does not find a path-scoped
+        pod.
       security: [{}]
       x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047]
       responses:
@@ -772,14 +751,14 @@ components:
         the identifier's host and port (`SPS-AUTH-004`).
 
         **The endpoint URLs below name the same placeholder pod as `servers`, and do not follow it.**
-        OpenAPI has no way to template them the way a server URL is templated: changing the `origin`
-        and `pod` variables moves the operations and leaves these where they are. Substitute your
-        pod here as well. Relative URLs are not the answer — `_system/auth/authorize` resolves
-        against `https://example.org/alice` to `https://example.org/_system/auth/authorize`, losing
-        the pod, because a pod base is path-scoped (`SPS-CORE-007`).
+        OpenAPI has no way to template them the way a server URL is templated: changing the
+        `podBaseUrl` variable moves the operations and leaves these where they are. Substitute your
+        pod's base URL here as well. Relative URLs are not the answer — `_system/auth/authorize`
+        resolves against `https://example.org/alice` to `https://example.org/_system/auth/authorize`,
+        losing the pod, and `SPS-CORE-007` allows a base URL that carries a path.
       # The trade is stated in the description above, where a consumer can read it. For an author:
-      # `site/build.py` substitutes these together with the `servers` defaults when staging, so the
-      # published copy names one pod throughout. Writing `{origin}/{pod}` here instead was tried —
+      # `site/build.py` substitutes these together with the `servers` default when staging, so the
+      # published copy names one pod throughout. Writing `{podBaseUrl}` here instead was tried —
       # Scalar drops the whole flow rather than substituting, so the try-it page loses its login.
       flows:
         authorizationCode:

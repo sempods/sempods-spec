@@ -14,4 +14,4 @@ No scoped `AGENTS.md` files exist yet; the root file governs every edit.
 
 Before editing any `*.md`, read `docs/agents/documentation-strategy.md`. Before editing anything
 under `spec/`, read `docs/agents/spec-authoring.md` as well — requirement IDs are permanent and a
-renumbering is a silent break.
+renumbering is a silent break, except inside the pre-`0.1` window `GOVERNANCE.md` opens.

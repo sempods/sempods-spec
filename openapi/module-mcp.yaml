@@ -28,10 +28,9 @@ externalDocs:
   url: https://github.com/sempods/sempods-spec/blob/main/spec/modules/mcp.md
 
 servers:
-  - url: '{origin}/{pod}'
+  - url: '{podBaseUrl}'
     variables:
-      origin: { default: 'https://example.org' }
-      pod: { default: alice }
+      podBaseUrl: { default: 'https://example.org/alice' }
 
 security:
   - {}

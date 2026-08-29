@@ -32,7 +32,19 @@ That promise is what makes an identifier safe to cite from a conformance report,
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
 RDF terms, for the same reason.
 
+It begins at the `0.1` tag, which is when there is first something to cite. Until then a requirement
+may be deleted outright, identifiers may be renumbered, and a requirement whose meaning changes may
+keep its identifier; [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states the window, what it is not
+for, and what closes it. This chapter is descriptive until that same tag, and the two facts expire
+together.
+
 ## 2. What conforms
+
+**The subject of this specification is one pod.** Every requirement in it can be satisfied by a pod
+that is the only one in existence, and none of them needs a second pod to mean anything. A
+deployment that serves many pods is conformant when each of those pods is; how it provisions them,
+tells them apart, or administers them across the set is an extension of an implementation and not a
+part of this specification.
 
 <a id="SPS-CORE-004"></a>
 **`SPS-CORE-004`** — A **conformant sempods implementation** MUST satisfy every `MUST` and
@@ -54,9 +66,13 @@ The modules defined by this specification are `oidc`, `media` and `mcp`.
 ## 3. Addressing
 
 <a id="SPS-CORE-007"></a>
-**`SPS-CORE-007`** — A pod is addressed under a base URL of the form `{origin}/{pod}`, where `{pod}`
-is the pod's identifier within the deployment. Every resource, context and control-plane route of
-that pod lives under that prefix.
+**`SPS-CORE-007`** — A pod is addressed under a base URL. Every resource, context and control-plane
+route of that pod lives under that base URL.
+
+This specification does not prescribe how the base URL decomposes. A path segment under a shared
+origin, a host of the pod's own, and an origin that is a single pod are the same pod as far as every
+other requirement is concerned. What a client is given is the base URL, and `{pod}` throughout this
+specification means it.
 
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the
