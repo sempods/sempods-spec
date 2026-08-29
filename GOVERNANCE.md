@@ -60,15 +60,19 @@ this project whose build breaks when a requirement moves. Tagging before there i
 spends the freedom to still be wrong about the shape — which the specification currently is in at
 least one place it knows of, and probably more it does not.
 
-So the trigger is not a date. **`0.1` is tagged when a second implementation exists, or when a
-client outside this project depends on the contract.** Whichever comes first is the moment the
-promise has an addressee.
+So the trigger is not a date. **`0.1` is tagged when two things hold at once:** somebody is there
+to promise to — a second implementation, or a client outside this project that depends on the
+contract — **and** everything below is settled. Adoption is what makes the tag worth cutting; the
+open questions are what makes it possible. Neither is sufficient alone, and adoption arriving first
+is a reason to close the rest, not to tag around it.
 
 Until then `0.1-dev` is what an implementation declares, what the conformance endpoint reports, and
 what this document means wherever it says "before the tag". It is the honest answer to "which
 version is this?" — more honest than a `0.1` that gets edited the week after it is cut.
 
-One thing has to be settled before the tag and is not:
+### What has to be settled first
+
+One thing, and it is not:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
 the IRIs it has already published. A pod's data is cited from elsewhere on the web, and the
 citations are the point — so a version change cannot move the pod to a new address.
