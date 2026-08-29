@@ -14,6 +14,7 @@ first line; if that changes, this follows rather than inventing a second tagline
 
 import re
 from pathlib import Path
+from xml.etree import ElementTree
 
 import cairosvg
 
@@ -30,14 +31,20 @@ MARK = 288  # the mark's rendered edge, whatever coordinate system it is drawn i
 mark = (HERE / "sempods-mark.svg").read_text()
 glyph = re.sub(r"^.*?<svg[^>]*>|</svg>\s*$", "", mark, flags=re.S).strip()
 
-view_box = re.search(r'viewBox="([^"]+)"', mark)
+# Read by a parser rather than by pattern. XML permits either quote style, and a mark exported
+# by a different tool than the current one is exactly the case this script exists for — a regex
+# that knows only double quotes would report "no viewBox" on a perfectly valid file.
+try:
+    view_box = ElementTree.fromstring(mark).get("viewBox")
+except ElementTree.ParseError as broken:
+    raise SystemExit(f"error: sempods-mark.svg is not parseable XML — {broken}")
 if not view_box:
     raise SystemExit("error: sempods-mark.svg has no viewBox — cannot place it without guessing.")
 
 card = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}"
      viewBox="0 0 {WIDTH} {HEIGHT}">
   <rect width="{WIDTH}" height="{HEIGHT}" fill="{BACKGROUND}"/>
-  <svg x="496" y="116" width="{MARK}" height="{MARK}" viewBox="{view_box.group(1)}"
+  <svg x="496" y="116" width="{MARK}" height="{MARK}" viewBox="{view_box}"
        fill="{FOREGROUND}" color="{FOREGROUND}">{glyph}</svg>
   <text x="640" y="486" font-family="Helvetica,Arial,sans-serif" font-size="62"
         fill="{FOREGROUND}" text-anchor="middle" letter-spacing="1">sempods</text>
