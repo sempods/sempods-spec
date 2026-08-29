@@ -106,10 +106,12 @@ equally urgent and the announce waits on all of them.
       pod: [`spec/core/index.md`](../../spec/core/index.md) §2 states it for a reader, and
       [`spec-authoring.md`](../agents/spec-authoring.md) §1 makes *can a single pod satisfy this on
       its own?* the first question an author answers.
-      Six requirements did not. `SPS-AUTH-056` and `SPS-AUTH-057` are **deleted**; `SPS-CORE-007`,
-      `SPS-MCP-004`, `SPS-MCP-031` and `SPS-MEDIA-004` keep their identifiers and lose the clause
-      that reached above the pod. Two are added, `SPS-CORE-019` and `SPS-CORE-020`, fixing the form
-      of a base URL now that `{pod}` is one — the chapters carry what each says and why.
+      `SPS-CORE-007` says a pod has a base URL and stops prescribing how it decomposes, which is
+      what this item is named after. Six others failed the test: `SPS-AUTH-056` and `SPS-AUTH-057`
+      are **deleted**; `SPS-AUTH-054`, `SPS-MCP-004`, `SPS-MCP-031` and `SPS-MEDIA-004` keep their
+      identifiers and lose the clause that reached above the pod. Two are added, `SPS-CORE-019` and
+      `SPS-CORE-020`, fixing the form of a base URL now that `{pod}` is one — the chapters carry
+      what each says and why.
       Deleting needed [`../../GOVERNANCE.md`](../../GOVERNANCE.md) §"Deleting and renumbering,
       before `0.1`" first, and `check-requirements.py` carries the matching exception and its
       expiry. All four OpenAPI descriptions template one `podBaseUrl`, and `site/build.py` holds one
