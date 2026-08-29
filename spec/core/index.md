@@ -33,10 +33,12 @@ and an identifier be renumbered or reused.
 
 Permanence is what makes an identifier safe to cite from a conformance report, an implementation
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
-RDF terms, for the same reason, and it begins at the tag because that is when there is first
-something to cite. [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is
-for, what it is not for, and what closes it. This chapter is descriptive until that same tag, and
-the two facts expire together.
+RDF terms, for the same reason, and it begins as soon as there is something to cite — which the tag
+guarantees and an outside dependant can bring about sooner.
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is for, what it is not
+for, and what closes it. This chapter is descriptive until the tag, and only until the tag: that is
+a different event resting on a different fact. Whether the text or the reference implementation is
+right is a promise this project makes about itself, and nobody else's arrival settles it.
 
 ## 2. What conforms
 

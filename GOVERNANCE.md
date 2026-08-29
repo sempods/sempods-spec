@@ -118,8 +118,10 @@ After the tag, none of the three ever again.**
 so a second implementation or an external client can appear while it is still open — and the moment
 one does, the fact this rests on stops being true: there *is* somebody citing these identifiers, and
 renumbering would retarget their tests silently. The relaxation ends when the first external
-dependency appears or when `0.1` is tagged, whichever is sooner. This is the same dated event as the switch from
-descriptive to prescriptive, and it rests on the same fact. Permanence buys exactly one thing: an
+dependency appears or when `0.1` is tagged, whichever is sooner — which makes it a different event
+from the switch to prescriptive above, resting on a different fact. That switch is a promise this
+project makes about its own text and only the tag makes it; this one is about whether anybody is
+citing the identifiers, and somebody outside can answer that first. Permanence buys exactly one thing: an
 identifier stays safe to cite from a conformance report this project never sees. Nothing has been
 published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
 a chapter carrying text that was wrong from the day it was written, for a promise nobody was given.
