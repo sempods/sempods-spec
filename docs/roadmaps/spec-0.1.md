@@ -116,12 +116,16 @@ equally urgent and the announce waits on all of them.
       All four OpenAPI descriptions template one `podBaseUrl`, the host-rooted metadata path item is
       gone with the requirement behind it, and `site/build.py` holds one `DEMO_POD_BASE_URL` where it
       held an origin and a pod name.
-      `SPS-MCP-031` was the fourth requirement past the line and was not in the sweep, so it is here
-      rather than in it: it demanded the metadata at an MCP URL's host-rooted form *and* at the
-      append form on that URL, and only the first is above the pod base. It **keeps its identifier
-      and loses that half** — the same treatment `SPS-MEDIA-004` got, because a requirement whose
-      satisfiable half is being used is narrowed rather than deleted. Deletion is for a statement
-      that should never have been written; half of this one should have been.
+      Two more were past the line and in neither the sweep nor this item as first written, and both
+      **keep their identifiers and lose the offending clause** — the treatment `SPS-MEDIA-004` got,
+      because a requirement whose satisfiable half is being used is narrowed rather than deleted.
+      `SPS-MCP-031` demanded the metadata at an MCP URL's host-rooted form *and* at the append form
+      on that URL; only the first is above the pod base. `SPS-MCP-004` required a distinct JSON-RPC
+      code with HTTP `404` for an **unknown pod** — a response to a request that by definition never
+      reaches a pod, so the actor is whatever routes to pods rather than a pod. The rest of its
+      error model is untouched, and `openapi/module-mcp.yaml` lost the same sentence.
+      That the sweep found three and the count is five is the argument for writing the test down:
+      each of the last two was found by reading the change rather than by looking for them.
       **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery
       no longer finds a path-scoped pod, at the pod level or at an MCP URL. What that leans on is an
       open decision below.

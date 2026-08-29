@@ -140,6 +140,5 @@ components:
               type: integer
               description: |
                 Parse error, invalid request, method or tool not found, invalid params, internal
-                error — plus a distinct code for a rejected bearer, paired with HTTP 401, and one
-                for an unknown pod, paired with HTTP 404.
+                error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }

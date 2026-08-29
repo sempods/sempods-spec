@@ -67,7 +67,9 @@ choosing, and can prove it.
 - **Core**: the chapters every implementation must satisfy. No opt-out, no partial core.
 - **Module**: an optional, separately versioned chapter set. An implementation advertises which ones
   it provides; it does not silently omit them.
-- **Requirement ID**: `SPS-<AREA>-<NNN>`, the permanent handle on one normative statement.
+- **Requirement ID**: `SPS-<AREA>-<NNN>`, the handle on one normative statement — permanent from
+  the `0.1` tag, and until then still deletable and renumberable under the window
+  [`GOVERNANCE.md`](GOVERNANCE.md) opens.
 
 ## Non-negotiable invariants
 

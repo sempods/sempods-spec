@@ -94,7 +94,8 @@ later.
 
 `.github/scripts/check-requirements.py` carries the matching exception, and it closes on its own
 rather than by memory: the relaxation holds only while the repository has no `0.1` tag **and** the
-script still declares a `-dev` specification version. Tagging ends it whether or not anyone
+script still declares the pre-`0.1` specification version, matched exactly rather than by its `-dev`
+suffix. `0.2-dev` is a later version, not a second window. Tagging ends it whether or not anyone
 remembers this paragraph.
 
 ## Who decides

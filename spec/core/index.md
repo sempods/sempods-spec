@@ -74,6 +74,14 @@ origin, a host of the pod's own, and an origin that is a single pod are the same
 other requirement is concerned. What a client is given is the base URL, and `{pod}` throughout this
 specification means it.
 
+**Notation.** A base URL is written without a trailing slash, and every `{pod}/…` below is that
+string with what follows appended to it. A base a client is handed with a trailing slash names the
+same pod; the slash is not part of it. Writing the base as `https://example.org/alice/` and reading
+`{pod}/_system/conformance` as concatenation would produce a doubled slash, which servers and
+proxies do not normalise alike — so a client that is given one strips it before composing. A pod
+that is an entire origin is `https://example.org`, and the same rule makes
+`{pod}/_system/conformance` resolve as it should.
+
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the
 control plane. An implementation MUST NOT serve ordinary Linked Data resources from

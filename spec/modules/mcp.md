@@ -33,7 +33,7 @@ The empty answers are not placeholders. Several clients probe those methods on c
 <a id="SPS-MCP-004"></a>
 **`SPS-MCP-004`** — Error responses MUST use JSON-RPC codes: parse error, invalid request, method or
 tool not found, invalid params, internal error. A rejected bearer MUST be a distinct code paired with
-HTTP `401`, and an unknown pod a distinct code paired with HTTP `404`.
+HTTP `401`.
 
 ## 2. Authentication modes
 

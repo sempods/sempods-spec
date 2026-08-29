@@ -30,7 +30,9 @@ and this repository is. [`GOVERNANCE.md`](GOVERNANCE.md) states the switch, and 
 event rather than a mood.
 
 What that means concretely: **you can implement against this repository, and you cannot yet prove
-you did.** The requirements are stable enough to build against and their identifiers are permanent;
+you did.** The requirements are stable enough to build against, and their identifiers become
+permanent at the `0.1` tag — until then one may still be deleted or renumbered, which
+[`GOVERNANCE.md`](GOVERNANCE.md) states and bounds;
 what does not exist is the suite that would check an implementation against them.
 [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) is what remains, and in which order.
 

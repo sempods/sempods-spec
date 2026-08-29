@@ -49,8 +49,15 @@ INDEX = Path("requirements.json")
 # exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
 SPEC_VERSION = "0.1-dev"
 
-# The tag that ends the window in which a requirement may be deleted or an identifier renumbered.
+# The tag that ends the window in which a requirement may be deleted or an identifier renumbered,
+# and the one version in which that window is open.
+#
+# `PRE_RELEASE_VERSION` is an exact string rather than a `-dev` suffix test, and the difference is
+# the whole guard. After `0.1` ships, ordinary development sets `0.2-dev` — and a suffix test would
+# read that as pre-release and reopen a window GOVERNANCE.md says never reopens. Every later
+# version fails the comparison, which is the direction that has to be automatic.
 RELEASE_TAG = "0.1"
+PRE_RELEASE_VERSION = "0.1-dev"
 
 # A module versions independently of core (`SPS-CORE-005`, GOVERNANCE.md §"Versioning"), so one
 # number over the whole index would be a claim the model does not make: a consumer reading a MEDIA
@@ -110,10 +117,14 @@ def window_open(spec_version, is_tagged):
     and a `SPEC_VERSION` nobody remembered to move reads as pre-release. Both have to say
     pre-release, so either one closes the window on its own.
 
+    The version test is an equality against one string, not a `-dev` suffix. A suffix test reopens
+    the window at `0.2-dev`, and it does so in exactly the environment the tag half cannot cover —
+    a clone without tags. Two guards that fail together are one guard.
+
     Pure, so the self-test can prove the polarity. An inverted condition here does not fail — it
     permits, and permitting silently is the whole failure mode this file exists to prevent.
     """
-    return spec_version.endswith("-dev") and not is_tagged
+    return spec_version == PRE_RELEASE_VERSION and not is_tagged
 
 
 def tagged(name=RELEASE_TAG):
@@ -188,10 +199,14 @@ def self_test():
         print(f"error: self-test failed — requirements() returned {idents}", file=sys.stderr)
         return False
 
-    # All four combinations, because the one that matters is the one that never fails loudly: a
-    # window wrongly open lets a deletion through with a note that reads like approval.
+    # Every combination that decides something, because the case that matters never fails loudly:
+    # a window wrongly open lets a deletion through with a note that reads like approval. The
+    # `0.2-dev` rows are the ones a suffix test got wrong — a later development version in a clone
+    # without tags is the shape that silently reopens this.
     cases = {("0.1-dev", False): True, ("0.1-dev", True): False,
-             ("0.1", False): False, ("0.1", True): False}
+             ("0.1", False): False, ("0.1", True): False,
+             ("0.2-dev", False): False, ("0.2-dev", True): False,
+             ("1.0-dev", False): False}
     for (version, is_tagged), wanted in cases.items():
         if window_open(version, is_tagged) is not wanted:
             print(
