@@ -72,7 +72,13 @@ version is this?" — more honest than a `0.1` that gets edited the week after i
 
 ### What has to be settled first
 
-One thing, and it is not:
+**The roadmap's open decisions are the gate, not a list kept here** — two copies of that list would
+disagree within a week. What is written down there as required before `0.1` is required before
+`0.1`, and one of those is a **known security defect**: `SPS-CORE-018` is a context-enumeration
+oracle. Tagging over it makes it binding, which is the one outcome this whole switch exists to
+prevent.
+
+The one that is not on the roadmap, because it came out of a conversation rather than a review:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
 the IRIs it has already published. A pod's data is cited from elsewhere on the web, and the
 citations are the point — so a version change cannot move the pod to a new address.
@@ -106,7 +112,13 @@ withdrawn in, and names what replaces it if anything does. The ID stays out of c
 
 **Until `0.1` is tagged a requirement may be deleted outright, identifiers may be renumbered, and a
 requirement whose meaning changes may keep its identifier rather than be withdrawn for a successor.
-After the tag, none of the three ever again.** This is the same dated event as the switch from
+After the tag, none of the three ever again.**
+
+**The window closes earlier if adoption arrives first.** The tag now waits for the blockers above,
+so a second implementation or an external client can appear while it is still open — and the moment
+one does, the fact this rests on stops being true: there *is* somebody citing these identifiers, and
+renumbering would retarget their tests silently. The relaxation ends when the first external
+dependency appears or when `0.1` is tagged, whichever is sooner. This is the same dated event as the switch from
 descriptive to prescriptive, and it rests on the same fact. Permanence buys exactly one thing: an
 identifier stays safe to cite from a conformance report this project never sees. Nothing has been
 published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
