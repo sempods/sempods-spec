@@ -109,8 +109,9 @@ components:
           refreshUrl: 'https://example.org/alice/_system/auth/token'
           scopes:
             public-read: >-
-              Read whatever the pod currently exposes as public, in addition to the caller's own
-              grants (`SPS-AUTH-035`).
+              The pod's currently public contexts, unioned into the caller's readable set on top of
+              the grants resolved from storage (`SPS-GRANT-020`). A token issued for it carries no
+              refresh token (`SPS-AUTH-035`).
         clientCredentials:
           tokenUrl: 'https://example.org/alice/_system/auth/token'
           scopes: {}
