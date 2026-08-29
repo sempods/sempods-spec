@@ -165,8 +165,9 @@ paths:
 
   /{resourcePath}:
     description: |
-      The LOD layer. `resourcePath` is everything after the pod segment and **may contain slashes**
-      — OpenAPI path templating has no multi-segment parameter, so tooling will show it as one
+      The LOD layer. `resourcePath` is everything after the pod's base URL — not after a pod path
+      segment, which a pod that is an entire origin does not have — and **may contain slashes**.
+      OpenAPI path templating has no multi-segment parameter, so tooling will show it as one
       segment. A path equal to `_system` or beginning `_system/` is not addressable here.
     parameters:
       - $ref: '#/components/parameters/ResourcePath'
@@ -791,7 +792,9 @@ components:
       in: path
       required: true
       schema: { type: string }
-      description: Everything after the pod segment. May contain slashes.
+      description: >-
+        Everything after the pod's base URL — not after a pod path segment, which a pod that is an
+        entire origin does not have. May contain slashes.
 
     ResourceIri:
       name: resourceIri

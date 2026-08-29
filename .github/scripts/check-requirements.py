@@ -164,6 +164,20 @@ def said(body):
     return " ".join(body.split())
 
 
+def only_withdrawn(before, after):
+    """Whether the only change is the withdrawal preamble going in front of the original text.
+
+    The one in-place edit `SPS-CORE-003` blesses after the tag: a retired requirement keeps its
+    identifier and its original text and gains the preamble. Recognised so that withdrawing — the
+    move the rule tells an author to make — is not the move the guard refuses.
+    """
+    head = said(after).lstrip("— ").lstrip()
+    kept = PREAMBLE.sub("", head)
+    if kept == head:
+        return False  # No preamble was removed, so nothing was withdrawn.
+    return said(before).lstrip("— ").lstrip() == kept
+
+
 def requirements(text):
     """Every `(identifier, body)` a document opens, in order — a LIST, not a mapping.
 
@@ -242,6 +256,23 @@ def self_test():
         if window_open(version, is_tagged) is not wanted:
             print(
                 f"error: self-test failed — window_open({version!r}, {is_tagged}) is not {wanted}",
+                file=sys.stderr,
+            )
+            return False
+
+    # The withdrawal is the one in-place edit the rule prescribes, so mistaking it for a
+    # reassignment would make the guard refuse the very move it tells an author to make — and
+    # mistaking a reassignment for a withdrawal would let the forbidden one through silently.
+    kept = " — A write request MUST carry `Content-Type: application/ld+json`."
+    withdrawn = (
+        " — *Withdrawn in 0.3. Superseded by [`SPS-CRUD-019`](#SPS-CRUD-019).*\n"
+        "A write request MUST carry `Content-Type: application/ld+json`."
+    )
+    reassigned = " — A write request MUST carry `Accept: text/turtle`."
+    for after, wanted in ((withdrawn, True), (reassigned, False), (kept, False)):
+        if only_withdrawn(kept, after) is not wanted:
+            print(
+                f"error: self-test failed — only_withdrawn() is not {wanted} for {after[:40]!r}",
                 file=sys.stderr,
             )
             return False
@@ -486,17 +517,32 @@ def main():
         # as tidying, and silence is what makes it read that way.
         open_window = window_open(SPEC_VERSION, is_tagged=released is not False)
         for ident, (path, body) in sorted(before.items()):
-            # An identifier kept through a change of meaning is the window's third permission and
-            # the one nothing else can see: the identifier is still there, so the disappearance
-            # check below says nothing, and downstream a citation of it goes on resolving while
-            # pointing at a different obligation. Reported for the same reason a deletion is.
-            if ident in current and open_window and said(body) != said(current[ident][1]):
-                notices.append(
-                    f"{ident} says something else than it did at {base}. Keeping an identifier "
-                    f"through a change of meaning is allowed until {RELEASE_TAG} is tagged, and it "
-                    f"owes the sweep GOVERNANCE.md names: re-vendor the index downstream, and read "
-                    f"every citation of {ident} there."
-                )
+            # An identifier kept through a change of text is the case nothing else here can see:
+            # the identifier is still present, so the disappearance check below says nothing, and
+            # downstream a citation of it goes on resolving while pointing at a different
+            # obligation. It is checked in both states, because the permanent half is the half that
+            # matters — `SPS-CORE-003` makes reassignment a MUST NOT from the tag on, and a guard
+            # that only watched the window would enforce the temporary rule and not the lasting one.
+            if ident in current and said(body) != said(current[ident][1]):
+                if only_withdrawn(body, current[ident][1]):
+                    pass  # The one in-place edit the rule itself prescribes.
+                elif open_window:
+                    notices.append(
+                        f"{ident} says something else than it did at {base}. Keeping an identifier "
+                        f"through a change of meaning is allowed until {RELEASE_TAG} is tagged, and "
+                        f"it owes the sweep GOVERNANCE.md names: re-vendor the index downstream, "
+                        f"and read every citation of {ident} there."
+                    )
+                else:
+                    problems.append(
+                        f"{ident} says something else than it did at {base}, and its text is not a "
+                        f"withdrawal of what was there. An identifier is never reassigned to a "
+                        f"different statement (SPS-CORE-003) — a requirement whose meaning moves "
+                        f"gets a new identifier and this one is withdrawn. If the demand is "
+                        f"unchanged and only the wording is clearer, that is allowed and this "
+                        f"guard cannot tell the two apart: say so in the pull request, and relax "
+                        f"this check deliberately rather than by rewording around it."
+                    )
             if ident not in current:
                 if open_window:
                     notices.append(

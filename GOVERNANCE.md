@@ -105,6 +105,12 @@ the tag exists, a shallow clone with no tag refs to read, counts as tagged: the 
 not the one to give a question that was never asked. Tagging ends the window whether or not anyone
 remembers this paragraph, and a tag with a stale version is reported rather than absorbed.
 
+What the script watches is not only whether an identifier disappeared. A requirement that keeps its
+identifier and says something else is the same permission seen from the other side, and it is
+reported while the window is open and refused after it closes — a withdrawal, which keeps the
+original text and adds the preamble in front of it, being the one in-place edit the rule prescribes
+and therefore the one it does not refuse.
+
 ## Who decides
 
 One maintainer today (`@haed`). That is a fact, not a design: a specification governed by one person
