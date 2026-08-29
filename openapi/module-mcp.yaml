@@ -80,11 +80,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
-        '404':
-          description: The pod segment names no pod.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/JsonRpcResponse' }
 
 components:
 
