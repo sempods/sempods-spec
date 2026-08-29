@@ -159,6 +159,11 @@ def tag_state(name=RELEASE_TAG):
     return False
 
 
+def said(body):
+    """A requirement's text with its layout removed, so a reflow is not a change of meaning."""
+    return " ".join(body.split())
+
+
 def requirements(text):
     """Every `(identifier, body)` a document opens, in order — a LIST, not a mapping.
 
@@ -480,7 +485,18 @@ def main():
         # be seen to be reviewed — the failure this guard was written for is a deletion that reads
         # as tidying, and silence is what makes it read that way.
         open_window = window_open(SPEC_VERSION, is_tagged=released is not False)
-        for ident, (path, _) in sorted(before.items()):
+        for ident, (path, body) in sorted(before.items()):
+            # An identifier kept through a change of meaning is the window's third permission and
+            # the one nothing else can see: the identifier is still there, so the disappearance
+            # check below says nothing, and downstream a citation of it goes on resolving while
+            # pointing at a different obligation. Reported for the same reason a deletion is.
+            if ident in current and open_window and said(body) != said(current[ident][1]):
+                notices.append(
+                    f"{ident} says something else than it did at {base}. Keeping an identifier "
+                    f"through a change of meaning is allowed until {RELEASE_TAG} is tagged, and it "
+                    f"owes the sweep GOVERNANCE.md names: re-vendor the index downstream, and read "
+                    f"every citation of {ident} there."
+                )
             if ident not in current:
                 if open_window:
                     notices.append(

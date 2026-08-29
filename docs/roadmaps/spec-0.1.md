@@ -102,50 +102,20 @@ equally urgent and the announce waits on all of them.
       module asserts — `SPS-CORE-006` makes it a claim that every `MUST` in that chapter holds,
       which is a claim the conformance suite is what can check.
 - [x] 38 — **One pod, one base URL.** Numbered after the items already issued rather than inserted,
-      because it settles what S2 owns and was decided late. `SPS-CORE-007` now says a pod has a base
-      URL and stops prescribing how it decomposes; `spec/core/index.md` §2 states that the subject of
-      this specification is one pod, and `spec-authoring.md` §1 makes *can a single pod satisfy this
-      on its own?* the first question an author answers — the boundary existed and was nowhere
-      written, which is how two requirements got past it.
-      `SPS-AUTH-056` and `SPS-AUTH-057` are **deleted rather than withdrawn**: both obliged a pod to
-      answer on a route above its own base, which a pod cannot serve and a host can. That needed
-      `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" first, and the requirements checker
-      carries the matching exception — it reports such a deletion as a notice, and closes the window
-      by itself at the tag. `SPS-MEDIA-004` says the same thing it said, as a pod rather than by
-      naming other pods.
-      All four OpenAPI descriptions template one `podBaseUrl`, the host-rooted metadata path item is
-      gone with the requirement behind it, and `site/build.py` holds one `DEMO_POD_BASE_URL` where it
-      held an origin and a pod name.
-      Two more were past the line and in neither the sweep nor this item as first written, and both
-      **keep their identifiers and lose the offending clause** — the treatment `SPS-MEDIA-004` got,
-      because a requirement whose satisfiable half is being used is narrowed rather than deleted.
-      `SPS-MCP-031` demanded the metadata at an MCP URL's host-rooted form *and* at the append form
-      on that URL; only the first is above the pod base. `SPS-MCP-004` required a distinct JSON-RPC
-      code with HTTP `404` for an **unknown pod** — a response to a request that by definition never
-      reaches a pod, so the actor is whatever routes to pods rather than a pod. The rest of its
-      error model is untouched, and `openapi/module-mcp.yaml` lost the same sentence.
-      `SPS-AUTH-054` is the sixth and the last: "a sign-in at one pod MUST NOT be a sign-in at
-      another" named a second pod to constrain this one, so conformance could only be judged with
-      that other pod present. It now binds a session credential's scope to the pod's own base URL,
-      which is the same property tested on the pod that has to hold it.
-      That the sweep found three and the count is six is the argument for writing the test down:
-      every one after the third was found by reading the change rather than by looking for them.
-      **`SPS-CORE-019` is the one addition**, and it exists because this change created the hole it
-      fills: while `{pod}` was an identifier segment a trailing slash, a query and a fragment were
-      none of them expressible, and now that it is the whole base URL, `{pod}/_system/…` had no
-      defined composition. It fixes the form — an absolute `http:` or `https:` URL, no query, no
-      fragment, no trailing slash — because each of those is a way for appending to stop meaning
-      what the route says. **`SPS-CORE-020`** is its security half and the second addition: a base
-      path carrying a dot segment, a backslash or a percent-encoded octet composes into a route that
-      resolves *outside* the pod on some clients and not on others. `site/build.py` had already
-      reached that conclusion for the try-it page and checked it against a real browser; the
-      chapter now carries the same rule, and for the same stated reason — the list of spellings is
-      not one a specification can close, so the forms are refused rather than normalised. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
-      statement without an identifier does not bind, so the notation could not have qualified
-      anything. `SPS-CORE-003` carries its own dated exception for the same reason.
-      **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery
-      no longer finds a path-scoped pod, at the pod level or at an MCP URL. What that leans on is an
-      open decision below.
+      because it settles what S2 owns and was decided late. The subject of this specification is one
+      pod: [`spec/core/index.md`](../../spec/core/index.md) §2 states it for a reader, and
+      [`spec-authoring.md`](../agents/spec-authoring.md) §1 makes *can a single pod satisfy this on
+      its own?* the first question an author answers.
+      Six requirements did not. `SPS-AUTH-056` and `SPS-AUTH-057` are **deleted**; `SPS-CORE-007`,
+      `SPS-MCP-004`, `SPS-MCP-031` and `SPS-MEDIA-004` keep their identifiers and lose the clause
+      that reached above the pod. Two are added, `SPS-CORE-019` and `SPS-CORE-020`, fixing the form
+      of a base URL now that `{pod}` is one — the chapters carry what each says and why.
+      Deleting needed [`../../GOVERNANCE.md`](../../GOVERNANCE.md) §"Deleting and renumbering,
+      before `0.1`" first, and `check-requirements.py` carries the matching exception and its
+      expiry. All four OpenAPI descriptions template one `podBaseUrl`, and `site/build.py` holds one
+      `DEMO_POD_BASE_URL`.
+      **Open, in the decisions below:** `auth` §10 has two holes the deletions left, both before
+      `0.1`.
 
 ## S3 — Core chapters
 

@@ -383,7 +383,7 @@
       "id": "SPS-AUTH-054",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A browser session established at a pod MUST be scoped to that pod's base URL: an implementation MUST NOT issue a session credential whose scope reaches beyond it.",
+      "summary": "A pod MUST accept a browser session credential only where it issued that credential for itself.",
       "withdrawn": false
     },
     {
@@ -1769,7 +1769,7 @@
       "id": "SPS-MEDIA-004",
       "part": "media",
       "chapter": "spec/modules/media.md",
-      "summary": "Content addressing MUST deduplicate within a pod.",
+      "summary": "Content addressing MUST deduplicate within a pod, and a collected object MUST become unretrievable at that pod whatever else holds the same bytes.",
       "withdrawn": false
     },
     {

@@ -343,13 +343,18 @@ grant was made.
 MUST consume it once, at the login callback, and MUST NOT accept it as a bearer token afterwards.
 
 <a id="SPS-AUTH-054"></a>
-**`SPS-AUTH-054`** — A browser session established at a pod MUST be scoped to that pod's base URL:
-an implementation MUST NOT issue a session credential whose scope reaches beyond it.
+**`SPS-AUTH-054`** — A pod MUST accept a browser session credential only where it issued that
+credential for itself.
 
-A cookie scoped to the host rather than to the pod's base is the failure this forbids. On a
-deployment where the pod is a path under a shared origin, such a cookie would make a sign-in at this
-pod a sign-in at whatever else the host serves — and the isolation would then be a property of the
-deployment layout rather than of the pod, which is the one place it can be tested.
+Stated as what the pod accepts rather than as where the browser sends it, because the browser is the
+wrong place to put the boundary. A cookie is not scoped by port and only coarsely by path, so a
+deployment cannot confine one to a pod's base URL, and a requirement that asked it to would forbid
+ordinary cookie sessions while buying nothing: the credential still arrives, and what matters is
+that the pod refuses it. Narrowing the cookie is worth doing and is an implementation's business.
+
+This is the pod-local form of an isolation that used to be written as a comparison between two pods,
+which no test against one pod could settle. A sign-in at one pod is still not a sign-in at another,
+now as a consequence rather than as an obligation nobody could check.
 
 ## 10. Discovery
 
