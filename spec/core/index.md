@@ -74,15 +74,20 @@ other requirement is concerned. What a client is given is the base URL, and `{po
 specification means it.
 
 <a id="SPS-CORE-019"></a>
-**`SPS-CORE-019`** — A pod's base URL MUST NOT end in a slash.
+**`SPS-CORE-019`** — A pod's base URL MUST be an absolute `http:` or `https:` URL whose path does
+not end in a slash, carrying no query and no fragment.
 
 Every route in this specification written as `{pod}/…` is that base URL with what follows appended
-to it, so without this the composition is ambiguous. A base of `https://example.org/alice/` would
-compose `{pod}/_system/conformance` into a doubled slash, and servers and proxies do not normalise
-that alike — a client would address a route the pod does not serve, on some deployments and not
-others. A pod that is an entire origin is `https://example.org`, which the same rule composes
-correctly. A base handed to a client with a trailing slash names the same pod; the slash is not part
-of it, and a client drops it before composing.
+to it, and each part of the form above is what makes appending mean anything. A base of
+`https://example.org/alice/` composes `{pod}/_system/conformance` into a doubled slash, which
+servers and proxies do not normalise alike — a client would address a route the pod does not serve,
+on some deployments and not others. A base carrying a query or a fragment does not compose into that
+route at all: appending to `https://example.org/alice?tenant=1` leaves the path where it was and
+puts the route inside the query.
+
+A pod that is an entire origin is `https://example.org`, which the same rule composes correctly. A
+base handed to a client with a trailing slash names the same pod; the slash is not part of it, and a
+client drops it before composing.
 
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the

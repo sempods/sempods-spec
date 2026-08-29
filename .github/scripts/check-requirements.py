@@ -130,21 +130,32 @@ def window_open(spec_version, is_tagged):
 def tag_state(name=RELEASE_TAG):
     """True, False, or None for "this checkout cannot say".
 
-    The third state is the point. A shallow clone has no tag refs to read, so an absent tag there
+    The third state is the point. A checkout may have no tag refs to read, so an absent tag there
     means "not fetched" as readily as "not created" — and answering the permissive one to a
     question that was never asked is how the window reopens after the release. Unknown is
     therefore its own answer, and the caller fails closed on it.
+
+    Two shapes say the refs may be missing rather than absent: a shallow clone, and a clone made
+    with `--no-tags`, which records itself in `remote.origin.tagOpt`. `False` is returned only when
+    neither holds, so it means the tag does not exist rather than that nobody looked.
+
+    What is left after both is a checkout assembled by hand from a fetch that never asked for tags,
+    on a tree whose `SPEC_VERSION` was never moved past the release. That second half is what the
+    caller reports as an error wherever tags *are* readable — CI fetches them — so the state this
+    cannot see is one that cannot survive a pull request either.
     """
     done = subprocess.run(["git", "tag", "--list", name], capture_output=True, text=True)
     if done.returncode != 0:
         return None
     if done.stdout.strip():
         return True
-    shallow = subprocess.run(
-        ["git", "rev-parse", "--is-shallow-repository"], capture_output=True, text=True
-    )
-    if shallow.returncode == 0 and shallow.stdout.strip() == "true":
-        return None
+    for question, unknown in (
+        (["git", "rev-parse", "--is-shallow-repository"], "true"),
+        (["git", "config", "--get", "remote.origin.tagOpt"], "--no-tags"),
+    ):
+        answer = subprocess.run(question, capture_output=True, text=True)
+        if answer.returncode == 0 and answer.stdout.strip() == unknown:
+            return None
     return False
 
 
@@ -480,8 +491,8 @@ def main():
                 else:
                     unknown = (
                         f" The window is closed here because this checkout cannot establish "
-                        f"whether {RELEASE_TAG} is tagged — a shallow clone has no tag refs. "
-                        f"Fetch tags if this is a pre-{RELEASE_TAG} checkout."
+                        f"whether {RELEASE_TAG} is tagged — it is shallow, or was cloned with "
+                        f"--no-tags. Fetch tags if this is a pre-{RELEASE_TAG} checkout."
                         if released is None else ""
                     )
                     problems.append(

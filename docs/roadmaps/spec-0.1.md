@@ -131,9 +131,11 @@ equally urgent and the announce waits on all of them.
       That the sweep found three and the count is six is the argument for writing the test down:
       every one after the third was found by reading the change rather than by looking for them.
       **`SPS-CORE-019` is the one addition**, and it exists because this change created the hole it
-      fills: while `{pod}` was an identifier segment a trailing slash was not expressible, and now
-      that it is the whole base URL, `{pod}/_system/…` had no defined composition. A pod's base URL
-      MUST NOT end in a slash. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
+      fills: while `{pod}` was an identifier segment a trailing slash, a query and a fragment were
+      none of them expressible, and now that it is the whole base URL, `{pod}/_system/…` had no
+      defined composition. It fixes the form — an absolute `http:` or `https:` URL, no query, no
+      fragment, no trailing slash — because each of those is a way for appending to stop meaning
+      what the route says. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
       statement without an identifier does not bind, so the notation could not have qualified
       anything. `SPS-CORE-003` carries its own dated exception for the same reason.
       **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery
