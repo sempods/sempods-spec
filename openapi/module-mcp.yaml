@@ -9,7 +9,7 @@ openapi: 3.1.0
 
 info:
   title: sempods — MCP module
-  version: '0.1'
+  version: '0.1-dev'
   summary: The per-pod agent-facing endpoint.
   description: |
     Binds only an implementation advertising `https://schema.sempods.org/module/mcp` at the

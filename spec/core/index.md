@@ -24,11 +24,12 @@ identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normat
 implementation is not obliged by it.
 
 <a id="SPS-CORE-003"></a>
-**`SPS-CORE-003`** — From the `0.1` release on, requirement identifiers are permanent: an identifier
-MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is
-retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its
-successor if it has one. Before that release none of those obligations holds — a requirement MAY be
-deleted outright, and an identifier MAY be renumbered or reused.
+**`SPS-CORE-003`** — Requirement identifiers are permanent: an identifier MUST NOT be reassigned to
+a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked
+`withdrawn`, keep its identifier and its original text, and name its successor if it has one. Those
+obligations bind from the `0.1` release or from the first dependency on this contract from outside
+this project, whichever comes first. Only before that point MAY a requirement be deleted outright
+and an identifier be renumbered or reused.
 
 Permanence is what makes an identifier safe to cite from a conformance report, an implementation
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
@@ -144,8 +145,8 @@ module's IRI — and a `version` string.
 {
   "specVersion": "0.1-dev",
   "modules": [
-    { "id": "https://schema.sempods.org/module/media", "version": "0.1" },
-    { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1" }
+    { "id": "https://schema.sempods.org/module/media", "version": "0.1-dev" },
+    { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1-dev" }
   ]
 }
 ```

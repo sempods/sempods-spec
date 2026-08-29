@@ -10,7 +10,7 @@ openapi: 3.1.0
 
 info:
   title: sempods — OIDC module
-  version: '0.1'
+  version: '0.1-dev'
   summary: The pod's callback, and nothing else.
   description: |
     Binds only an implementation advertising `https://schema.sempods.org/module/oidc` at the

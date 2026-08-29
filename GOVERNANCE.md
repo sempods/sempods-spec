@@ -78,7 +78,7 @@ disagree within a week. What is written down there as required before `0.1` is r
 oracle. Tagging over it makes it binding, which is the one outcome this whole switch exists to
 prevent.
 
-The one that is not on the roadmap, because it came out of a conversation rather than a review:
+The heaviest of them, because it decides whether a version change is survivable at all:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
 the IRIs it has already published. A pod's data is cited from elsewhere on the web, and the
 citations are the point — so a version change cannot move the pod to a new address.

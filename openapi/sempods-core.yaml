@@ -11,7 +11,7 @@ openapi: 3.1.0
 
 info:
   title: sempods — core
-  version: '0.1'
+  version: '0.1-dev'
   summary: The HTTP surface every sempods implementation provides.
   description: |
     The routes a conformant implementation must serve. Behaviour is specified in the core chapters
@@ -935,7 +935,7 @@ components:
       type: object
       required: [specVersion, modules]
       properties:
-        specVersion: { type: string, examples: ['0.1'] }
+        specVersion: { type: string, examples: ['0.1-dev'] }
         modules:
           type: array
           items:
