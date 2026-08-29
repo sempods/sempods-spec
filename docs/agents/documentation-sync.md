@@ -42,7 +42,11 @@ get wrong.
   ```
 
   Every ID that appears there must also appear in the new text — as a withdrawal, or unchanged
-  somewhere else in the diff. One that does not is a break.
+  somewhere else in the diff. One that does not is a break, with one dated exception:
+  [`../../GOVERNANCE.md`](../../GOVERNANCE.md) permits deletion and renumbering until `0.1` is
+  tagged. Inside that window the question is not whether the ID is gone but whether the change says
+  it is gone and why. The requirements checker prints such a deletion as a `notice:` line rather
+  than failing, so run it and read what it let through.
 
 - **Every anchor matches its ID**, character for character. A mismatched anchor makes a citation
   resolve to the top of the page rather than fail, so a reader sees the wrong requirement and is

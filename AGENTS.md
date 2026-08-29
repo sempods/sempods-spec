@@ -67,7 +67,9 @@ choosing, and can prove it.
 - **Core**: the chapters every implementation must satisfy. No opt-out, no partial core.
 - **Module**: an optional, separately versioned chapter set. An implementation advertises which ones
   it provides; it does not silently omit them.
-- **Requirement ID**: `SPS-<AREA>-<NNN>`, the permanent handle on one normative statement.
+- **Requirement ID**: `SPS-<AREA>-<NNN>`, the handle on one normative statement — permanent from
+  the `0.1` tag, and until then still deletable and renumberable under the window
+  [`GOVERNANCE.md`](GOVERNANCE.md) opens.
 
 ## Non-negotiable invariants
 
@@ -191,6 +193,9 @@ here rather than copied.
 ## Working rules
 
 - **Requirement IDs are permanent.** Never renumber, never reassign, never delete. Withdraw instead.
+  One dated exception, live today: until `0.1` is tagged a requirement may be deleted and
+  identifiers renumbered, for a statement that should never have been written rather than one that
+  is in the way. [`GOVERNANCE.md`](GOVERNANCE.md) states it; the checker enforces the expiry.
 - **A normative statement without a requirement ID is not normative** — it is background, and a
   reader is entitled to treat it that way.
 - **No empty placeholder files.** A chapter appears when it is written; until then it is a row with
@@ -251,9 +256,13 @@ python3 site/build.py                                  # the site's inputs, then
 
 The **requirement checker** exists because `SPS-CORE-003` — an identifier is never reassigned,
 renumbered or deleted — is a promise no link checker can see, and deleting a requirement looks like
-tidying. The **site check** exists because the try-it page sends a reader's requests, authenticated
-ones included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but
-the demo pod.
+tidying. While the pre-`0.1` window is open it reports a deletion as a notice instead of failing on
+it, which is the same reason in the other direction: what the guard is really for is making the
+deletion visible.
+
+The **site check** exists because the try-it page sends a reader's requests, authenticated ones
+included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but the
+demo pod.
 
 Two variants of that last one, neither of which replaces it:
 

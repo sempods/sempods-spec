@@ -343,11 +343,17 @@ grant was made.
 MUST consume it once, at the login callback, and MUST NOT accept it as a bearer token afterwards.
 
 <a id="SPS-AUTH-054"></a>
-**`SPS-AUTH-054`** — A browser session established at a pod MUST be scoped to that pod. A sign-in at
-one pod MUST NOT be a sign-in at another, including where both are served from the same host.
+**`SPS-AUTH-054`** — A pod MUST accept a browser session credential only where it issued that
+credential for itself.
 
-Pods are isolated tenants that may share a host on a path-scoped deployment. A session that spanned
-them would make the isolation depend on the deployment layout.
+Stated as what the pod accepts rather than as where the browser sends it, because the browser is the
+wrong place to put the boundary. A cookie is not scoped by port and only coarsely by path, so a
+deployment cannot confine one to a pod's base URL, and a requirement that asked it to would forbid
+ordinary cookie sessions while buying nothing: the credential still arrives, and what matters is
+that the pod refuses it. Narrowing the cookie is worth doing and is an implementation's business.
+
+A sign-in at one pod is therefore not a sign-in at another, including where both are served from the
+same host. That follows from what each pod accepts, which is where it can be tested.
 
 ## 10. Discovery
 
@@ -356,26 +362,24 @@ them would make the isolation depend on the deployment layout.
 `GET {pod}/.well-known/oauth-protected-resource`, without authentication, carrying at least
 `resource`, `authorization_servers` and `bearer_methods_supported`.
 
-<a id="SPS-AUTH-056"></a>
-**`SPS-AUTH-056`** — An implementation MUST **also** serve the metadata at the host-rooted form RFC
-9728 §3.1 constructs, by inserting `/.well-known/oauth-protected-resource` between the authority and
-the pod's path: `{origin}/.well-known/oauth-protected-resource/{pod}`. Both addresses MUST return
-the same document.
+That is the append form, and it is the only one this specification requires. The host-rooted address
+RFC 9728 §3.1 constructs — the well-known segment inserted between the authority and the resource's
+path — is a route on the origin rather than under the pod base, and a pod whose base URL is
+path-scoped cannot serve it without owning everything beside it. A deployment can, and one that
+hosts many pods is the right place for it.
 
-Serving only the append form is the failure this requirement exists for, and it is invisible until a
-client that follows the RFC arrives. A generic OAuth client — anything driving RFC 9728 discovery
-rather than following a `WWW-Authenticate` hint — constructs the host-rooted address and finds
-nothing there. The append form is what a `resource_metadata` hint points at and is equally
-necessary; neither replaces the other.
+The narrowing that follows is deliberate rather than an oversight. A generic client doing RFC 9728
+discovery ahead of its first request finds nothing at the host-rooted address of a path-scoped pod,
+and reaches the metadata only by asking the pod: an unauthenticated request, a `401`, and the
+`resource_metadata` hint in `WWW-Authenticate` that names the address above.
 
-<a id="SPS-AUTH-057"></a>
-**`SPS-AUTH-057`** — Where an implementation advertises RFC 8414 Authorization Server Metadata, it
-MUST serve it at the host-rooted form for its issuer as well as at the append form, and both MUST
-return the same document.
-
-The same split, one layer up: a client that reads `authorization_servers[0]` out of the resource
-metadata and then probes the host-rooted path for it gets nothing from an implementation that serves
-only the append form.
+**Core does not yet require that hint**, which makes the fallback weaker than it reads.
+[`SPS-MCP-009`](../modules/mcp.md#SPS-MCP-009) requires it of a pod that provides the MCP module,
+and nothing requires it of one that does not — so a client of such a pod is left constructing the
+append form by convention. This chapter is likewise silent on where RFC 8414 Authorization Server
+Metadata lives, though it profiles the standard and [`SPS-AUTH-048`](#SPS-AUTH-048) constrains what
+that document may claim. Both are recorded rather than blessed, and closing them is on the
+specification's roadmap, before `0.1` becomes prescriptive.
 
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.

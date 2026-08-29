@@ -9,11 +9,21 @@ name: Requirements
 # and deleting a requirement looks like tidying. The pull-request template asks for the check by
 # hand; a promise that only a checklist enforces survives precisely as long as reviewers are
 # attentive.
+#
+# Until `0.1` is tagged the deletion half is a notice rather than a failure — GOVERNANCE.md
+# §"Deleting and renumbering, before `0.1`". The script decides that, not this file, and it closes
+# the window on its own at the tag.
 
 on:
   pull_request:
   push:
     branches: [main]
+    # The release tag too. `SPEC_VERSION` still saying `0.1-dev` when `0.1` is pushed publishes a
+    # pre-release index at a ref that downstream vendors from and that nobody should move — and a
+    # later run on `main` can diagnose that without being able to repair it. Running here is the
+    # first moment the mistake is visible, and the last one at which deleting the tag and cutting
+    # it again costs nothing.
+    tags: ['[0-9]+.[0-9]+']
 
 permissions:
   contents: read

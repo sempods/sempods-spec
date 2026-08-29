@@ -33,7 +33,7 @@ The empty answers are not placeholders. Several clients probe those methods on c
 <a id="SPS-MCP-004"></a>
 **`SPS-MCP-004`** — Error responses MUST use JSON-RPC codes: parse error, invalid request, method or
 tool not found, invalid params, internal error. A rejected bearer MUST be a distinct code paired with
-HTTP `401`, and an unknown pod a distinct code paired with HTTP `404`.
+HTTP `401`.
 
 ## 2. Authentication modes
 
@@ -117,12 +117,18 @@ challenge loop.
 
 <a id="SPS-MCP-031"></a>
 **`SPS-MCP-031`** — Some clients treat the MCP URL itself as the protected-resource identifier. An
-implementation MUST therefore serve Protected Resource Metadata for that URL too — at the host-rooted
-form RFC 9728 §3.1 constructs from it, and at the append form on the MCP URL. Both MUST return the
-**pod-level** document.
+implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
+and it MUST return the **pod-level** document.
 
 The MCP URL is an alternative spelling of the same protected resource, not a resource of its own:
 the pod stays the unit of access control ([`SPS-AUTH-045`](../core/auth.md#SPS-AUTH-045)).
+
+The host-rooted address RFC 9728 §3.1 constructs from an MCP URL is not required here, for the
+reason [`../core/auth.md`](../core/auth.md) §10 gives for the pod-level one: it inserts the
+well-known segment in front of the path, which puts it on the origin rather than under the pod's
+base URL. A pod cannot serve what is above it. A client that probes there before its first request
+finds nothing and falls back to the `401`, which [`SPS-MCP-009`](#SPS-MCP-009) makes a complete
+answer for this module.
 
 <a id="SPS-MCP-032"></a>
 **`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.

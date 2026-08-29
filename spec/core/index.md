@@ -24,15 +24,26 @@ identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normat
 implementation is not obliged by it.
 
 <a id="SPS-CORE-003"></a>
-**`SPS-CORE-003`** — Requirement identifiers are permanent. An identifier MUST NOT be reassigned to
-a different statement, and MUST NOT be renumbered. A requirement that is retired is marked
-`withdrawn`, keeps its identifier and its original text, and names its successor if it has one.
+**`SPS-CORE-003`** — From the `0.1` release on, requirement identifiers are permanent: an identifier
+MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is
+retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its
+successor if it has one. Before that release none of those obligations holds — a requirement MAY be
+deleted outright, and an identifier MAY be renumbered or reused.
 
-That promise is what makes an identifier safe to cite from a conformance report, an implementation
+Permanence is what makes an identifier safe to cite from a conformance report, an implementation
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
-RDF terms, for the same reason.
+RDF terms, for the same reason, and it begins at the tag because that is when there is first
+something to cite. [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is
+for, what it is not for, and what closes it. This chapter is descriptive until that same tag, and
+the two facts expire together.
 
 ## 2. What conforms
+
+**The subject of this specification is one pod.** Every requirement in it can be satisfied by a pod
+that is the only one in existence, and none of them needs a second pod to mean anything. A
+deployment that serves many pods is conformant when each of those pods is; how it provisions them,
+tells them apart, or administers them across the set is an extension of an implementation and not a
+part of this specification.
 
 <a id="SPS-CORE-004"></a>
 **`SPS-CORE-004`** — A **conformant sempods implementation** MUST satisfy every `MUST` and
@@ -54,9 +65,52 @@ The modules defined by this specification are `oidc`, `media` and `mcp`.
 ## 3. Addressing
 
 <a id="SPS-CORE-007"></a>
-**`SPS-CORE-007`** — A pod is addressed under a base URL of the form `{origin}/{pod}`, where `{pod}`
-is the pod's identifier within the deployment. Every resource, context and control-plane route of
-that pod lives under that prefix.
+**`SPS-CORE-007`** — A pod is addressed under a base URL. Every resource, context and control-plane
+route of that pod lives under that base URL.
+
+This specification does not prescribe how the base URL decomposes. A path segment under a shared
+origin, a host of the pod's own, and an origin that is a single pod are the same pod as far as every
+other requirement is concerned. What a client is given is the base URL, and `{pod}` throughout this
+specification means it.
+
+<a id="SPS-CORE-019"></a>
+**`SPS-CORE-019`** — A pod's base URL MUST be absolute, MUST use `https` on any host and MAY use
+`http` only on a loopback address, MUST carry no query and no fragment, and its path MUST NOT end in
+a slash.
+
+The scheme half is [`SPS-AUTH-018`](auth.md#SPS-AUTH-018)'s rule for a redirect URI, and a pod base
+cannot be looser than it: every route below carries a bearer, and the token, authorization and
+registration endpoints carry credentials. A pod reachable over `http` on a real host would hand
+them to the network. The loopback exception is the same one, and for the same case — a development
+pod, which [`SPS-AUTH-006`](auth.md#SPS-AUTH-006) already refuses outside development.
+
+Every route in this specification written as `{pod}/…` is the base URL with what follows appended
+to it, and each part of the form above is what makes appending mean anything. A base of
+`https://example.org/alice/` composes `{pod}/_system/conformance` into a doubled slash, which
+servers and proxies do not normalise alike — a client would address a route the pod does not serve,
+on some deployments and not others. A base carrying a query or a fragment does not compose into that
+route at all: appending to `https://example.org/alice?tenant=1` leaves the path where it was and
+puts the route inside the query.
+
+A pod that is an entire origin is `https://example.org`, which the same rule composes correctly. A
+base handed to a client with a trailing slash names the same pod; the slash is not part of it, and a
+client drops it before composing.
+
+<a id="SPS-CORE-020"></a>
+**`SPS-CORE-020`** — A pod's base URL path MUST NOT contain a dot segment, a backslash, or a
+percent-encoded octet.
+
+This is what keeps the pod prefix a prefix. `https://example.org/alice/..` satisfies
+[`SPS-CORE-019`](#SPS-CORE-019) and composes `{pod}/_system/conformance` into a path a client
+resolves to `https://example.org/_system/conformance` — outside the pod, and on some clients and not
+on others.
+
+The three forms are named rather than left to "a normalised path", because normalising is where this
+goes wrong rather than where it is fixed. `%2e%2e`, `%2E%2E`, `.%2e` and a backslash separator each
+hide the segment from a normaliser that runs before the parser a client actually dials with, and
+each resolves the pod away. The list of spellings is not one a specification can close, so the forms
+are refused whatever they would have resolved to — which is a test an implementation can run against
+its own configuration, once, rather than against every client that will ever reach it.
 
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the

@@ -73,8 +73,9 @@ where a reader would otherwise guess.
 the normal path takes its explanation with it. Deleting is a correct change, not a loss. The failure
 mode is not keeping the old text but *replacing* it: an explanation of why the thing is now ordinary
 is a longer way of writing nothing. The requirement itself is a different matter — it is
-**withdrawn**, never deleted, because its ID is cited elsewhere. See
-[`spec-authoring.md`](spec-authoring.md).
+**withdrawn**, never deleted, because its ID is cited elsewhere. Until the `0.1` tag there is one
+exception, stated in [`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
+[`spec-authoring.md`](spec-authoring.md) §5.
 
 **6. A normative statement without an ID is not normative.** It is background, and a reader is
 entitled to treat it that way. If it matters, give it an ID; if it does not, say it in the concept
@@ -115,7 +116,8 @@ title and a link to the roadmap file — never a copy of the checklist.
 
 A change to the specification is not finished until, **in the same change**:
 
-- every new normative statement carries a requirement ID, and no ID was reused or renumbered;
+- every new normative statement carries a requirement ID, and no ID was reused or renumbered —
+  unless the pre-`0.1` window is open and the change says so out loud;
 - a withdrawn requirement is marked withdrawn rather than removed, and names its successor;
 - the OpenAPI description agrees with the chapter, where the change touched the HTTP surface;
 - the corresponding roadmap item is ticked;

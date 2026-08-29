@@ -23,10 +23,12 @@ implementation that skips a module entirely is still conformant.
 
 - **`0.x`** — the contract may break between minors. Breaking changes are listed in the release
   notes and are never silent.
-- **Requirement IDs never break, at any version.** An ID is never reassigned and never renumbered;
+- **Requirement IDs never break, from `0.1` on.** An ID is never reassigned and never renumbered;
   a withdrawn requirement stays in the text marked `withdrawn` with a pointer to its successor.
   This is deliberately the same rule the vocabulary applies to RDF terms, and for the same reason:
   an ID ends up in other people's test suites the way a term ends up in other people's data.
+  Before the tag there are no such test suites, and §"Deleting and renumbering, before `0.1`" says
+  what follows from that.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
 
@@ -65,6 +67,49 @@ default.
 
 A requirement is never deleted. It is marked `withdrawn`, keeps its ID, states the version it was
 withdrawn in, and names what replaces it if anything does. The ID stays out of circulation forever.
+
+### Deleting and renumbering, before `0.1`
+
+**Until `0.1` is tagged a requirement may be deleted outright, identifiers may be renumbered, and a
+requirement whose meaning changes may keep its identifier rather than be withdrawn for a successor.
+After the tag, none of the three ever again.** This is the same dated event as the switch from
+descriptive to prescriptive, and it rests on the same fact. Permanence buys exactly one thing: an
+identifier stays safe to cite from a conformance report this project never sees. Nothing has been
+published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
+a chapter carrying text that was wrong from the day it was written, for a promise nobody was given.
+
+What the window is not is a licence to delete whatever is inconvenient. Deletion is for a statement
+that should never have been written — one whose subject is not this specification's, or that the
+thing this specification describes cannot satisfy on its own. Everything else is withdrawn, in the
+window as after it.
+
+A number freed by a deletion returns to the pool while the window is open — renumbering that could
+not reuse a freed number would not be renumbering. The three permissions are one fact seen three
+ways: an identifier does not yet stand for a fixed statement, because nothing has been told to rely
+on it standing for one.
+
+The consumer that holds identifiers today is the reference implementation, and re-vendoring
+`requirements.json` there is not enough. It cites identifiers in prose and in code comments, and its
+`checkDocLinks` validates them by *existence* against the vendored index — so a citation of a number
+that was deleted and later reused goes on passing while pointing at a different obligation. That is
+the one failure nothing downstream can see, and it is the reason reuse is bounded by this window
+rather than merely inconvenient. A change that deletes, renumbers or reuses therefore carries the
+downstream sweep with it: re-vendor the index, and read every citation of an affected identifier.
+Both belong to the change that caused it, not to whoever finds the mismatch later.
+
+`.github/scripts/check-requirements.py` carries the matching exception, and it closes on its own
+rather than by memory. The relaxation holds only while the repository has no `0.1` tag **and** the
+script still declares the pre-`0.1` specification version, matched exactly rather than by its `-dev`
+suffix — `0.2-dev` is a later version, not a second window. A checkout that cannot establish whether
+the tag exists, a shallow clone with no tag refs to read, counts as tagged: the permissive answer is
+not the one to give a question that was never asked. Tagging ends the window whether or not anyone
+remembers this paragraph, and a tag with a stale version is reported rather than absorbed.
+
+What the script watches is not only whether an identifier disappeared. A requirement that keeps its
+identifier and says something else is the same permission seen from the other side, and it is
+reported while the window is open and refused after it closes — a withdrawal, which keeps the
+original text and adds the preamble in front of it, being the one in-place edit the rule prescribes
+and therefore the one it does not refuse.
 
 ## Who decides
 

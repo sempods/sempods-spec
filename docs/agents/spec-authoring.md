@@ -8,18 +8,29 @@ Required before writing or editing anything under `spec/`.
 
 ## 1. Decide whether it is a requirement at all
 
-Most sentences in a chapter are not. Three questions, in order:
+Most sentences in a chapter are not. Four questions, in order:
 
-1. **Could an implementation get this wrong?** If the behaviour follows a standard the chapter has
+1. **Can a single pod satisfy this on its own?** The subject of this specification is one pod —
+   [`spec/core/index.md`](../../spec/core/index.md) §2 states it, and
+   [`SPS-CORE-007`](../../spec/core/index.md#SPS-CORE-007) gives that pod one base URL without
+   saying how the URL decomposes. A statement that needs a second pod to exist, or that puts a
+   route somewhere other than under the pod's own base URL, does not belong here however true it
+   is. It belongs to whatever hosts the pods, and hosting is an implementation's extension rather
+   than this specification's subject.
+2. **Could an implementation get this wrong?** If the behaviour follows a standard the chapter has
    already declared it profiles, and follows it exactly, it needs no requirement — rule 4 of the
    strategy. Write the deviation, not the norm.
-2. **Is it testable?** A requirement that no conformance test could ever fail is a wish. "The
+3. **Is it testable?** A requirement that no conformance test could ever fail is a wish. "The
    server SHOULD be fast" is not a requirement; "the server MUST answer `413` above the advertised
    body limit" is.
-3. **Is it one statement?** Two obligations joined by "and" are two requirements. Bundling them
+4. **Is it one statement?** Two obligations joined by "and" are two requirements. Bundling them
    means a conformance report can only say "failed" without saying which half.
 
-If the answer to the first is no, the sentence belongs in the chapter as plain prose or in the
+A no to the first is not a smaller requirement; it is a requirement for a different document. Two
+were written past that line while nothing stated it, both of them obliging a pod to answer on a
+route above its own base, and both had to be deleted rather than repaired.
+
+If the answer to the second is no, the sentence belongs in the chapter as plain prose or in the
 concept as reasoning. Prose is not second-class here; it is what makes the requirements readable.
 
 ## 2. Write it
@@ -53,6 +64,11 @@ SPS-<AREA>-<NNN>
 `AREA` is one of the registered areas below. `NNN` is the next unused number in that area, zero
 padded to three digits, allocated in order of first appearance. Numbers are **never reused**, so the
 next number is one above the highest that has *ever* existed in the area, withdrawn ones included.
+
+Until `0.1` is tagged a number freed by a deletion is an exception to that and returns to the pool —
+`GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says why, and says that the window closes
+at the tag and never reopens. So before the tag the highest that has ever existed is the highest
+still in the chapters, and after it the two part company for good.
 
 Registered areas:
 
@@ -123,6 +139,18 @@ A requirement whose *wording* is clarified without changing what it demands keep
 requirement whose meaning narrows or widens gets a new ID and the old one is withdrawn. When in
 doubt: if an implementation that passed before could now fail, it is a new ID.
 
+**One exception, and it expires:** until `0.1` is tagged a requirement may be deleted outright
+instead of withdrawn, and one whose meaning changes may keep its identifier instead of yielding to a
+successor — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`". Deletion is for a statement
+that should never have been written, not for one that is merely in the way; a withdrawal notice for
+text nobody was ever bound by preserves a promise nobody was given. Deleting still costs a
+re-vendored `requirements.json` downstream and a citation sweep through `openapi/`, and the
+requirements checker reports the deletion as a notice so it is reviewed rather than absorbed.
+
+The two are not interchangeable. Where a requirement has a half that a single pod can satisfy and a
+half it cannot, the half is what goes — the identifier stays and the text narrows. Deleting a
+requirement to be rid of one of its clauses throws away the clause that was right.
+
 ## 6. Check
 
 - The ID is new, and higher than every ID ever issued in its area.
@@ -146,4 +174,5 @@ doubt: if an implementation that passed before could now fail, it is a new ID.
 - **Do not number by section.** `SPS-CRUD-3.2.1` breaks the first time a section moves, which is the
   failure the flat scheme exists to avoid.
 - **Do not renumber to close a gap.** Gaps are free; renumbering is a silent break in every document
-  that cites the old number.
+  that cites the old number. The window before the `0.1` tag permits it, which is not the same as
+  its being worth doing: a gap costs nothing to keep and a renumbering has to be worth its diff.

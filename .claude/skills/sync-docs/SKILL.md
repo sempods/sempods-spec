@@ -22,4 +22,5 @@ anything under `spec/` also
 
 The step most often missed: **a requirement ID that disappeared from the diff.** Deleting a
 requirement looks like tidying and is a silent break in every conformance suite that cites it. The
-correct outcome is a withdrawal that keeps the ID and the original text.
+correct outcome is a withdrawal that keeps the ID and the original text — or, while the pre-`0.1`
+window in `GOVERNANCE.md` is open, a deletion the change states in so many words.

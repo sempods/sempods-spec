@@ -14,6 +14,10 @@ Three of them, and none is checkable by a link checker:
    never sees, and it is exactly the kind of promise a reviewer stops noticing after the third
    pull request. Hence a check.
 
+   Until `0.1` is tagged the third one is a notice rather than a failure, because there is no
+   conformance suite yet to protect — GOVERNANCE.md §"Deleting and renumbering, before `0.1`".
+   The exception closes itself; see `window_open`.
+
 Run with no arguments to check the working tree. Pass a git ref to also compare against it:
 
     .github/scripts/check-requirements.py origin/main
@@ -44,6 +48,16 @@ INDEX = Path("requirements.json")
 # Until `0.1` is tagged the index says so, so nothing downstream can pin a version that does not
 # exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
 SPEC_VERSION = "0.1-dev"
+
+# The tag that ends the window in which a requirement may be deleted or an identifier renumbered,
+# and the one version in which that window is open.
+#
+# `PRE_RELEASE_VERSION` is an exact string rather than a `-dev` suffix test, and the difference is
+# the whole guard. After `0.1` ships, ordinary development sets `0.2-dev` — and a suffix test would
+# read that as pre-release and reopen a window GOVERNANCE.md says never reopens. Every later
+# version fails the comparison, which is the direction that has to be automatic.
+RELEASE_TAG = "0.1"
+PRE_RELEASE_VERSION = "0.1-dev"
 
 # A module versions independently of core (`SPS-CORE-005`, GOVERNANCE.md §"Versioning"), so one
 # number over the whole index would be a claim the model does not make: a consumer reading a MEDIA
@@ -92,6 +106,76 @@ def versions_cover_modules():
         print("\n".join(f"error: {p}" for p in problems), file=sys.stderr)
         return False
     return True
+
+
+def window_open(spec_version, is_tagged):
+    """Whether a requirement may still be deleted or an identifier renumbered.
+
+    GOVERNANCE.md §"Deleting and renumbering, before `0.1`" opens this until the tag and closes it
+    forever after. Two conditions rather than one, because each alone fails in the permissive
+    direction: a checkout without tags — a shallow clone, an archive export — reads as untagged,
+    and a `SPEC_VERSION` nobody remembered to move reads as pre-release. Both have to say
+    pre-release, so either one closes the window on its own.
+
+    The version test is an equality against one string, not a `-dev` suffix. A suffix test reopens
+    the window at `0.2-dev`, and it does so in exactly the environment the tag half cannot cover —
+    a clone without tags. Two guards that fail together are one guard.
+
+    Pure, so the self-test can prove the polarity. An inverted condition here does not fail — it
+    permits, and permitting silently is the whole failure mode this file exists to prevent.
+    """
+    return spec_version == PRE_RELEASE_VERSION and not is_tagged
+
+
+def tag_state(name=RELEASE_TAG):
+    """True, False, or None for "this checkout cannot say".
+
+    The third state is the point. A checkout may have no tag refs to read, so an absent tag there
+    means "not fetched" as readily as "not created" — and answering the permissive one to a
+    question that was never asked is how the window reopens after the release. Unknown is
+    therefore its own answer, and the caller fails closed on it.
+
+    Two shapes say the refs may be missing rather than absent: a shallow clone, and a clone made
+    with `--no-tags`, which records itself in `remote.origin.tagOpt`. `False` is returned only when
+    neither holds, so it means the tag does not exist rather than that nobody looked.
+
+    What is left after both is a checkout assembled by hand from a fetch that never asked for tags,
+    on a tree whose `SPEC_VERSION` was never moved past the release. That second half is what the
+    caller reports as an error wherever tags *are* readable — CI fetches them — so the state this
+    cannot see is one that cannot survive a pull request either.
+    """
+    done = subprocess.run(["git", "tag", "--list", name], capture_output=True, text=True)
+    if done.returncode != 0:
+        return None
+    if done.stdout.strip():
+        return True
+    for question, unknown in (
+        (["git", "rev-parse", "--is-shallow-repository"], "true"),
+        (["git", "config", "--get", "remote.origin.tagOpt"], "--no-tags"),
+    ):
+        answer = subprocess.run(question, capture_output=True, text=True)
+        if answer.returncode == 0 and answer.stdout.strip() == unknown:
+            return None
+    return False
+
+
+def said(body):
+    """A requirement's text with its layout removed, so a reflow is not a change of meaning."""
+    return " ".join(body.split())
+
+
+def only_withdrawn(before, after):
+    """Whether the only change is the withdrawal preamble going in front of the original text.
+
+    The one in-place edit `SPS-CORE-003` blesses after the tag: a retired requirement keeps its
+    identifier and its original text and gains the preamble. Recognised so that withdrawing — the
+    move the rule tells an author to make — is not the move the guard refuses.
+    """
+    head = said(after).lstrip("— ").lstrip()
+    kept = PREAMBLE.sub("", head)
+    if kept == head:
+        return False  # No preamble was removed, so nothing was withdrawn.
+    return said(before).lstrip("— ").lstrip() == kept
 
 
 def requirements(text):
@@ -159,6 +243,39 @@ def self_test():
     if idents != ["SPS-X-001", "SPS-X-001", "SPS-X-002"]:
         print(f"error: self-test failed — requirements() returned {idents}", file=sys.stderr)
         return False
+
+    # Every combination that decides something, because the case that matters never fails loudly:
+    # a window wrongly open lets a deletion through with a note that reads like approval. The
+    # `0.2-dev` rows are the ones a suffix test got wrong — a later development version in a clone
+    # without tags is the shape that silently reopens this.
+    cases = {("0.1-dev", False): True, ("0.1-dev", True): False,
+             ("0.1", False): False, ("0.1", True): False,
+             ("0.2-dev", False): False, ("0.2-dev", True): False,
+             ("1.0-dev", False): False}
+    for (version, is_tagged), wanted in cases.items():
+        if window_open(version, is_tagged) is not wanted:
+            print(
+                f"error: self-test failed — window_open({version!r}, {is_tagged}) is not {wanted}",
+                file=sys.stderr,
+            )
+            return False
+
+    # The withdrawal is the one in-place edit the rule prescribes, so mistaking it for a
+    # reassignment would make the guard refuse the very move it tells an author to make — and
+    # mistaking a reassignment for a withdrawal would let the forbidden one through silently.
+    kept = " — A write request MUST carry `Content-Type: application/ld+json`."
+    withdrawn = (
+        " — *Withdrawn in 0.3. Superseded by [`SPS-CRUD-019`](#SPS-CRUD-019).*\n"
+        "A write request MUST carry `Content-Type: application/ld+json`."
+    )
+    reassigned = " — A write request MUST carry `Accept: text/turtle`."
+    for after, wanted in ((withdrawn, True), (reassigned, False), (kept, False)):
+        if only_withdrawn(kept, after) is not wanted:
+            print(
+                f"error: self-test failed — only_withdrawn() is not {wanted} for {after[:40]!r}",
+                file=sys.stderr,
+            )
+            return False
     return True
 
 
@@ -336,6 +453,22 @@ def main():
         return 5
 
     current, problems = collect(lambda p: p.read_text())
+    notices = []
+
+    # The one state the two guards cannot tell apart is a released tree whose SPEC_VERSION nobody
+    # moved: `window_open` closes on the tag here, but a clone made without tags reads the same
+    # tree as pre-release and reopens the window. Closing silently would leave the tree wrong in
+    # exactly the way that makes the next checkout wrong, so it is reported where it can still be
+    # fixed rather than where it does damage.
+    # Unknown counts as released: a checkout that cannot answer the question does not get the
+    # permissive answer to it.
+    released = tag_state()
+    if released is True and SPEC_VERSION == PRE_RELEASE_VERSION:
+        problems.append(
+            f"{RELEASE_TAG} is tagged but SPEC_VERSION is still {PRE_RELEASE_VERSION!r}. The "
+            f"deletion window is closed here either way, but a checkout without tags would read "
+            f"this tree as pre-release and reopen it. Set SPEC_VERSION to {RELEASE_TAG!r}."
+        )
     if not current:
         print(
             f"error: {SPEC} defines no requirements at all. That is either a parsing failure or a "
@@ -379,12 +512,55 @@ def main():
         old_paths = [Path(line) for line in listing.stdout.splitlines() if line.endswith(".md")]
         before, _ = collect(at_base, old_paths)
 
-        for ident, (path, _) in sorted(before.items()):
+        # Reported either way. A deletion inside the window is still the kind of change that has to
+        # be seen to be reviewed — the failure this guard was written for is a deletion that reads
+        # as tidying, and silence is what makes it read that way.
+        open_window = window_open(SPEC_VERSION, is_tagged=released is not False)
+        for ident, (path, body) in sorted(before.items()):
+            # An identifier kept through a change of text is the case nothing else here can see:
+            # the identifier is still present, so the disappearance check below says nothing, and
+            # downstream a citation of it goes on resolving while pointing at a different
+            # obligation. It is checked in both states, because the permanent half is the half that
+            # matters — `SPS-CORE-003` makes reassignment a MUST NOT from the tag on, and a guard
+            # that only watched the window would enforce the temporary rule and not the lasting one.
+            if ident in current and said(body) != said(current[ident][1]):
+                if only_withdrawn(body, current[ident][1]):
+                    pass  # The one in-place edit the rule itself prescribes.
+                elif open_window:
+                    notices.append(
+                        f"{ident} says something else than it did at {base}. Keeping an identifier "
+                        f"through a change of meaning is allowed until {RELEASE_TAG} is tagged, and "
+                        f"it owes the sweep GOVERNANCE.md names: re-vendor the index downstream, "
+                        f"and read every citation of {ident} there."
+                    )
+                else:
+                    problems.append(
+                        f"{ident} says something else than it did at {base}, and its text is not a "
+                        f"withdrawal of what was there. An identifier is never reassigned to a "
+                        f"different statement (SPS-CORE-003) — a requirement whose meaning moves "
+                        f"gets a new identifier and this one is withdrawn. If the demand is "
+                        f"unchanged and only the wording is clearer, that is allowed and this "
+                        f"guard cannot tell the two apart: say so in the pull request, and relax "
+                        f"this check deliberately rather than by rewording around it."
+                    )
             if ident not in current:
-                problems.append(
-                    f"{ident} was in {path} at {base} and is gone. An identifier is never deleted — "
-                    f"mark it withdrawn and keep its text (SPS-CORE-003)."
-                )
+                if open_window:
+                    notices.append(
+                        f"{ident} was in {path} at {base} and is gone. Deleting is allowed until "
+                        f"{RELEASE_TAG} is tagged — GOVERNANCE.md §\"Deleting and renumbering, "
+                        f"before `0.1`\". Say in the change which identifier went, and why."
+                    )
+                else:
+                    unknown = (
+                        f" The window is closed here because this checkout cannot establish "
+                        f"whether {RELEASE_TAG} is tagged — it is shallow, or was cloned with "
+                        f"--no-tags. Fetch tags if this is a pre-{RELEASE_TAG} checkout."
+                        if released is None else ""
+                    )
+                    problems.append(
+                        f"{ident} was in {path} at {base} and is gone. An identifier is never "
+                        f"deleted — mark it withdrawn and keep its text (SPS-CORE-003).{unknown}"
+                    )
 
     by_area = {}
     for ident in current:
@@ -397,6 +573,9 @@ def main():
     if cited:
         print(f"openapi {len(cited):3d} citations over {len({p for _, p in cited})} file(s), "
               f"{len({i for i, _ in cited})} distinct requirements")
+
+    if notices:
+        print("\n" + "\n".join(f"notice: {n}" for n in notices))
 
     if problems:
         print("\n" + "\n".join(problems), file=sys.stderr)
