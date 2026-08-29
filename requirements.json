@@ -527,6 +527,13 @@
       "withdrawn": false
     },
     {
+      "id": "SPS-CORE-020",
+      "part": "core",
+      "chapter": "spec/core/index.md",
+      "summary": "A pod's base URL path MUST NOT contain a dot segment, a backslash, or a percent-encoded octet.",
+      "withdrawn": false
+    },
+    {
       "id": "SPS-CRUD-001",
       "part": "core",
       "chapter": "spec/core/lod-crud.md",

@@ -135,7 +135,12 @@ equally urgent and the announce waits on all of them.
       none of them expressible, and now that it is the whole base URL, `{pod}/_system/…` had no
       defined composition. It fixes the form — an absolute `http:` or `https:` URL, no query, no
       fragment, no trailing slash — because each of those is a way for appending to stop meaning
-      what the route says. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
+      what the route says. **`SPS-CORE-020`** is its security half and the second addition: a base
+      path carrying a dot segment, a backslash or a percent-encoded octet composes into a route that
+      resolves *outside* the pod on some clients and not on others. `site/build.py` had already
+      reached that conclusion for the try-it page and checked it against a real browser; the
+      chapter now carries the same rule, and for the same stated reason — the list of spellings is
+      not one a specification can close, so the forms are refused rather than normalised. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
       statement without an identifier does not bind, so the notation could not have qualified
       anything. `SPS-CORE-003` carries its own dated exception for the same reason.
       **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery

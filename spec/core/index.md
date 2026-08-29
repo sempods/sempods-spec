@@ -89,6 +89,22 @@ A pod that is an entire origin is `https://example.org`, which the same rule com
 base handed to a client with a trailing slash names the same pod; the slash is not part of it, and a
 client drops it before composing.
 
+<a id="SPS-CORE-020"></a>
+**`SPS-CORE-020`** — A pod's base URL path MUST NOT contain a dot segment, a backslash, or a
+percent-encoded octet.
+
+This is what keeps the pod prefix a prefix. `https://example.org/alice/..` satisfies
+[`SPS-CORE-019`](#SPS-CORE-019) and composes `{pod}/_system/conformance` into a path a client
+resolves to `https://example.org/_system/conformance` — outside the pod, and on some clients and not
+on others.
+
+The three forms are named rather than left to "a normalised path", because normalising is where this
+goes wrong rather than where it is fixed. `%2e%2e`, `%2E%2E`, `.%2e` and a backslash separator each
+hide the segment from a normaliser that runs before the parser a client actually dials with, and
+each resolves the pod away. The list of spellings is not one a specification can close, so the forms
+are refused whatever they would have resolved to — which is a test an implementation can run against
+its own configuration, once, rather than against every client that will ever reach it.
+
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the
 control plane. An implementation MUST NOT serve ordinary Linked Data resources from
