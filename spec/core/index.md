@@ -24,19 +24,18 @@ identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normat
 implementation is not obliged by it.
 
 <a id="SPS-CORE-003"></a>
-**`SPS-CORE-003`** — Requirement identifiers are permanent. An identifier MUST NOT be reassigned to
-a different statement, and MUST NOT be renumbered. A requirement that is retired is marked
-`withdrawn`, keeps its identifier and its original text, and names its successor if it has one.
+**`SPS-CORE-003`** — From the `0.1` release on, requirement identifiers are permanent: an identifier
+MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is
+retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its
+successor if it has one. Before that release none of those obligations holds — a requirement MAY be
+deleted outright, and an identifier MAY be renumbered or reused.
 
-That promise is what makes an identifier safe to cite from a conformance report, an implementation
+Permanence is what makes an identifier safe to cite from a conformance report, an implementation
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
-RDF terms, for the same reason.
-
-It begins at the `0.1` tag, which is when there is first something to cite. Until then a requirement
-may be deleted outright, identifiers may be renumbered, and a requirement whose meaning changes may
-keep its identifier; [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states the window, what it is not
-for, and what closes it. This chapter is descriptive until that same tag, and the two facts expire
-together.
+RDF terms, for the same reason, and it begins at the tag because that is when there is first
+something to cite. [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is
+for, what it is not for, and what closes it. This chapter is descriptive until that same tag, and
+the two facts expire together.
 
 ## 2. What conforms
 
@@ -74,13 +73,16 @@ origin, a host of the pod's own, and an origin that is a single pod are the same
 other requirement is concerned. What a client is given is the base URL, and `{pod}` throughout this
 specification means it.
 
-**Notation.** A base URL is written without a trailing slash, and every `{pod}/…` below is that
-string with what follows appended to it. A base a client is handed with a trailing slash names the
-same pod; the slash is not part of it. Writing the base as `https://example.org/alice/` and reading
-`{pod}/_system/conformance` as concatenation would produce a doubled slash, which servers and
-proxies do not normalise alike — so a client that is given one strips it before composing. A pod
-that is an entire origin is `https://example.org`, and the same rule makes
-`{pod}/_system/conformance` resolve as it should.
+<a id="SPS-CORE-019"></a>
+**`SPS-CORE-019`** — A pod's base URL MUST NOT end in a slash.
+
+Every route in this specification written as `{pod}/…` is that base URL with what follows appended
+to it, so without this the composition is ambiguous. A base of `https://example.org/alice/` would
+compose `{pod}/_system/conformance` into a doubled slash, and servers and proxies do not normalise
+that alike — a client would address a route the pod does not serve, on some deployments and not
+others. A pod that is an entire origin is `https://example.org`, which the same rule composes
+correctly. A base handed to a client with a trailing slash names the same pod; the slash is not part
+of it, and a client drops it before composing.
 
 <a id="SPS-CORE-008"></a>
 **`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the

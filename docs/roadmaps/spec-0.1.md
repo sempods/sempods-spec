@@ -124,8 +124,18 @@ equally urgent and the announce waits on all of them.
       code with HTTP `404` for an **unknown pod** — a response to a request that by definition never
       reaches a pod, so the actor is whatever routes to pods rather than a pod. The rest of its
       error model is untouched, and `openapi/module-mcp.yaml` lost the same sentence.
-      That the sweep found three and the count is five is the argument for writing the test down:
-      each of the last two was found by reading the change rather than by looking for them.
+      `SPS-AUTH-054` is the sixth and the last: "a sign-in at one pod MUST NOT be a sign-in at
+      another" named a second pod to constrain this one, so conformance could only be judged with
+      that other pod present. It now binds a session credential's scope to the pod's own base URL,
+      which is the same property tested on the pod that has to hold it.
+      That the sweep found three and the count is six is the argument for writing the test down:
+      every one after the third was found by reading the change rather than by looking for them.
+      **`SPS-CORE-019` is the one addition**, and it exists because this change created the hole it
+      fills: while `{pod}` was an identifier segment a trailing slash was not expressible, and now
+      that it is the whole base URL, `{pod}/_system/…` had no defined composition. A pod's base URL
+      MUST NOT end in a slash. Stating it as prose was tried and is wrong — `SPS-CORE-002` says a
+      statement without an identifier does not bind, so the notation could not have qualified
+      anything. `SPS-CORE-003` carries its own dated exception for the same reason.
       **The narrowing that follows is deliberate**: a generic client's pre-flight RFC 9728 discovery
       no longer finds a path-scoped pod, at the pod level or at an MCP URL. What that leans on is an
       open decision below.

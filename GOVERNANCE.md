@@ -86,11 +86,16 @@ window as after it.
 A number freed by a deletion returns to the pool while the window is open — renumbering that could
 not reuse a freed number would not be renumbering. The three permissions are one fact seen three
 ways: an identifier does not yet stand for a fixed statement, because nothing has been told to rely
-on it standing for one. The only consumer holding identifiers today is the reference
-implementation, which vendors `requirements.json` rather than citing it from outside; there all
-three show up as a summary changing rather than an identifier appearing, which is a diff somebody
-reads. Re-vendoring belongs to the change that made it change, not to whoever finds the mismatch
-later.
+on it standing for one.
+
+The consumer that holds identifiers today is the reference implementation, and re-vendoring
+`requirements.json` there is not enough. It cites identifiers in prose and in code comments, and its
+`checkDocLinks` validates them by *existence* against the vendored index — so a citation of a number
+that was deleted and later reused goes on passing while pointing at a different obligation. That is
+the one failure nothing downstream can see, and it is the reason reuse is bounded by this window
+rather than merely inconvenient. A change that deletes, renumbers or reuses therefore carries the
+downstream sweep with it: re-vendor the index, and read every citation of an affected identifier.
+Both belong to the change that caused it, not to whoever finds the mismatch later.
 
 `.github/scripts/check-requirements.py` carries the matching exception, and it closes on its own
 rather than by memory: the relaxation holds only while the repository has no `0.1` tag **and** the

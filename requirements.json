@@ -383,7 +383,7 @@
       "id": "SPS-AUTH-054",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A browser session established at a pod MUST be scoped to that pod.",
+      "summary": "A browser session established at a pod MUST be scoped to that pod's base URL: an implementation MUST NOT issue a session credential whose scope reaches beyond it.",
       "withdrawn": false
     },
     {
@@ -411,7 +411,7 @@
       "id": "SPS-CORE-003",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "Requirement identifiers are permanent.",
+      "summary": "From the `0.1` release on, requirement identifiers are permanent: an identifier MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its successor if it has one.",
       "withdrawn": false
     },
     {
@@ -517,6 +517,13 @@
       "part": "core",
       "chapter": "spec/core/index.md",
       "summary": "On a **write**, the two failures are currently distinguished: a context that is not registered produces `404`, and a registered context the caller may not write produces `403`.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-CORE-019",
+      "part": "core",
+      "chapter": "spec/core/index.md",
+      "summary": "A pod's base URL MUST NOT end in a slash.",
       "withdrawn": false
     },
     {

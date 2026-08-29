@@ -392,6 +392,19 @@ def main():
 
     current, problems = collect(lambda p: p.read_text())
     notices = []
+
+    # The one state the two guards cannot tell apart is a released tree whose SPEC_VERSION nobody
+    # moved: `window_open` closes on the tag here, but a clone made without tags reads the same
+    # tree as pre-release and reopens the window. Closing silently would leave the tree wrong in
+    # exactly the way that makes the next checkout wrong, so it is reported where it can still be
+    # fixed rather than where it does damage.
+    released = tagged()
+    if released and SPEC_VERSION == PRE_RELEASE_VERSION:
+        problems.append(
+            f"{RELEASE_TAG} is tagged but SPEC_VERSION is still {PRE_RELEASE_VERSION!r}. The "
+            f"deletion window is closed here either way, but a checkout without tags would read "
+            f"this tree as pre-release and reopen it. Set SPEC_VERSION to {RELEASE_TAG!r}."
+        )
     if not current:
         print(
             f"error: {SPEC} defines no requirements at all. That is either a parsing failure or a "
@@ -438,7 +451,7 @@ def main():
         # Reported either way. A deletion inside the window is still the kind of change that has to
         # be seen to be reviewed — the failure this guard was written for is a deletion that reads
         # as tidying, and silence is what makes it read that way.
-        open_window = window_open(SPEC_VERSION, tagged())
+        open_window = window_open(SPEC_VERSION, released)
         for ident, (path, _) in sorted(before.items()):
             if ident not in current:
                 if open_window:
