@@ -10,6 +10,15 @@ implementation. The reference implementation is on `0.2.0-SNAPSHOT` while this s
 at `0.1`, and locking the two together would mean every implementation release forced a
 specification release and the reverse.
 
+**The implementation's line is equally its own.** Independence has two directions and only one of
+them is obvious. The specification not following an implementation is the half that protects the
+specification; an implementation not mirroring the specification's number is the half that protects
+the implementation, and it is a decision rather than an omission. A scheme deriving one from the
+other — spec `0.1` giving an implementation `0.1.<n>` — was considered and rejected: the reference
+implementation is on `0.2.0-SNAPSHOT` against `0.1-dev` here, and that scheme could not express it
+without renumbering one of the two backwards. What an implementation owes is the declaration below,
+not a matching digit.
+
 An implementation states which specification version it implements, and that statement is
 machine-readable rather than prose in a README. The reference implementation carries it in
 `gradle.properties`; every implementation exposes it to clients at the conformance discovery
