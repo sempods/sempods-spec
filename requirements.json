@@ -523,7 +523,7 @@
       "id": "SPS-CORE-019",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "A pod's base URL MUST be an absolute `http:` or `https:` URL whose path does not end in a slash, carrying no query and no fragment.",
+      "summary": "A pod's base URL MUST be absolute, MUST use `https` on any host and MAY use `http` only on a loopback address, MUST carry no query and no fragment, and its path MUST NOT end in a slash.",
       "withdrawn": false
     },
     {

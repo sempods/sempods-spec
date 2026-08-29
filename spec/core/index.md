@@ -74,10 +74,17 @@ other requirement is concerned. What a client is given is the base URL, and `{po
 specification means it.
 
 <a id="SPS-CORE-019"></a>
-**`SPS-CORE-019`** — A pod's base URL MUST be an absolute `http:` or `https:` URL whose path does
-not end in a slash, carrying no query and no fragment.
+**`SPS-CORE-019`** — A pod's base URL MUST be absolute, MUST use `https` on any host and MAY use
+`http` only on a loopback address, MUST carry no query and no fragment, and its path MUST NOT end in
+a slash.
 
-Every route in this specification written as `{pod}/…` is that base URL with what follows appended
+The scheme half is [`SPS-AUTH-018`](auth.md#SPS-AUTH-018)'s rule for a redirect URI, and a pod base
+cannot be looser than it: every route below carries a bearer, and the token, authorization and
+registration endpoints carry credentials. A pod reachable over `http` on a real host would hand
+them to the network. The loopback exception is the same one, and for the same case — a development
+pod, which [`SPS-AUTH-006`](auth.md#SPS-AUTH-006) already refuses outside development.
+
+Every route in this specification written as `{pod}/…` is the base URL with what follows appended
 to it, and each part of the form above is what makes appending mean anything. A base of
 `https://example.org/alice/` composes `{pod}/_system/conformance` into a doubled slash, which
 servers and proxies do not normalise alike — a client would address a route the pod does not serve,

@@ -352,9 +352,8 @@ deployment cannot confine one to a pod's base URL, and a requirement that asked 
 ordinary cookie sessions while buying nothing: the credential still arrives, and what matters is
 that the pod refuses it. Narrowing the cookie is worth doing and is an implementation's business.
 
-This is the pod-local form of an isolation that used to be written as a comparison between two pods,
-which no test against one pod could settle. A sign-in at one pod is still not a sign-in at another,
-now as a consequence rather than as an obligation nobody could check.
+A sign-in at one pod is therefore not a sign-in at another, including where both are served from the
+same host. That follows from what each pod accepts, which is where it can be tested.
 
 ## 10. Discovery
 
