@@ -28,8 +28,9 @@ replacement lands in the same shape:
 |---|---|
 | Canvas | 1280 × 640, the size GitHub recommends; it crops smaller in some surfaces, so nothing important goes near an edge |
 | Mark | 288 × 288, top-left corner at (496, 116) — centred horizontally, sitting above the words |
-| Wordmark | `sempods`, 62px, baseline at y=486 |
-| Tagline | `your data belongs to you`, 25px, baseline at y=532 |
+| Type | Helvetica, falling back to Arial then any sans-serif. Both lines centred on x=640 |
+| Wordmark | `sempods`, 62px, baseline at y=486, letter-spacing 1 |
+| Tagline | `your data belongs to you`, 25px, baseline at y=532, no extra tracking |
 | Colours | `#111111` ground, `#ffffff` mark and wordmark, `#9a9a9a` tagline — the app icon's palette |
 
 The tagline is the website's first line. If that changes, this follows rather than becoming a
