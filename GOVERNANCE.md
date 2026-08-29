@@ -98,10 +98,12 @@ downstream sweep with it: re-vendor the index, and read every citation of an aff
 Both belong to the change that caused it, not to whoever finds the mismatch later.
 
 `.github/scripts/check-requirements.py` carries the matching exception, and it closes on its own
-rather than by memory: the relaxation holds only while the repository has no `0.1` tag **and** the
+rather than by memory. The relaxation holds only while the repository has no `0.1` tag **and** the
 script still declares the pre-`0.1` specification version, matched exactly rather than by its `-dev`
-suffix. `0.2-dev` is a later version, not a second window. Tagging ends it whether or not anyone
-remembers this paragraph.
+suffix — `0.2-dev` is a later version, not a second window. A checkout that cannot establish whether
+the tag exists, a shallow clone with no tag refs to read, counts as tagged: the permissive answer is
+not the one to give a question that was never asked. Tagging ends the window whether or not anyone
+remembers this paragraph, and a tag with a stale version is reported rather than absorbed.
 
 ## Who decides
 

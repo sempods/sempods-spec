@@ -127,10 +127,25 @@ def window_open(spec_version, is_tagged):
     return spec_version == PRE_RELEASE_VERSION and not is_tagged
 
 
-def tagged(name=RELEASE_TAG):
-    """Whether this checkout carries the release tag."""
+def tag_state(name=RELEASE_TAG):
+    """True, False, or None for "this checkout cannot say".
+
+    The third state is the point. A shallow clone has no tag refs to read, so an absent tag there
+    means "not fetched" as readily as "not created" — and answering the permissive one to a
+    question that was never asked is how the window reopens after the release. Unknown is
+    therefore its own answer, and the caller fails closed on it.
+    """
     done = subprocess.run(["git", "tag", "--list", name], capture_output=True, text=True)
-    return done.returncode == 0 and bool(done.stdout.strip())
+    if done.returncode != 0:
+        return None
+    if done.stdout.strip():
+        return True
+    shallow = subprocess.run(
+        ["git", "rev-parse", "--is-shallow-repository"], capture_output=True, text=True
+    )
+    if shallow.returncode == 0 and shallow.stdout.strip() == "true":
+        return None
+    return False
 
 
 def requirements(text):
@@ -398,8 +413,10 @@ def main():
     # tree as pre-release and reopens the window. Closing silently would leave the tree wrong in
     # exactly the way that makes the next checkout wrong, so it is reported where it can still be
     # fixed rather than where it does damage.
-    released = tagged()
-    if released and SPEC_VERSION == PRE_RELEASE_VERSION:
+    # Unknown counts as released: a checkout that cannot answer the question does not get the
+    # permissive answer to it.
+    released = tag_state()
+    if released is True and SPEC_VERSION == PRE_RELEASE_VERSION:
         problems.append(
             f"{RELEASE_TAG} is tagged but SPEC_VERSION is still {PRE_RELEASE_VERSION!r}. The "
             f"deletion window is closed here either way, but a checkout without tags would read "
@@ -451,7 +468,7 @@ def main():
         # Reported either way. A deletion inside the window is still the kind of change that has to
         # be seen to be reviewed — the failure this guard was written for is a deletion that reads
         # as tidying, and silence is what makes it read that way.
-        open_window = window_open(SPEC_VERSION, released)
+        open_window = window_open(SPEC_VERSION, is_tagged=released is not False)
         for ident, (path, _) in sorted(before.items()):
             if ident not in current:
                 if open_window:
@@ -461,9 +478,15 @@ def main():
                         f"before `0.1`\". Say in the change which identifier went, and why."
                     )
                 else:
+                    unknown = (
+                        f" The window is closed here because this checkout cannot establish "
+                        f"whether {RELEASE_TAG} is tagged — a shallow clone has no tag refs. "
+                        f"Fetch tags if this is a pre-{RELEASE_TAG} checkout."
+                        if released is None else ""
+                    )
                     problems.append(
                         f"{ident} was in {path} at {base} and is gone. An identifier is never "
-                        f"deleted — mark it withdrawn and keep its text (SPS-CORE-003)."
+                        f"deleted — mark it withdrawn and keep its text (SPS-CORE-003).{unknown}"
                     )
 
     by_area = {}
