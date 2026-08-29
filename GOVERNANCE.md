@@ -23,12 +23,12 @@ implementation that skips a module entirely is still conformant.
 
 - **`0.x`** — the contract may break between minors. Breaking changes are listed in the release
   notes and are never silent.
-- **Requirement IDs never break, from `0.1` on.** An ID is never reassigned and never renumbered;
+- **Requirement IDs never break.** An ID is never reassigned and never renumbered;
   a withdrawn requirement stays in the text marked `withdrawn` with a pointer to its successor.
   This is deliberately the same rule the vocabulary applies to RDF terms, and for the same reason:
   an ID ends up in other people's test suites the way a term ends up in other people's data.
-  Before the tag there are no such test suites, and §"Deleting and renumbering, before `0.1`" says
-  what follows from that.
+  There are no such test suites yet, and §"Deleting and renumbering, before `0.1`" says what follows
+  from that — including that the first one to appear closes the window without waiting for the tag.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
 
@@ -49,6 +49,46 @@ included. It gets no standing it does not earn by being correct.
 The switch happens **when `0.1` is tagged in this repository**, not when it feels ready. Until then
 every chapter carries the fact that it is descriptive; after it, nothing does, because it is the
 default.
+
+### When `0.1` gets tagged
+
+**The current version is `0.1-dev`, and it is not close to a tag.** That is a decision, not a
+delay.
+
+A tag is a promise to somebody. There is nobody yet: no second implementation, no client outside
+this project whose build breaks when a requirement moves. Tagging before there is buys nothing and
+spends the freedom to still be wrong about the shape — which the specification currently is in at
+least one place it knows of, and probably more it does not.
+
+So the trigger is not a date. **`0.1` is tagged when two things hold at once:** somebody is there
+to promise to — a second implementation, or a client outside this project that depends on the
+contract — **and** everything below is settled. Adoption is what makes the tag worth cutting; the
+open questions are what makes it possible. Neither is sufficient alone, and adoption arriving first
+is a reason to close the rest, not to tag around it.
+
+Until then `0.1-dev` is what an implementation declares, what the conformance endpoint reports, and
+what this document means wherever it says "before the tag". It is the honest answer to "which
+version is this?" — more honest than a `0.1` that gets edited the week after it is cut.
+
+### What has to be settled first
+
+**The roadmap's open decisions are the gate, not a list kept here** — two copies of that list would
+disagree within a week. What is written down there as required before `0.1` is required before
+`0.1`, and one of those is a **known security defect**: `SPS-CORE-018` is a context-enumeration
+oracle. Tagging over it makes it binding, which is the one outcome this whole switch exists to
+prevent.
+
+The heaviest of them, because it decides whether a version change is survivable at all:
+[how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
+the IRIs it has already published. A pod's data is cited from elsewhere on the web, and the
+citations are the point — so a version change cannot move the pod to a new address.
+
+**That is a principle this specification does not yet require.** `SPS-CORE-009` looks like it says
+so and does not: it makes minting independent of a request's `Host` header, which a pod could
+satisfy while changing its publicly known address. Nothing else states it either — `Published IRIs
+never change` above covers module IRIs and vocabulary terms, not a pod's resources. Issue #21
+carries the gap; until it closes, the constraint is the project's intent rather than its
+contract.
 
 ## How a change is made
 
@@ -72,8 +112,16 @@ withdrawn in, and names what replaces it if anything does. The ID stays out of c
 
 **Until `0.1` is tagged a requirement may be deleted outright, identifiers may be renumbered, and a
 requirement whose meaning changes may keep its identifier rather than be withdrawn for a successor.
-After the tag, none of the three ever again.** This is the same dated event as the switch from
-descriptive to prescriptive, and it rests on the same fact. Permanence buys exactly one thing: an
+After the tag, none of the three ever again.**
+
+**The window closes earlier if adoption arrives first.** The tag now waits for the blockers above,
+so a second implementation or an external client can appear while it is still open — and the moment
+one does, the fact this rests on stops being true: there *is* somebody citing these identifiers, and
+renumbering would retarget their tests silently. The relaxation ends when the first external
+dependency appears or when `0.1` is tagged, whichever is sooner — which makes it a different event
+from the switch to prescriptive above, resting on a different fact. That switch is a promise this
+project makes about its own text and only the tag makes it; this one is about whether anybody is
+citing the identifiers, and somebody outside can answer that first. Permanence buys exactly one thing: an
 identifier stays safe to cite from a conformance report this project never sees. Nothing has been
 published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
 a chapter carrying text that was wrong from the day it was written, for a promise nobody was given.

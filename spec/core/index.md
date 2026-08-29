@@ -24,18 +24,21 @@ identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normat
 implementation is not obliged by it.
 
 <a id="SPS-CORE-003"></a>
-**`SPS-CORE-003`** — From the `0.1` release on, requirement identifiers are permanent: an identifier
-MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is
-retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its
-successor if it has one. Before that release none of those obligations holds — a requirement MAY be
-deleted outright, and an identifier MAY be renumbered or reused.
+**`SPS-CORE-003`** — Requirement identifiers are permanent: an identifier MUST NOT be reassigned to
+a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked
+`withdrawn`, keep its identifier and its original text, and name its successor if it has one. Those
+obligations bind from the `0.1` release or from the first dependency on this contract from outside
+this project, whichever comes first. Only before that point MAY a requirement be deleted outright
+and an identifier be renumbered or reused.
 
 Permanence is what makes an identifier safe to cite from a conformance report, an implementation
 note or a bug tracker that this project never sees. It is the same promise the vocabulary makes for
-RDF terms, for the same reason, and it begins at the tag because that is when there is first
-something to cite. [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is
-for, what it is not for, and what closes it. This chapter is descriptive until that same tag, and
-the two facts expire together.
+RDF terms, for the same reason, and it begins as soon as there is something to cite — which the tag
+guarantees and an outside dependant can bring about sooner.
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is for, what it is not
+for, and what closes it. This chapter is descriptive until the tag, and only until the tag: that is
+a different event resting on a different fact. Whether the text or the reference implementation is
+right is a promise this project makes about itself, and nobody else's arrival settles it.
 
 ## 2. What conforms
 
@@ -142,10 +145,10 @@ module's IRI — and a `version` string.
 
 ```json
 {
-  "specVersion": "0.1",
+  "specVersion": "0.1-dev",
   "modules": [
-    { "id": "https://schema.sempods.org/module/media", "version": "0.1" },
-    { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1" }
+    { "id": "https://schema.sempods.org/module/media", "version": "0.1-dev" },
+    { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1-dev" }
   ]
 }
 ```

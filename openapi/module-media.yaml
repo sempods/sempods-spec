@@ -6,7 +6,7 @@ openapi: 3.1.0
 
 info:
   title: sempods — media module
-  version: '0.1'
+  version: '0.1-dev'
   summary: Binaries a pod owns, addressed by content hash and bound to contexts.
   description: |
     Binds only an implementation advertising `https://schema.sempods.org/module/media` at the

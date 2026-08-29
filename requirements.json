@@ -411,7 +411,7 @@
       "id": "SPS-CORE-003",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "From the `0.1` release on, requirement identifiers are permanent: an identifier MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its successor if it has one.",
+      "summary": "Requirement identifiers are permanent: an identifier MUST NOT be reassigned to a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked `withdrawn`, keep its identifier and its original text, and name its successor if it has one.",
       "withdrawn": false
     },
     {

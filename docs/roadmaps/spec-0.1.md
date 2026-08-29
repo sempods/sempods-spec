@@ -301,25 +301,21 @@ equally urgent and the announce waits on all of them.
     reinstatement: the append form was never the standard's, and requiring it is a decision about
     blessing a convention rather than about writing down what everyone already does.
 
-- **How an implementation's version relates to the specification's, and what a pre-release looks
-  like.** `GOVERNANCE.md` says the specification's line is independent of any implementation, and
-  gives the reason — the implementation must not force a specification release. The proposal on the
-  table points the other way and is compatible with that: an implementation *follows*, so spec
-  `0.1` gives sempods-kotlin `0.1.<n>`, counting up. A second implementation would do the same.
-  What is undecided, and wanted before the project is public:
-  - Whether a tagged `0.1` can still move at all, or whether every change after the tag is `0.2`.
-    The current text implies the latter — the switch to prescriptive happens *at* the tag — and the
-    `0.x` promise already allows breaking between minors, which makes frequent minors cheap.
-  - Whether the specification gets pre-release versions of its own (`0.2.0-SNAPSHOT` or similar)
-    so a change can be worked on while `0.1` stays fixed, and what an implementation declares while
-    tracking one. `specVersion` is a free-form string today (`SPS-CORE-011`), and the reference
-    implementation already declares `0.1-dev` — so the question is not whether it is expressible
-    but what it is allowed to mean.
-  - What "pulling a version" is as a procedure: what gets tagged, in what order the two
-    repositories move, and what the conformance endpoint reports in between.
-  This is `GOVERNANCE.md`'s subject, not a roadmap item — but it has to be settled before `0.1`,
-  because the tag is what makes all of it binding.
+- **How an implementation's version relates to the specification's.** `GOVERNANCE.md` says the
+  specification's line is independent of any implementation, and gives the reason — the
+  implementation must not force a specification release. The proposal points the other way and is
+  compatible with that: an implementation *follows*, so spec `0.1` gives sempods-kotlin `0.1.<n>`,
+  counting up. A second implementation would do the same. Still undecided.
 
+  **Settled since this was written:** the current version is `0.1-dev`; the tag is triggered by a
+  second implementation or a client outside this project, not by a date; and `0.1-dev` is what an
+  implementation declares and what the conformance endpoint reports meanwhile. `GOVERNANCE.md`
+  §"When `0.1` gets tagged".
+
+  **Still open, and the one that blocks the tag:** how a pod moves between versions without moving
+  the IRIs it has already published — [issue #21](https://github.com/sempods/sempods-spec/issues/21).
+  Beside it: whether a tagged `0.1` may move at all or every change after it is `0.2`, and what
+  "pulling a version" is as a procedure across two repositories.
 - **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
   On a write, an unregistered context answers `404` and a registered one the caller may not write
   answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.

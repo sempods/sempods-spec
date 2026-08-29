@@ -193,9 +193,11 @@ here rather than copied.
 ## Working rules
 
 - **Requirement IDs are permanent.** Never renumber, never reassign, never delete. Withdraw instead.
-  One dated exception, live today: until `0.1` is tagged a requirement may be deleted and
-  identifiers renumbered, for a statement that should never have been written rather than one that
-  is in the way. [`GOVERNANCE.md`](GOVERNANCE.md) states it; the checker enforces the expiry.
+  One exception, live today: a requirement may be deleted and identifiers renumbered, for a
+  statement that should never have been written rather than one that is in the way.
+  [`GOVERNANCE.md`](GOVERNANCE.md) owns that rule and names both events that end it — do not restate
+  the deadline here or anywhere else, because a deadline copied into five files is a deadline four
+  of them will get wrong. The checker enforces the half it can observe.
 - **A normative statement without a requirement ID is not normative** — it is background, and a
   reader is entitled to treat it that way.
 - **No empty placeholder files.** A chapter appears when it is written; until then it is a row with

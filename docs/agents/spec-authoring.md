@@ -65,10 +65,10 @@ SPS-<AREA>-<NNN>
 padded to three digits, allocated in order of first appearance. Numbers are **never reused**, so the
 next number is one above the highest that has *ever* existed in the area, withdrawn ones included.
 
-Until `0.1` is tagged a number freed by a deletion is an exception to that and returns to the pool —
-`GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says why, and says that the window closes
-at the tag and never reopens. So before the tag the highest that has ever existed is the highest
-still in the chapters, and after it the two part company for good.
+While the deletion window is open a number freed by a deletion is an exception to that and returns
+to the pool — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says why, and owns what
+closes it and when. So while it is open the highest that has ever existed is the highest still in
+the chapters, and once it shuts the two part company for good.
 
 Registered areas:
 
@@ -139,9 +139,10 @@ A requirement whose *wording* is clarified without changing what it demands keep
 requirement whose meaning narrows or widens gets a new ID and the old one is withdrawn. When in
 doubt: if an implementation that passed before could now fail, it is a new ID.
 
-**One exception, and it expires:** until `0.1` is tagged a requirement may be deleted outright
-instead of withdrawn, and one whose meaning changes may keep its identifier instead of yielding to a
-successor — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`". Deletion is for a statement
+**One exception, and it expires:** while the deletion window is open a requirement may be deleted
+outright instead of withdrawn, and one whose meaning changes may keep its identifier instead of
+yielding to a successor — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says when it
+shuts, and it can shut before the tag. Check there rather than assuming it is still open. Deletion is for a statement
 that should never have been written, not for one that is merely in the way; a withdrawal notice for
 text nobody was ever bound by preserves a promise nobody was given. Deleting still costs a
 re-vendored `requirements.json` downstream and a citation sweep through `openapi/`, and the
