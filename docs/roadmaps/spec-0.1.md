@@ -301,13 +301,12 @@ equally urgent and the announce waits on all of them.
     reinstatement: the append form was never the standard's, and requiring it is a decision about
     blessing a convention rather than about writing down what everyone already does.
 
-- **How an implementation's version relates to the specification's.** `GOVERNANCE.md` says the
-  specification's line is independent of any implementation, and gives the reason — the
-  implementation must not force a specification release. The proposal points the other way and is
-  compatible with that: an implementation *follows*, so spec `0.1` gives sempods-kotlin `0.1.<n>`,
-  counting up. A second implementation would do the same. Still undecided.
+- **How an implementation's version relates to the specification's.** **Decided: it does not.** The
+  two lines are independent in both directions, and `GOVERNANCE.md` §"Versioning" owns the
+  statement — do not restate it here. The proposal this entry used to carry, that an implementation
+  *follows* so that spec `0.1` gives sempods-kotlin `0.1.<n>`, is rejected; the reason is there.
 
-  **Settled since this was written:** the current version is `0.1-dev`; the tag is triggered by a
+  **Settled earlier, and still true:** the current version is `0.1-dev`; the tag is triggered by a
   second implementation or a client outside this project, not by a date; and `0.1-dev` is what an
   implementation declares and what the conformance endpoint reports meanwhile. `GOVERNANCE.md`
   §"When `0.1` gets tagged".
