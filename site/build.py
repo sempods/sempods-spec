@@ -37,9 +37,16 @@ STAGE = SITE / "_stage"
 # including to a demo pod that is a host of its own rather than a path.
 DEMO_POD_BASE_URL = "https://sempods.org/aaltra"
 
+# The site's own host, named once because three copies of a hostname agree right up until the
+# site moves and one of them does not. It is the `CNAME` GitHub Pages serves from, the origin
+# `robots.txt` sends a crawler to, and the identity below. `check()` holds `mkdocs.yml` to it
+# too: MkDocs writes the sitemap's URLs from its own `site_url`, and `robots.txt` names that
+# file, so a disagreement there advertises one site while pointing at another.
+SITE_HOST = "spec.sempods.org"
+
 # What the try-it page identifies as when a reader logs in. A `did:web:` client is its origin and
 # registers nothing, so this is the site's own address and changes only if the site moves.
-DEMO_CLIENT = "did:web:spec.sempods.org"
+DEMO_CLIENT = f"did:web:{SITE_HOST}"
 
 # Every address a staged description is allowed to resolve a server to. A closed list rather
 # than "anything on the demo origin": `https://sempods.org/wrong` is on the origin too, and
@@ -165,7 +172,17 @@ def staged_content() -> dict:
         else:
             wanted[relative] = source.read_bytes()
 
-    wanted["CNAME"] = b"spec.sempods.org\n"
+    wanted["CNAME"] = f"{SITE_HOST}\n".encode()
+
+    # GitHub Pages serves no `robots.txt` of its own, so without this the sitemap MkDocs writes
+    # is found only by a crawler that guesses the conventional path. `www.sempods.org` has
+    # carried the same pair since it launched; this is the specification site's half of it.
+    wanted["robots.txt"] = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: https://{SITE_HOST}/sitemap.xml\n"
+    ).encode()
     return wanted
 
 
@@ -587,6 +604,18 @@ def check() -> int:
     for path in sorted((ROOT / "spec" / "modules").glob("*.md")):
         if path.stem not in MODULES and path.stem != "README":
             problems.append(f"{path.relative_to(ROOT)} exists but is in no nav list")
+
+    # The sitemap `robots.txt` points at is written by MkDocs from its own `site_url`, so the two
+    # have to name the same host. Checked rather than derived: reading the host out of
+    # `mkdocs.yml` would make the build depend on parsing it, and the failure this guards against
+    # is silent in every rendered page — the site would look right and be unindexable.
+    import yaml
+    site_url = (yaml.safe_load((SITE / "mkdocs.yml").read_text()) or {}).get("site_url", "")
+    if site_url.rstrip("/") != f"https://{SITE_HOST}":
+        problems.append(
+            f"site/mkdocs.yml declares site_url {site_url!r}, which is not https://{SITE_HOST}. "
+            f"The sitemap is written from that value and robots.txt points a crawler at it, so "
+            f"they would advertise one site and name another")
 
     descriptions = sorted((ROOT / "openapi").glob("*.yaml"))
     if not descriptions:
