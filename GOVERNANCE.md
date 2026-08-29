@@ -23,12 +23,12 @@ implementation that skips a module entirely is still conformant.
 
 - **`0.x`** — the contract may break between minors. Breaking changes are listed in the release
   notes and are never silent.
-- **Requirement IDs never break, from `0.1` on.** An ID is never reassigned and never renumbered;
+- **Requirement IDs never break.** An ID is never reassigned and never renumbered;
   a withdrawn requirement stays in the text marked `withdrawn` with a pointer to its successor.
   This is deliberately the same rule the vocabulary applies to RDF terms, and for the same reason:
   an ID ends up in other people's test suites the way a term ends up in other people's data.
-  Before the tag there are no such test suites, and §"Deleting and renumbering, before `0.1`" says
-  what follows from that.
+  There are no such test suites yet, and §"Deleting and renumbering, before `0.1`" says what follows
+  from that — including that the first one to appear closes the window without waiting for the tag.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
 
