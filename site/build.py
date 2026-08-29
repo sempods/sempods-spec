@@ -340,11 +340,14 @@ def with_demo_pod(yaml_text: str) -> str:
 
 
 def on_demo_pod(url: str) -> bool:
-    """Whether a URL addresses something under the demo pod, after normalisation.
+    """Whether a URL addresses something under the demo pod.
 
-    Normalised rather than compared as text. `https://sempods.org/aaltra/../_system/auth/token`
-    starts with the pod base and is not on the pod: a browser resolves the dot segment before it
-    dials, so a lexical prefix test passes exactly the values it exists to reject.
+    Strict about the path rather than clever about it. A dot segment hides from a normaliser in
+    several ways and reappears in the parser a browser actually dials with: `%2e%2e`, `%2E%2E`,
+    `.%2e`, and a backslash separator all resolve away the pod, which was checked against a real
+    browser. Chasing those spellings is a losing game — the answer is that an endpoint on the demo
+    pod has no business carrying percent-encoding, a backslash, or a dot segment at all, so a path
+    that does is refused whatever it would have resolved to.
     """
     from urllib.parse import urlsplit
 
@@ -352,7 +355,15 @@ def on_demo_pod(url: str) -> bool:
     target = urlsplit(url)
     if (target.scheme, target.netloc) != (base.scheme, base.netloc):
         return False
-    path = posixpath.normpath(target.path)
+    if target.query or target.fragment:
+        return False
+
+    path = target.path
+    if "%" in path or "\\" in path:
+        return False
+    if posixpath.normpath(path) != path.rstrip("/") or not path.startswith("/"):
+        return False
+
     return path == base.path or path.startswith(base.path.rstrip("/") + "/")
 
 
