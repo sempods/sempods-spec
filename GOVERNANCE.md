@@ -50,6 +50,30 @@ The switch happens **when `0.1` is tagged in this repository**, not when it feel
 every chapter carries the fact that it is descriptive; after it, nothing does, because it is the
 default.
 
+### When `0.1` gets tagged
+
+**The current version is `0.1-dev`, and it is not close to a tag.** That is a decision, not a
+delay.
+
+A tag is a promise to somebody. There is nobody yet: no second implementation, no client outside
+this project whose build breaks when a requirement moves. Tagging before there is buys nothing and
+spends the freedom to still be wrong about the shape — which the specification currently is in at
+least one place it knows of, and probably more it does not.
+
+So the trigger is not a date. **`0.1` is tagged when a second implementation exists, or when a
+client outside this project depends on the contract.** Whichever comes first is the moment the
+promise has an addressee.
+
+Until then `0.1-dev` is what an implementation declares, what the conformance endpoint reports, and
+what this document means wherever it says "before the tag". It is the honest answer to "which
+version is this?" — more honest than a `0.1` that gets edited the week after it is cut.
+
+One thing has to be settled before the tag and is not:
+[how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
+the IRIs it has already published. A pod's resource IRIs are permanent (`SPS-CORE-009`), so a
+version change cannot move the pod to a new address — its data is cited from elsewhere on the web,
+and the citations are the point.
+
 ## How a change is made
 
 1. **An issue first**, describing the change and the rationale. Specification changes need a written
