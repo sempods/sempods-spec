@@ -142,7 +142,7 @@ module's IRI — and a `version` string.
 
 ```json
 {
-  "specVersion": "0.1",
+  "specVersion": "0.1-dev",
   "modules": [
     { "id": "https://schema.sempods.org/module/media", "version": "0.1" },
     { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1" }

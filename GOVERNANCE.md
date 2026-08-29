@@ -70,9 +70,15 @@ version is this?" — more honest than a `0.1` that gets edited the week after i
 
 One thing has to be settled before the tag and is not:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
-the IRIs it has already published. A pod's resource IRIs are permanent (`SPS-CORE-009`), so a
-version change cannot move the pod to a new address — its data is cited from elsewhere on the web,
-and the citations are the point.
+the IRIs it has already published. A pod's data is cited from elsewhere on the web, and the
+citations are the point — so a version change cannot move the pod to a new address.
+
+**That is a principle this specification does not yet require.** `SPS-CORE-009` looks like it says
+so and does not: it makes minting independent of a request's `Host` header, which a pod could
+satisfy while changing its publicly known address. Nothing else states it either — `Published IRIs
+never change` above covers module IRIs and vocabulary terms, not a pod's resources. Issue #21
+carries the gap; until it closes, the constraint is the project's intent rather than its
+contract.
 
 ## How a change is made
 
