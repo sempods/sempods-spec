@@ -339,6 +339,23 @@ def with_demo_pod(yaml_text: str) -> str:
     return "".join(lines)
 
 
+def on_demo_pod(url: str) -> bool:
+    """Whether a URL addresses something under the demo pod, after normalisation.
+
+    Normalised rather than compared as text. `https://sempods.org/aaltra/../_system/auth/token`
+    starts with the pod base and is not on the pod: a browser resolves the dot segment before it
+    dials, so a lexical prefix test passes exactly the values it exists to reject.
+    """
+    from urllib.parse import urlsplit
+
+    base = urlsplit(f"{DEMO_ORIGIN}/{DEMO_POD}")
+    target = urlsplit(url)
+    if (target.scheme, target.netloc) != (base.scheme, base.netloc):
+        return False
+    path = posixpath.normpath(target.path)
+    return path == base.path or path.startswith(base.path.rstrip("/") + "/")
+
+
 def flow_urls(staged: str) -> list:
     """Every OAuth flow endpoint in a staged description, as (scheme, flow, field, url)."""
     found = []
@@ -579,9 +596,8 @@ def check() -> int:
             # substitution replaces one exact string and silently does nothing to any other —
             # and the try-it login would carry a reader there.
             staged = with_demo_pod(text)
-            pod_base = f"{DEMO_ORIGIN}/{DEMO_POD}/"
             for scheme, flow, field, url in flow_urls(staged):
-                if not url.startswith(pod_base):
+                if not on_demo_pod(url):
                     problems.append(
                         f"{src.relative_to(ROOT)} would stage {scheme}.{flow}.{field} as {url!r}, "
                         f"which is not on the demo pod. A reader logging in from the try-it page "
