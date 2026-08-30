@@ -232,6 +232,10 @@ specification's roadmap, before `0.1` becomes prescriptive.
 Named, not re-explained. A chapter states the deviations from these; where it is silent, the
 standard applies unchanged.
 
+This is the intended implementation shape, not a footnote: a sempods implementation should be able
+to use existing HTTP, RDF, SPARQL and OAuth/OIDC libraries, and focus its own code on the pod
+contract that composes them.
+
 | Standard | Where |
 |---|---|
 | RFC 9110 (HTTP Semantics) | throughout — verbs, status codes, conditional requests |

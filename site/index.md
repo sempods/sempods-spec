@@ -6,6 +6,11 @@ contract such a pod implements. It is written so that somebody who has never see
 implementation can build a conformant pod in a language of their choosing — and can tell whether
 they succeeded.
 
+The point is not a new protocol stack. sempods profiles and composes standards that already exist:
+HTTP resources, RDF and named graphs, JSON-LD, SPARQL, OAuth/OIDC and MCP. The specification adds
+the pod contract between them: one base URL, one context per statement, server-resolved grants,
+sandboxed reads and writes, and an agent surface that uses the same rules as every other client.
+
 !!! warning "This specification is not yet binding"
 
     Until the `0.1` release it is **descriptive**: it was extracted from the reference
