@@ -7,6 +7,12 @@ and you decide who may read or write what.
 This repository holds the specification of that model. It is written to be implementable by
 somebody who has never read the reference implementation — in any language, on any store.
 
+Its leverage comes from composition rather than novelty at the bottom of the stack. sempods names
+and profiles existing standards — HTTP, RDF datasets, JSON-LD, SPARQL, OAuth/OIDC and MCP — then
+specifies the contract that makes them behave as one pod: contexts as the permission boundary,
+server-resolved grants, sandboxed query and write surfaces, and conformance that another
+implementation can test.
+
 ## Where am I?
 
 | | |
