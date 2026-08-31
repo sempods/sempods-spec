@@ -26,9 +26,9 @@ requirement.
 
 - [`access-control.md`](access-control.md) — at what granularity access is decided, and why
   [`contexts`](../../spec/core/contexts.md) and [`grants`](../../spec/core/grants.md) answer that
-  question differently from [`lod-crud`](../../spec/core/lod-crud.md). Profiles the Solid
-  Authorization Panel's ACP as the shared contract and carries the open decision on a default
-  context.
+  question differently from [`lod-crud`](../../spec/core/lod-crud.md). Defines the target
+  resource-first ACP profile, the optional multi-Context constraint, and the closed matcher model
+  for enterprise groups and audiences.
 
 Reasoning that belongs to another document is not repeated here:
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and the descriptive-to-prescriptive
