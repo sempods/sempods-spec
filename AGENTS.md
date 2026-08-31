@@ -179,7 +179,10 @@ Agent instructions — [`docs/agents/`](docs/agents/):
 Concepts and roadmaps:
 
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
-  specification repository than in an implementation, and the template. None exist yet
+  specification repository than in an implementation, and the template
+- [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
+  access is decided, the ACP profile the two levels share, and where policy lives. Carries the open
+  decision on a default context
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, the second copy in the

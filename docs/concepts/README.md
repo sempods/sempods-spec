@@ -24,10 +24,16 @@ requirement.
 
 ## Here today
 
-None. The permanent reasoning that exists so far lives in the documents that own it:
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and the descriptive-to-prescriptive
-switch, [`../../spec/README.md`](../../spec/README.md) for the core/module split, and
-[`../agents/spec-authoring.md`](../agents/spec-authoring.md) for the requirement scheme. A concept
+- [`access-control.md`](access-control.md) — at what granularity access is decided, and why
+  [`contexts`](../../spec/core/contexts.md) and [`grants`](../../spec/core/grants.md) answer that
+  question differently from [`lod-crud`](../../spec/core/lod-crud.md). Profiles the Solid
+  Authorization Panel's ACP as the shared contract and carries the open decision on a default
+  context.
+
+Reasoning that belongs to another document is not repeated here:
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and the descriptive-to-prescriptive
+switch, [`../../spec/README.md`](../../spec/README.md) the core/module split, and
+[`../agents/spec-authoring.md`](../agents/spec-authoring.md) the requirement scheme. A concept
 is written for the first chapter whose content needs one, not in advance.
 
 ## Template
