@@ -182,8 +182,8 @@ Concepts and roadmaps:
   specification repository than in an implementation, and the template
 - [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
   access is decided, the resource-first ACP profile, optional multi-context constraint, enterprise
-  matchers and target-indexed policy location — and the invariants and requirements the target state
-  contradicts
+  matchers and target-indexed policy location — and the load-bearing specification impact of that
+  target state
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, the second copy in the

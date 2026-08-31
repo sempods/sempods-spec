@@ -19,8 +19,9 @@ sempods a Solid server or importing ACP's complete resolution algorithm.
 
 Sections below are marked **IST** (specified today, verifiable against the chapters) or **SOLL**
 (target state). The SOLL has no roadmap yet, and it contradicts requirements and project invariants
-that are in force — "What this change breaks" names them one by one. It is therefore a governance
-decision, not an editorial reinterpretation, and nothing here is adopted by having been written down.
+that are in force — "Specification impact" names the load-bearing ones. It is therefore a
+governance decision, not an editorial reinterpretation, and nothing here is adopted by having been
+written down.
 
 ## The two decision units (IST)
 
@@ -135,8 +136,9 @@ Core has one canonical data context with no independent access policy. It remain
 stored data statement belongs to exactly one context, but a single-context pod does not expose
 context creation, discovery, provenance or selection as client concepts. Writes omit `?context=`
 because there is no choice to make, and reads address resources rather than storage partitions. That
-withdraws [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) for such a pod; "What this
-change breaks" below lists it with the rest.
+requires a different CRUD contract from
+[`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007); "Specification impact" below lists it
+with the other load-bearing changes.
 
 The optional multi-context module exposes the current context lifecycle, discovery, explicit write
 target and read downscope. It also adds the context evaluator. For a statement
@@ -169,8 +171,9 @@ authenticated modes = delegated client ceiling
                       ∩ resource policy decision
                       ∩ optional context policy decision
 
-public modes = public resource policy decision
-               ∩ optional public context policy decision
+public modes = { read } if public resource policy allows read
+                         and, when present, public context policy allows read
+               ∅ otherwise
 
 effective modes = authenticated modes ∪ public modes
 ```
@@ -182,11 +185,12 @@ ceiling. The ceiling may constrain modes, targets or both; OAuth owns how a pers
 subset, while access control owns the per-request decision. In particular, the resource-only profile
 cannot quietly reuse context selection as its consent vocabulary.
 
-Public access becomes an ordinary resource or context policy matched by ACP's public-agent
-semantics. A `public` convenience field may project to that policy, but it is not a second decision
-path. An authenticated request remains able to read what an unauthenticated request can read; the
-present `public-read` scope therefore has to be reconsidered when this target state becomes a
-roadmap.
+Public access becomes an ordinary resource policy and, where multi-context support is enabled, an
+ordinary context policy matched by ACP's public-agent semantics. The sempods profile permits that
+matcher for `read` only; anonymous `write` or `manage` is not part of the target model. A `public`
+convenience field may project to that policy, but it is not a second decision path. An authenticated
+request remains able to read what an unauthenticated request can read; the present `public-read`
+scope therefore has to be reconsidered when this target state becomes a roadmap.
 
 ## Enterprise matchers (SOLL)
 
@@ -264,14 +268,46 @@ control-plane state, and the boundary above is the read-side half it does not st
 
 ## Operation boundaries (SOLL)
 
-`read` authorization is evaluated per candidate statement. This gives resource retrieval, find and
-SPARQL one rule even though an implementation may enforce it through dataset pruning, query joins or
-post-filtering.
+`read` authorization is evaluated per candidate statement. Resource retrieval and find discard a
+statement before it can contribute to an answer. SPARQL executes against a server-derived statement
+view that already excludes denied statements before query algebra, joins, filters, aggregates or
+result construction can observe them. Selecting readable contexts provides the context half of that
+view; in the multi-context profile it does not replace the resource decision.
+
+For find the boundary has to sit ahead of the whole pipeline — matching and index lookup, hit
+selection, ranking, `limit` and expansion — and not around the graph that comes back. The reason is
+in the chapter: [`SPS-FIND-008`](../../spec/core/find.md#SPS-FIND-008) permits an implementation to
+match *through* a linked resource and return only the requested types, so an index that matched on a
+denied statement could still decide which permitted resource appears as a hit. A resource nobody may
+read must not be able to nominate one that everybody may.
+[`SPS-FIND-010`](../../spec/core/find.md#SPS-FIND-010) already states this shape for the context
+downscope — the whole operation, expansion included — and the authorized statement view needs the
+same reach.
+
+Filtering a completed SPARQL result is not sound: an inaccessible statement may already have
+changed an `ASK`, aggregate, negation or join even when no final binding names it.
+
+The authorized statement view **is** the dataset the query executes against. SPARQL 1.1 §13 defines
+an RDF Dataset as a default graph plus zero or more named graphs and does not require those graphs to
+be the ones a store holds, so a dataset assembled by filtering is a dataset. The property
+[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) protects therefore survives intact —
+one decision the engine cannot see around, no rewriting — and the requirement needs precision rather
+than replacement.
+
+```text
+physical store → authorized statement view → effective dataset → unchanged SPARQL algebra
+```
+
+[`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) is the one that has to move: it fixes
+what a query may see as *the readable contexts*, which is too permissive once individual subjects
+inside a readable context are denied. Both are listed under "Specification impact".
 
 Existing-resource mutations require the requested mode on the resource and, with the multi-context
 module enabled, on the target context. Slot and edge operations use their subject as the resource
-target. A SPARQL update is acceptable only when every statement it can add or remove satisfies the
-same rule; client-supplied dataset clauses never expand the server-derived sandbox.
+target. SPARQL remains read-only
+([`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)); the target model does not add a
+second mutation path beside CRUD, and client-supplied dataset clauses never expand the server-derived
+statement view ([`SPS-SPARQL-008`](../../spec/core/sparql.md#SPS-SPARQL-008)).
 
 Creation is necessarily different because a new resource has no policy yet. Its authority comes
 from the destination: `write` on the pod's bootstrap ACR in a single-context pod, or `write` on the
@@ -301,22 +337,25 @@ The remaining complexity is visible where it belongs: multi-dimensional deployme
 second decision, while the core no longer makes every client manage a graph partition before it can
 write one resource.
 
-## What this change breaks (SOLL)
+## Specification impact (SOLL)
 
-The target state is not reachable by editing chapters. It contradicts requirements that are in force
-and invariants that [`AGENTS.md`](../../AGENTS.md) §"Non-negotiable invariants" says are refused
-rather than debated. That rule cannot be applied to a proposal which does not name them, so they are
-named here.
+The target state changes the specification's architecture rather than merely its vocabulary. Some of
+what follows is contradicted outright, including invariants that
+[`AGENTS.md`](../../AGENTS.md) §"Non-negotiable invariants" says are refused rather than debated;
+one entry keeps its principle and changes only its wording. The load-bearing impacts are:
 
 | In force today | What the target state does to it |
 |---|---|
-| Invariants 2 and 3 — the read and write sandboxes are stated over contexts | Become vacuous in a resource-only pod, where no context carries policy. Both have to be restated over the target of a decision |
+| Invariants 2 and 3 — the read and write sandboxes are stated over contexts | Superseded in the resource-only profile, which has no context authorization decision against which they could be satisfied. Both have to be restated over the target of a decision |
 | Invariant 4 — a CRUD write names its target context explicitly | Contradicted: a single-context pod omits `?context=` because there is nothing to choose |
 | Mission, third goal — "graph-based access control where the 4th RDF dimension … is called Context" | Core access control stops being graph-based; the graph dimension becomes the optional constraint |
+| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — `contexts` and `grants` are part of an indivisible core | The core has to be cut around resource policy, with multi-context lifecycle and context policy moved behind one advertised module |
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Resource policy is such an abstraction, and it becomes the primitive |
 | [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | The canonical context is one. The invariant it serves — every statement in exactly one context — survives untouched |
-| [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — every write carries exactly one `?context=` | Withdrawn for a single-context pod, retained by the multi-context module |
+| [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — every write carries exactly one `?context=` | Applies to the multi-context profile; a resource-only write has no context parameter |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same requirement seen from the grants chapter |
+| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) — a query sees exactly the readable contexts | Too permissive once the decision unit is the resource: within a readable context, individual subjects are denied |
+| [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — the dataset carries the sandbox, and the query is never rewritten | Kept, and made precise: the dataset a query executes against need not be the graphs a store holds, so an authorized statement view satisfies it |
 | [`grants`](../../spec/core/grants.md) §2 — the grant grammar `<context-iri>#read` | Becomes the multi-context module's spelling of a context policy; the core spelling is a policy on a subject IRI |
 
 Two entries are reversals of intent rather than mechanical edits, and they are what makes this a
@@ -329,19 +368,41 @@ What survives is worth stating beside it. Invariant 1 holds unchanged, and so do
 listed under "The current model" above: monotone policy, the mode implications, the implicit owner,
 silence as private, and the OAuth ceiling.
 
-None of this is a withdrawal that a concept can perform. A concept records the argument; a
-requirement is withdrawn under [`spec-authoring.md`](../agents/spec-authoring.md) §5, which needs a
-roadmap — and, while the specification is still descriptive, an implementation to be descriptive
-against.
+Adoption requires one coherent change to the affected core and module contracts, their conformance
+descriptions and the implementation. The concept records why that change has this shape; it is not a
+second contract beside the specification chapters.
 
 ## Rejected alternatives
 
-**Full ACP deny, exclusion and member inheritance.** They solve real container-policy problems, but
-sempods has no resource-container relation from which to derive them. They turn positive query
-confinement into negative evaluation over a transitive closure. “Everyone in this group except one
-person” is deliberately represented by a principal set without that person.
+**ACP deny and exclusion.** They turn positive confinement into negative evaluation over the
+effective policy set. What a positive algebra buys is narrow and worth stating exactly: access
+contributed by satisfied policies accumulates by union, with no subtractive exception to account for,
+so adding an allow policy never removes access. It does not by itself make the policy set
+enumerable backwards from an agent — a principal-set matcher holds a set IRI rather than a list of
+agents, owner and creator are server-derived, and a decision also depends on client, issuer, the
+OAuth ceiling and the optional context. An implementation may still index policies in that direction;
+that is a strategy, not a consequence of the algebra.
 
-**contexts as the core policy unit.** It keeps the current model small only while every audience
+“Everyone in this group except one person” is expressed one layer down instead: a principal set may
+be defined by difference, so the matcher still asks a single membership question. This moves the
+negation into the membership resolver rather than removing it. What is monotone is the policy
+algebra over unchanged membership facts, which is the property the enforcement mechanisms depend on;
+the authorization system as a whole is not monotone, because a membership fact can be withdrawn.
+
+**ACP member inheritance.** An inheriting policy needs a containment relation, and ACP expects the
+resource server to supply one. This specification defines none between resources, and
+[`SPS-CRUD-011`](../../spec/core/lod-crud.md#SPS-CRUD-011) makes a resource and a context independent
+dimensions rather than a member and its container — the slash-delimited `manage` coverage of
+[`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007) is a sempods rule over context paths, not
+resource membership. Inheritance is therefore excluded, and the profile above says so.
+
+Introducing it later is a definition, not a switch: which relation creates containment, between which
+resource kinds, which policies and modes propagate, what bounds the depth, and whether it is
+`acp:memberAccessControl` or a rule of sempods' own. Until those are answered the exclusion stands,
+and the cost ACP's model carries — evaluation over a transitive closure on every decision — is the
+reason to answer them before adopting it rather than after.
+
+**Contexts as the core policy unit.** It keeps the current model small only while every audience
 aligns with a graph. A deployment needing finer audiences then creates one graph per permission set
 and turns a policy edit into data movement. It also prevents the single-context resource/ACR model
 from being the ordinary case.
@@ -398,23 +459,50 @@ expansion ([`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020),
 unauthenticated caller reads exactly the public contexts and is not a degraded client
 ([`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031),
 [`SPS-GRANT-032`](../../spec/core/grants.md#SPS-GRANT-032)). A public-agent policy can carry the
-guarantee, which is the property worth keeping. What has to be decided is which of the seven are
-withdrawn, which are restated over a resource target, and whether a scope survives at all once
-public access is an ordinary policy rather than a second resolution branch.
+guarantee, which is the property worth keeping. What has to be decided is whether a scope remains
+useful as a coarse discovery or token capability once public access is an ordinary policy rather
+than a second resolution branch.
 
 The rest are ordinary open questions:
 
 - Choose the creation bootstrap: implicit creator policy, atomic caller-supplied ACR, or an advertised
   server policy template.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
+- Define the resource-only protocol projection: graph-aware representations and SPARQL dataset
+  parameters, the context filters in `find`, the MCP tool catalogue and arguments, and whether media
+  requires the multi-context module or receives resource policy of its own.
+- Restate [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) over the authorized statement
+  view and make [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) precise about what a
+  dataset is. The constraint to weigh while wording them: the SPARQL protocol lets a client *describe*
+  a requested dataset through graph IRIs, while the **query service** constructs the authorized
+  effective dataset — which is why
+  [`SPS-SPARQL-008`](../../spec/core/sparql.md#SPS-SPARQL-008) can refuse the description any widening
+  power. With a remote store the query service therefore needs either a trusted statement-level
+  filtering facility in that store, or local construction and evaluation of the effective dataset.
+  Passing an unchanged query down with a list of permitted graph IRIs is the one answer that is not
+  sufficient, because it is graph-granular by construction.
 - Define how an existing multi-context pod installs complete resource policies before switching to
   the intersected model.
+
+These are not all the same kind of open. The two named above and the first four bullets are
+**contract blockers**: until they are answered there is no target contract to implement, so nothing
+can be conformant against it. The last is an **adoption blocker** — a pod starting in the target model
+has nothing to migrate, and what is unresolved is how an existing multi-context pod gets there.
+
+None of them blocks an experiment. Core is indivisible
+([`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)), so an implementation that answers before
+the contract blockers are settled, or that supports part of the query surface, makes no conformance
+claim rather than a partial one. Both directions are conformance defects — refusing a query the
+contract requires and returning a statement the contract denies — and only their severity differs,
+which is a distinction for whoever triages the conformance suite rather than one the contract makes.
 
 ## Not in scope
 
 - **Identity proof.** [`auth`](../../spec/core/auth.md) and the `oidc` module establish agent, client
   and issuer. Access control consumes their verified result.
-- **One enforcement implementation.** Dataset pruning, algebra rewriting and filtered retrieval are
-  conformant strategies only when they produce the same decision for every supported operation.
+- **One enforcement implementation.** The authorized statement view is the contract. How an
+  implementation produces it is its own affair, subject to the sandbox requirements the open decision
+  above leaves unresolved — what a mechanism owes is that view, exactly, for every operation it
+  supports.
 - **Solid protocol conformance.** ACP-inspired policy and a Solid-compatible HTTP resource server are
   separate claims.
