@@ -68,9 +68,13 @@ and staying private takes no work.
 
 ## What is not here
 
-No policy on a recipe. No `?context=` on Anna's writes — there is nothing to choose between, so the
-parameter has nothing to say. No catalogue for a client to browse, because a list of one is not a
-choice.
+No policy on a recipe. No catalogue for a client to browse, because a list of one is not a choice.
+
+What Anna's writes still carry is `?context=`, naming the one context. That looks like ceremony and
+is not: the invariant it serves forbids an implicit fallback, and a pod with a single candidate is
+precisely where a fallback would appear and never be noticed. The parameter costs one client the same
+call it would make with fifty contexts, and it is what keeps the pod from acquiring a default it
+would later have to take away.
 
 A pod can stay like this forever. The next two scenarios add one thing each: several contexts to
 choose between, and then a second, finer decision inside them.

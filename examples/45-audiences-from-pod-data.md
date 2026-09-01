@@ -25,6 +25,12 @@ Reading an audience out of this makes the contacts **authorization state**. Writ
 grants access, which is the thing a trust boundary exists to prevent — so the pod has to declare that
 this context is an authority, and the declaring is the safeguard rather than a formality.
 
+Be clear about what that costs. The concept states as a guarantee that authorization facts are read
+only from stores no data write can reach, and this is the declared exception to it: the graph below
+*is* reachable by a write. What stays topological is the declaration, which lives in control-plane
+state; what the exception buys is membership only, never policy. Whether to keep it is an open
+decision rather than a settled part of the model.
+
 The rule that decides whether it is safe:
 
 > A context may serve as a principal-set authority exactly when **write on it is not weaker than

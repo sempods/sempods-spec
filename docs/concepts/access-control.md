@@ -12,9 +12,14 @@ needs it. **Every pod decides on contexts. A pod that needs audiences smaller th
 a second decision, and both must allow.**
 
 What becomes optional is not the context. Every statement belongs to exactly one, always. What a pod
-may leave out is the **management of several** — the lifecycle, the catalogue, the explicit write
-target — and a pod that leaves it out has one canonical context, carrying policy like any other, with
-nothing for a client to choose between.
+may leave out is the **management of several** — the lifecycle and the catalogue — and a pod that
+leaves it out has one canonical context, carrying policy like any other, with nothing for a client to
+choose between.
+
+A write still names it. Invariant 4 forbids an implicit fallback context, and having only one
+candidate is exactly the situation where a fallback is tempting and where it costs nothing to refuse:
+the client reads the one context and names it, the same call it would make with fifty. What a
+one-context pod removes is the *choice*, not the naming.
 
 The policy language is a deliberately small profile of the Solid Community Group's
 [Access Control Policy (ACP)](https://solid.github.io/authorization-panel/acp-specification/), used
@@ -233,7 +238,7 @@ implementation comes to trust something nothing checks.
 
 | Rule | Held up by | |
 |---|---|---|
-| Authorization facts are read only from stores no data write can reach | topology — the two graph sets are disjoint by construction | **guarantee** |
+| Authorization facts are read only from stores no data write can reach | topology — the two graph sets are disjoint by construction | **guarantee**, with one declared exception below |
 | Evaluations compose by intersection | the pod, on every request | **guarantee** |
 | An ACR carries no `acp:deny` and no `acp:noneOf` | whatever writes the ACR | convention |
 | A policy states its modes expanded | whatever writes the ACR | convention |
@@ -366,8 +371,9 @@ The extension is closed in two senses:
 
 - clients select relations and principal-set IRIs from a vocabulary the implementation advertises;
   they do not submit SPARQL, code or arbitrary expressions for the evaluator to execute; and,
-- membership facts come from a protected identity graph or an external authority, never from data
-  writable through LOD CRUD.
+- membership facts come from a protected identity graph or an external authority, and not from data
+  writable through LOD CRUD — except where a pod has **declared** an ordinary context an authority,
+  which is the exception stated below and not a second route in through the front.
 
 This maps the enterprise model without changing its algebra:
 
@@ -414,6 +420,23 @@ The security boundary is topological:
 Looking like policy never makes ordinary RDF authoritative. A caller may write statements about an
 ACR IRI or use ACP predicates as ordinary data; none of those statements enter the evaluator's
 policy set.
+
+**The one exception, stated rather than buried.** A pod may declare an ordinary context a
+principal-set authority — an address book that decides an audience, say — and membership is then read
+from a graph the data path can write. That is a hole in the sentence above, and calling it anything
+else would be worse than having it. What bounds it:
+
+- it exists only where a pod **declares** it, in control-plane state a data write cannot reach. The
+  declaration is the guarantee; the graph it points at is not;
+- it carries membership, never policy. No `acp:allow` written into such a context is read, so the
+  worst it can do is admit somebody to a set some policy already trusts; and,
+- the declaration is sound only while **write on the authority is not weaker than `manage` on what it
+  grants**. Where that holds, everyone who could add themselves to the set could have written the
+  policy directly, and nothing is reachable that was not already.
+
+The third is a condition on the deployment rather than something the pod checks, which puts it on the
+convention side of the table above and makes it the second one to watch. Whether to keep the
+exception at all is an open decision below.
 
 This is where [`SPS-CTX-026`](../../spec/core/contexts.md#SPS-CTX-026) acquires a hazard it does not
 have today. Treating a statement about a `_system` IRI as ordinary data is right and stays right —
@@ -509,7 +532,7 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | In force today | What the target state does to it |
 |---|---|
 | [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | A pod that does not manage several has one, canonical and carrying policy. The invariant it serves — every statement in exactly one context — survives untouched |
-| Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Hold wherever there is a choice to make. A pod with one context has none, and the parameter becomes optional there and only there |
+| Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Untouched. A pod with one context has no choice to offer and still takes the name, because an implicit fallback is what the invariant forbids and one candidate is where it would appear |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same, seen from the grants chapter |
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
 | [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)), the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) and the discovery route ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) are core obligations today, and moving them behind a declaration relocates them |
@@ -685,6 +708,11 @@ The rest are ordinary open questions:
   credentials, and a profile built around documents may state a creator and use it.
   [`examples/60-creator.md`](../../examples/60-creator.md) runs both cases.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
+- Decide whether a pod may declare an ordinary context a principal-set authority at all. Refusing it
+  keeps the topological guarantee whole and costs the personal case its best feature — an audience
+  that follows the app somebody actually uses. Keeping it means the guarantee has a declared hole,
+  bounded by a condition on the deployment rather than by the pod, and that condition has to be
+  written as a requirement rather than left as advice.
 - Define what the resource module changes in the surfaces around it: whether `find` filters, the MCP
   tool arguments and the media surface acquire a resource dimension, or inherit the context one
   unchanged.
