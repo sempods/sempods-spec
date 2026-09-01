@@ -47,6 +47,16 @@ independent, so one subject may have statements in several contexts
 There is consequently no containment relation between a context and a resource. A context is not
 the folder in which a resource lives, and ACP member inheritance cannot manufacture that relation.
 
+A context is best read as an **area**: something a caller may enter, addressed by an IRI the pod hands
+out, carrying its own permission boundary. That is what
+[`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021) reports — the permissions held *on* the
+context, not a summary of everything within it, which is why finer policy inside an area does not
+contradict it, any more than a readable folder is contradicted by a file it hides. The reading has two
+limits, and both are deliberate rules rather than oversights: deleting an area leaves the areas
+beneath it standing ([`SPS-CTX-018`](../../spec/core/contexts.md#SPS-CTX-018)), and a resource does not
+live *in* one — a subject may hold statements in several areas at once, and a read returns the union
+of those the caller may see.
+
 ## The current model (IST)
 
 Read as one access-control model, the current chapters say:
@@ -87,42 +97,47 @@ The pod owner is represented by an implicit system policy using ACP's owner-matc
 moves owner handling through the common evaluator, but does not pretend the owner stopped being a
 server-provided rule.
 
-### A monotone ACP profile
+### A pure ACP profile
 
-sempods uses ACP's vocabulary and matcher frame, but not its complete effective-policy resolution
-algorithm. The sempods profile is **allow-only and non-inheriting**:
+sempods uses ACP's vocabulary **and** its resolution algorithm. What the profile constrains is what a
+sempods ACR may contain, not how it is evaluated — which is the difference between a profile of ACP
+and a variant of it:
 
-- resource evaluation uses only policies directly associated with the evaluated subject; context
-  evaluation may additionally use a `manage` policy whose target covers the evaluated context under
-  the existing slash-delimited rule
-  ([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007));
-- satisfied policies contribute their allowed modes by union;
-- `acp:allOf` and `acp:anyOf` express conjunction and alternatives between matchers;
-- `acp:deny`, `acp:noneOf` and `acp:memberAccessControl` do not participate; and,
-- no satisfied policy means no allowed mode.
+- an ACR contains no `acp:deny` and no `acp:noneOf`, so nothing is ever subtracted from the allowed
+  set and the result stays monotone;
+- an ACR contains no `acp:memberAccessControl`, so no policy decides a target other than its own;
+- a policy states every mode it allows, expanded, rather than relying on an implication ACP does not
+  have; and,
+- `acp:allOf` and `acp:anyOf` carry conjunction and alternatives between matchers, as ACP defines
+  them.
 
-Full ACP gathers direct policies and member policies inherited from ancestor resources, then removes
-every mode denied by a satisfied policy from the allowed set. That model is valuable where a server
-has a real container hierarchy and needs exceptions. sempods has neither containment between
-contexts and resources nor a present deny model. Importing those operations would add negative
-checks over a transitive closure to every access decision and would make the result non-monotone.
+Stated this way the restrictions cost nothing: ACP's algorithm subtracts nothing where nothing is
+denied and gathers nothing from ancestors where no member access control exists, so a full ACP engine
+produces exactly these results. Running the whole algorithm is also the safer choice, because
+`acp:deny` and `acp:noneOf` can only ever restrict — honouring an unexpected one fails safe, ignoring
+it does not.
 
-The modes keep the names and the implications the grants chapter already fixes
-([`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006),
-[`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009)). They belong to sempods rather than being
-aliases for similarly named ACL modes, because those implications are part of the contract:
+The gain is that conformance becomes checkable instead of asserted: an independent ACP engine, given
+a sempods ACR and a context graph, must produce the same access grant graph. That holds **per
+evaluation**. It does not extend to the whole decision, because the conjunction between evaluations
+and the OAuth ceiling are sempods' and not ACP's.
 
-```text
-expand(manage) = { manage, write, read }
-expand(write)  = { write, read }
-expand(read)   = { read }
-```
+The modes are the ones [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) names with the
+implications [`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009) fixes, and the profile keeps
+both by **expanding when the policy is written**: a policy conferring `manage` states `acl:Read`,
+`acl:Write` and `acl:Control`. ACP is mode-agnostic and has no implication of its own, so writing the
+expansion out is what makes a foreign engine agree; using the `acl:` vocabulary rather than minting
+sempods mode IRIs is what keeps the document legible to one.
 
-On a resource, `manage` governs its access-control resource (ACR). On a context, `manage` additionally
-retains the slash-delimited descendant authority of
-[`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007). That coverage rule is a sempods context
-rule, not ACP resource membership or policy inheritance. Reusing ACP's policy machinery does not give
-two differently specified mode systems the same meaning.
+One deviation remains, and this concept does not resolve it. On a context, `manage` reaches
+slash-delimited descendants ([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007)) — a policy on
+one target deciding another, which is the one thing the profile otherwise excludes. Two ways close
+it, both pure ACP: express the coverage as `acp:memberAccessControl` on the ancestor's ACR, where the
+context path supplies exactly the membership information ACP expects a resource server to provide; or
+materialise the policy into each registered descendant, leaving every ACR self-contained. The first
+uses ACP's own mechanism at the cost of an ancestor walk bounded by path depth; the second keeps
+evaluation flat and makes a `manage` change a rewrite. Until one is chosen, a context ACR is not
+portable on its own.
 
 ## Resource core and optional contexts (SOLL)
 
@@ -177,6 +192,17 @@ public modes = { read } if public resource policy allows read
 
 effective modes = authenticated modes ∪ public modes
 ```
+
+The ceiling is expressible in ACP's own vocabulary, but as **its own evaluation** rather than as
+policies inside a target's ACR: a per-principal ACR whose policies require the agent and the client
+together, with `acp:client` carrying the application's `did:web:` identifier
+([`SPS-AUTH-003`](../../spec/core/auth.md#SPS-AUTH-003)). Merged into a target's ACR it would fail,
+because ACP composes policies by union while a ceiling can only restrict. And ACP can hold it but
+not produce it: `granted = requested ∩ effective`
+([`SPS-GRANT-013`](../../spec/core/grants.md#SPS-GRANT-013)) is a computation at consent time, and
+the revocation sweep ([`SPS-GRANT-015`](../../spec/core/grants.md#SPS-GRANT-015),
+[`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016)) is a recomputation over the store. ACP
+evaluates a state; it does not establish one.
 
 This preserves immediate policy revocation and the distinction between agent and client. A broad
 policy for a person does not silently broaden every application that person uses. Public authority
@@ -389,18 +415,33 @@ negation into the membership resolver rather than removing it. What is monotone 
 algebra over unchanged membership facts, which is the property the enforcement mechanisms depend on;
 the authorization system as a whole is not monotone, because a membership fact can be withdrawn.
 
-**ACP member inheritance.** An inheriting policy needs a containment relation, and ACP expects the
-resource server to supply one. This specification defines none between resources, and
+**ACP member inheritance between resources.** An inheriting policy needs a containment relation, and
+ACP expects the resource server to supply one. This specification defines none between resources:
 [`SPS-CRUD-011`](../../spec/core/lod-crud.md#SPS-CRUD-011) makes a resource and a context independent
-dimensions rather than a member and its container — the slash-delimited `manage` coverage of
-[`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007) is a sempods rule over context paths, not
-resource membership. Inheritance is therefore excluded, and the profile above says so.
+dimensions rather than a member and its container, so there is nothing for a resource policy to
+descend along. Introducing one later is a definition, not a switch — which relation creates
+containment, between which resource kinds, which policies and modes propagate, what bounds the depth
+— and the cost ACP's model carries, evaluation over a transitive closure on every decision, is the
+reason to answer those before adopting it rather than after.
+
+Between **contexts** the situation differs and the profile above records it as open rather than
+rejected: the slash-delimited `manage` coverage of
+[`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007) is a specified relation, bounded by path
+depth, and `acp:memberAccessControl` is one of the two ways to express it.
 
 Introducing it later is a definition, not a switch: which relation creates containment, between which
 resource kinds, which policies and modes propagate, what bounds the depth, and whether it is
 `acp:memberAccessControl` or a rule of sempods' own. Until those are answered the exclusion stands,
 and the cost ACP's model carries — evaluation over a transitive closure on every decision — is the
 reason to answer them before adopting it rather than after.
+
+**Security labels as machine-managed graphs.** Assigning every statement to a graph that stands for
+an audience, evaluating policy once per label and assembling the dataset from the labels that pass,
+would keep the restriction in the dataset and leave the whole of SPARQL usable. It holds only while
+audiences are shared. The label set is the product of the dimensions that must all be satisfied, so a
+deployment layering an area, a resource and anything finer arrives at one label per resource and the
+dataset degenerates into an enumeration. What is worth keeping from it is the part that already
+survives elsewhere: membership resolved at access time, so changing who is in a group moves no data.
 
 **Contexts as the core policy unit.** It keeps the current model small only while every audience
 aligns with a graph. A deployment needing finer audiences then creates one graph per permission set
@@ -466,7 +507,9 @@ than a second resolution branch.
 The rest are ordinary open questions:
 
 - Choose the creation bootstrap: implicit creator policy, atomic caller-supplied ACR, or an advertised
-  server policy template.
+  server policy template. The first has a precondition the specification does not meet today — no
+  chapter records who created a resource, so `acp:CreatorAgent` has no fact to match against, and
+  recording it is worthless retroactively for everything written before.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Define the resource-only protocol projection: graph-aware representations and SPARQL dataset
   parameters, the context filters in `find`, the MCP tool catalogue and arguments, and whether media
