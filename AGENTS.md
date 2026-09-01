@@ -151,6 +151,9 @@ The specification:
   the chapter tables. Six core chapters and three modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
+- [`examples/README.md`](examples/README.md) — worked access-control scenarios. Fixtures rather than
+  prose: each is run through ACP's own resolution algorithm by
+  `.github/scripts/check-examples.py`, so one that stops being true fails rather than misleads
 
 The rendered site — [`site/`](site/):
 
@@ -252,11 +255,12 @@ and not before — a build file that exists to run nothing is a dependency to ma
 `site/` is the exception and stays one: it renders the published site and has a locked dependency
 tree of its own. Nothing under `spec/` depends on it, and the specification is complete without it.
 
-Three checks, all in CI and all runnable by hand:
+Four checks, all in CI and all runnable by hand:
 
 ```bash
 lychee --offline --include-fragments --no-progress --exclude-path site .   # links, and requirement anchors
 .github/scripts/check-requirements.py origin/main      # the identifier promises
+.github/scripts/check-examples.py                      # the worked scenarios, against ACP itself
 python3 site/build.py                                  # the site's inputs, then a strict render
 ```
 

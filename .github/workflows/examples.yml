@@ -1,0 +1,49 @@
+name: Examples
+
+# The scenarios under `examples/` are the one place this repository keeps a second, friendlier
+# description of what the contract does — and it refuses second descriptions everywhere else, for
+# the reason `AGENTS.md` gives: two copies means one of them is wrong, and the readable one is the
+# one people believe.
+#
+# They are exempt because they are not descriptions. Each is a fixture: an authorization graph, an
+# attempted access, and the access modes that attempt must be granted. This job runs them through
+# ACP's own resolution algorithm, so a scenario that stops being true fails here rather than
+# misleading a reader indefinitely.
+#
+# The runner deliberately knows nothing about sempods. The concept claims sempods access control
+# resources are *pure* ACP — that an independent engine, given one and a context graph, produces the
+# same grant. A runner sharing sempods' reading of the vocabulary could not test that; this one can,
+# and a green run is the evidence.
+#
+# Add this job to the ruleset's required checks, or it is advisory — the same failure item 7 of the
+# `0.1` roadmap warns about, and the one the strict site render already fell into once.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v7
+
+      # Pinned rather than floating, unlike the `pyyaml` this repository installs for the OpenAPI
+      # job. That one only has to parse YAML; this one parses Turtle and decides whether a scenario
+      # is correct, so a change in parsing behaviour would quietly change results instead of
+      # breaking loudly. The version is the one the transcription of ACP §6 was verified against.
+      #
+      # It lives here rather than in a requirements file because `site/` is this repository's only
+      # dependency tree and stays its only one — see AGENTS.md §"What this repository deliberately
+      # does not have".
+      - name: Scenarios agree with ACP's resolution algorithm
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet rdflib==7.6.0
+          .github/scripts/check-examples.py
