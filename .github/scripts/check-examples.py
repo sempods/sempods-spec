@@ -14,6 +14,7 @@ A scenario file is Markdown with fenced `turtle` blocks carrying a kind in the i
     ```turtle acr        an authorization graph; one per resource it controls
     ```turtle context    one attempted access
     ```turtle grant      the access modes that attempt must be granted
+    ```turtle aside      shown for context, parsed but not evaluated
 
 Each `context` pairs with the next `grant` below it. A `context` names its `acp:target`, and the
 `acr` whose `acp:resource` is that target is the one evaluated. A `grant` block holding only a
@@ -84,7 +85,10 @@ ACL = "http://www.w3.org/ns/auth/acl#"
 
 PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 
-KINDS = ("acr", "context", "grant")
+# `aside` is Turtle a scenario shows without the runner evaluating it — an identity authority's
+# membership facts, say, which are not ACP and which no ACP engine has any business resolving. It is
+# still parsed, so a malformed one fails; it simply takes no part in a case.
+KINDS = ("acr", "context", "grant", "aside")
 BLOCK = re.compile(
     r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
 )
@@ -393,6 +397,10 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         if not by_target:
             failures.append(f"{rel}: no acr block declares acp:resource")
             return failures, notes
+
+        # Parsed for well-formedness and then set aside: a malformed one still fails.
+        for index, block in enumerate(b for b in found if b.kind == "aside"):
+            parse(block, 3000 + index)
 
         pending = None
         cases = 0

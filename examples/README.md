@@ -12,6 +12,8 @@ before:
 | [`10-one-context.md`](10-one-context.md) | a pod with one place to put things — the whole model at its smallest |
 | [`20-several-contexts.md`](20-several-contexts.md) | areas to choose between, one of them public. The shape most pods have |
 | [`30-spaces-and-documents.md`](30-spaces-and-documents.md) | a space whose documents are not all for the same readers, so a second decision narrows inside it |
+| [`40-groups-and-shared-policy.md`](40-groups-and-shared-policy.md) | the same shape at enterprise scale: an audience that is a group, one policy governing several resources, and the one place sempods adds a matcher ACP does not have |
+| [`45-audiences-from-pod-data.md`](45-audiences-from-pod-data.md) | the same wish on a personal pod — "everyone tagged Family" — and why the answer there is the mechanism the enterprise case cannot use |
 
 The rest answer a question somebody asked rather than showing the model, and are worth reading when
 that question comes up:
@@ -40,6 +42,7 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `acr` | an authorization graph — one per resource it controls, several per file where a scenario turns on a contrast |
 | `context` | one attempted access, as the server would describe it |
 | `grant` | the access modes that attempt must be granted |
+| `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
 
 A `context` pairs with the next `grant` below it. Its `acp:target` selects the `acr` whose
 `acp:resource` matches. A `grant` block containing only a comment means nothing is granted, which is
