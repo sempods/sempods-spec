@@ -12,9 +12,9 @@ needs it. **Every pod decides on contexts. A pod that needs audiences smaller th
 a second decision, and both must allow.**
 
 What becomes optional is not the context. Every statement belongs to exactly one, always. What a pod
-may leave out is the **management of several** — the lifecycle and the catalogue — and a pod that
-leaves it out has one canonical context, carrying policy like any other, with nothing for a client to
-choose between.
+may leave out is the **management of several** — the lifecycle — and a pod that leaves it out has one
+canonical context, carrying policy like any other, with nothing for a client to choose between. The
+catalogue is not on that list: it is where a client reads the name a write has to carry.
 
 A write still names it. Invariant 4 forbids an implicit fallback context, and having only one
 candidate is exactly the situation where a fallback is tempting and where it costs nothing to refuse:
@@ -243,17 +243,18 @@ implementation comes to trust something nothing checks.
 | An ACR carries no `acp:deny` and no `acp:noneOf` | whatever writes the ACR | convention |
 | A policy states its modes expanded | whatever writes the ACR | convention |
 | An ACR carries no `acp:memberAccessControl` | whatever writes the ACR, and today the server as well | convention, and the one to watch |
+| A shared policy's referring targets have the same manager | the deployment | convention, until the open decision below closes it |
 
 Policy is written through control-plane operations rather than by hand: somebody shares a document,
 and something turns that into a policy. That layer is where a convention lives, and it can hold rules
 a policy language cannot express — which is also why the distinction matters, because an owner
 holding `manage` can write an ACR directly and step around every convention in it.
 
-That is acceptable for two of the three, and the reason is worth stating rather than assumed: they
+That is acceptable for the first two, and the reason is worth stating rather than assumed: they
 **fail towards less access**. A hand-written deny is honoured and narrows; modes left unexpanded grant
 less than intended. Neither hands anybody access the owner could not have granted outright.
 
-The third does not, and it is the one to watch. `acp:memberAccessControl` does not restrict — it adds
+The last two do not. Take member access control first, because it is the one to watch. `acp:memberAccessControl` does not restrict — it adds
 an ancestor's policies to a descendant's effective set, and under union adding policies can only
 widen. A hand-written one is inert today, but **not because this convention holds**: it is inert
 because the server supplies no ancestors for it to resolve against, and ACP expects the resource
@@ -263,6 +264,11 @@ Answer the `manage` question below with member access control and the server beg
 at which point this restriction can fail the wrong way — and by the rule that governs the rest of
 this table, **a convention that could fail the other way would have to become a guarantee**. Which of
 the two it is therefore depends on a decision this concept has not made.
+
+The shared-policy row is the same rule reached from a different direction: it fails the wrong way
+today, not after some future decision, because a caller managing one referring target rewrites a
+policy deciding access on the rest. It is stated with its two closings where sharing is described,
+and it stays a convention only until one is chosen.
 
 ## One decision always, a second by declaration (SOLL)
 
@@ -426,6 +432,25 @@ An ACR is reached through a control-plane route and linked from the target. Read
 itself authorized: `manage` on the target permits policy management, subject to the implicit owner
 policy and the OAuth ceiling. The client-facing answer to “what may I do?” remains an effective-
 permission view; clients are not expected to reimplement policy evaluation from raw RDF.
+
+**A policy referenced by several targets breaks that sentence, and the break is an escalation.**
+`acp:apply` names a policy resource, which is what makes one edit reach a whole channel instead of a
+sweep across every article. It also means a caller holding `manage` on one referring target can
+rewrite a policy that decides access on targets they hold nothing over — authority acquired by
+reference rather than granted. Two ways to close it, and neither is free:
+
+- **require `manage` on every referring target.** Safe, and it leaks: refusing an edit tells the
+  caller that a target they cannot see references this policy, which is exactly the kind of
+  requirement `AGENTS.md` calls a defect. Answering as though the edit succeeded is not available
+  either, because it did not; and,
+- **give the shared artifact an authorization boundary of its own** — a policy resource is a target,
+  with `manage` on it distinct from `manage` on anything applying it. No leak, and a third thing to
+  administer, plus a bootstrap question: who holds `manage` on a policy the moment it is created.
+
+Until one is chosen, a shared policy is safe only where every referring target has the same manager,
+which is a condition on the deployment rather than something the pod checks — the same shape as the
+declared authority above, and the third entry for the convention side of that table. It is carried
+below as an open decision.
 
 The security boundary is topological:
 
@@ -724,6 +749,11 @@ The rest are ordinary open questions:
   unsatisfied here rather than forbidden, exactly as `acp:vc` is in a pod that presents no
   credentials, and a profile built around documents may state a creator and use it.
   [`examples/60-creator.md`](../../examples/60-creator.md) runs both cases.
+- Decide how a policy referenced by several targets is authorized for editing — `manage` on every
+  referring target, which is safe and leaks topology, or an authorization boundary on the policy
+  resource itself, which does not leak and adds a third thing to administer and a bootstrap question
+  with it. Sharing a policy is what makes an audience change one edit rather than a sweep, so this is
+  not a corner: it is the price of the feature.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Decide whether a pod may declare an ordinary context a principal-set authority at all. Refusing it
   keeps the topological guarantee whole and costs the personal case its best feature — an audience

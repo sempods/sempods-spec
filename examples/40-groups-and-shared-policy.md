@@ -197,6 +197,11 @@ A policy is a resource with an IRI, and `acp:apply` points at it. So one rule ca
 document and everything under it, and changing who may read the channel is **one edit** rather than a
 sweep across every article.
 
+That reach is the feature and also its price. `manage` on a target permits managing its policy, so
+whoever manages *one* of these articles can rewrite a policy deciding access on the other — authority
+picked up by reference rather than granted. Both articles have the same manager here and nothing goes
+wrong; the concept records how to stop relying on that, and neither closing is free.
+
 This is what a sub-document needs, and it is worth saying what it does *not* need: no containment
 relation, no ancestor to resolve against, no inheritance. Two resources sharing a policy are not
 parent and child — they are two things the same rule is about.
@@ -236,6 +241,29 @@ copies that happen to agree would prove neither.
 Greg is named on the memo and nowhere else — not on the space. **Read on its own, this policy says he
 may read the memo. He may not**, because the space decides first and does not admit him, and the pod
 grants what both allow.
+
+Which is a claim, so it is a case:
+
+```turtle decision
+[
+  acp:target <https://acme.example/pod/_system/contexts/spaces/engineering> ;
+  acp:agent  <https://acme.example/people/greg#me> ;
+  acp:owner  <https://acme.example/pod/owner#me>
+] .
+
+[
+  acp:target <https://acme.example/memo> ;
+  acp:agent  <https://acme.example/people/greg#me> ;
+  acp:owner  <https://acme.example/pod/owner#me>
+] .
+```
+
+```turtle grant
+# nothing
+```
+
+Add Greg to the space policy and this case fails, which is the point of writing it down: the sentence
+above stops being true the moment somebody widens the space, and now something notices.
 
 That is the sharpest reason for making the composition part of the contract rather than a property of
 how a query happens to be built. A deployment can arrive at the same answer by pruning the data a

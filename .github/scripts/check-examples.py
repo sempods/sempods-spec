@@ -235,9 +235,21 @@ def one(graph: Graph, subject, predicate, where: str):
     return values[0] if values else None
 
 
+def requests_in(graph: Graph, where: str) -> set:
+    """The nodes describing a request — and nothing else may be in the block.
+
+    Selecting only what carries `acp:target` would leave a second node ignored: it renders for a
+    reader, says whatever it likes, and takes no part in any case.
+    """
+    targeted = {s for s, _, _ in graph if (s, P["target"], None) in graph}
+    for node in {s for s, _, _ in graph} - targeted:
+        raise Problem(f"{where}: a node in this block carries no acp:target, so nothing reads it")
+    return targeted
+
+
 def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
     """Every node carrying acp:target, as the halves of one request's decision."""
-    subjects = {s for s, _, _ in graph if (s, P["target"], None) in graph}
+    subjects = requests_in(graph, where)
     if len(subjects) < least:
         raise Problem(
             f"{where}: expected at least {least} node(s) carrying acp:target, found {len(subjects)}"
@@ -260,7 +272,7 @@ def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
 
 
 def read_context(graph: Graph, where: str) -> Context:
-    subjects = {s for s, _, _ in graph if (s, P["target"], None) in graph}
+    subjects = requests_in(graph, where)
     if len(subjects) != 1:
         raise Problem(f"{where}: expected exactly one node carrying acp:target, found {len(subjects)}")
     return read_one_context(graph, subjects.pop(), where)
@@ -675,6 +687,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     f"{len(targets)} target(s), and the profile makes one canonical for one"
                 )
             for acr, _, target in graph.triples((None, P["resource"], None)):
+                kinds = {k for k, _, _ in by_target.get(target, ())}
+                # Two decisions on one IRI are the context one and the resource one. An unqualified
+                # block beside a qualified one would make a third, and modes_for() would intersect
+                # all of them — a fixture modelling something the concept does not describe.
+                if kinds and ("unqualified" in kinds) != (kind == "unqualified"):
+                    failures.append(
+                        f"{where}: {short(target)} is claimed by both a qualified and an "
+                        "unqualified acr, and the pair is context and resource"
+                    )
                 if any(k == kind for k, _, _ in by_target.get(target, ())):
                     # Silently replacing the first mapping would leave its policies never evaluated.
                     # Two decisions on one IRI are legitimate; two of the same kind are not.
@@ -912,6 +933,14 @@ BROKEN = [
     ("an extension predicate outside a matcher, where it is inert rather than fail-closed",
      ("<#p> a acp:Policy ;", "<#p> a acp:Policy ; <https://a.example/ns/when> \"always\" ;"),
      "outside a matcher"),
+    ("one IRI claimed by a qualified and an unqualified acr",
+     ("```turtle context", "```turtle acr-resource\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/c> ] .\n```\n```turtle context"),
+     "qualified and an unqualified acr"),
+    ("a second node in a context block that no case reads",
+     ("[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ a acp:Context ] ."), "carries no acp:target"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
