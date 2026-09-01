@@ -299,7 +299,10 @@ def hidden_fixtures(text: str) -> list[str]:
         elif "<!--" in line and "-->" not in line:
             comment = True
         elif LITERAL_OPEN.match(line):
-            literal = LITERAL_OPEN.match(line).group(1)
+            tag = LITERAL_OPEN.match(line).group(1)
+            # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
+            # every fence after it look hidden and reject fixtures a reader can see perfectly well.
+            literal = None if re.search(rf"</{tag}\s*>", line, re.I) else tag
         elif BLOCK_OPEN.match(line):
             ordinary = True
     return problems
@@ -908,7 +911,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         applied: set = set()
         for index, block in enumerate(b for b in found if b.kind.startswith("acr")):
             kind = block.kind[4:] or "unqualified"
-            own = parse(block, index)
+            own, acr = parse(block, index), None
             # Adding triples to a shared policy's subject makes a private version of it for this
             # access control resource only — one edit reaching every referrer is the claim these
             # files make, and two versions that differ is that claim being false.
@@ -946,7 +949,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     f"{where}: an acr block holds {len(subjects)} access control resource(s) and "
                     f"{len(targets)} target(s), and the profile makes one canonical for one"
                 )
-            for acr, _, target in graph.triples((None, P["resource"], None)):
+            for acr, _, target in graph.triples((None, P["resource"], None)):  # noqa: B020
                 kinds = {k for k, _, _ in by_target.get(target, ())}
                 # Two decisions on one IRI are the context one and the resource one. An unqualified
                 # block beside a qualified one would make a third, and modes_for() would intersect
@@ -964,6 +967,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
+            if acr is None:
+                # The shape failure above says why. Walking from an access control resource that is
+                # not there would raise instead of reporting it, and take the other scenarios with
+                # it — a crash in the checker is the loudest possible way to check nothing.
+                continue
             # This access control resource's own policies, not the graph's: a shared policy is
             # merged into every one of them, so a graph-wide sweep would blame this decision for a
             # mode only some other decision applies.
@@ -1506,6 +1514,10 @@ BROKEN = [
      ("```turtle acr", "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    # Two the checker used to get wrong itself: it crashed on the first and rejected the second.
+    ("an acr block typed but carrying no target",
+     ("```turtle acr", "```turtle acr\n[ a acp:AccessControlResource ] .\n```\n```turtle acr"),
+     "0 target(s)"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
