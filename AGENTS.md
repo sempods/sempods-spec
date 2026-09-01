@@ -214,15 +214,16 @@ here rather than copied.
 
 ## Before you commit
 
-1. All three checks pass. CI runs them; locally:
+1. All four checks pass. CI runs them; locally:
 
    ```bash
    lychee --offline --include-fragments --no-progress --exclude-path site .
    .github/scripts/check-requirements.py origin/main
+   .github/scripts/check-examples.py
    python3 site/build.py
    ```
 
-   The third one is the full render, not `--check`. `site/index.md` is the one published page
+   The last one is the full render, not `--check`. `site/index.md` is the one published page
    written by hand, its links are written against the staged layout, and lychee is told to skip
    that directory for exactly that reason — so the strict build is the only thing here that
    reads them. `--check` returns before staging and would not.

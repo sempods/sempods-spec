@@ -37,10 +37,24 @@ never satisfied. That is the correct answer for a foreign engine, and where an e
 such an attribute the difference is reported rather than hidden: it is the portability boundary,
 and seeing it is the reason to run this.
 
+## Misspellings are errors, unknown vocabularies are extensions
+
+A fixture that quietly does nothing is worse than no fixture, because the green run is believed. So
+this runner distinguishes two things that look alike. A term from a namespace it knows — `acp:` for
+the vocabulary, `acl:` for the modes — that is not a term of that namespace is a **typo**, and it
+fails: `acp:agents` on a matcher leaves that matcher unsatisfiable, and a scenario expecting no grant
+would otherwise pass for entirely the wrong reason. A term from a namespace it does not know is an
+**extension**, and it is reported rather than refused, because that is the portability boundary and
+seeing it is the point.
+
+The same reasoning covers the shapes around them: a block whose kind it cannot read, two access
+control resources claiming one target, and an empty run are all failures, because each is a way for
+coverage to disappear while the check stays green.
+
 Usage:
 
     .github/scripts/check-examples.py             # every scenario under examples/
-    .github/scripts/check-examples.py examples/10-owner-only.md
+    .github/scripts/check-examples.py examples/10-one-context.md
 """
 
 from __future__ import annotations
@@ -56,7 +70,7 @@ try:
 except ImportError:  # pragma: no cover - the message is the whole point
     sys.exit(
         "check-examples.py needs rdflib to parse the scenarios.\n\n"
-        "    python3 -m pip install rdflib\n\n"
+        "    python3 -m pip install rdflib==7.6.0\n\n"
         "It is the specification's first RDF dependency; docs/roadmaps names that as a decision\n"
         "rather than an oversight."
     )
@@ -70,8 +84,15 @@ ACL = "http://www.w3.org/ns/auth/acl#"
 
 PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 
-BLOCK = re.compile(r"^```turtle[ \t]+(acr|context|grant)[ \t]*$(.*?)^```[ \t]*$", re.M | re.S)
-CITATION = re.compile(r"SPS-[A-Z]+-\d{3}")
+KINDS = ("acr", "context", "grant")
+BLOCK = re.compile(
+    r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
+)
+# Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
+ANY_BLOCK = re.compile(r"^```turtle([ \t]+[^\n]*)?$", re.M)
+# Greedy on the digits: `SPS-GRANT-0099` has to come out whole and fail as unknown, rather than
+# matching the real `SPS-GRANT-009` inside it and passing.
+CITATION = re.compile(r"SPS-[A-Z]+-\d+")
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
@@ -158,6 +179,9 @@ def read_context(graph: Graph, where: str) -> Context:
     if len(subjects) != 1:
         raise Problem(f"{where}: expected exactly one node carrying acp:target, found {len(subjects)}")
     node = subjects.pop()
+    errors, _ = classify(graph.predicates(node, None), where, "access context")
+    if errors:
+        raise Problem(errors[0].split(": ", 1)[1])
     return Context(
         target=one(graph, node, P["target"], where),
         agent=one(graph, node, P["agent"], where),
@@ -267,19 +291,52 @@ def resolve(graph: Graph, acr, ctx: Context) -> set:
 
 # ------------------------------------------------------------------------------ extension notes
 
-def extension_attributes(graph: Graph) -> set:
-    """Matcher attributes ACP does not define. Not an error — a portability boundary."""
-    found = set()
-    for policy_link in (P["allOf"], P["anyOf"], P["noneOf"]):
-        for _, _, matcher in graph.triples((None, policy_link, None)):
-            for predicate in set(graph.predicates(matcher, None)):
-                if str(predicate).startswith(ACP) and predicate not in MATCHER_ATTRIBUTES:
-                    continue
-                if not str(predicate).startswith(ACP) and predicate != URIRef(
-                    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-                ):
-                    found.add(predicate)
-    return found
+RDF_TYPE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+
+# Everything ACP defines that may legitimately appear as a predicate in a fixture. A predicate in the
+# ACP namespace outside this set is a misspelling, not a feature.
+KNOWN_ACP = set(P.values()) | {URIRef(ACP + "attribute")}
+
+# The modes WAC defines. One in the acl: namespace outside this set is a misspelling; the sempods
+# context mode will live in a namespace of its own and is reported as an extension until it is named.
+KNOWN_ACL = {URIRef(ACL + n) for n in ("Read", "Write", "Append", "Control")}
+
+
+def classify(predicates, where: str, on: str) -> tuple[list[str], set]:
+    """Split predicates into misspellings of a known vocabulary and terms of an unknown one."""
+    errors, extensions = [], set()
+    for predicate in predicates:
+        if predicate == RDF_TYPE or predicate in KNOWN_ACP:
+            continue
+        if str(predicate).startswith(ACP):
+            errors.append(f"{where}: {on} carries {short(predicate)}, which ACP does not define")
+        else:
+            extensions.add(predicate)
+    return errors, extensions
+
+
+def inspect_matchers(graph: Graph, where: str) -> tuple[list[str], list[str]]:
+    """Matcher predicates: an ACP misspelling fails, another vocabulary is a portability note."""
+    errors, notes = [], []
+    for link in (P["allOf"], P["anyOf"], P["noneOf"]):
+        for _, _, matcher in graph.triples((None, link, None)):
+            found, extensions = classify(graph.predicates(matcher, None), where, "matcher")
+            errors += found
+            for predicate in extensions:
+                notes.append(
+                    f"{where}: matcher uses {short(predicate)}, which ACP does not define — a "
+                    "conforming ACP engine leaves that matcher unsatisfied"
+                )
+    return errors, notes
+
+
+def inspect_modes(terms, where: str, on: str) -> list[str]:
+    """A mode in the acl: namespace that WAC does not define is a typo, not a mode."""
+    return [
+        f"{where}: {on} names {short(term)}, which is not an ACL access mode"
+        for term in terms
+        if str(term).startswith(ACL) and term not in KNOWN_ACL
+    ]
 
 
 # ------------------------------------------------------------------------------------ the check
@@ -305,6 +362,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             failures.append(f"{rel}: cites {citation}, which no chapter defines")
 
     found = blocks_of(text)
+    # A block whose kind is misspelled matches no pattern above and would simply vanish, taking its
+    # case with it while the rest of the file still passes.
+    if len(ANY_BLOCK.findall(text)) != len(found):
+        failures.append(
+            f"{rel}: a fenced turtle block carries a kind that is not one of {', '.join(KINDS)}"
+        )
     if not found:
         failures.append(f"{rel}: no turtle blocks — a scenario without a case proves nothing")
         return failures, notes
@@ -313,13 +376,19 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         by_target: dict = {}
         for index, block in enumerate(b for b in found if b.kind == "acr"):
             graph = parse(block, index)
+            where = f"{rel} line {block.line}"
             for acr, _, target in graph.triples((None, P["resource"], None)):
+                if target in by_target:
+                    # Silently replacing the first mapping would leave its policies never evaluated.
+                    failures.append(f"{where}: a second acr claims {short(target)}")
                 by_target[target] = (graph, acr)
-            for predicate in extension_attributes(graph):
-                notes.append(
-                    f"{rel} line {block.line}: matcher uses {short(predicate)}, which ACP does not "
-                    "define — a conforming ACP engine leaves that matcher unsatisfied"
-                )
+            matcher_errors, matcher_notes = inspect_matchers(graph, where)
+            failures += matcher_errors
+            notes += matcher_notes
+            failures += inspect_modes(
+                set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"])),
+                where, "policy",
+            )
 
         if not by_target:
             failures.append(f"{rel}: no acr block declares acp:resource")
@@ -345,6 +414,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 graph, acr = by_target[ctx.target]
                 got = resolve(graph, acr, ctx)
                 want = read_grant(parse(block, 2000 + offset))
+                failures += inspect_modes(want, f"{rel} line {block.line}", "grant")
                 if got != want:
                     failures.append(
                         f"{where}: expected {{{', '.join(sorted(short(m) for m in want)) or '—'}}}, "
@@ -371,8 +441,10 @@ def main(argv: list[str]) -> int:
     paths = [Path(a).resolve() for a in argv] or sorted(EXAMPLES.glob("*.md"))
     paths = [p for p in paths if p.name != "README.md"]
     if not paths:
-        print("no scenarios found under examples/")
-        return 0
+        # A passing loop over nothing would let the required check stay green while the promised
+        # coverage had been deleted — the same trap the OpenAPI job guards against.
+        print("no scenarios found: examples/ holds nothing to check", file=sys.stderr)
+        return 1
 
     failures: list[str] = []
     notes: list[str] = []
