@@ -407,6 +407,14 @@ statements:
 - a resource ACR, where the module is declared, is canonical for one subject IRI; and,
 - identity and principal-set facts live in a separate protected authority.
 
+The lookup key is the pair — **which decision, and which IRI** — and not the IRI alone. That is not
+tidiness: the two dimensions are independent by
+[`SPS-CRUD-011`](../../spec/core/lod-crud.md#SPS-CRUD-011), and a statement may be *about* a context,
+which [`SPS-CTX-026`](../../spec/core/contexts.md#SPS-CTX-026) not only permits but illustrates
+(`<{pod}/_system/contexts/contacts> rdfs:label "Privat"`). Keyed by IRI alone, that subject's resource
+ACR and the contacts context's own ACR would be one document, and a resource policy could then widen
+who reaches the context — an inversion of the rule that the finer decision only ever subtracts.
+
 An implementation may represent these as RDF named graphs internally. They are control-plane
 graphs, not registered sempods data contexts: they do not appear in context discovery, cannot be
 selected by `?context=`, and are unreachable through LOD CRUD. That distinction ends the apparent
@@ -486,8 +494,8 @@ physical store → authorized statement view → effective dataset → unchanged
 what a query may see as *the readable contexts*, which is too permissive once individual subjects
 inside a readable context are denied. Both are listed under "Specification impact".
 
-Existing-resource mutations require the requested mode on the resource and, with the multi-context
-module enabled, on the target context. Slot and edge operations use their subject as the resource
+Existing-resource mutations require the requested mode on the target context always and, where the
+resource module is declared, on the resource as well. Slot and edge operations use their subject as the resource
 target. SPARQL remains read-only
 ([`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)); the target model does not add a
 second mutation path beside CRUD, and client-supplied dataset clauses never expand the server-derived

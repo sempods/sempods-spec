@@ -238,6 +238,11 @@ def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
     for attribute in ("agent", "client", "issuer"):
         if len({getattr(c, attribute) for c in contexts}) != 1:
             raise Problem(f"{where}: the halves of one decision disagree about acp:{attribute}")
+    # Owner and creator are server-derived per target and may legitimately differ. A presented
+    # credential is not: it comes with the request, so halves disagreeing about it are two requests,
+    # and intersecting their answers certifies an outcome neither of them produces.
+    if len({frozenset(c.vcs) for c in contexts}) != 1:
+        raise Problem(f"{where}: the halves of one decision present different acp:vc")
     return contexts
 
 
@@ -383,7 +388,8 @@ KNOWN_ACL = {URIRef(ACL + n) for n in ("Read", "Write", "Append", "Control")}
 # The three the profile maps sempods' permissions onto. `acl:Append` is spelled correctly and is
 # still not one of them — SPS-GRANT-006 has read, write and manage and nothing between write and
 # read — so a fixture using it is certifying an authority sempods cannot grant.
-PROFILE_MODES = {URIRef(ACL + n) for n in ("Read", "Write", "Control")}
+ACL_READ, ACL_WRITE, ACL_CONTROL = (URIRef(ACL + n) for n in ("Read", "Write", "Control"))
+PROFILE_MODES = {ACL_READ, ACL_WRITE, ACL_CONTROL}
 
 
 def classify(predicates, where: str, on: str) -> tuple[list[str], set]:
@@ -466,6 +472,31 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
                 errors.append(
                     f"{where}: {short(predicate)} is on a node that is no {role}, so nothing reaches it"
                 )
+    # Per policy, because a set collected across the graph lets one policy's acl:Read stand in for
+    # another's missing one. ACP carries no implication of its own, so a policy saying acl:Write and
+    # not acl:Read grants exactly that to any engine reading it — the profile expands when the policy
+    # is written, and here is where the writing is checked.
+    for policy in roles["policy"]:
+        modes = set(graph.objects(policy, P["allow"]))
+        for mode, implied in ((ACL_WRITE, {ACL_READ}), (ACL_CONTROL, {ACL_READ, ACL_WRITE})):
+            missing = implied - modes if mode in modes else set()
+            if missing:
+                errors.append(
+                    f"{where}: a policy allows {short(mode)} without "
+                    + ", ".join(sorted(short(m) for m in missing))
+                    + " — the profile expands when the policy is written"
+                )
+        # The public matcher is permitted for read and nothing else. Under acp:allOf it happens to
+        # be harmless and also pointless, since it is satisfied by every request; refusing it there
+        # too costs nothing and keeps the rule the one sentence the profile states.
+        matchers = set(graph.objects(policy, P["allOf"])) | set(graph.objects(policy, P["anyOf"]))
+        public = any(PUBLIC_AGENT in set(graph.objects(m, P["agent"])) for m in matchers)
+        if public and modes - {ACL_READ}:
+            errors.append(
+                f"{where}: a policy reaching acp:PublicAgent allows "
+                + ", ".join(sorted(short(m) for m in modes - {ACL_READ}))
+                + " — the profile permits the public matcher for read only"
+            )
     # A matcher mixing an extension attribute with one of ACP's is the one construction where a
     # foreign engine answers *more*: ACP conjoins the attribute types within a matcher, and an
     # engine that cannot see the extension has one conjunct fewer to fail. The profile forbids it —
@@ -577,6 +608,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # Both counts, because either alone lets the other slip: a second, targetless access
             # control resource beside a correct one leaves `targets` at exactly one, and everything
             # it applies is never resolved.
+            for target in targets:
+                if not isinstance(target, URIRef):
+                    failures.append(
+                        f"{where}: acp:resource carries the literal \"{target}\", and a target is an IRI"
+                    )
             if len(subjects) != 1 or len(targets) != 1:
                 failures.append(
                     f"{where}: an acr block holds {len(subjects)} access control resource(s) and "
@@ -751,6 +787,25 @@ BROKEN = [
      "not one of the individuals ACP defines for it"),
     ("a mode WAC defines that the sempods profile does not",
      ("acp:allow acl:Read ;", "acp:allow acl:Append ;"), "no permission for"),
+    ("a policy stating acl:Write without the acl:Read the profile expands it to",
+     ("acp:allow acl:Read ;", "acp:allow acl:Write ;"), "expands when the policy is written"),
+    ("anonymous write, which the profile does not permit",
+     ("acp:allow acl:Read ;\n     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .",
+      "acp:allow acl:Read, acl:Write ;\n"
+      "     acp:anyOf [ a acp:Matcher ; acp:agent acp:PublicAgent ] ."),
+     "public matcher for read only"),
+    ("a literal where an authorization target belongs",
+     ("acp:resource <https://a.example/c> ;", 'acp:resource "https://a.example/c" ;'),
+     "and a target is an IRI"),
+    ("halves of a decision presenting different credentials",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr\n[ a acp:AccessControlResource ; acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:vc <https://a.example/vc1> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:vc <https://a.example/vc2> ] .\n```"),
+     "present different acp:vc"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
