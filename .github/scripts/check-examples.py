@@ -123,11 +123,11 @@ KINDS = ("acr-context", "acr-resource", "acr", "policy", "context", "decision", 
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
 FENCE = r"(`{3,}|~{3,})"
 BLOCK = re.compile(
-    r"^ {0,3}" + FENCE + r"turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}\1[ \t]*$",
+    r"^ {0,3}" + FENCE + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}\1[ \t]*$",
     re.M | re.S,
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"turtle([ \t]+[^\n]*)?$", re.M)
+ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
@@ -156,6 +156,11 @@ P = {n: URIRef(ACP + n) for n in (
 # through its type — but a misspelled `a acp:Policyy` is still a fixture that reads as ACP and is not,
 # and a reader believes the type before they trace the links.
 POLICY = URIRef(ACP + "Policy")
+CLASS_OF = {
+    "access control resource": "AccessControlResource", "access control": "AccessControl",
+    "policy": "Policy", "matcher": "Matcher",
+}
+ROLE_OF = {URIRef(ACP + c): name for name, c in CLASS_OF.items()}
 KNOWN_CLASSES = {POLICY} | {URIRef(ACP + n) for n in (
     "AccessControlResource", "AccessControl", "Matcher", "Context", "AccessGrant",
 )}
@@ -526,16 +531,35 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     def typed(name: str) -> set:
         return set(graph.subjects(RDF_TYPE, URIRef(ACP + name)))
 
-    roles = {
-        "access control resource": set(graph.subjects(P["resource"], None))
-        | typed("AccessControlResource"),
+    linked = {
+        "access control resource": set(graph.subjects(P["resource"], None)),
         "access control": set(graph.objects(None, P["accessControl"]))
-        | set(graph.objects(None, P["memberAccessControl"])) | typed("AccessControl"),
-        "policy": set(graph.objects(None, P["apply"])) | typed("Policy"),
+        | set(graph.objects(None, P["memberAccessControl"])),
+        "policy": set(graph.objects(None, P["apply"])),
         "matcher": set(graph.objects(None, P["allOf"]))
         | set(graph.objects(None, P["anyOf"]))
-        | set(graph.objects(None, P["noneOf"])) | typed("Matcher"),
+        | set(graph.objects(None, P["noneOf"])),
     }
+    roles = {name: nodes | typed(CLASS_OF[name]) for name, nodes in linked.items()}
+
+    # A class the graph knows, on a node the links put somewhere else. Typing a linked policy
+    # `a acp:AccessControl` resolves and passes, because acp:apply gives it the policy role
+    # regardless — so the fixture renders an ACP shape that is not one.
+    for node, _, value in graph.triples((None, RDF_TYPE, None)):
+        if not str(value).startswith(ACP):
+            continue
+        declared = ROLE_OF.get(value)
+        if declared is None:
+            errors.append(
+                f"{where}: types a node {short(value)}, which describes no part of an "
+                "authorization graph"
+            )
+            continue
+        for name, nodes in linked.items():
+            if node in nodes and name != declared:
+                errors.append(
+                    f"{where}: a node the links make {name} is typed {short(value)}"
+                )
     belongs = {
         P["resource"]: "access control resource",
         P["accessControl"]: "access control resource",
@@ -683,6 +707,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             failures += shared_errors
             notes += shared_notes
 
+        shared_policies = set(shared.subjects(None, None))
         by_target: dict = {}
         applied: set = set()
         for index, block in enumerate(b for b in found if b.kind.startswith("acr")):
@@ -750,7 +775,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 reachable |= set(graph.objects(control, P["apply"]))
             candidates = set(graph.objects(None, P["apply"])) | set(graph.subjects(RDF_TYPE, POLICY))
             for policy in sorted(candidates - reachable, key=str):
-                if policy not in applied:
+                # Reachability is per graph. `applied` is the whole file, and letting it excuse an
+                # inline policy would mean another block naming the same absolute IRI suppresses
+                # this one — whose own triples resolution never reads. Only a policy that came from
+                # a shared block is genuinely covered elsewhere.
+                if policy not in shared_policies:
                     failures.append(f"{rel}: nothing applies {short(policy)}")
             # The same silence one level further down: a typed matcher no policy links to renders
             # as a condition and takes no part in any case.
@@ -1028,6 +1057,22 @@ BROKEN = [
     ("a typed matcher no policy references",
      ("<#p> a acp:Policy ;", "<#stray> a acp:Matcher ; acp:agent <https://b.example/#me> .\n"
       "<#p> a acp:Policy ;"), "no policy references"),
+    ("a class disagreeing with the role the links give the node",
+     ("<#p> a acp:Policy ;", "<#p> a acp:AccessControl ;"), "is typed acp:AccessControl"),
+    ("an info string separated from its fence, which CommonMark renders",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "``` turtle grant\n# nothing\n```"),
+     "expected {—}, got {acl:Read}"),
+    ("an unapplied inline policy whose IRI another block applies",
+     ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ;\n"
+      "  acp:accessControl [ acp:apply <https://a.example/shared> ] ] .\n"
+      "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/e> ] .\n"
+      "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context"), "nothing applies"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

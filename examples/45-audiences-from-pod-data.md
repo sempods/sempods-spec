@@ -33,8 +33,8 @@ decision rather than a settled part of the model.
 
 The rule that decides whether it is safe:
 
-> A context may serve as a principal-set authority exactly when **every agent and client pair that can
-> write it holds at least `manage` on everything it grants**.
+> A context may serve as a principal-set authority exactly when **every agent and client pair whose
+> writes are still in it holds at least `manage` on everything it now grants**.
 
 The pair, not the person, and that is the part that is easy to get wrong. The contacts are written by
 a sync, and a sync is an application acting as Anna — a grant is resolved from the verified client
@@ -51,6 +51,12 @@ else and the pod has moved the boundary without moving the policy.
 It would also stop holding the moment Anna shared the address book for writing — a friend adding
 themselves as *Family* would be granting themselves access, through a route nobody would think to
 audit. Same rule, the case that is easier to see.
+
+And note *still in it*, which is doing work. A tag outlives the permission that wrote it. Anna
+uninstalls the sync, the entries it made stay, and a later policy points at *Family* from something
+the sync never touched — nobody who may write the contacts today is short of anything, and the
+condition reads as satisfied over an entry made by an application that is gone. Which is why the
+moments to check are revocation and a new reference, rather than the write.
 
 ## The way that stays plain ACP: expand when the policy is written
 

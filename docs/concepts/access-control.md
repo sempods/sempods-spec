@@ -469,19 +469,29 @@ else would be worse than having it. What bounds it:
   declaration is the guarantee; the graph it points at is not;
 - it carries membership, never policy. No `acp:allow` written into such a context is read, so the
   worst it can do is admit somebody to a set some policy already trusts; and,
-- the declaration is sound only while **every agent and client pair that can write the authority
-  holds at least `manage` on everything it grants**. Where that holds, everyone who could add
-  themselves to the set could have written the policy directly, and nothing is reachable that was not
-  already.
+- the declaration is sound only while **every agent and client pair whose writes are still in the
+  authority holds at least `manage` on everything it now grants**. Where that holds, everyone whose
+  writing is being believed could have written the policy directly, and nothing is reachable that was
+  not already.
 
-Stated over the person alone that last condition is wrong, and wrong in the direction that matters. A
-grant is resolved from the verified client together with the verified subject
-([`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002)), and the thing that writes an address
-book is usually an application. It can hold `write` on the authority while its delegation stops well
-short of `manage` on what the authority grants — at which point the ceiling refuses to let it write
-the policy and this route lets it write the answer instead. Such an authority is sound only where its
-writers are control-plane code rather than delegated applications, or where their delegation reaches
-that far.
+Two things make that condition easy to state wrongly, and both fail in the direction that matters.
+
+**It is about the pair, not the person.** A grant is resolved from the verified client together with
+the verified subject ([`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002)), and the thing that
+writes an address book is usually an application. It can hold `write` on the authority while its
+delegation stops well short of `manage` on what the authority grants — at which point the ceiling
+refuses to let it write the policy and this route lets it write the answer instead.
+
+**And it is about writes, not writers.** Membership outlives the authority to have written it. A pair
+adds somebody while it holds `manage` on everything the set then governs, loses both grants, and the
+set stays populated; a later policy references it from a target that pair never managed, and the
+condition reads as satisfied because nobody who can write it today lacks anything. The write is still
+being believed, so it still has to be covered — which makes revocation and new references the moments
+that matter, not the write.
+
+So such an authority is sound where its writers are control-plane code rather than delegated
+applications, or where their delegation reaches that far *and* membership is revalidated when the
+writers change or a new target references the set. Neither is something the pod checks today.
 
 The condition is on the deployment rather than something the pod checks, which puts it on the
 convention side of the table above and makes it the second one to watch. Whether to keep the
@@ -769,7 +779,10 @@ The rest are ordinary open questions:
   keeps the topological guarantee whole and costs the personal case its best feature — an audience
   that follows the app somebody actually uses. Keeping it means the guarantee has a declared hole,
   bounded by a condition on the deployment rather than by the pod, and that condition has to be
-  written as a requirement rather than left as advice.
+  written as a requirement rather than left as advice. Its wording is where the cost shows: it is
+  over agent and client pairs rather than people, and over writes that are still believed rather than
+  writers who can still write — so keeping the exception means specifying revalidation on revocation
+  and on a new reference, not only a rule about who may write.
 - Define what the resource module changes in the surfaces around it: whether `find` filters, the MCP
   tool arguments and the media surface acquire a resource dimension, or inherit the context one
   unchanged.
