@@ -53,8 +53,13 @@ This applies to every predicate in an authorization graph rather than to matcher
 well: `acp:OwnerAgents` would otherwise pass as an ordinary agent IRI that happens to match nobody.
 
 The same reasoning covers the shapes around them: a block whose kind it cannot read, two access
-control resources claiming one target, an access control resource nothing asks about, and an empty
-run are all failures, because each is a way for coverage to disappear while the check stays green.
+control resources claiming one target **and one decision kind**, an access control resource nothing
+asks about, a policy nothing applies, and an empty run are all failures, because each is a way for
+coverage to disappear while the check stays green.
+
+The decision kind is part of that: policy is keyed by the pair — which decision, and which IRI —
+because a subject IRI and a context IRI can be the same string, so two access control resources for
+one IRI are legitimate exactly when they are two different decisions.
 
 Those guards can rot the same way, so `--self-test` holds each one to a fixture it must reject.
 
@@ -106,15 +111,23 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # adds is sempods' composition — both must allow — applied to the answers rather than inside them.
 # That rule is the load-bearing claim of the whole model and ACP has no operator for it, so leaving
 # it as prose meant a scenario could keep its central sentence while the sentence became false.
-KINDS = ("acr", "policy", "context", "decision", "grant", "aside")
+#
+# `acr-context` and `acr-resource` are the same block, qualified. The lookup key for policy is the
+# pair — which decision, and which IRI — and not the IRI alone, because the two dimensions are
+# independent: a statement may be *about* a context, so a subject IRI and a context IRI can be the
+# same string with two separate decisions on it. Plain `acr` is the unqualified form, for the files
+# where only one decision is in play.
+KINDS = ("acr-context", "acr-resource", "acr", "policy", "context", "decision", "grant", "aside")
 # ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
 # a list item is the ordinary way it happens. Anchoring at column one would let such a block render
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
+FENCE = r"(`{3,}|~{3,})"
 BLOCK = re.compile(
-    r"^ {0,3}```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}```[ \t]*$", re.M | re.S
+    r"^ {0,3}" + FENCE + r"turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}\1[ \t]*$",
+    re.M | re.S,
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^ {0,3}```turtle([ \t]+[^\n]*)?$", re.M)
+ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"turtle([ \t]+[^\n]*)?$", re.M)
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
@@ -192,7 +205,7 @@ class Problem(Exception):
 
 def blocks_of(text: str) -> list[Block]:
     return [
-        Block(m.group(1), m.group(2), text.count("\n", 0, m.start()) + 1)
+        Block(m.group(2), m.group(3), text.count("\n", 0, m.start()) + 1)
         for m in BLOCK.finditer(text)
     ]
 
@@ -253,10 +266,21 @@ def read_context(graph: Graph, where: str) -> Context:
     return read_one_context(graph, subjects.pop(), where)
 
 
+# What an access context may say. `acp:allow` is spelled correctly, belongs to ACP, and confers
+# nothing here — a fixture carrying it displays request data that looks like a grant.
+CONTEXT_PREDICATES = {P[n] for n in ("target", "agent", "client", "issuer", "owner", "creator", "vc")}
+
+
 def read_one_context(graph: Graph, node, where: str) -> Context:
     errors, _ = classify(graph.predicates(node, None), where, "access context")
     if errors:
         raise Problem(errors[0].split(": ", 1)[1])
+    for predicate in set(graph.predicates(node, None)):
+        if predicate != RDF_TYPE and predicate not in CONTEXT_PREDICATES:
+            raise Problem(f"access context carries {short(predicate)}, which describes no request")
+    for value in set(graph.objects(node, RDF_TYPE)):
+        if value != URIRef(ACP + "Context"):
+            raise Problem(f"access context is typed {short(value)}, not acp:Context")
     # An access context describes a request: a target, who is asking, which client and issuer. None
     # of those is ever a term ACP defines. Naming one would exploit §6.5.2's last step, which
     # compares the matcher's value to the request's agent after the named individuals have been
@@ -412,11 +436,24 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     a negative case would pass while the graph said nothing at all.
     """
     errors, extensions = classify(set(graph.predicates(None, None)), where, "authorization graph")
-    notes = [
-        f"{where}: uses {short(predicate)}, which ACP does not define — a conforming ACP engine "
-        "leaves a matcher carrying it unsatisfied"
-        for predicate in extensions
-    ]
+    matcher_nodes = set()
+    for link in (P["allOf"], P["anyOf"], P["noneOf"]):
+        matcher_nodes |= set(graph.objects(None, link))
+    notes = []
+    for predicate in extensions:
+        # On a matcher the note is true and is the portability boundary. Anywhere else the resolver
+        # simply ignores the predicate, so the same note would report a condition as fail-closed
+        # while it does nothing at all — and a fixture carrying an inert condition is claiming one.
+        if set(graph.subjects(predicate, None)) <= matcher_nodes:
+            notes.append(
+                f"{where}: uses {short(predicate)}, which ACP does not define — a conforming ACP "
+                "engine leaves a matcher carrying it unsatisfied"
+            )
+        else:
+            errors.append(
+                f"{where}: {short(predicate)} is outside a matcher, where an ACP engine ignores it "
+                "rather than failing closed"
+            )
     # The resolver below implements these, deliberately: it is an ACP engine and has to answer for
     # graphs the profile would not write. A *fixture* carrying one is a different thing — it would
     # certify an access control resource outside the model these files demonstrate.
@@ -605,7 +642,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
         by_target: dict = {}
         applied: set = set()
-        for index, block in enumerate(b for b in found if b.kind == "acr"):
+        for index, block in enumerate(b for b in found if b.kind.startswith("acr")):
+            kind = block.kind[4:] or "unqualified"
             graph = parse(block, index) + shared
             where = f"{rel} line {block.line}"
             # Walked from the access control resource rather than read off the graph: a typed but
@@ -637,10 +675,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     f"{len(targets)} target(s), and the profile makes one canonical for one"
                 )
             for acr, _, target in graph.triples((None, P["resource"], None)):
-                if target in by_target:
+                if any(k == kind for k, _, _ in by_target.get(target, ())):
                     # Silently replacing the first mapping would leave its policies never evaluated.
-                    failures.append(f"{where}: a second acr claims {short(target)}")
-                by_target[target] = (graph, acr)
+                    # Two decisions on one IRI are legitimate; two of the same kind are not.
+                    failures.append(f"{where}: a second {kind} acr claims {short(target)}")
+                by_target.setdefault(target, []).append((kind, graph, acr))
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
@@ -648,6 +687,18 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"])),
                 where, "policy",
             )
+
+        # An inline policy nothing applies is the same silence as an unapplied shared one, and it
+        # sits inside a graph whose other policy can carry every case in the file.
+        for kind, graph, acr in [e for entries in by_target.values() for e in entries]:
+            reachable = set()
+            for control in set(graph.objects(acr, P["accessControl"])) | set(
+                graph.objects(acr, P["memberAccessControl"])
+            ):
+                reachable |= set(graph.objects(control, P["apply"]))
+            for policy in sorted(set(graph.subjects(RDF_TYPE, POLICY)) - reachable, key=str):
+                if policy not in applied:
+                    failures.append(f"{rel}: nothing applies {short(policy)}")
 
         if not by_target:
             failures.append(f"{rel}: no acr block declares acp:resource")
@@ -665,9 +716,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             if ctx.target not in by_target:
                 failures.append(f"{where}: no acr controls {short(ctx.target)}")
                 return None
-            exercised.add(ctx.target)
-            graph, acr = by_target[ctx.target]
-            return resolve(graph, acr, ctx)
+            # Every decision keyed to this IRI, intersected: where a subject is also a context, both
+            # apply to the one request and the finer one can only subtract.
+            answers = []
+            for kind, graph, acr in by_target[ctx.target]:
+                exercised.add((kind, ctx.target))
+                answers.append(resolve(graph, acr, ctx))
+            return set.intersection(*answers)
         for offset, block in enumerate(found):
             if block.kind in ("context", "decision"):
                 if pending is not None:
@@ -713,8 +768,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             failures.append(f"{rel}: no context/grant pair")
         # An access control resource nothing asks about is prose, not a case: it could say anything
         # and the file would still pass.
-        for target in sorted(set(by_target) - exercised, key=str):
-            failures.append(f"{rel}: nothing asks about {short(target)}, so its acr is never evaluated")
+        declared = {(kind, target) for target, entries in by_target.items() for kind, _, _ in entries}
+        for kind, target in sorted(declared - exercised, key=str):
+            failures.append(
+                f"{rel}: nothing asks about {short(target)}, so its {kind} acr is never evaluated"
+            )
         # A shared policy nothing applies is the same silence one level up.
         for policy in sorted(set(shared.subjects(RDF_TYPE, POLICY)) - applied, key=str):
             failures.append(f"{rel}: no acr applies {short(policy)}")
@@ -833,6 +891,27 @@ BROKEN = [
      ("```turtle context", "```turtle policy\n<https://a.example/spare> a acp:Policy ; "
       "acp:allow acl:Read .\n[ a acp:AccessControl ; acp:apply <https://a.example/spare> ] .\n```\n"
       "```turtle context"), "no acr applies"),
+    ("two decisions of the same kind on one IRI",
+     ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/c> ] .\n```\n```turtle context"),
+     "a second unqualified acr claims"),
+    ("an inline policy no access control resource applies",
+     ("<#p> a acp:Policy ;", "<#spare> a acp:Policy ; acp:allow acl:Read ;\n"
+      "     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n"
+      "<#p> a acp:Policy ;"), "nothing applies"),
+    ("a fence opened with four backticks, which CommonMark allows",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "````turtle grant\n# nothing\n````"),
+     "expected {—}, got {acl:Read}"),
+    ("a misplaced known predicate on an access context",
+     ("acp:agent <https://b.example/#me> ] .\n```\n```turtle grant",
+      "acp:agent <https://b.example/#me> ; acp:allow acl:Write ] .\n```\n```turtle grant"),
+     "which describes no request"),
+    ("a misspelled class on an access context",
+     ("[ acp:target <https://a.example/c>", "[ a acp:Contexxt ; acp:target <https://a.example/c>"),
+     "not acp:Context"),
+    ("an extension predicate outside a matcher, where it is inert rather than fail-closed",
+     ("<#p> a acp:Policy ;", "<#p> a acp:Policy ; <https://a.example/ns/when> \"always\" ;"),
+     "outside a matcher"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

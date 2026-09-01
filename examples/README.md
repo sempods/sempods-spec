@@ -12,6 +12,7 @@ before:
 | [`10-one-context.md`](10-one-context.md) | a pod with one place to put things — the whole model at its smallest |
 | [`20-several-contexts.md`](20-several-contexts.md) | areas to choose between, one of them public. The shape most pods have |
 | [`30-spaces-and-documents.md`](30-spaces-and-documents.md) | a space whose documents are not all for the same readers, so a second decision narrows inside it |
+| [`35-subject-is-a-context.md`](35-subject-is-a-context.md) | a statement whose subject is the context holding it, so one IRI carries two decisions and the lookup key has to be a pair |
 | [`40-groups-and-shared-policy.md`](40-groups-and-shared-policy.md) | the same shape at enterprise scale: an audience that is a group, one policy governing several resources, and the one place sempods adds a matcher ACP does not have |
 | [`45-audiences-from-pod-data.md`](45-audiences-from-pod-data.md) | the same wish on a personal pod — "everyone tagged Family" — and why the answer there is the mechanism the enterprise case cannot use |
 
@@ -42,6 +43,7 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `acr` | an authorization graph — one per resource it controls, several per file where a scenario turns on a contrast |
 | `context` | one attempted access, as the server would describe it |
 | `grant` | the access modes that attempt must be granted |
+| `acr-context`, `acr-resource` | the same block, qualified. Policy is keyed by the pair — which decision, and which IRI — because a subject IRI and a context IRI can be the same string with two separate decisions on it. Plain `acr` is the unqualified form, for the files where only one decision is in play |
 | `policy` | one policy artifact several `acr` blocks reference. Merged into every `acr` in the file, so a scenario claiming two resources share a policy demonstrates it rather than writing two copies that agree |
 | `decision` | one request put to several `acr` blocks at once. Each half is resolved by the plain ACP engine; the modes below are what **both** allow, which is sempods' composition applied to the answers rather than inside the engine |
 | `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |

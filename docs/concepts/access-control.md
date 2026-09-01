@@ -272,8 +272,10 @@ the context holds, and a pod that never hears of anything below it is complete.
 
 Two things vary around that, and they are independent of each other.
 
-**The management of several contexts.** A pod that provides it exposes the lifecycle, the catalogue,
-the explicit write target and the read downscope the chapters specify today. A pod that does not has
+**The management of several contexts.** A pod that provides it exposes the lifecycle and the read
+downscope the chapters specify today. The catalogue and the explicit write target are not on that
+list: a write names its context either way, and the route a client reads that name from is needed
+most where there is only one. A pod that does not has
 one canonical context — carrying policy exactly like any other, so sharing is still a policy on a
 context — and nothing for a client to select between. Every statement still belongs to exactly one
 context either way; what is absent is the choosing, not the context.
@@ -573,7 +575,10 @@ contributed by satisfied policies accumulates by union, with no subtractive exce
 so adding an allow policy never removes access. It does not by itself make the policy set
 enumerable backwards from an agent — a principal-set matcher holds a set IRI rather than a list of
 agents, owner and creator are server-derived, and a decision also depends on client, issuer, the
-OAuth ceiling and the optional context. An implementation may still index policies in that direction;
+OAuth ceiling and — where the module is declared — the resource decision as well. Reading it backwards
+starts from the context, which every pod decides: a resource policy nominating a subject in a context
+the caller cannot read adds nothing, and treating that decision as the optional one would widen the
+answer past the read sandbox. An implementation may still index policies in that direction;
 that is a strategy, not a consequence of the algebra.
 
 “Everyone in this group except one person” is expressed one layer down instead: a principal set may

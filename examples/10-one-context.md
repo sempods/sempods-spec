@@ -68,13 +68,18 @@ and staying private takes no work.
 
 ## What is not here
 
-No policy on a recipe. No catalogue for a client to browse, because a list of one is not a choice.
+No policy on a recipe. Nothing for a client to choose between — but the catalogue is still there, and
+that is the point rather than an exception.
 
-What Anna's writes still carry is `?context=`, naming the one context. That looks like ceremony and
-is not: the invariant it serves forbids an implicit fallback, and a pod with a single candidate is
-precisely where a fallback would appear and never be noticed. The parameter costs one client the same
-call it would make with fifty contexts, and it is what keeps the pod from acquiring a default it
-would later have to take away.
+Anna's writes carry `?context=`, naming the one context, and the discovery route
+([`SPS-CTX-021`](../spec/core/contexts.md#SPS-CTX-021)) is where a client reads that name: it may not
+construct the IRI itself ([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)). So a listing of one
+is not a formality — it is the only specified way to learn the value the write must carry.
+
+The parameter looks like ceremony and is not: the invariant it serves forbids an implicit fallback,
+and a pod with a single candidate is precisely where a fallback would appear and never be noticed. It
+costs a client the same call it would make with fifty contexts, and it keeps the pod from acquiring a
+default it would later have to take away.
 
 A pod can stay like this forever. The next two scenarios add one thing each: several contexts to
 choose between, and then a second, finer decision inside them.
