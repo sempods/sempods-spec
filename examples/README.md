@@ -106,10 +106,12 @@ teach more than one that ends in a long list.
 The runner needs [rdflib](https://rdflib.readthedocs.io/) to parse Turtle:
 
 ```bash
-python3 -m pip install rdflib==7.6.0
+python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2
 ```
 
-CI installs the same pinned version and runs the scenarios on every pull request
+Both names, because pinning only the first leaves the parser stack resolving fresh on every machine
+and a contributor can then be running a different one from CI. CI installs the same pinned version
+and runs the scenarios on every pull request
 ([`.github/workflows/examples.yml`](../.github/workflows/examples.yml)). The pin is tighter than the
 `pyyaml` the OpenAPI job installs because this dependency decides whether a scenario is *correct*:
 a change in Turtle parsing would move results quietly rather than break loudly.

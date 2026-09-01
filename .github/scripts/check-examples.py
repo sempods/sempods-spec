@@ -145,12 +145,16 @@ KNOWN_CLASSES = {POLICY} | {URIRef(ACP + n) for n in (
 # does not know, which is worth reporting rather than ignoring.
 MATCHER_ATTRIBUTES = {P["agent"], P["client"], P["issuer"], P["vc"]}
 
-# The named individuals a matcher attribute may carry. A value in the ACP namespace outside this set
-# is a misspelling: `acp:OwnerAgents` would otherwise fall through as an ordinary agent IRI that
-# happens not to match, so a negative case would pass while the fixture was wrong.
+# The named individuals each matcher attribute may carry, kept apart per attribute rather than in one
+# set. A value in the ACP namespace outside its attribute's set is a misspelling — `acp:OwnerAgents`
+# would fall through as an ordinary agent IRI that happens not to match — and so is a correctly
+# spelled individual on the wrong attribute: `acp:client acp:OwnerAgent` reads as deliberate and
+# matches nothing, which is a negative case passing for a reason nobody wrote down.
 KNOWN_INDIVIDUALS = {
-    PUBLIC_AGENT, AUTHENTICATED_AGENT, CREATOR_AGENT, OWNER_AGENT,
-    PUBLIC_CLIENT, AUTHENTICATED_CLIENT, PUBLIC_ISSUER, AUTHENTICATED_ISSUER,
+    P["agent"]: {PUBLIC_AGENT, AUTHENTICATED_AGENT, CREATOR_AGENT, OWNER_AGENT},
+    P["client"]: {PUBLIC_CLIENT, AUTHENTICATED_CLIENT},
+    P["issuer"]: {PUBLIC_ISSUER, AUTHENTICATED_ISSUER},
+    P["vc"]: set(),
 }
 
 
@@ -248,8 +252,8 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     # tried and does not return early — so a request claiming to *be* acp:OwnerAgent satisfies an
     # owner matcher without owning anything. That step is transcribed faithfully below; the fixture
     # that would abuse it is refused here instead.
-    for value in graph.objects(node, None):
-        if str(value).startswith(ACP):
+    for predicate, value in graph.predicate_objects(node):
+        if predicate != RDF_TYPE and str(value).startswith(ACP):
             raise Problem(f"access context names {short(value)}, which describes no request")
     return Context(
         target=one(graph, node, P["target"], where),
@@ -370,6 +374,11 @@ KNOWN_ACP = set(P.values()) | {URIRef(ACP + "attribute")}
 # context mode will live in a namespace of its own and is reported as an extension until it is named.
 KNOWN_ACL = {URIRef(ACL + n) for n in ("Read", "Write", "Append", "Control")}
 
+# The three the profile maps sempods' permissions onto. `acl:Append` is spelled correctly and is
+# still not one of them — SPS-GRANT-006 has read, write and manage and nothing between write and
+# read — so a fixture using it is certifying an authority sempods cannot grant.
+PROFILE_MODES = {URIRef(ACL + n) for n in ("Read", "Write", "Control")}
+
 
 def classify(predicates, where: str, on: str) -> tuple[list[str], set]:
     """Split predicates into misspellings of a known vocabulary and terms of an unknown one."""
@@ -399,11 +408,49 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     for value in set(graph.objects(None, RDF_TYPE)):
         if str(value).startswith(ACP) and value not in KNOWN_CLASSES:
             errors.append(f"{where}: types a node acp:{str(value)[len(ACP):]}, which ACP has no class for")
-    for attribute in MATCHER_ATTRIBUTES:
+    for attribute, individuals in KNOWN_INDIVIDUALS.items():
         for value in set(graph.objects(None, attribute)):
-            if str(value).startswith(ACP) and value not in KNOWN_INDIVIDUALS:
+            if str(value).startswith(ACP) and value not in individuals:
                 errors.append(
-                    f"{where}: {short(attribute)} names {short(value)}, which ACP does not define"
+                    f"{where}: {short(attribute)} names {short(value)}, which is not one of the "
+                    "individuals ACP defines for it"
+                )
+    # A predicate ACP defines, on a node it does not describe. `acp:apply` written straight onto the
+    # access control resource rather than beneath `acp:accessControl` is spelled correctly, reads as
+    # a policy reference, and leaves the policy set empty — so a case expecting no grant stays green
+    # over a graph that says nothing. Roles are read off the links, which is how ACP §6 finds them.
+    #
+    # A node holds a role if something links to it in that position *or* if it says so with its type.
+    # The type half is not decoration: a shared `policy` block is merged into every access control
+    # resource in the file, so in all but the ones that apply it nothing links to it at all.
+    def typed(name: str) -> set:
+        return set(graph.subjects(RDF_TYPE, URIRef(ACP + name)))
+
+    roles = {
+        "access control resource": set(graph.subjects(P["resource"], None))
+        | typed("AccessControlResource"),
+        "access control": set(graph.objects(None, P["accessControl"]))
+        | set(graph.objects(None, P["memberAccessControl"])) | typed("AccessControl"),
+        "policy": set(graph.objects(None, P["apply"])) | typed("Policy"),
+        "matcher": set(graph.objects(None, P["allOf"]))
+        | set(graph.objects(None, P["anyOf"]))
+        | set(graph.objects(None, P["noneOf"])) | typed("Matcher"),
+    }
+    belongs = {
+        P["resource"]: "access control resource",
+        P["accessControl"]: "access control resource",
+        P["memberAccessControl"]: "access control resource",
+        P["apply"]: "access control",
+        P["allow"]: "policy", P["deny"]: "policy",
+        P["allOf"]: "policy", P["anyOf"]: "policy", P["noneOf"]: "policy",
+        P["agent"]: "matcher", P["client"]: "matcher",
+        P["issuer"]: "matcher", P["vc"]: "matcher",
+    }
+    for predicate, role in belongs.items():
+        for subject in set(graph.subjects(predicate, None)):
+            if subject not in roles[role]:
+                errors.append(
+                    f"{where}: {short(predicate)} is on a node that is no {role}, so nothing reaches it"
                 )
     # A matcher mixing an extension attribute with one of ACP's is the one construction where a
     # foreign engine answers *more*: ACP conjoins the attribute types within a matcher, and an
@@ -433,12 +480,20 @@ def inspect_grant(graph: Graph, where: str) -> list[str]:
 
 
 def inspect_modes(terms, where: str, on: str) -> list[str]:
-    """A mode in the acl: namespace that WAC does not define is a typo, not a mode."""
-    return [
-        f"{where}: {on} names {short(term)}, which is not an ACL access mode"
-        for term in terms
-        if str(term).startswith(ACL) and term not in KNOWN_ACL
-    ]
+    """A mode in the acl: namespace that WAC does not define is a typo; one WAC defines and the
+    profile does not is a mode sempods has no permission for."""
+    errors = []
+    for term in terms:
+        if not str(term).startswith(ACL):
+            continue
+        if term not in KNOWN_ACL:
+            errors.append(f"{where}: {on} names {short(term)}, which is not an ACL access mode")
+        elif term not in PROFILE_MODES:
+            errors.append(
+                f"{where}: {on} names {short(term)}, which sempods has no permission for — "
+                "SPS-GRANT-006 has read, write and manage and nothing between read and write"
+            )
+    return errors
 
 
 # ------------------------------------------------------------------------------------ the check
@@ -490,6 +545,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             graph = parse(block, index) + shared
             applied |= set(graph.objects(None, P["apply"]))
             where = f"{rel} line {block.line}"
+            # Without this, a block declaring no target adds nothing to by_target and no later check
+            # can see it: the file passes on its other blocks while this one is never evaluated.
+            targets = set(parse(block, index).objects(None, P["resource"]))
+            if len(targets) != 1:
+                failures.append(
+                    f"{where}: an acr block declares {len(targets)} targets, and the profile makes "
+                    "one access control resource canonical for one target"
+                )
             for acr, _, target in graph.triples((None, P["resource"], None)):
                 if target in by_target:
                     # Silently replacing the first mapping would leave its policies never evaluated.
@@ -534,8 +597,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     failures.append(f"{rel} line {block.line}: grant block with no context block before it")
                     continue
                 where = f"{rel} line {pending.line}"
-                halves = read_contexts(parse(pending, 1000 + offset), where,
-                                       least=2 if pending.kind == "decision" else 1)
+                # A `context` block holding two nodes would be silently composed like a `decision`,
+                # which is a different claim: the expectation would match an intersection nobody
+                # wrote. So the two kinds are read with different arities.
+                halves = (read_contexts(parse(pending, 1000 + offset), where, least=2)
+                          if pending.kind == "decision"
+                          else [read_context(parse(pending, 1000 + offset), where)])
                 answers = [modes_for(ctx, where) for ctx in halves]
                 if any(a is None for a in answers):
                     pending = None
@@ -618,6 +685,22 @@ BROKEN = [
     ("a shared policy no access control resource applies",
      ("```turtle context", "```turtle policy\n<https://a.example/spare> a acp:Policy ; "
       "acp:allow acl:Read .\n```\n```turtle context"), "no acr applies"),
+    ("a known predicate on a node that is no policy",
+     ("acp:accessControl [ acp:apply <#p> ] ] .", "acp:apply <#p> ] .")," is no access control"),
+    ("an acr block declaring no target at all",
+     ("```turtle context", "```turtle acr\n<#stray> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n```turtle context"),
+     "declares 0 targets"),
+    ("a context block holding two attempts, which would be composed like a decision",
+     ("[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ] ."),
+     "exactly one node carrying acp:target"),
+    ("a reserved individual on an attribute it does not belong to",
+     ("acp:agent <https://b.example/#me> ]", "acp:agent acp:PublicClient ]"),
+     "not one of the individuals ACP defines for it"),
+    ("a mode WAC defines that the sempods profile does not",
+     ("acp:allow acl:Read ;", "acp:allow acl:Append ;"), "no permission for"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
