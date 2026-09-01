@@ -33,7 +33,7 @@ useful granularity.
 
 | Candidate | Defined by | Useful as a decision unit |
 |---|---|---|
-| Statement | [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) | No — no route addresses one statement |
+| Statement | [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) | No, and not for want of an address — see below |
 | Slot `(subject, predicate)` in one context | [`lod-crud`](../../spec/core/lod-crud.md) §5 | No — policy would be repeated per predicate |
 | **Resource** (subject) | [`SPS-CRUD-001`](../../spec/core/lod-crud.md#SPS-CRUD-001) | **Yes** — it has an LOD IRI |
 | **Context** (named graph) | [`SPS-CTX-002`](../../spec/core/contexts.md#SPS-CTX-002) | **Yes** — it is registered under an IRI |
@@ -46,6 +46,13 @@ writes land in one explicitly named context
 [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025)). The resource IRI and context remain
 independent, so one subject may have statements in several contexts
 ([`SPS-CRUD-011`](../../spec/core/lod-crud.md#SPS-CRUD-011)).
+
+The statement is rejected for a reason worth stating precisely, because half of it is addressable.
+The single-edge route names exactly `(subject, predicate, target)`, and
+[`SPS-CRUD-042`](../../spec/core/lod-crud.md#SPS-CRUD-042) defines deletion through it — but only
+where the object is an IRI. A decision unit that covers IRI-valued statements and not literal-valued
+ones would be partial by construction, and one policy per statement is a policy per triple. It is the
+granularity that fails, not the addressing.
 
 There is consequently no containment relation between a context and a resource. A context is not
 the folder in which a resource lives, and ACP member inheritance cannot manufacture that relation.
@@ -154,9 +161,15 @@ produces exactly these results. Running the whole algorithm is also the safer ch
 it does not.
 
 The gain is that conformance becomes checkable instead of asserted: an independent ACP engine, given
-a sempods ACR and a context graph, must produce the same access grant graph. That holds **per
-evaluation**. It does not extend to the whole decision, because the conjunction between evaluations
-and the OAuth ceiling are sempods' and not ACP's.
+a sempods ACR and a context graph, must produce the same access grant graph.
+
+Two limits on that, and both matter. It holds **per evaluation** and not for the whole decision,
+because the conjunction between evaluations and the OAuth ceiling are sempods' and not ACP's. And it
+holds for **ACP's own matcher attributes** and not beyond them: an access control resource using the
+principal-set matcher defined below carries an attribute a plain ACP engine does not know, so that
+engine leaves the matcher unsatisfied where sempods would resolve it through a trusted membership
+authority. Checking such a resource needs an oracle that knows the extension, or it reports a
+difference that is the extension rather than a defect.
 
 The modes are the ones [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) names, with the
 implications [`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009) fixes, and the profile keeps
@@ -212,17 +225,27 @@ implementation comes to trust something nothing checks.
 | Evaluations compose by intersection | the pod, on every request | **guarantee** |
 | An ACR carries no `acp:deny` and no `acp:noneOf` | whatever writes the ACR | convention |
 | A policy states its modes expanded | whatever writes the ACR | convention |
+| An ACR carries no `acp:memberAccessControl` | whatever writes the ACR, and today the server as well | convention, and the one to watch |
 
 Policy is written through control-plane operations rather than by hand: somebody shares a document,
 and something turns that into a policy. That layer is where a convention lives, and it can hold rules
 a policy language cannot express — which is also why the distinction matters, because an owner
 holding `manage` can write an ACR directly and step around every convention in it.
 
-That is acceptable, and the reason is worth stating rather than assumed. **Every convention here
-fails towards less access.** A hand-written deny is honoured and narrows; modes left unexpanded grant
-less than intended; a member access control has no containment relation to resolve against and does
-nothing at all. None of them hands anybody access the owner could not have granted outright. A
-convention that could fail the other way would have to become a guarantee.
+That is acceptable for two of the three, and the reason is worth stating rather than assumed: they
+**fail towards less access**. A hand-written deny is honoured and narrows; modes left unexpanded grant
+less than intended. Neither hands anybody access the owner could not have granted outright.
+
+The third does not, and it is the one to watch. `acp:memberAccessControl` does not restrict — it adds
+an ancestor's policies to a descendant's effective set, and under union adding policies can only
+widen. A hand-written one is inert today, but **not because this convention holds**: it is inert
+because the server supplies no ancestors for it to resolve against, and ACP expects the resource
+server to provide exactly that information. A different guarantee is doing the work.
+
+Answer the `manage` question below with member access control and the server begins supplying them,
+at which point this restriction can fail the wrong way — and by the rule that governs the rest of
+this table, **a convention that could fail the other way would have to become a guarantee**. Which of
+the two it is therefore depends on a decision this concept has not made.
 
 ## One decision always, a second by declaration (SOLL)
 
@@ -298,8 +321,10 @@ the revocation sweep ([`SPS-GRANT-015`](../../spec/core/grants.md#SPS-GRANT-015)
 [`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016)) is a recomputation over the store. ACP
 evaluates a state; it does not establish one.
 
-This preserves immediate policy revocation and the distinction between agent and client. A broad
-policy for a person does not silently broaden every application that person uses. Public authority
+This preserves immediate policy revocation and the distinction between agent and client. That an
+application is not broadened by a policy written for the person is the property being aimed at rather
+than one the model already has: a ceiling agreed over a scope reaches whatever enters that scope
+afterwards, which is the open decision recorded below. Public authority
 does not come from the agent and therefore cannot be delegated or removed by the agent's OAuth
 ceiling. The ceiling may constrain modes, targets or both; OAuth owns how a person selects that
 subset, while access control owns the per-request decision.
