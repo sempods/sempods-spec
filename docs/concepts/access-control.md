@@ -490,6 +490,16 @@ short-lived to put in its place. Whether the ceiling becomes coarser (modes only
 principal sets, or keeps a context-shaped surface that a resource-only pod synthesises, is
 unresolved — and the answer decides how much of §5 and §6 survives.
 
+Whatever it becomes, it will be **coarser than the decision it bounds**, because consent per
+resource is not something a person can give. A ceiling therefore covers resources that enter its
+scope after it was agreed: a policy granting somebody access to one more document is reached by
+every application they had already authorised, and nobody was asked again.
+[`SPS-GRANT-019`](../../spec/core/grants.md#SPS-GRANT-019) is kept to the letter — no grant was
+widened, a policy was changed, and those are different acts — while the reason it gives, that
+regaining access should not silently re-arm every application that once wanted it, is walked around.
+Deciding whether that is the intended behaviour is part of the same question, and
+[`examples/30-delegation.md`](../../examples/30-delegation.md) is what it looks like in cases.
+
 **`public-read` is a scope in a model that no longer has the thing it scopes.** Seven requirements
 carry today's answer: the `public` flag and its private default
 ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015),
