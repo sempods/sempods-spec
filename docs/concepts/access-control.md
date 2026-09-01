@@ -545,10 +545,15 @@ than a second resolution branch.
 
 The rest are ordinary open questions:
 
-- Choose the creation bootstrap: implicit creator policy, atomic caller-supplied ACR, or an advertised
-  server policy template. The first has a precondition the specification does not meet today — no
-  chapter records who created a resource, so `acp:CreatorAgent` has no fact to match against, and
-  recording it is worthless retroactively for everything written before.
+- Choose the creation bootstrap between an atomic caller-supplied ACR and an advertised server policy
+  template. A third option, an implicit creator policy, is not available in core — and not because
+  the fact is unrecorded but because it is undefined. A resource here is a subject some statement
+  mentions, so creating one is not an act anybody performs, and a pod routinely holds statements
+  about IRIs nobody in it created at all
+  ([`SPS-CRUD-003`](../../spec/core/lod-crud.md#SPS-CRUD-003)). `acp:CreatorAgent` is therefore
+  unsatisfied here rather than forbidden, exactly as `acp:vc` is in a pod that presents no
+  credentials, and a profile built around documents may state a creator and use it.
+  [`examples/40-creator.md`](../../examples/40-creator.md) runs both cases.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Define the resource-only protocol projection: graph-aware representations and SPARQL dataset
   parameters, the context filters in `find`, the MCP tool catalogue and arguments, and whether media
