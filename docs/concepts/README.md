@@ -26,9 +26,10 @@ requirement.
 
 - [`access-control.md`](access-control.md) — at what granularity access is decided, and why
   [`contexts`](../../spec/core/contexts.md) and [`grants`](../../spec/core/grants.md) answer that
-  question differently from [`lod-crud`](../../spec/core/lod-crud.md). Defines the target
-  resource-first ACP profile, the optional multi-context constraint, and the closed matcher model
-  for enterprise groups and audiences — and its load-bearing specification impact.
+  question differently from [`lod-crud`](../../spec/core/lod-crud.md). The target keeps the context as
+  the deciding unit and adds a declared resource decision where audiences are smaller than one.
+  Carries the ACP profile, the closed matcher model for groups and audiences, and the load-bearing
+  specification impact.
 
 Reasoning that belongs to another document is not repeated here:
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and the descriptive-to-prescriptive

@@ -300,11 +300,12 @@ the agent's non-public authority the client received. Neither substitutes for th
 
 ```text
 authenticated modes = delegated client ceiling
-                      ∩ resource policy decision
-                      ∩ optional context policy decision
+                      ∩ context policy decision
+                      ∩ optional resource policy decision
 
-public modes = { read } if public resource policy allows read
-                         and, when present, public context policy allows read
+public modes = { read } if public context policy allows read
+                         and, where the resource module is declared,
+                         public resource policy allows read
                ∅ otherwise
 
 effective modes = authenticated modes ∪ public modes
@@ -499,15 +500,15 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Hold wherever there is a choice to make. A pod with one context has none, and the parameter becomes optional there and only there |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same, seen from the grants chapter |
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
+| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)), the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) and the discovery route ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) are core obligations today, and moving them behind a declaration relocates them |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
 
 None of these is a reversal of intent. The mission's third goal — *"graph-based access control where
 the 4th RDF dimension … is called Context"* — stays true, because the graph dimension remains the
 decision every pod makes. Invariants 2 and 3 are untouched for the same reason: the sandboxes are
 stated over contexts, and contexts are always there.
-[`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) is untouched because a module is not a cut
-into the core, and the grant grammar of [`grants`](../../spec/core/grants.md) §2 is untouched because
-grants stay keyed by context.
+The grant grammar of [`grants`](../../spec/core/grants.md) §2 is untouched because grants stay keyed
+by context.
 
 What else survives is worth stating beside it. Invariant 1 holds unchanged, and so does every
 property listed under "The current model" above: monotone policy, the mode implications, the implicit
@@ -691,11 +692,14 @@ The rest are ordinary open questions:
 - Define how a pod installs complete resource policies before declaring the resource module, given
   that an evaluator with no matching policy denies.
 
-These are not all the same kind of open. The two named above and the first five bullets are
-**contract blockers**: until they are answered there is no target contract to implement, so nothing
-can be conformant against it. The last is an **adoption blocker** — a pod that never declares the
-resource module has nothing to install, and a pod that does needs its policies in place before the
-second decision starts denying.
+These are not all the same kind of open. Every one above except the last is a **contract blocker**:
+until it is answered there is no target contract to implement, so nothing can be conformant against
+it. The sandbox restatement belongs in that group rather than beside it — the read sandbox is what
+the resource module has to preserve, and the paragraph below says as much when it observes that
+partial query support claims no conformance.
+
+The last is an **adoption blocker** — a pod that never declares the resource module has nothing to
+install, and a pod that does needs its policies in place before the second decision starts denying.
 
 None of them blocks an experiment. Core is indivisible
 ([`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)), so an implementation that answers before
