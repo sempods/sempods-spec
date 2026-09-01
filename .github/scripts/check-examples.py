@@ -132,7 +132,7 @@ ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"turtle([ \t]+[^\n]*)?$", re.M)
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
 # the malformed text while pointing at an anchor that resolves, so nothing else would catch it.
-CITATION = re.compile(r"SPS-[0-9A-Za-z-]+")
+CITATION = re.compile(r"SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
@@ -293,6 +293,11 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     for value in set(graph.objects(node, RDF_TYPE)):
         if value != URIRef(ACP + "Context"):
             raise Problem(f"access context is typed {short(value)}, not acp:Context")
+    for predicate, value in graph.predicate_objects(node):
+        if not isinstance(value, URIRef):
+            raise Problem(
+                f"access context gives {short(predicate)} a literal, and every one of these is an IRI"
+            )
     # An access context describes a request: a target, who is asking, which client and issuer. None
     # of those is ever a term ACP defines. Naming one would exploit §6.5.2's last step, which
     # compares the matcher's value to the request's agent after the named individuals have been
@@ -479,6 +484,15 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
             errors.append(f"{where}: types a node acp:{str(value)[len(ACP):]}, which ACP has no class for")
     for attribute, individuals in KNOWN_INDIVIDUALS.items():
         for value in set(graph.objects(None, attribute)):
+            # SPS-AUTH-049: a pod knows a person only as a WebID URI. A literal on both the matcher
+            # and the request compares equal to itself, so the case passes on an identity the
+            # specification refuses to hold.
+            if not isinstance(value, URIRef):
+                errors.append(
+                    f"{short(attribute)} names a literal, and an identity is an IRI "
+                    f"(SPS-AUTH-049) — at {where}"
+                )
+                continue
             if str(value).startswith(ACP) and value not in individuals:
                 errors.append(
                     f"{where}: {short(attribute)} names {short(value)}, which is not one of the "
@@ -717,7 +731,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 graph.objects(acr, P["memberAccessControl"])
             ):
                 reachable |= set(graph.objects(control, P["apply"]))
-            for policy in sorted(set(graph.subjects(RDF_TYPE, POLICY)) - reachable, key=str):
+            candidates = set(graph.objects(None, P["apply"])) | set(graph.subjects(RDF_TYPE, POLICY))
+            for policy in sorted(candidates - reachable, key=str):
                 if policy not in applied:
                     failures.append(f"{rel}: nothing applies {short(policy)}")
 
@@ -733,14 +748,25 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         cases = 0
         exercised: set = set()
 
-        def modes_for(ctx: Context, where: str) -> set | None:
+        def modes_for(ctx: Context, where: str, composed: bool = False) -> set | None:
             if ctx.target not in by_target:
                 failures.append(f"{where}: no acr controls {short(ctx.target)}")
                 return None
             # Every decision keyed to this IRI, intersected: where a subject is also a context, both
             # apply to the one request and the finer one can only subtract.
+            entries = by_target[ctx.target]
+            # Both apply when the request *is* about this IRI — the subject-equals-context case,
+            # written as a lone context block. As one half of a decision about something else, the
+            # half means the context decision or the resource decision and cannot say which, so the
+            # runner refuses rather than narrowing by an unrelated policy.
+            if len(entries) > 1 and composed:
+                failures.append(
+                    f"{where}: {short(ctx.target)} carries two decisions, so a half of a larger "
+                    "decision cannot say which of them it means"
+                )
+                return None
             answers = []
-            for kind, graph, acr in by_target[ctx.target]:
+            for kind, graph, acr in entries:
                 exercised.add((kind, ctx.target))
                 answers.append(resolve(graph, acr, ctx))
             return set.intersection(*answers)
@@ -762,7 +788,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 halves = (read_contexts(parse(pending, 1000 + offset), where, least=2)
                           if pending.kind == "decision"
                           else [read_context(parse(pending, 1000 + offset), where)])
-                answers = [modes_for(ctx, where) for ctx in halves]
+                answers = [modes_for(ctx, where, composed=len(halves) > 1) for ctx in halves]
                 if any(a is None for a in answers):
                     pending = None
                     continue
@@ -941,6 +967,32 @@ BROKEN = [
      ("[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
       "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
       "[ a acp:Context ] ."), "carries no acp:target"),
+    ("a literal identity, which SPS-AUTH-049 refuses",
+     ("acp:agent <https://b.example/#me> ]", 'acp:agent "bob" ]'),
+     "an identity is an IRI"),
+    ("a requirement identifier trailing punctuation the token class once stopped at",
+     ("```turtle acr", "Cites SPS-GRANT-003_bad.\n\n```turtle acr"),
+     "not the shape of a requirement id"),
+    ("an untyped policy applied by an access control nothing links to",
+     ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ;\n"
+      "  acp:accessControl [ acp:apply <#reached> ] ] .\n"
+      "<#reached> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n"
+      "[ a acp:AccessControl ; acp:apply <#stray> ] .\n"
+      "<#stray> acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context"), "nothing applies"),
+    ("a half of a larger decision naming an IRI that carries two decisions",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle acr-resource\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "cannot say which of them it means"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
