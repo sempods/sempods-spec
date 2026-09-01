@@ -3,25 +3,28 @@
 ## Purpose
 
 sempods identifies a resource by its LOD IRI — an RDF subject — but decides access at a different
-unit today: the context that holds a statement. Both units are useful. Treating either one as the
-whole model is what creates the tension: a context is too coarse for document-level audiences, while
-a subject alone cannot distinguish statements deliberately placed in different security domains.
+unit: the context that holds a statement. Both units are useful, and treating either as the whole
+model is what creates the tension. A context is too coarse for document-level audiences; a subject
+alone cannot distinguish statements deliberately placed in different security domains.
 
-The target model makes the distinction explicit. **Resource policy is the access-control primitive;
-multiple managed contexts are an optional second constraint.** A pod with only its canonical context
-has a small, resource-oriented model. A deployment that needs graph-level isolation enables the
-contexts module, and a deployment with enterprise audiences enables both dimensions.
+The target model keeps the context as the deciding unit and adds the finer one where a deployment
+needs it. **Every pod decides on contexts. A pod that needs audiences smaller than a context declares
+a second decision, and both must allow.**
+
+What becomes optional is not the context. Every statement belongs to exactly one, always. What a pod
+may leave out is the **management of several** — the lifecycle, the catalogue, the explicit write
+target — and a pod that leaves it out has one canonical context, carrying policy like any other, with
+nothing for a client to choose between.
 
 The policy language is a deliberately small profile of the Solid Community Group's
-[Access Control Policy (ACP)](https://solid.github.io/authorization-panel/acp-specification/). ACP
-provides the useful frame — target, access context, policy, matcher and access mode — without making
-sempods a Solid server or importing ACP's complete resolution algorithm.
+[Access Control Policy (ACP)](https://solid.github.io/authorization-panel/acp-specification/), used
+for both decisions: the same vocabulary and the same algorithm, differing only in what `acp:target`
+binds to. ACP provides the frame — target, access context, policy, matcher and access mode — without
+making sempods a Solid server.
 
 Sections below are marked **IST** (specified today, verifiable against the chapters) or **SOLL**
-(target state). The SOLL has no roadmap yet, and it contradicts requirements and project invariants
-that are in force — "Specification impact" names the load-bearing ones. It is therefore a
-governance decision, not an editorial reinterpretation, and nothing here is adopted by having been
-written down.
+(target state). The SOLL has no roadmap yet and touches requirements that are in force —
+"Specification impact" names them. Nothing here is adopted by having been written down.
 
 ## The two decision units (IST)
 
@@ -76,6 +79,39 @@ Read as one access-control model, the current chapters say:
 Those properties survive the target model. What changes is the unit against which policy is first
 resolved.
 
+## What rests on running code (IST)
+
+The target state is not uniformly speculative, and a reader should be able to tell which half they
+are in. While the specification is descriptive ([`GOVERNANCE.md`](../../GOVERNANCE.md)), a section
+describing something no implementation does is a proposal; one describing something that runs is a
+reframing of it, and far less likely to be wrong.
+
+**Running today**, in the reference implementation or in a deployment built on this model:
+
+- deciding access on a context, with every property listed under "The current model" above;
+- the OAuth ceiling — the consent-time intersection, resolution per request from the client and
+  subject pair, and the revocation sweep;
+- the topological trust boundary: authorization facts read only from a graph set that content writes
+  cannot reach, with a graph's role fixed by its origin rather than by classifying it by name; and,
+- a second, finer decision composed by intersection with the first — in one deployment, enforced by
+  rewriting a query rather than by anything this concept describes.
+
+**Design, with nothing implementing it yet:**
+
+- ACP as the vocabulary and the algorithm. No implementation emits or evaluates an access control
+  resource today;
+- policy indexed by the target it controls, and the ACR as an addressable artifact reached through a
+  link;
+- the resource module as a declared, advertised second decision, rather than one deployment's
+  internal arrangement;
+- the principal-set matcher and the mode vocabulary; and,
+- everything under "Operation boundaries" beyond what the read and write paths already enforce.
+
+The line matters most where the two meet. **The composition rule is the part with a deployment behind
+it; expressing either decision in ACP is the part with none.** So the intersection is the least
+likely thing here to be wrong, and the ACP profile the most likely to move — which is the reverse of
+what the amount of text about each suggests.
+
 ## The authorization primitive (SOLL)
 
 The primitive is an access decision, not a storage graph or an OAuth scope:
@@ -84,8 +120,8 @@ The primitive is an access decision, not a storage graph or an OAuth scope:
 authorize(target, mode, accessContext) -> granted | denied
 ```
 
-The **target** is an IRI controlled by the evaluator. In core it is the resource's subject IRI. The
-optional context evaluator instead binds it to the statement's context IRI.
+The **target** is an IRI controlled by the evaluator. Every pod binds it to the statement's context
+IRI. A pod that declares the resource module binds a second evaluation to the subject IRI as well.
 
 The **access context** is the trusted description of one attempted access: verified agent, verified
 client, issuer where relevant, target, pod, and server-derived facts such as owner or creator. This
@@ -122,22 +158,48 @@ a sempods ACR and a context graph, must produce the same access grant graph. Tha
 evaluation**. It does not extend to the whole decision, because the conjunction between evaluations
 and the OAuth ceiling are sempods' and not ACP's.
 
-The modes are the ones [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) names with the
+The modes are the ones [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) names, with the
 implications [`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009) fixes, and the profile keeps
-both by **expanding when the policy is written**: a policy conferring `manage` states `acl:Read`,
-`acl:Write` and `acl:Control`. ACP is mode-agnostic and has no implication of its own, so writing the
-expansion out is what makes a foreign engine agree; using the `acl:` vocabulary rather than minting
-sempods mode IRIs is what keeps the document legible to one.
+both by **expanding when the policy is written**. ACP is mode-agnostic and carries no implication of
+its own, so writing the expansion out is what makes a foreign engine agree. Where a sempods mode
+means what an ACL mode means, the ACL term is used — minting a synonym is the opposite of
+interoperability:
 
-One deviation remains, and this concept does not resolve it. On a context, `manage` reaches
+| | written as |
+|---|---|
+| `read` | `acl:Read` |
+| `write` | `acl:Read`, `acl:Write` |
+| `manage` on a resource | `acl:Read`, `acl:Write`, `acl:Control` |
+| `manage` on a context | `acl:Read`, `acl:Write`, a sempods term of its own |
+
+`acl:Control` is *"read and write operations on an ACL resource"* and nothing more, which is exactly
+what managing a resource is. Managing a context is more: it creates one that does not exist yet
+([`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)), deletes one
+([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019)) and reaches slash-delimited descendants
+([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007)). Writing `acl:Control` there would name
+a smaller authority than the one that holds, which is the one mistake a shared vocabulary must not
+make. The context mode is therefore sempods' own, and stays **one** term rather than splitting the
+bundle, so [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) keeps three values.
+
+Neither implication is a convenience, and this is why neither can be dropped. `write` implies `read`
+because a write path is a read oracle — a conditional request, an entity tag, a patch that succeeds
+or fails on what is already there. [`SPS-GRANT-010`](../../spec/core/grants.md#SPS-GRANT-010) closes
+the illusion that reading can be withheld from somebody who may write, because an implementation
+believing otherwise builds *"a read path that hides data its own write path can reach"*. And `manage`
+implies `write` one level up for the same shape of reason: whoever may write an access control
+resource writes themselves a policy, so a `manage` that did not imply `read` would look like
+separation of duties and enforce none.
+
+The combination that costs is the one WAC allows and this does not — administering permissions
+without being able to read the content. Keeping the context mode a bundle gives up a second one that
+*would* have been enforceable, reading an access control resource without being able to change it.
+What both buy is a model that claims no separation it cannot hold.
+
+One deviation remains and this concept does not resolve it. On a context, `manage` reaches
 slash-delimited descendants ([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007)) — a policy on
-one target deciding another, which is the one thing the profile otherwise excludes. Two ways close
-it, both pure ACP: express the coverage as `acp:memberAccessControl` on the ancestor's ACR, where the
-context path supplies exactly the membership information ACP expects a resource server to provide; or
-materialise the policy into each registered descendant, leaving every ACR self-contained. The first
-uses ACP's own mechanism at the cost of an ancestor walk bounded by path depth; the second keeps
-evaluation flat and makes a `manage` change a rewrite. Until one is chosen, a context ACR is not
-portable on its own.
+one target deciding another, which is the one thing the profile otherwise excludes. Until it is
+settled a context access control resource is not complete on its own, and that is the artefact every
+pod has. It is carried below as an open decision, with the two ways to close it.
 
 ### What is guaranteed and what is convention
 
@@ -162,42 +224,51 @@ less than intended; a member access control has no containment relation to resol
 nothing at all. None of them hands anybody access the owner could not have granted outright. A
 convention that could fail the other way would have to become a guarantee.
 
-## Resource core and optional contexts (SOLL)
+## One decision always, a second by declaration (SOLL)
 
-Every conforming pod evaluates resource policy. There is no configurable evaluator list and no
-empty-chain special case. Optional modules add fixed constraints with specified composition rather
-than extension points whose meaning differs between deployments — a module is advertised, and
-[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) makes advertising one a claim about every
-`MUST` in it.
+Every conforming pod evaluates **context** policy. That is the decision the chapters already
+describe, and it stays where it is: the target is a context IRI, the answer governs every statement
+the context holds, and a pod that never hears of anything below it is complete.
 
-Core has one canonical data context with no independent access policy. It remains true that every
-stored data statement belongs to exactly one context, but a single-context pod does not expose
-context creation, discovery, provenance or selection as client concepts. Writes omit `?context=`
-because there is no choice to make, and reads address resources rather than storage partitions. That
-requires a different CRUD contract from
-[`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007); "Specification impact" below lists it
-with the other load-bearing changes.
+Two things vary around that, and they are independent of each other.
 
-The optional multi-context module exposes the current context lifecycle, discovery, explicit write
-target and read downscope. It also adds the context evaluator. For a statement
-`q = (subject, predicate, object, context)`, visibility then has one definition:
+**The management of several contexts.** A pod that provides it exposes the lifecycle, the catalogue,
+the explicit write target and the read downscope the chapters specify today. A pod that does not has
+one canonical context — carrying policy exactly like any other, so sharing is still a policy on a
+context — and nothing for a client to select between. Every statement still belongs to exactly one
+context either way; what is absent is the choosing, not the context.
+
+**A second decision on a finer target.** Where audiences are smaller than a context — a space whose
+documents are not all for the same readers — a pod declares the resource module, and `acp:target`
+binds to a subject IRI as well. For a statement `q = (subject, predicate, object, context)`:
 
 ```text
-resource-only pod:  visible(q) = resourceAllows(subject, read)
+without the module:  visible(q) = contextAllows(context, read)
 
-multi-context pod:  visible(q) = resourceAllows(subject, read)
-                                  AND contextAllows(context, read)
+with the module:     visible(q) = contextAllows(context, read)
+                                    AND resourceAllows(subject, read)
 ```
 
 The same intersection applies to the requested mode on updates and deletes. It is sempods'
-composition rule, not ACP policy union and not `acp:allOf`: the two decisions have different targets.
-An evaluator that has no matching policy denies, so enabling multi-context support requires context
-policies to exist before the module becomes active.
+composition rule, not ACP policy union and not `acp:allOf` — the two decisions have different
+targets, and ACP has no operator joining two evaluations.
 
-A subject may span any number of contexts under either profile. Resource policy is resolved once by
-the subject IRI and applies uniformly to that resource's statements; the context evaluator, where
-present, independently decides which of those statements are reachable. No policy is discovered by
-merging the authorization graphs adjacent to whichever data contexts a caller can already see.
+Both are declared rather than inferred. A module is advertised, and
+[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) makes advertising one a claim about every
+`MUST` in it. **Neither may be an internal arrangement of a deployment**: a client receiving `404`
+must be able to find out whether a second decision exists, or it cannot tell a missing resource from
+a hidden one — and two pods would then differ in observable behaviour with no contract between them.
+How policies are written, where they are stored and how the decision is enforced stay entirely a
+deployment's own business.
+
+An evaluator with no matching policy denies, so turning the resource module on before resource
+policies exist removes access rather than adding a layer. That is correct and it is a breaking
+operation, not a feature toggle.
+
+A subject may span any number of contexts, and the two decisions stay orthogonal: the context
+evaluator discriminates statements, the resource evaluator discriminates subjects, and the
+intersection is well defined either way. No policy is discovered by merging the authorization graphs
+adjacent to whichever data contexts a caller can already see.
 
 ### OAuth remains a ceiling
 
@@ -231,11 +302,10 @@ This preserves immediate policy revocation and the distinction between agent and
 policy for a person does not silently broaden every application that person uses. Public authority
 does not come from the agent and therefore cannot be delegated or removed by the agent's OAuth
 ceiling. The ceiling may constrain modes, targets or both; OAuth owns how a person selects that
-subset, while access control owns the per-request decision. In particular, the resource-only profile
-cannot quietly reuse context selection as its consent vocabulary.
+subset, while access control owns the per-request decision.
 
-Public access becomes an ordinary resource policy and, where multi-context support is enabled, an
-ordinary context policy matched by ACP's public-agent semantics. The sempods profile permits that
+Public access becomes an ordinary context policy and, where the resource module is enabled, an
+ordinary resource policy as well, matched by ACP's public-agent semantics. The sempods profile permits that
 matcher for `read` only; anonymous `write` or `manage` is not part of the target model. A `public`
 convenience field may project to that policy, but it is not a second decision path. An authenticated
 request remains able to read what an unauthenticated request can read; the present `public-read`
@@ -265,8 +335,8 @@ This maps the enterprise model without changing its algebra:
 
 | Enterprise concept | sempods policy model |
 |---|---|
-| Visible Space | Context policy, when the multi-context module is enabled |
-| Document ACL | Resource policy |
+| Visible Space | Context policy |
+| Document ACL | Resource policy, where the resource module is declared |
 | Several grants on a document | Several allow policies (OR) |
 | Requirements within one grant | `acp:allOf` matchers (AND) |
 | Several accessors satisfying one requirement | One matcher with alternative agents, or a principal-set matcher (OR) |
@@ -285,8 +355,8 @@ another mechanism.
 Policy is indexed by the target it controls, not by the data context that happens to hold a target's
 statements:
 
-- a resource ACR is canonical for one subject IRI;
-- a context ACR is canonical for one context IRI; and,
+- a context ACR is canonical for one context IRI;
+- a resource ACR, where the module is declared, is canonical for one subject IRI; and,
 - identity and principal-set facts live in a separate protected authority.
 
 An implementation may represent these as RDF named graphs internally. They are control-plane
@@ -320,8 +390,8 @@ control-plane state, and the boundary above is the read-side half it does not st
 `read` authorization is evaluated per candidate statement. Resource retrieval and find discard a
 statement before it can contribute to an answer. SPARQL executes against a server-derived statement
 view that already excludes denied statements before query algebra, joins, filters, aggregates or
-result construction can observe them. Selecting readable contexts provides the context half of that
-view; in the multi-context profile it does not replace the resource decision.
+result construction can observe them. Selecting readable contexts is what builds that view; where the
+resource module is declared it narrows further, and neither replaces the other.
 
 For find the boundary has to sit ahead of the whole pipeline — matching and index lookup, hit
 selection, ranking, `limit` and expansion — and not around the graph that comes back. The reason is
@@ -358,13 +428,17 @@ target. SPARQL remains read-only
 second mutation path beside CRUD, and client-supplied dataset clauses never expand the server-derived
 statement view ([`SPS-SPARQL-008`](../../spec/core/sparql.md#SPS-SPARQL-008)).
 
-Creation is necessarily different because a new resource has no policy yet. Its authority comes
-from the destination: `write` on the pod's bootstrap ACR in a single-context pod, or `write` on the
-target context in a multi-context pod. Creation and the resource's initial policy have to be one
-operation from the client's perspective; otherwise the resource is either born unreachable or is
-temporarily unprotected. The exact bootstrap policy — creator management, an explicitly supplied
-ACR, or a server-owned template — remains an open design choice for the roadmap, but silent creation
-without one is not a complete model.
+Creation keeps the rule the chapters already carry: its authority comes from the destination, so
+creating a resource needs `write` on the target context and creating a context needs `manage`
+covering it ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019),
+[`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)). Nothing more is needed, because a new
+resource is covered by its context's policy from the moment it exists.
+
+The resource module reopens the question, and only there. A new resource has no resource policy yet,
+so creation and that policy have to be one operation from the client's perspective — otherwise the
+resource is born unreachable, or reachable while it should not be. Which bootstrap policy applies is
+an open design choice; what is not open is that silent creation without one leaves the module
+incomplete.
 
 Authorization is checked before target existence wherever different responses would reveal protected
 topology. ACP does not close an enumeration oracle by itself: the HTTP contract still has to make an
@@ -379,43 +453,40 @@ The target state removes parallel authorization concepts rather than merely rena
 - public access is a public-agent policy rather than a flag plus a separate resolution branch;
 - owner access is an implicit system policy evaluated by the common engine;
 - direct users, clients, groups and tenant-wide audiences are matchers in one policy model;
-- a single-context pod has no context management surface; and,
-- enterprise deployments add a context constraint without changing resource policy semantics.
+- context policy and resource policy are one vocabulary and one algorithm differing only in what
+  `acp:target` binds to, so a tool that reads one reads the other; and,
+- a pod that manages one context has no context management surface, without the context ceasing to
+  exist.
 
-The remaining complexity is visible where it belongs: multi-dimensional deployments opt into a
-second decision, while the core no longer makes every client manage a graph partition before it can
-write one resource.
+The remaining complexity is visible where it belongs: a deployment whose audiences are smaller than
+its contexts opts into a second decision, and every other deployment never meets it.
 
 ## Specification impact (SOLL)
 
-The target state changes the specification's architecture rather than merely its vocabulary. Some of
-what follows is contradicted outright, including invariants that
-[`AGENTS.md`](../../AGENTS.md) §"Non-negotiable invariants" says are refused rather than debated;
-one entry keeps its principle and changes only its wording. The load-bearing impacts are:
+The target state keeps the deciding unit the chapters already use and adds a finer one behind a
+declaration, so most of what is in force is untouched. What moves is listed here, because
+[`AGENTS.md`](../../AGENTS.md) §"Non-negotiable invariants" says an invariant is refused rather than
+debated and that rule cannot be applied to a proposal which does not name what it reaches.
 
 | In force today | What the target state does to it |
 |---|---|
-| Invariants 2 and 3 — the read and write sandboxes are stated over contexts | Superseded in the resource-only profile, which has no context authorization decision against which they could be satisfied. Both have to be restated over the target of a decision |
-| Invariant 4 — a CRUD write names its target context explicitly | Contradicted: a single-context pod omits `?context=` because there is nothing to choose |
-| Mission, third goal — "graph-based access control where the 4th RDF dimension … is called Context" | Core access control stops being graph-based; the graph dimension becomes the optional constraint |
-| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — `contexts` and `grants` are part of an indivisible core | The core has to be cut around resource policy, with multi-context lifecycle and context policy moved behind one advertised module |
-| [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Resource policy is such an abstraction, and it becomes the primitive |
-| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | The canonical context is one. The invariant it serves — every statement in exactly one context — survives untouched |
-| [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — every write carries exactly one `?context=` | Applies to the multi-context profile; a resource-only write has no context parameter |
-| [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same requirement seen from the grants chapter |
-| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) — a query sees exactly the readable contexts | Too permissive once the decision unit is the resource: within a readable context, individual subjects are denied |
-| [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — the dataset carries the sandbox, and the query is never rewritten | Kept, and made precise: the dataset a query executes against need not be the graphs a store holds, so an authorized statement view satisfies it |
-| [`grants`](../../spec/core/grants.md) §2 — the grant grammar `<context-iri>#read` | Becomes the multi-context module's spelling of a context policy; the core spelling is a policy on a subject IRI |
+| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | A pod that does not manage several has one, canonical and carrying policy. The invariant it serves — every statement in exactly one context — survives untouched |
+| Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Hold wherever there is a choice to make. A pod with one context has none, and the parameter becomes optional there and only there |
+| [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same, seen from the grants chapter |
+| [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
+| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
 
-Two entries are reversals of intent rather than mechanical edits, and they are what makes this a
-governance decision rather than an editorial one. The mission names the graph dimension as *the*
-access-control model, and `SPS-CTX-003` was written specifically to keep a second permission concept
-out. Both were right for a model whose only decision unit was the context, and both were load-bearing
-for the argument [`contexts`](../../spec/core/contexts.md) §1 makes.
+None of these is a reversal of intent. The mission's third goal — *"graph-based access control where
+the 4th RDF dimension … is called Context"* — stays true, because the graph dimension remains the
+decision every pod makes. Invariants 2 and 3 are untouched for the same reason: the sandboxes are
+stated over contexts, and contexts are always there.
+[`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) is untouched because a module is not a cut
+into the core, and the grant grammar of [`grants`](../../spec/core/grants.md) §2 is untouched because
+grants stay keyed by context.
 
-What survives is worth stating beside it. Invariant 1 holds unchanged, and so does every property
-listed under "The current model" above: monotone policy, the mode implications, the implicit owner,
-silence as private, and the OAuth ceiling.
+What else survives is worth stating beside it. Invariant 1 holds unchanged, and so does every
+property listed under "The current model" above: monotone policy, the mode implications, the implicit
+owner, silence as private, and the OAuth ceiling.
 
 Adoption requires one coherent change to the affected core and module contracts, their conformance
 descriptions and the implementation. The concept records why that change has this shape; it is not a
@@ -466,14 +537,19 @@ deployment layering an area, a resource and anything finer arrives at one label 
 dataset degenerates into an enumeration. What is worth keeping from it is the part that already
 survives elsewhere: membership resolved at access time, so changing who is in a group moves no data.
 
-**Contexts as the core policy unit.** It keeps the current model small only while every audience
-aligns with a graph. A deployment needing finer audiences then creates one graph per permission set
-and turns a policy edit into data movement. It also prevents the single-context resource/ACR model
-from being the ordinary case.
+**The context as the only policy unit.** Keeping it the sole decision works while every audience
+aligns with a graph, and stops working exactly where an audience is smaller than one. A deployment
+that needed finer audiences would create a graph per permission set, which turns changing an
+audience into moving data rather than editing a rule, and grows the number of graphs with the number
+of distinct audiences rather than with how a pod is actually organised. Hence the finer decision —
+optional, because most deployments never reach that point.
 
-**A configurable evaluator chain.** A generic list creates an empty-chain identity problem and lets
-two conforming pods attach incompatible meaning to the same request. Fixed core and module semantics
-give conformance discovery something concrete to advertise and test.
+**A configurable evaluator chain.** A generic list — evaluators assembled per deployment, meaning
+settled locally — creates an empty-chain identity problem and lets two conforming pods attach
+incompatible meaning to the same request. A **closed set of named, advertised** combinations is not
+that: the meaning is fixed per name, a client asks once, and
+[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) turns advertising one into a claim a
+conformance suite can test.
 
 **Additive composition of resource and context decisions.** Union lets either dimension override
 the other. A document policy that appears to restrict a broad context grant would then be unable to
@@ -497,29 +573,25 @@ a separate feature with a separate conformance cost.
 
 ## Open decisions before a roadmap
 
-Two of these are a different size from the rest and come first. In both, a section of a current
-chapter loses the thing it is about — they are not details left to settle.
+Two are larger than the rest and come first.
 
-**Delegation has no unit in a resource-only pod.** [`grants`](../../spec/core/grants.md) §5 and §6
-rest on the context catalogue throughout: an application asks for a set of contexts and receives the
+**A ceiling reaches further than it was agreed for.** [`grants`](../../spec/core/grants.md) §5 and §6
+survive the target state intact — an application still asks for a set of contexts and receives the
 intersection with what the person effectively holds
 ([`SPS-GRANT-013`](../../spec/core/grants.md#SPS-GRANT-013),
 [`SPS-GRANT-028`](../../spec/core/grants.md#SPS-GRANT-028)), and narrowing a person's own access
-sweeps every delegation no longer covered by recomputing it rather than matching strings
+still sweeps every delegation no longer covered
 ([`SPS-GRANT-015`](../../spec/core/grants.md#SPS-GRANT-015),
-[`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016)). Take contexts out of core and consent
-has nothing enumerable left to offer, while the resource population is far too large and too
-short-lived to put in its place. Whether the ceiling becomes coarser (modes only), attaches to
-principal sets, or keeps a context-shaped surface that a resource-only pod synthesises, is
-unresolved — and the answer decides how much of §5 and §6 survives.
+[`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016)). The catalogue they rest on is still
+there, because contexts are.
 
-A ceiling agreed once is **coarser than the decisions it bounds**, so it reaches resources that enter
+What is unresolved is subtler. A ceiling agreed once is **coarser than the decisions it bounds**, so it reaches resources that enter
 its scope afterwards: a policy giving somebody access to one more document is reached by every
 application they had already authorised, and nobody was asked again.
 [`SPS-GRANT-019`](../../spec/core/grants.md#SPS-GRANT-019) is kept to the letter — no grant was
 widened, a policy was changed, and those are different acts — while the reason it gives, that
 regaining access should not silently re-arm every application that once wanted it, is walked around.
-[`examples/30-delegation.md`](../../examples/30-delegation.md) is what the untreated case looks like.
+[`examples/50-delegation.md`](../../examples/50-delegation.md) is what the untreated case looks like.
 
 Two shapes avoid it, and neither is free. A ceiling can be an **enumerated set a person extends**
 rather than a scope that tracks — the pattern a photo picker uses when it hands an application
@@ -529,21 +601,41 @@ grows without bound. Or the widening can stand and be made **visible**, which pr
 meets what the rule is for: `SPS-GRANT-019` guards against re-arming an application *silently*, not
 against re-arming it.
 
-**`public-read` is a scope in a model that no longer has the thing it scopes.** Seven requirements
-carry today's answer: the `public` flag and its private default
-([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015),
-[`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027)), the scope itself and its access-time
-expansion ([`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020),
-[`SPS-GRANT-021`](../../spec/core/grants.md#SPS-GRANT-021),
-[`SPS-GRANT-022`](../../spec/core/grants.md#SPS-GRANT-022)), and the guarantee that an
-unauthenticated caller reads exactly the public contexts and is not a degraded client
-([`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031),
-[`SPS-GRANT-032`](../../spec/core/grants.md#SPS-GRANT-032)). A public-agent policy can carry the
-guarantee, which is the property worth keeping. What has to be decided is whether a scope remains
-useful as a coarse discovery or token capability once public access is an ordinary policy rather
-than a second resolution branch.
+**A context access control resource is not complete on its own.**
+[`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007) makes `R#manage` reach `R/inbox`, so a
+policy on one context decides another. An engine handed only the descendant's access control resource
+does not see the authority governing it — which is precisely the claim per-evaluation conformance
+rests on, and this is the artefact every pod has rather than one behind a module.
+
+Two ways close it, both pure ACP, neither free:
+
+- **Express the coverage as `acp:memberAccessControl`** on the ancestor's access control resource.
+  ACP's own mechanism, and the context path supplies exactly the membership information ACP expects a
+  resource server to provide. It costs an ancestor walk on every decision — bounded by path depth
+  rather than running a transitive closure, so the objection recorded against inheritance between
+  resources does not carry over — and the profile's exclusion of member access control has to become
+  an exclusion *between resources*, which is where no containment relation exists.
+- **Materialise the policy into each registered descendant.** Every access control resource stays
+  self-contained and evaluation stays flat. It costs a write across every descendant when `manage` is
+  granted, and [`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033) means a descendant that does
+  not exist yet cannot be written to — so the policy has to be applied again each time one is created,
+  which makes context creation and policy propagation one operation.
+
+Leaving it open is the one thing that is not available: until it is decided, the model's primary
+artefact is one an independent engine cannot check on its own, and that is the property the ACP
+profile exists to buy.
 
 The rest are ordinary open questions:
+
+- Decide whether `public-read` still earns a scope. Nothing about public access has to be withdrawn —
+  the `public` flag, its private default and the guarantee that an unauthenticated caller reads
+  exactly the public contexts all keep their subject
+  ([`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027),
+  [`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031)). But once a public context carries an
+  ordinary policy matched by ACP's public-agent semantics, an anonymous request is already satisfied
+  by the policy, and the scope
+  ([`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020)) is left doing only what the OAuth
+  ceiling does anyway.
 
 - Choose the creation bootstrap between an atomic caller-supplied ACR and an advertised server policy
   template. A third option, an implicit creator policy, is not available in core — and not because
@@ -553,11 +645,14 @@ The rest are ordinary open questions:
   ([`SPS-CRUD-003`](../../spec/core/lod-crud.md#SPS-CRUD-003)). `acp:CreatorAgent` is therefore
   unsatisfied here rather than forbidden, exactly as `acp:vc` is in a pod that presents no
   credentials, and a profile built around documents may state a creator and use it.
-  [`examples/40-creator.md`](../../examples/40-creator.md) runs both cases.
+  [`examples/60-creator.md`](../../examples/60-creator.md) runs both cases.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
-- Define the resource-only protocol projection: graph-aware representations and SPARQL dataset
-  parameters, the context filters in `find`, the MCP tool catalogue and arguments, and whether media
-  requires the multi-context module or receives resource policy of its own.
+- Define what the resource module changes in the surfaces around it: whether `find` filters, the MCP
+  tool arguments and the media surface acquire a resource dimension, or inherit the context one
+  unchanged.
+- Decide whether a pod that manages one context still exposes the context in its client-facing
+  surfaces, or hides it — the discovery route, `find`, and the MCP tool arguments each have to answer
+  the same way.
 - Restate [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) over the authorized statement
   view and make [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) precise about what a
   dataset is. The constraint to weigh while wording them: the SPARQL protocol lets a client *describe*
@@ -568,13 +663,14 @@ The rest are ordinary open questions:
   filtering facility in that store, or local construction and evaluation of the effective dataset.
   Passing an unchanged query down with a list of permitted graph IRIs is the one answer that is not
   sufficient, because it is graph-granular by construction.
-- Define how an existing multi-context pod installs complete resource policies before switching to
-  the intersected model.
+- Define how a pod installs complete resource policies before declaring the resource module, given
+  that an evaluator with no matching policy denies.
 
-These are not all the same kind of open. The two named above and the first four bullets are
+These are not all the same kind of open. The two named above and the first five bullets are
 **contract blockers**: until they are answered there is no target contract to implement, so nothing
-can be conformant against it. The last is an **adoption blocker** — a pod starting in the target model
-has nothing to migrate, and what is unresolved is how an existing multi-context pod gets there.
+can be conformant against it. The last is an **adoption blocker** — a pod that never declares the
+resource module has nothing to install, and a pod that does needs its policies in place before the
+second decision starts denying.
 
 None of them blocks an experiment. Core is indivisible
 ([`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)), so an implementation that answers before
