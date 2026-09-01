@@ -554,8 +554,11 @@ statement view ([`SPS-SPARQL-008`](../../spec/core/sparql.md#SPS-SPARQL-008)).
 Creation keeps the rule the chapters already carry: its authority comes from the destination, so
 creating a resource needs `write` on the target context and creating a context needs `manage`
 covering it ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019),
-[`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)). Nothing more is needed, because a new
-resource is covered by its context's policy from the moment it exists.
+[`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)). Where the resource module is not
+declared that is the whole operation, because a new resource is covered by its context's policy from
+the moment it exists. Where it is, context `write` still says who may *begin* the creation, and
+finishing it also installs the resource policy described below — one operation, or the resource is
+born unreachable or reachable when it should not be.
 
 **Deleting a context is the operation the composition rule does not yet reach.** It removes every
 statement the context holds ([`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017)) and is

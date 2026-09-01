@@ -78,7 +78,7 @@ silently replace the first — so Bob would lose access because Carla authorised
 The application is named by its `did:web:` identifier, which is its origin and is parsed structurally
 rather than fetched ([`SPS-AUTH-003`](../spec/core/auth.md#SPS-AUTH-003)).
 
-```turtle acr
+```turtle acr-delegation
 [
   a acp:AccessControlResource ;
   acp:resource <https://bob.example/profile#me> ;

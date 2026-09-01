@@ -117,7 +117,11 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # independent: a statement may be *about* a context, so a subject IRI and a context IRI can be the
 # same string with two separate decisions on it. Plain `acr` is the unqualified form, for the files
 # where only one decision is in play.
-KINDS = ("acr-context", "acr-resource", "acr", "policy", "context", "decision", "grant", "aside")
+# `acr-delegation` is the ceiling: how much of a person's authority an application received. It is
+# named rather than inferred, because its target is the principal and a perfectly ordinary resource
+# decision can be about the requester's own WebID too.
+KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
+         "grant", "aside")
 # ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
 # a list item is the ordinary way it happens. Anchoring at column one would let such a block render
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
@@ -225,6 +229,14 @@ class Problem(Exception):
 # --------------------------------------------------------------------------- reading a scenario
 
 COMMENT = re.compile(r"<!--.*?-->", re.S)
+# CommonMark's raw HTML blocks. The literal ones (`<pre>` and friends) run to their closing tag; the
+# ordinary ones start on a line opening a block-level tag and end at the next blank line. Inside
+# either, a fence is text a reader sees as backticks rather than a fixture anybody runs.
+RAW_HTML = re.compile(
+    r"<(?:pre|script|style|textarea)\b.*?</(?:pre|script|style|textarea)>"
+    r"|^ {0,3}<(?:details|div|blockquote|table|section|figure)\b.*?(?:\n[ \t]*\n|\Z)",
+    re.S | re.M | re.I,
+)
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$", re.M)
 
 
@@ -236,11 +248,12 @@ def hidden_fixtures(text: str) -> list[str]:
     which is the one failure this file exists to prevent, arrived at from the other side.
     """
     problems = []
-    if any("turtle" in m.group(0) for m in COMMENT.finditer(text)):
-        problems.append("a turtle fence sits inside an HTML comment, where no reader sees it")
+    for pattern, where in ((COMMENT, "an HTML comment"), (RAW_HTML, "a raw HTML block")):
+        if any(FENCE_LINE.search(m.group(0)) for m in pattern.finditer(text)):
+            problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
 
     open_fence = None
-    for match in FENCE_LINE.finditer(COMMENT.sub("", text)):
+    for match in FENCE_LINE.finditer(RAW_HTML.sub("", COMMENT.sub("", text))):
         run, info = match.group(1), match.group(2).strip()
         if open_fence is None:
             open_fence = (run[0], len(run))
@@ -829,11 +842,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # A shared block is merged into every access control resource in the file, so an access
             # control resource smuggled into one would be registered as a decision of its own while
             # being displayed under the wrong kind.
-            if (None, RDF_TYPE, URIRef(ACP + "AccessControlResource")) in one:
-                failures.append(
-                    f"{rel} line {block.line}: a policy block types a node "
-                    "acp:AccessControlResource, and a shared artifact is a policy and its matchers"
-                )
+            for name in ("AccessControlResource", "AccessControl"):
+                if (None, RDF_TYPE, URIRef(ACP + name)) in one:
+                    failures.append(
+                        f"{rel} line {block.line}: a policy block types a node acp:{name}, and a "
+                        "shared artifact is a policy and its matchers"
+                    )
             for predicate in (P["resource"], P["accessControl"], P["memberAccessControl"]):
                 if (None, predicate, None) in one:
                     failures.append(
@@ -963,22 +977,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         cases = 0
         exercised: set = set()
 
-        def public_matcher(graph: Graph, acr) -> bool:
-            """Whether any policy this acr applies can be satisfied by an unauthenticated request."""
-            reachable = set()
-            for control in set(graph.objects(acr, P["accessControl"])) | set(
-                graph.objects(acr, P["memberAccessControl"])
-            ):
-                reachable |= set(graph.objects(control, P["apply"]))
-            for policy in reachable:
-                for link in (P["allOf"], P["anyOf"]):
-                    for matcher in graph.objects(policy, link):
-                        for attribute in (P["agent"], P["client"], P["issuer"]):
-                            if set(graph.objects(matcher, attribute)) & {
-                                PUBLIC_AGENT, PUBLIC_CLIENT, PUBLIC_ISSUER
-                            }:
-                                return True
-            return False
+        def reachable_anonymously(graph: Graph, acr, target) -> bool:
+            """Whether an unauthenticated request gets anything here.
+
+            Asked by resolving rather than by looking for a public token: a matcher combining
+            `acp:PublicAgent` with `acp:AuthenticatedClient` carries one and is satisfied by nobody
+            anonymous, and treating it as a public branch would refuse a fixture that is fine.
+            """
+            return bool(resolve(graph, acr, Context(target=target)))
 
         def modes_for(ctx: Context, where: str, composed: bool = False,
                       ceiling: bool = False) -> set | None:
@@ -1005,7 +1011,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # uniformly, which is the same answer everywhere except there; rather than quietly give
             # the wrong one, it refuses the combination it cannot express.
             if composed and ceiling and any(
-                public_matcher(graph, acr) for _, graph, acr in entries
+                reachable_anonymously(graph, acr, ctx.target) for _, graph, acr in entries
             ):
                 failures.append(
                     f"{where}: composes a delegation ceiling with a target reached publicly, and "
@@ -1036,8 +1042,10 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 halves = (read_contexts(parse(pending, 1000 + offset), where, least=2)
                           if pending.kind == "decision"
                           else [read_context(parse(pending, 1000 + offset), where)])
-                # A half whose target is the agent it describes is the delegation evaluation.
-                bounds = any(c.target == c.agent for c in halves)
+                bounds = any(
+                    k == "delegation"
+                    for c in halves for k, _, _ in by_target.get(c.target, ())
+                )
                 answers = [
                     modes_for(ctx, where, composed=len(halves) > 1, ceiling=bounds)
                     for ctx in halves
@@ -1367,6 +1375,31 @@ BROKEN = [
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "```turtle grant\n[] acp:grant acl:Read .\n```\n<!--\n```turtle grant\n# nothing\n```\n-->"),
      "inside an HTML comment"),
+    ("a fixture inside a raw HTML block, which renders as backticks",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n<pre>\n```turtle grant\n# nothing\n```\n</pre>"),
+     "inside a raw HTML block"),
+    ("an access control smuggled into a policy block",
+     ("```turtle context", "```turtle policy\n[ a acp:AccessControl ; acp:apply "
+      "<https://a.example/q> ] .\n<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context"), "a shared artifact is a policy and its matchers"),
+    ("a ceiling composed with a target anyone can read",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/open> ;\n"
+      "  acp:accessControl [ acp:apply <#pub> ] ] .\n"
+      "<#pub> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent acp:PublicAgent ] .\n```\n"
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/open> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://b.example/#me> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "the public branch unions where this block intersects"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
