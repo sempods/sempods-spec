@@ -144,6 +144,8 @@ CITATION = re.compile(r"SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
 MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
+REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
+REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(\S+)", re.M)
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
@@ -733,7 +735,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
     # A link showing one requirement and ending at another passes both checks that exist: the text
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
-    for shown, destination in MISDIRECTED.findall(text):
+    definitions = dict(REFERENCE_DEFINITION.findall(text))
+    citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
+    for shown, label in REFERENCED.findall(text):
+        # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
+        # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
+        citations.append((shown, definitions.get(label or shown, "")))
+    for shown, destination in citations:
         anchor = destination.partition("#")[2]
         if anchor != shown:
             failures.append(
@@ -768,7 +776,17 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         # rather than a copy per reference.
         shared = Graph()
         for index, block in enumerate(b for b in found if b.kind == "policy"):
-            shared += parse(block, 4000 + index)
+            one = parse(block, 4000 + index)
+            # A shared block is merged into every access control resource in the file, so an access
+            # control resource smuggled into one would be registered as a decision of its own while
+            # being displayed under the wrong kind.
+            for predicate in (P["resource"], P["accessControl"], P["memberAccessControl"]):
+                if (None, predicate, None) in one:
+                    failures.append(
+                        f"{rel} line {block.line}: a policy block carries {short(predicate)}, and a "
+                        "shared artifact is a policy and its matchers"
+                    )
+            shared += one
             shared_errors, shared_notes = inspect_acr(shared, f"{rel} line {block.line}")
             failures += shared_errors
             notes += shared_notes
@@ -1188,6 +1206,16 @@ BROKEN = [
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "> ```turtle grant\n> [] acp:grant acl:Read .\n> ```"),
      "inside a block quote or a nested list"),
+    ("a reference-style citation resolving to a different requirement",
+     ("```turtle acr", "See [SPS-GRANT-003][wrong].\n\n[wrong]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("an access control resource smuggled into a policy block",
+     ("```turtle context", "```turtle policy\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ;\n"
+      "  acp:accessControl [ acp:apply <https://a.example/q> ] ] .\n"
+      "<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context"), "a shared artifact is a policy and its matchers"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
