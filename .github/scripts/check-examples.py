@@ -279,6 +279,14 @@ def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
     # and intersecting their answers certifies an outcome neither of them produces.
     if len({frozenset(c.vcs) for c in contexts}) != 1:
         raise Problem(f"{where}: the halves of one decision present different acp:vc")
+    # Ownership is decided against the pod's recorded owner (SPS-AUTH-051), so it is one thing and
+    # the same for every target. Letting it vary would let a resource half name the requester and an
+    # acp:OwnerAgent policy grant them.
+    for context in contexts:
+        if len(context.owners) > 1:
+            raise Problem(f"{where}: an access context names {len(context.owners)} owners")
+    if len({frozenset(c.owners) for c in contexts}) != 1:
+        raise Problem(f"{where}: the halves of one decision disagree about acp:owner")
     return contexts
 
 
@@ -564,8 +572,15 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     # A class the graph knows, on a node the links put somewhere else. Typing a linked policy
     # `a acp:AccessControl` resolves and passes, because acp:apply gives it the policy role
     # regardless — so the fixture renders an ACP shape that is not one.
+    reached = set().union(*linked.values())
     for node, _, value in graph.triples((None, RDF_TYPE, None)):
         if not str(value).startswith(ACP):
+            # `[ a ex:Condition ]` renders as a condition, is exempt from predicate classification
+            # because it is an rdf:type, and is outside every ACP role — so nothing else looks at it.
+            if node not in reached:
+                errors.append(
+                    f"{where}: {short(value)} types a node no link reaches, so ACP never sees it"
+                )
             continue
         declared = ROLE_OF.get(value)
         if declared is None:
@@ -715,8 +730,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
     for shown, destination in MISDIRECTED.findall(text):
         anchor = destination.partition("#")[2]
-        if anchor and anchor != shown:
-            failures.append(f"{rel}: a link showing {shown} ends at #{anchor}")
+        if anchor != shown:
+            failures.append(
+                f"{rel}: a link showing {shown} ends at "
+                + (f"#{anchor}" if anchor else "the chapter rather than the requirement")
+            )
 
     for citation in sorted(set(CITATION.findall(text))):
         if not WELL_FORMED.match(citation):
@@ -1136,6 +1154,21 @@ BROKEN = [
     ("an access control no access control resource holds",
      ("<#p> a acp:Policy ;", "[ a acp:AccessControl ] .\n<#p> a acp:Policy ;"),
      "no access control resource holds"),
+    ("a requirement link that stops at the chapter",
+     ("```turtle acr", "See [SPS-GRANT-003](../spec/core/grants.md).\n\n```turtle acr"),
+     "the chapter rather than the requirement"),
+    ("halves of a decision disagreeing about the pod owner",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr\n[ a acp:AccessControlResource ; acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:owner <https://o.example/#me> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:owner <https://b.example/#me> ] .\n```"),
+     "disagree about acp:owner"),
+    ("a foreign class on a node no link reaches",
+     ("<#p> a acp:Policy ;", "[ a <https://a.example/ns/Condition> ] .\n<#p> a acp:Policy ;"),
+     "types a node no link reaches"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

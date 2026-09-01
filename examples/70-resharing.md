@@ -31,6 +31,24 @@ names say which:
 
 ## While the chain stands
 
+Alice's notes are a context, and it decides first — every one of the states below is a read that has
+to pass it before any policy on a plan is consulted.
+
+```turtle acr
+[
+  a acp:AccessControlResource ;
+  acp:resource <https://alice.example/_system/contexts/notes> ;
+  acp:accessControl [ acp:apply <#notesReaders> ]
+] .
+
+<#notesReaders>
+  a acp:Policy ;
+  acp:allow acl:Read ;
+  acp:anyOf [ a acp:Matcher ;
+              acp:agent <https://bob.example/profile#me>,
+                        <https://carla.example/profile#me> ] .
+```
+
 ```turtle acr
 [
   a acp:AccessControlResource ;
@@ -49,7 +67,13 @@ names say which:
   acp:anyOf [ a acp:Matcher ; acp:agent <https://carla.example/profile#me> ] .
 ```
 
-```turtle context
+```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://carla.example/profile#me> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
 [
   acp:target <https://alice.example/notes/plan> ;
   acp:agent  <https://carla.example/profile#me> ;
@@ -60,6 +84,10 @@ names say which:
 ```turtle grant
 [] acp:grant acl:Read .
 ```
+
+Both halves are in that block. If Carla could not read the context, no policy Bob wrote on the plan
+would reach her — the resharing question only arises inside a context she is already in, and stating
+it that way is what keeps this file from certifying a read that skipped the sandbox.
 
 Look at what Carla's policy does **not** say: that Bob put it there. Every policy here is a flat
 statement that somebody may read, and they are indistinguishable in origin. That is not a gap in the
@@ -87,7 +115,13 @@ Nothing is left. Alice still reaches her own plan, but that is the pod giving it
 without storing it ([`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011)) rather than anything
 written here.
 
-```turtle context
+```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://carla.example/profile#me> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
 [
   acp:target <https://alice.example/notes/plan-swept> ;
   acp:agent  <https://carla.example/profile#me> ;
@@ -119,7 +153,13 @@ to *what a person passed on* is the same instruction with a longer chain to walk
   acp:anyOf [ a acp:Matcher ; acp:agent <https://carla.example/profile#me> ] .
 ```
 
-```turtle context
+```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://carla.example/profile#me> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
 [
   acp:target <https://alice.example/notes/plan-kept> ;
   acp:agent  <https://carla.example/profile#me> ;

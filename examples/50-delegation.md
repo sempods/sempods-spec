@@ -101,7 +101,8 @@ this person through this application — and neither half alone.
 [
   acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
-  acp:client <did:web:notes.example>
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
 ] .
 ```
 
@@ -115,7 +116,8 @@ this person through this application — and neither half alone.
 [
   acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
-  acp:client <did:web:spamtool.example>
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
 ] .
 ```
 
@@ -157,7 +159,8 @@ access control resources at once, and the grant below it is what the pod actuall
 [
   acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
-  acp:client <did:web:notes.example>
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
 ] .
 ```
 
@@ -183,7 +186,8 @@ access control resources at once, and the grant below it is what the pod actuall
 [
   acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
-  acp:client <did:web:spamtool.example>
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
 ] .
 ```
 
@@ -300,7 +304,8 @@ Alice shares a second document with Bob.
 [
   acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
-  acp:client <did:web:notes.example>
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
 ] .
 ```
 
