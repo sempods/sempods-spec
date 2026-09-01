@@ -48,7 +48,10 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `decision` | one request put to several `acr` blocks at once. It composes the decisions that **narrow**; where a delegation ceiling meets a target reached through a public matcher the concept unions rather than intersects, and the block refuses that combination rather than answering it wrongly. Each half is resolved by the plain ACP engine; the modes below are what **both** allow, which is sempods' composition applied to the answers rather than inside the engine |
 | `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
 
-A `context` or `decision` pairs with the next `grant` below it. Its `acp:target` selects the `acr` whose
+A `context` or `decision` pairs with the next `grant` below it. A composed `decision` carries the
+dimensions the model has: exactly one context decision, and at most one resource decision and one
+ceiling — so files with `decision` blocks qualify every `acr`, and plain `acr` stays for the files
+where one decision is in play. Its `acp:target` selects the `acr` whose
 `acp:resource` matches. A `grant` block containing only a comment means nothing is granted, which is
 an ordinary outcome and the answer several scenarios turn on.
 

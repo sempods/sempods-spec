@@ -16,7 +16,7 @@ narrows further, per subject, within them.
 Exactly the kind of access control resource the previous scenario used. Nothing about the base
 decision changes when the module is added.
 
-```turtle acr
+```turtle acr-context
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/_system/contexts/spaces/eng> ;
@@ -63,7 +63,7 @@ Hold on to that answer. Erik is about to be named in a document policy, and it w
 
 ## The ordinary document
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/docs/roadmap> ;
@@ -92,7 +92,7 @@ Hold on to that answer. Erik is about to be named in a document policy, and it w
 
 ## The one that is not
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/docs/salary-round> ;

@@ -18,7 +18,7 @@ inside, and this file checks both the halves and the whole.
 Two things, because this pod declares the resource module. The context her notes live in, which every
 pod decides:
 
-```turtle acr
+```turtle acr-context
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/_system/contexts/notes> ;
@@ -34,7 +34,7 @@ pod decides:
 and the document, named only. Alice has no idea which applications Bob uses and it is not hers to
 say.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/roadmap> ;
@@ -217,7 +217,7 @@ evaluation. It does not work, and the reason is worth seeing rather than being t
 Here is a second document where Alice tried exactly that — she kept her rule for Bob and added a
 client-constrained one beside it.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/shortcut> ;
@@ -273,7 +273,7 @@ none, because it looks like a control.
 
 Alice shares a second document with Bob.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/finance> ;

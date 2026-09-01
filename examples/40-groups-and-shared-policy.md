@@ -63,7 +63,7 @@ patterns can reach are two disjoint sets, assembled from different origins.
 
 ## The space, admitting a group and a person
 
-```turtle acr
+```turtle acr-context
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/pod/_system/contexts/spaces/engineering> ;
@@ -153,7 +153,7 @@ The policy is written once, in a block of its own:
 
 and each access control resource names it:
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/articles/welcome> ;
@@ -161,7 +161,7 @@ and each access control resource names it:
 ] .
 ```
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/articles/onboarding> ;
@@ -214,7 +214,7 @@ copies that happen to agree would prove neither.
 
 ## The memo, granted to one person
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/memo> ;
@@ -276,7 +276,7 @@ and nothing written down says otherwise.
 Somebody started sharing this and stopped. The policy confers `acl:Read` and names no condition at
 all.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/draft> ;

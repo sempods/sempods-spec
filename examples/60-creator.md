@@ -44,7 +44,7 @@ its owner authority without storing it
 ([`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011)). It appears because this file is about
 comparing two relational matchers, and a fixture can only evaluate what is in front of it.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/draft> ;
@@ -131,7 +131,7 @@ exactly as `acp:vc` is in a pod that has no credentials to present.
 The application that knows what a document is writes the policy when the document is made, naming
 Bob outright.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/draft-named> ;

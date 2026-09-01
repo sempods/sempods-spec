@@ -146,7 +146,7 @@ CONTAINED = re.compile(
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
 # the malformed text while pointing at an anchor that resolves, so nothing else would catch it.
-CITATION = re.compile(r"SPS-[\w-]+")
+CITATION = re.compile(r"(?<![\w-])SPS-[\w-]+|[\w-]+SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
 MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
@@ -228,44 +228,80 @@ class Problem(Exception):
 
 # --------------------------------------------------------------------------- reading a scenario
 
-COMMENT = re.compile(r"<!--.*?-->", re.S)
-# CommonMark's raw HTML blocks. The literal ones (`<pre>` and friends) run to their closing tag; the
-# ordinary ones start on a line opening a block-level tag and end at the next blank line. Inside
-# either, a fence is text a reader sees as backticks rather than a fixture anybody runs.
-RAW_HTML = re.compile(
-    r"<(?:pre|script|style|textarea)\b.*?</(?:pre|script|style|textarea)>"
-    r"|^ {0,3}<(?:details|div|blockquote|table|section|figure)\b.*?(?:\n[ \t]*\n|\Z)",
-    re.S | re.M | re.I,
+# CommonMark's block-level tags. Inside a raw HTML block a fence is text a reader sees as backticks
+# rather than a fixture anybody runs — as it is inside an HTML comment, and inside a longer outer
+# fence. All three are found by one pass below rather than by matching regions, because a region
+# pattern also matches a relative IRI at the start of a Turtle line and would reject a real fixture.
+LITERAL_TAGS = ("pre", "script", "style", "textarea")
+BLOCK_TAGS = (
+    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|"
+    "dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|"
+    "head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|"
+    "p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul"
 )
-FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$", re.M)
+FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$")
+LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")\b", re.I)
+BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")\b", re.I)
 
 
 def hidden_fixtures(text: str) -> list[str]:
     """Fixture fences a reader never sees, which the extractor would still run.
 
-    Two ways to reach that: inside an HTML comment, and inside a longer outer fence. Both render as
-    nothing or as literal text, so the scenario a reader meets and the scenario CI checks differ —
-    which is the one failure this file exists to prevent, arrived at from the other side.
+    Three ways to reach that: inside an HTML comment, inside a raw HTML block, and inside a longer
+    outer fence. Each renders as nothing or as literal backticks, so the scenario a reader meets and
+    the scenario CI checks differ — the one failure this file exists to prevent, from the other side.
+
+    One pass, because the states nest: a `<section>` on a line of Turtle is a relative IRI and not an
+    HTML block, and only knowing we are inside a fence tells the two apart.
     """
-    problems = []
-    for pattern, where in ((COMMENT, "an HTML comment"), (RAW_HTML, "a raw HTML block")):
-        if any(FENCE_LINE.search(m.group(0)) for m in pattern.finditer(text)):
+    problems, seen = [], set()
+
+    def note(where: str) -> None:
+        if where not in seen:
+            seen.add(where)
             problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
 
-    open_fence = None
-    for match in FENCE_LINE.finditer(RAW_HTML.sub("", COMMENT.sub("", text))):
-        run, info = match.group(1), match.group(2).strip()
-        if open_fence is None:
-            open_fence = (run[0], len(run))
+    fence = comment = literal = None
+    ordinary = False
+    for line in text.splitlines():
+        opener = FENCE_LINE.match(line)
+        turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
+
+        if comment:
+            if turtle:
+                note("an HTML comment")
+            if "-->" in line:
+                comment = None
             continue
-        char, length = open_fence
-        if run[0] == char and len(run) >= length and not info:
-            open_fence = None
-        elif info.startswith("turtle"):
-            problems.append(
-                "a turtle fence is opened inside another fence, where it is literal text rather "
-                "than a fixture"
-            )
+        if literal:
+            if turtle:
+                note("a raw HTML block")
+            if re.search(rf"</{literal}\s*>", line, re.I):
+                literal = None
+            continue
+        if ordinary:
+            if turtle:
+                note("a raw HTML block")
+            if not line.strip():
+                ordinary = False
+            continue
+        if fence:
+            char, length = fence
+            if opener and opener.group(1)[0] == char and len(opener.group(1)) >= length \
+                    and not opener.group(2).strip():
+                fence = None
+            elif turtle:
+                note("another fence, where it is literal text")
+            continue
+
+        if opener:
+            fence = (opener.group(1)[0], len(opener.group(1)))
+        elif "<!--" in line and "-->" not in line:
+            comment = True
+        elif LITERAL_OPEN.match(line):
+            literal = LITERAL_OPEN.match(line).group(1)
+        elif BLOCK_OPEN.match(line):
+            ordinary = True
     return problems
 
 
@@ -630,6 +666,9 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     # regardless — so the fixture renders an ACP shape that is not one.
     reached = set().union(*linked.values())
     for node, _, value in graph.triples((None, RDF_TYPE, None)):
+        if not isinstance(value, URIRef):
+            errors.append(f"{where}: types a node with the literal \"{value}\", not a class")
+            continue
         if not str(value).startswith(ACP):
             # `[ a ex:Condition ]` renders as a condition, is exempt from predicate classification
             # because it is an rdf:type, and is outside every ACP role — so nothing else looks at it.
@@ -792,7 +831,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
     # A link showing one requirement and ending at another passes both checks that exist: the text
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
-    definitions = {label.casefold(): d for label, d in REFERENCE_DEFINITION.findall(text)}
+    definitions: dict = {}
+    # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
+    # destination while the rendered link followed an earlier, wrong one.
+    for label, destination in REFERENCE_DEFINITION.findall(text):
+        definitions.setdefault(label.casefold(), destination)
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
     for shown in SHORTCUT.findall(text):
         if shown.casefold() in definitions:
@@ -921,16 +964,27 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
-            modes = set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"]))
+            # This access control resource's own policies, not the graph's: a shared policy is
+            # merged into every one of them, so a graph-wide sweep would blame this decision for a
+            # mode only some other decision applies.
+            applies = set()
+            for control in set(graph.objects(acr, P["accessControl"])) | set(
+                graph.objects(acr, P["memberAccessControl"])
+            ):
+                applies |= set(graph.objects(control, P["apply"]))
+            modes = {m for policy in applies
+                     for link in (P["allow"], P["deny"])
+                     for m in graph.objects(policy, link)}
             failures += inspect_modes(modes, where, "policy", notes)
             # `acl:Control` is reading and writing an access control resource. Context management
             # also creates and deletes contexts and reaches slash-delimited descendants, so the
             # profile gives it a sempods term of its own — which is not named yet, and until it is
             # a context policy cannot spell `manage` at all.
-            if kind == "context" and ACL_CONTROL in modes:
+            if ACL_CONTROL in modes and kind != "resource":
                 failures.append(
-                    f"{where}: a context policy allows acl:Control, which is management of an "
-                    "access control resource and smaller than manage on a context"
+                    f"{where}: allows acl:Control outside an acr-resource block. It is management "
+                    "of an access control resource; context management also creates, deletes and "
+                    "reaches descendants, and has a sempods term of its own that is not named yet"
                 )
 
         # An inline policy nothing applies is the same silence as an unapplied shared one, and it
@@ -1042,13 +1096,38 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 halves = (read_contexts(parse(pending, 1000 + offset), where, least=2)
                           if pending.kind == "decision"
                           else [read_context(parse(pending, 1000 + offset), where)])
-                bounds = any(
-                    k == "delegation"
-                    for c in halves for k, _, _ in by_target.get(c.target, ())
-                )
+                # 4 — a composed decision has the dimensions the model has: the context every pod
+                # decides, at most one finer decision on the resource, at most one ceiling. Two
+                # context halves would compose decisions no single statement is subject to, and a
+                # composition without one would skip the sandbox every pod enforces.
+                # 3 — and the ceiling bounds the principal it names, so its half is about them.
+                dimensions: list = []
+                composed = len(halves) > 1
+                for half in halves:
+                    for k, _, _ in by_target.get(half.target, ()):
+                        dimensions.append(k)
+                        if k == "delegation" and half.target != half.agent:
+                            failures.append(
+                                f"{where}: a delegation half targets {short(half.target)} while the "
+                                f"request is {short(half.agent)} — a ceiling bounds the principal "
+                                "it names"
+                            )
+                if composed:
+                    for kind_name, allowed in (("context", 1), ("resource", 1), ("delegation", 1),
+                                               ("unqualified", 0)):
+                        if dimensions.count(kind_name) > allowed:
+                            failures.append(
+                                f"{where}: composes {dimensions.count(kind_name)} {kind_name} "
+                                f"decisions, and the model has at most {allowed}"
+                            )
+                    if "context" not in dimensions:
+                        failures.append(
+                            f"{where}: composes no context decision, and every access passes the "
+                            "context it is in first"
+                        )
+                bounds = "delegation" in dimensions
                 answers = [
-                    modes_for(ctx, where, composed=len(halves) > 1, ceiling=bounds)
-                    for ctx in halves
+                    modes_for(ctx, where, composed=composed, ceiling=bounds) for ctx in halves
                 ]
                 if any(a is None for a in answers):
                     pending = None
@@ -1361,7 +1440,7 @@ BROKEN = [
       "  acp:accessControl [ acp:apply <https://a.example/shared> ] ] .\n"
       "<https://a.example/shared> acp:allow acl:Write .\n```\n"
       "```turtle context"), "a shared artifact has one version"),
-    ("acl:Control on a context decision",
+    ("acl:Control outside a resource decision",
      ("```turtle acr\n[ a acp:AccessControlResource ;\n"
       "  acp:resource <https://a.example/c> ;\n"
       "  acp:accessControl [ acp:apply <#p> ] ] .\n"
@@ -1370,7 +1449,7 @@ BROKEN = [
       "  acp:resource <https://a.example/c> ;\n"
       "  acp:accessControl [ acp:apply <#p> ] ] .\n"
       "<#p> a acp:Policy ; acp:allow acl:Read, acl:Write, acl:Control ;"),
-     "smaller than manage on a context"),
+     "outside an acr-resource block"),
     ("a fixture inside an HTML comment, which no reader sees",
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "```turtle grant\n[] acp:grant acl:Read .\n```\n<!--\n```turtle grant\n# nothing\n```\n-->"),
@@ -1400,6 +1479,33 @@ BROKEN = [
       "[ acp:target <https://a.example/open> ; acp:agent <https://b.example/#me> ] .\n"
       "[ acp:target <https://b.example/#me> ; acp:agent <https://b.example/#me> ] .\n```"),
      "the public branch unions where this block intersects"),
+    ("a composed decision with no context half",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-resource\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "composes no context decision"),
+    ("a delegation half naming somebody other than the requester",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/ctx> ] .\n```\n"
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://alice.example/#me> ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/ctx> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://alice.example/#me> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "a ceiling bounds the principal it names"),
+    ("a literal where a class assertion belongs",
+     ("<#p> a acp:Policy ;", '<#p> a "Policy" ;'), "not a class"),
+    ("a requirement id with a word character stuck to its front",
+     ("```turtle acr", "See XSPS-GRANT-003.\n\n```turtle acr"),
+     "not the shape of a requirement id"),
+    ("a repeated reference label whose first definition is the wrong one",
+     ("```turtle acr", "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
@@ -1458,7 +1564,7 @@ def main(argv: list[str]) -> int:
         return self_test(ids)
 
     paths = [Path(a).resolve() for a in argv] or sorted(EXAMPLES.rglob("*.md"))
-    paths = [p for p in paths if p.name != "README.md"]
+    paths = [p for p in paths if p != EXAMPLES / "README.md"]
     if not paths:
         # A passing loop over nothing would let the required check stay green while the promised
         # coverage had been deleted — the same trap the OpenAPI job guards against.

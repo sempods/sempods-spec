@@ -34,7 +34,7 @@ names say which:
 Alice's notes are a context, and it decides first — every one of the states below is a read that has
 to pass it before any policy on a plan is consulted.
 
-```turtle acr
+```turtle acr-context
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/_system/contexts/notes> ;
@@ -49,7 +49,7 @@ to pass it before any policy on a plan is consulted.
                         <https://carla.example/profile#me> ] .
 ```
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/plan> ;
@@ -104,7 +104,7 @@ fixture here would notice, because the two are told apart by which policies exis
 came to. That is not a gap this file works around — it is the file's finding, and the closing section
 is where it lands.
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/plan-swept>
@@ -140,7 +140,7 @@ to *what a person passed on* is the same instruction with a longer chain to walk
 
 ## The same withdrawal, if Carla was granted directly too
 
-```turtle acr
+```turtle acr-resource
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/plan-kept> ;
