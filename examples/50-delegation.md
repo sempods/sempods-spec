@@ -111,6 +111,13 @@ says whose authority is being bounded, not how far the bounding reaches — whet
 over the whole pod, over a set of contexts, or over something narrower is an open decision, and
 encoding an answer in the target would have decided it by accident.
 
+It is worth seeing why that leaves a narrower ceiling not merely unwritten but currently
+inexpressible. Because `acp:target` names Bob, this evaluation is the same one for every request he
+makes; nothing in it mentions the document. So *"read, as Bob, but only in this context"* has nowhere
+to go — it needs a second artifact that carries the target, or a rule choosing between several
+delegation policies, and both are decisions rather than spellings. What the shape above does express
+is a ceiling on **modes**, which is what these two cases exercise.
+
 Two evaluations, two answers. The pod grants what **both** allow — and that is the sentence this
 scenario is about, so it is checked rather than asserted. A `decision` block puts one request to both
 access control resources at once, and the grant below it is what the pod actually returns:

@@ -74,7 +74,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 try:
-    from rdflib import Graph, URIRef
+    from rdflib import Graph, Literal, URIRef
 except ImportError:  # pragma: no cover - the message is the whole point
     sys.exit(
         "check-examples.py needs rdflib to parse the scenarios.\n\n"
@@ -107,14 +107,20 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # That rule is the load-bearing claim of the whole model and ACP has no operator for it, so leaving
 # it as prose meant a scenario could keep its central sentence while the sentence became false.
 KINDS = ("acr", "policy", "context", "decision", "grant", "aside")
+# ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
+# a list item is the ordinary way it happens. Anchoring at column one would let such a block render
+# for a reader and vanish from the runner, which is the failure this file exists to prevent.
 BLOCK = re.compile(
-    r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
+    r"^ {0,3}```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}```[ \t]*$", re.M | re.S
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^```turtle([ \t]+[^\n]*)?$", re.M)
-# Greedy on the digits: `SPS-GRANT-0099` has to come out whole and fail as unknown, rather than
-# matching the real `SPS-GRANT-009` inside it and passing.
-CITATION = re.compile(r"SPS-[A-Z]+-\d+")
+ANY_BLOCK = re.compile(r"^ {0,3}```turtle([ \t]+[^\n]*)?$", re.M)
+# Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
+# and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
+# has to fail as malformed rather than validating through its valid prefix — a rendered link can show
+# the malformed text while pointing at an anchor that resolves, so nothing else would catch it.
+CITATION = re.compile(r"SPS-[0-9A-Za-z-]+")
+WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
@@ -405,6 +411,14 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
         "leaves a matcher carrying it unsatisfied"
         for predicate in extensions
     ]
+    # The resolver below implements these, deliberately: it is an ACP engine and has to answer for
+    # graphs the profile would not write. A *fixture* carrying one is a different thing — it would
+    # certify an access control resource outside the model these files demonstrate.
+    for predicate in (P["deny"], P["noneOf"], P["memberAccessControl"]):
+        if (None, predicate, None) in graph:
+            errors.append(
+                f"{where}: uses {short(predicate)}, which the sempods profile excludes"
+            )
     for value in set(graph.objects(None, RDF_TYPE)):
         if str(value).startswith(ACP) and value not in KNOWN_CLASSES:
             errors.append(f"{where}: types a node acp:{str(value)[len(ACP):]}, which ACP has no class for")
@@ -484,6 +498,12 @@ def inspect_modes(terms, where: str, on: str) -> list[str]:
     profile does not is a mode sempods has no permission for."""
     errors = []
     for term in terms:
+        # Before anything about namespaces: `acp:allow "acl:Read"` looks right, reads as a mode, and
+        # is a string. Used the same way in the policy and the expectation it compares equal to
+        # itself, so the case passes over a graph that grants nothing.
+        if isinstance(term, Literal):
+            errors.append(f"{where}: {on} names the literal \"{term}\", and a mode is an IRI")
+            continue
         if not str(term).startswith(ACL):
             continue
         if term not in KNOWN_ACL:
@@ -515,7 +535,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
 
     for citation in sorted(set(CITATION.findall(text))):
-        if citation not in ids:
+        if not WELL_FORMED.match(citation):
+            failures.append(f"{rel}: writes {citation}, which is not the shape of a requirement id")
+        elif citation not in ids:
             failures.append(f"{rel}: cites {citation}, which no chapter defines")
 
     found = blocks_of(text)
@@ -547,11 +569,18 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             where = f"{rel} line {block.line}"
             # Without this, a block declaring no target adds nothing to by_target and no later check
             # can see it: the file passes on its other blocks while this one is never evaluated.
-            targets = set(parse(block, index).objects(None, P["resource"]))
-            if len(targets) != 1:
+            own = parse(block, index)
+            subjects = set(own.subjects(P["resource"], None)) | set(
+                own.subjects(RDF_TYPE, URIRef(ACP + "AccessControlResource"))
+            )
+            targets = set(own.objects(None, P["resource"]))
+            # Both counts, because either alone lets the other slip: a second, targetless access
+            # control resource beside a correct one leaves `targets` at exactly one, and everything
+            # it applies is never resolved.
+            if len(subjects) != 1 or len(targets) != 1:
                 failures.append(
-                    f"{where}: an acr block declares {len(targets)} targets, and the profile makes "
-                    "one access control resource canonical for one target"
+                    f"{where}: an acr block holds {len(subjects)} access control resource(s) and "
+                    f"{len(targets)} target(s), and the profile makes one canonical for one"
                 )
             for acr, _, target in graph.triples((None, P["resource"], None)):
                 if target in by_target:
@@ -690,7 +719,28 @@ BROKEN = [
     ("an acr block declaring no target at all",
      ("```turtle context", "```turtle acr\n<#stray> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n```turtle context"),
-     "declares 0 targets"),
+     "access control resource(s) and 0 target(s)"),
+    ("a second, targetless access control resource beside a correct one",
+     ("acp:accessControl [ acp:apply <#p> ] ] .",
+      "acp:accessControl [ acp:apply <#p> ] ] .\n"
+      "[ a acp:AccessControlResource ; acp:accessControl [ acp:apply <#q> ] ] .\n"
+      "<#q> a acp:Policy ; acp:allow acl:Read ;\n"
+      "     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ."),
+     "2 access control resource(s) and 1 target(s)"),
+    # Not that an indented block is refused — it is valid Markdown and now valid here. What must
+    # fail is its *content*, which is only possible if the block was seen at all: were fences still
+    # anchored at column one, this would report a context with no grant instead.
+    ("a wrong expectation in a fence indented the three spaces CommonMark allows",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "   ```turtle grant\n   # nothing\n   ```"),
+     "expected {—}, got {acl:Read}"),
+    ("a literal where an access mode belongs",
+     ("acp:allow acl:Read ;", 'acp:allow "acl:Read" ;'), "and a mode is an IRI"),
+    ("a construct the sempods profile excludes",
+     ("acp:allow acl:Read ;", "acp:allow acl:Read ; acp:noneOf [ a acp:Matcher ; "
+      "acp:agent <https://m.example/#me> ] ;"), "the sempods profile excludes"),
+    ("a requirement identifier that validates through its valid prefix",
+     ("```turtle acr", "Cites SPS-GRANT-003x.\n\n```turtle acr"),
+     "not the shape of a requirement id"),
     ("a context block holding two attempts, which would be composed like a decision",
      ("[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
       "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"

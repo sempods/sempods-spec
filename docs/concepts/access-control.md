@@ -344,8 +344,12 @@ application is not broadened by a policy written for the person is the property 
 than one the model already has: a ceiling agreed over a scope reaches whatever enters that scope
 afterwards, which is the open decision recorded below. Public authority
 does not come from the agent and therefore cannot be delegated or removed by the agent's OAuth
-ceiling. The ceiling may constrain modes, targets or both; OAuth owns how a person selects that
-subset, while access control owns the per-request decision.
+ceiling. The ceiling constrains **modes**, and whether it can also constrain targets is open in a way worth
+being exact about: with `acp:target` bound to the principal, one evaluation answers for every request
+that person makes, and nothing in it names the data target — so a per-target ceiling needs either a
+second artifact carrying the target or a sempods rule selecting among several delegation policies.
+That is the scope question recorded below, and it is unanswered rather than merely unwritten. OAuth
+owns how a person selects the subset, while access control owns the per-request decision.
 
 Public access becomes an ordinary context policy and, where the resource module is enabled, an
 ordinary resource policy as well, matched by ACP's public-agent semantics. The sempods profile permits that
@@ -716,9 +720,11 @@ The rest are ordinary open questions:
 - Define what the resource module changes in the surfaces around it: whether `find` filters, the MCP
   tool arguments and the media surface acquire a resource dimension, or inherit the context one
   unchanged.
-- Decide whether a pod that manages one context still exposes the context in its client-facing
-  surfaces, or hides it — the discovery route, `find`, and the MCP tool arguments each have to answer
-  the same way.
+- Decide how far the context reaches into the client-facing surfaces of a pod that manages one —
+  `find` filters and the MCP tool arguments may carry a context dimension or leave it out. Hiding it
+  everywhere is not among the options: a write still names the context, and a client may not
+  construct that IRI ([`SPS-CTX-023`](../../spec/core/contexts.md#SPS-CTX-023)), so the discovery
+  route stays the pod-supplied source it reads the name from.
 - Restate [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) over the authorized statement
   view and make [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) precise about what a
   dataset is. The constraint to weigh while wording them: the SPARQL protocol lets a client *describe*
