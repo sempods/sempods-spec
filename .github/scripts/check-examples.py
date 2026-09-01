@@ -121,14 +121,17 @@ KINDS = ("acr-context", "acr-resource", "acr", "policy", "context", "decision", 
 # ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
 # a list item is the ordinary way it happens. Anchoring at column one would let such a block render
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
-FENCE = r"(`{3,}|~{3,})"
+# The two fence characters are captured separately so the closing run can be required to use the
+# opener's, and to run longer but never shorter. A backreference to a group that did not participate
+# cannot match, which is what keeps a backtick block from being closed by tildes.
+OPEN = r"(?:(`{3,})|(~{3,}))"
+CLOSE = r"^ {0,3}(?:\1`*|\2~*)[ \t]*$"
 BLOCK = re.compile(
-    r"^ {0,3}" + FENCE + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)"
-    r"^ {0,3}\1[`~]*[ \t]*$",
+    r"^ {0,3}" + OPEN + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)" + CLOSE,
     re.M | re.S,
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
+ANY_BLOCK = re.compile(r"^ {0,3}(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
@@ -213,7 +216,7 @@ class Problem(Exception):
 
 def blocks_of(text: str) -> list[Block]:
     return [
-        Block(m.group(2), m.group(3), text.count("\n", 0, m.start()) + 1)
+        Block(m.group(3), m.group(4), text.count("\n", 0, m.start()) + 1)
         for m in BLOCK.finditer(text)
     ]
 
@@ -530,6 +533,11 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
                     f"{where}: {short(link)} points at {short(value)}, and ACP's own terms are not "
                     "policies or matchers"
                 )
+            elif value not in set(graph.subjects(None, None)):
+                errors.append(
+                    f"{where}: {short(link)} points at {short(value)}, which the graph says nothing "
+                    "about — resolution finds no modes and no attributes there"
+                )
 
     # 2 — a predicate belonging to another kind of block
     for predicate in (P["target"], P["owner"], P["creator"], P["grant"]):
@@ -649,10 +657,11 @@ def inspect_grant(graph: Graph, where: str) -> list[str]:
     ]
 
 
-def inspect_modes(terms, where: str, on: str) -> list[str]:
+def inspect_modes(terms, where: str, on: str, notes: list | None = None) -> list[str]:
     """A mode in the acl: namespace that WAC does not define is a typo; one WAC defines and the
     profile does not is a mode sempods has no permission for."""
     errors = []
+    notes = notes if notes is not None else []
     for term in terms:
         # Before anything about namespaces: `acp:allow "acl:Read"` looks right, reads as a mode, and
         # is a string. Used the same way in the policy and the expectation it compares equal to
@@ -661,7 +670,18 @@ def inspect_modes(terms, where: str, on: str) -> list[str]:
             shown = f'"{term}"' if isinstance(term, Literal) else "a blank node"
             errors.append(f"{where}: {on} names {shown}, and a mode is an IRI")
             continue
+        if str(term).startswith(ACP):
+            # `acp:Raed` reads as a reserved name; used in the policy and the expectation alike it
+            # compares equal to itself. ACP defines no access modes at all (§5.2).
+            errors.append(f"{where}: {on} names {short(term)}, and ACP defines no access modes")
+            continue
         if not str(term).startswith(ACL):
+            # Not a typo and not a mode this profile knows — the sempods context term will look like
+            # this once it is named, so it is reported rather than refused.
+            notes.append(
+                f"{where}: {on} names {short(term)}, which is neither an ACL mode nor one the "
+                "sempods profile has named yet"
+            )
             continue
         if term not in KNOWN_ACL:
             errors.append(f"{where}: {on} names {short(term)}, which is not an ACL access mode")
@@ -780,7 +800,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             notes += acr_notes
             failures += inspect_modes(
                 set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"])),
-                where, "policy",
+                where, "policy", notes,
             )
 
         # An inline policy nothing applies is the same silence as an unapplied shared one, and it
@@ -807,6 +827,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             for matcher in sorted(set(graph.subjects(RDF_TYPE, URIRef(ACP + "Matcher"))) - linked,
                                   key=str):
                 failures.append(f"{rel}: no policy references {short(matcher)}")
+            controls = set(graph.objects(acr, P["accessControl"])) | set(
+                graph.objects(acr, P["memberAccessControl"])
+            )
+            for control in sorted(
+                set(graph.subjects(RDF_TYPE, URIRef(ACP + "AccessControl"))) - controls, key=str
+            ):
+                failures.append(f"{rel}: no access control resource holds {short(control)}")
 
         if not by_target:
             failures.append(f"{rel}: no acr block declares acp:resource")
@@ -871,7 +898,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 grant_graph = parse(block, 2000 + offset)
                 failures += inspect_grant(grant_graph, f"{rel} line {block.line}")
                 want = read_grant(grant_graph)
-                failures += inspect_modes(want, f"{rel} line {block.line}", "grant")
+                failures += inspect_modes(want, f"{rel} line {block.line}", "grant", notes)
                 if got != want:
                     failures.append(
                         f"{where}: expected {{{', '.join(sorted(short(m) for m in want)) or '—'}}}, "
@@ -1099,6 +1126,16 @@ BROKEN = [
     ("a closing fence longer than its opener, which CommonMark allows",
      ("```turtle grant\n[] acp:grant acl:Read .\n```", "```turtle grant\n# nothing\n````"),
      "expected {—}, got {acl:Read}"),
+    ("a closing fence of the other fence character, which does not close the block",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "```turtle grant\n# nothing\n~~~"),
+     "kind that is not one of"),
+    ("an ACP term used as an access mode",
+     ("acp:allow acl:Read ;", "acp:allow acp:Raed ;"), "ACP defines no access modes"),
+    ("a structural link to a node the graph says nothing about",
+     ("acp:apply <#p> ]", "acp:apply <#missing> ]"), "says nothing about"),
+    ("an access control no access control resource holds",
+     ("<#p> a acp:Policy ;", "[ a acp:AccessControl ] .\n<#p> a acp:Policy ;"),
+     "no access control resource holds"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

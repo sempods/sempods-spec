@@ -282,9 +282,23 @@ Alice shares a second document with Bob.
   acp:anyOf [ a acp:Matcher ; acp:agent <https://bob.example/profile#me> ] .
 ```
 
-```turtle context
+```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
 [
   acp:target <https://alice.example/notes/finance> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
+  acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
   acp:client <did:web:notes.example>
 ] .
@@ -296,6 +310,10 @@ Alice shares a second document with Bob.
 
 Bob's delegation was not touched. It still says *read, as Bob, in this pod* — and this document is
 now in the pod, so the notes application reaches it. Nobody asked Bob again.
+
+All three decisions are in that block, which is what makes the claim a claim. Revoke the notes
+application's delegation, or shut Bob out of the context, and this case goes empty — so the sentence
+above is about a delegation that is genuinely still standing rather than one nothing checks.
 
 Whether that is right is an open question rather than a settled rule.
 [`SPS-GRANT-019`](../spec/core/grants.md#SPS-GRANT-019) says widening a person's grants must not
