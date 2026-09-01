@@ -469,11 +469,21 @@ else would be worse than having it. What bounds it:
   declaration is the guarantee; the graph it points at is not;
 - it carries membership, never policy. No `acp:allow` written into such a context is read, so the
   worst it can do is admit somebody to a set some policy already trusts; and,
-- the declaration is sound only while **write on the authority is not weaker than `manage` on what it
-  grants**. Where that holds, everyone who could add themselves to the set could have written the
-  policy directly, and nothing is reachable that was not already.
+- the declaration is sound only while **every agent and client pair that can write the authority
+  holds at least `manage` on everything it grants**. Where that holds, everyone who could add
+  themselves to the set could have written the policy directly, and nothing is reachable that was not
+  already.
 
-The third is a condition on the deployment rather than something the pod checks, which puts it on the
+Stated over the person alone that last condition is wrong, and wrong in the direction that matters. A
+grant is resolved from the verified client together with the verified subject
+([`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002)), and the thing that writes an address
+book is usually an application. It can hold `write` on the authority while its delegation stops well
+short of `manage` on what the authority grants — at which point the ceiling refuses to let it write
+the policy and this route lets it write the answer instead. Such an authority is sound only where its
+writers are control-plane code rather than delegated applications, or where their delegation reaches
+that far.
+
+The condition is on the deployment rather than something the pod checks, which puts it on the
 convention side of the table above and makes it the second one to watch. Whether to keep the
 exception at all is an open decision below.
 

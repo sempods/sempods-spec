@@ -33,13 +33,24 @@ decision rather than a settled part of the model.
 
 The rule that decides whether it is safe:
 
-> A context may serve as a principal-set authority exactly when **write on it is not weaker than
-> manage on what it grants**.
+> A context may serve as a principal-set authority exactly when **every agent and client pair that can
+> write it holds at least `manage` on everything it grants**.
 
-Here it holds: the contacts are written by one sync and read-only to everyone else, and Anna could
-have written the policy directly anyway. It would stop holding the moment she shared the address book
-for writing — a friend adding themselves as *Family* would be granting themselves access, through a
-route nobody would think to audit.
+The pair, not the person, and that is the part that is easy to get wrong. The contacts are written by
+a sync, and a sync is an application acting as Anna — a grant is resolved from the verified client
+together with the verified subject
+([`SPS-GRANT-002`](../spec/core/grants.md#SPS-GRANT-002)). Anna holds `manage` on the family context;
+the sync need only hold `write` on contacts. Stated over Anna alone the condition looks satisfied
+while a compromised sync tags an attacker *Family* and grants access **outside its own delegation
+ceiling** — the ceiling stops it writing the policy and this route lets it write the answer instead.
+
+So the address book is an authority only where the sync is control-plane code rather than a delegated
+application, or where its delegation covers `manage` on every context the contacts govern. Anything
+else and the pod has moved the boundary without moving the policy.
+
+It would also stop holding the moment Anna shared the address book for writing — a friend adding
+themselves as *Family* would be granting themselves access, through a route nobody would think to
+audit. Same rule, the case that is easier to see.
 
 ## The way that stays plain ACP: expand when the policy is written
 

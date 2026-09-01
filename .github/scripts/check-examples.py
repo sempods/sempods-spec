@@ -506,6 +506,23 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     # A node holds a role if something links to it in that position *or* if it says so with its type.
     # The type half is not decoration: a shared `policy` block is merged into every access control
     # resource in the file, so in all but the ones that apply it nothing links to it at all.
+    for link in (P["accessControl"], P["memberAccessControl"], P["apply"],
+                 P["allOf"], P["anyOf"], P["noneOf"]):
+        for value in set(graph.objects(None, link)):
+            if isinstance(value, Literal):
+                errors.append(
+                    f"{where}: {short(link)} points at the literal \"{value}\" — later lookups find "
+                    "no triples for it, which is the silence this runner exists to break"
+                )
+
+    # 2 — a predicate belonging to another kind of block
+    for predicate in (P["target"], P["owner"], P["creator"], P["grant"]):
+        if (None, predicate, None) in graph:
+            errors.append(
+                f"{where}: carries {short(predicate)}, which belongs to a context or grant block "
+                "and takes no part in an authorization graph"
+            )
+
     def typed(name: str) -> set:
         return set(graph.subjects(RDF_TYPE, URIRef(ACP + name)))
 
@@ -735,6 +752,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             for policy in sorted(candidates - reachable, key=str):
                 if policy not in applied:
                     failures.append(f"{rel}: nothing applies {short(policy)}")
+            # The same silence one level further down: a typed matcher no policy links to renders
+            # as a condition and takes no part in any case.
+            linked = set()
+            for link in (P["allOf"], P["anyOf"], P["noneOf"]):
+                linked |= set(graph.objects(None, link))
+            for matcher in sorted(set(graph.subjects(RDF_TYPE, URIRef(ACP + "Matcher"))) - linked,
+                                  key=str):
+                failures.append(f"{rel}: no policy references {short(matcher)}")
 
         if not by_target:
             failures.append(f"{rel}: no acr block declares acp:resource")
@@ -993,6 +1018,16 @@ BROKEN = [
       "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
       "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ] .\n```"),
      "cannot say which of them it means"),
+    ("a structural link pointing at a literal",
+     ("acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ]", 'acp:anyOf "matcher"'),
+     "points at the literal"),
+    ("a request predicate inside an authorization graph",
+     ("acp:resource <https://a.example/c> ;",
+      "acp:resource <https://a.example/c> ; acp:owner <https://o.example/#me> ;"),
+     "belongs to a context or grant block"),
+    ("a typed matcher no policy references",
+     ("<#p> a acp:Policy ;", "<#stray> a acp:Matcher ; acp:agent <https://b.example/#me> .\n"
+      "<#p> a acp:Policy ;"), "no policy references"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
