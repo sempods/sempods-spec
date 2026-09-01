@@ -208,6 +208,8 @@ widen an application retroactively, and its reason is that regaining access shou
 re-arm every application that once wanted it. No grant was widened here — Alice changed a policy,
 which is a different act — so the rule is kept and its reason is walked around.
 
-The alternative is a delegation scoped finely enough to exclude the new document, and that is a
-delegation per resource, which nobody can consent to. The concept records the shape of the problem;
-this scenario is what it looks like.
+The alternative is a ceiling scoped finely enough to exclude the new document — an enumerated set a
+person extends rather than a scope that tracks, which is what a photo picker does when it hands an
+application selected items instead of a library. Consent per resource is impractical as a dialog and
+not impossible as a selection, so this is a design choice rather than a dead end. The concept records
+both shapes; this scenario is what neither of them looks like.

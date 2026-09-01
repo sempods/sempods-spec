@@ -139,6 +139,29 @@ uses ACP's own mechanism at the cost of an ancestor walk bounded by path depth; 
 evaluation flat and makes a `manage` change a rewrite. Until one is chosen, a context ACR is not
 portable on its own.
 
+### What is guaranteed and what is convention
+
+The restrictions above are not all held up the same way, and reading them as one kind is how an
+implementation comes to trust something nothing checks.
+
+| Rule | Held up by | |
+|---|---|---|
+| Authorization facts are read only from stores no data write can reach | topology — the two graph sets are disjoint by construction | **guarantee** |
+| Evaluations compose by intersection | the pod, on every request | **guarantee** |
+| An ACR carries no `acp:deny` and no `acp:noneOf` | whatever writes the ACR | convention |
+| A policy states its modes expanded | whatever writes the ACR | convention |
+
+Policy is written through control-plane operations rather than by hand: somebody shares a document,
+and something turns that into a policy. That layer is where a convention lives, and it can hold rules
+a policy language cannot express — which is also why the distinction matters, because an owner
+holding `manage` can write an ACR directly and step around every convention in it.
+
+That is acceptable, and the reason is worth stating rather than assumed. **Every convention here
+fails towards less access.** A hand-written deny is honoured and narrows; modes left unexpanded grant
+less than intended; a member access control has no containment relation to resolve against and does
+nothing at all. None of them hands anybody access the owner could not have granted outright. A
+convention that could fail the other way would have to become a guarantee.
+
 ## Resource core and optional contexts (SOLL)
 
 Every conforming pod evaluates resource policy. There is no configurable evaluator list and no
@@ -490,15 +513,21 @@ short-lived to put in its place. Whether the ceiling becomes coarser (modes only
 principal sets, or keeps a context-shaped surface that a resource-only pod synthesises, is
 unresolved — and the answer decides how much of §5 and §6 survives.
 
-Whatever it becomes, it will be **coarser than the decision it bounds**, because consent per
-resource is not something a person can give. A ceiling therefore covers resources that enter its
-scope after it was agreed: a policy granting somebody access to one more document is reached by
-every application they had already authorised, and nobody was asked again.
+A ceiling agreed once is **coarser than the decisions it bounds**, so it reaches resources that enter
+its scope afterwards: a policy giving somebody access to one more document is reached by every
+application they had already authorised, and nobody was asked again.
 [`SPS-GRANT-019`](../../spec/core/grants.md#SPS-GRANT-019) is kept to the letter — no grant was
 widened, a policy was changed, and those are different acts — while the reason it gives, that
 regaining access should not silently re-arm every application that once wanted it, is walked around.
-Deciding whether that is the intended behaviour is part of the same question, and
-[`examples/30-delegation.md`](../../examples/30-delegation.md) is what it looks like in cases.
+[`examples/30-delegation.md`](../../examples/30-delegation.md) is what the untreated case looks like.
+
+Two shapes avoid it, and neither is free. A ceiling can be an **enumerated set a person extends**
+rather than a scope that tracks — the pattern a photo picker uses when it hands an application
+selected items instead of a library, so consent per resource is impractical as a dialog but not
+impossible as a selection; it costs an interaction for each batch of new resources and a set that
+grows without bound. Or the widening can stand and be made **visible**, which prevents nothing but
+meets what the rule is for: `SPS-GRANT-019` guards against re-arming an application *silently*, not
+against re-arming it.
 
 **`public-read` is a scope in a model that no longer has the thing it scopes.** Seven requirements
 carry today's answer: the `public` flag and its private default
