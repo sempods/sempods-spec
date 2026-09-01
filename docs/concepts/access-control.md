@@ -547,7 +547,7 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Untouched. A pod with one context has no choice to offer and still takes the name, because an implicit fallback is what the invariant forbids and one candidate is where it would appear |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same, seen from the grants chapter |
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
-| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)), the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) and the discovery route ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) are core obligations today, and moving them behind a declaration relocates them |
+| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)) and the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) are core obligations today, and moving them behind a declaration relocates them. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
 
 None of these is a reversal of intent. The mission's third goal — *"graph-based access control where
@@ -744,7 +744,12 @@ The rest are ordinary open questions:
   Passing an unchanged query down with a list of permitted graph IRIs is the one answer that is not
   sufficient, because it is graph-granular by construction.
 - Define how a pod installs complete resource policies before declaring the resource module, given
-  that an evaluator with no matching policy denies.
+  that an evaluator with no matching policy denies — and, in the same decision, when a resource ACR
+  is **retired**. A resource ACR is indexed by subject and independent of any data context, so
+  deleting a subject's last statement leaves its policies standing; recreating that subject then
+  publishes new content under old grants, with no bootstrap in between. A subject whose statements
+  span several contexts makes "its last statement" a question rather than an event, which is why
+  retirement belongs beside installation rather than after it.
 
 These are not all the same kind of open. Every one above except the last is a **contract blocker**:
 until it is answered there is no target contract to implement, so nothing can be conformant against

@@ -516,11 +516,21 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
 
 
 def inspect_grant(graph: Graph, where: str) -> list[str]:
-    """A grant block states granted modes and nothing else."""
-    return [
+    """A grant block states granted modes and nothing else.
+
+    Its `rdf:type` is checked here rather than left exempt: a grant graph never reaches the class
+    validation an authorization graph gets, so `a acp:AccessGrannt` would compare equal to the
+    expectation and certify a misspelling in ACP's own namespace.
+    """
+    errors = [
         f"{where}: grant block carries {short(predicate)}, not acp:grant"
         for predicate in set(graph.predicates(None, None))
         if predicate not in (P["grant"], RDF_TYPE)
+    ]
+    return errors + [
+        f"{where}: grant block is typed {short(value)}, not acp:AccessGrant"
+        for value in set(graph.objects(None, RDF_TYPE))
+        if value != URIRef(ACP + "AccessGrant")
     ]
 
 
@@ -532,8 +542,9 @@ def inspect_modes(terms, where: str, on: str) -> list[str]:
         # Before anything about namespaces: `acp:allow "acl:Read"` looks right, reads as a mode, and
         # is a string. Used the same way in the policy and the expectation it compares equal to
         # itself, so the case passes over a graph that grants nothing.
-        if isinstance(term, Literal):
-            errors.append(f"{where}: {on} names the literal \"{term}\", and a mode is an IRI")
+        if not isinstance(term, URIRef):
+            shown = f'"{term}"' if isinstance(term, Literal) else "a blank node"
+            errors.append(f"{where}: {on} names {shown}, and a mode is an IRI")
             continue
         if not str(term).startswith(ACL):
             continue
@@ -596,8 +607,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         applied: set = set()
         for index, block in enumerate(b for b in found if b.kind == "acr"):
             graph = parse(block, index) + shared
-            applied |= set(graph.objects(None, P["apply"]))
             where = f"{rel} line {block.line}"
+            # Walked from the access control resource rather than read off the graph: a typed but
+            # unlinked acp:AccessControl carrying acp:apply would otherwise mark a shared policy
+            # exercised that resolve() can never reach.
+            for acr_node in set(graph.subjects(P["resource"], None)):
+                for control in set(graph.objects(acr_node, P["accessControl"])) | set(
+                    graph.objects(acr_node, P["memberAccessControl"])
+                ):
+                    applied |= set(graph.objects(control, P["apply"]))
             # Without this, a block declaring no target adds nothing to by_target and no later check
             # can see it: the file passes on its other blocks while this one is never evaluated.
             own = parse(block, index)
@@ -806,6 +824,15 @@ BROKEN = [
       "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ;\n"
       "  acp:vc <https://a.example/vc2> ] .\n```"),
      "present different acp:vc"),
+    ("a blank node where an access mode belongs",
+     ("acp:allow acl:Read ;", "acp:allow [ ] ;"), "a blank node, and a mode is an IRI"),
+    ("a misspelled class on a grant block",
+     ("[] acp:grant acl:Read .", "[] a acp:AccessGrannt ; acp:grant acl:Read ."),
+     "not acp:AccessGrant"),
+    ("a shared policy reached only from an access control nothing links to",
+     ("```turtle context", "```turtle policy\n<https://a.example/spare> a acp:Policy ; "
+      "acp:allow acl:Read .\n[ a acp:AccessControl ; acp:apply <https://a.example/spare> ] .\n```\n"
+      "```turtle context"), "no acr applies"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
