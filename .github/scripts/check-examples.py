@@ -201,6 +201,15 @@ def read_context(graph: Graph, where: str) -> Context:
     errors, _ = classify(graph.predicates(node, None), where, "access context")
     if errors:
         raise Problem(errors[0].split(": ", 1)[1])
+    # An access context describes a request: a target, who is asking, which client and issuer. None
+    # of those is ever a term ACP defines. Naming one would exploit §6.5.2's last step, which
+    # compares the matcher's value to the request's agent after the named individuals have been
+    # tried and does not return early — so a request claiming to *be* acp:OwnerAgent satisfies an
+    # owner matcher without owning anything. That step is transcribed faithfully below; the fixture
+    # that would abuse it is refused here instead.
+    for value in graph.objects(node, None):
+        if str(value).startswith(ACP):
+            raise Problem(f"access context names {short(value)}, which describes no request")
     return Context(
         target=one(graph, node, P["target"], where),
         agent=one(graph, node, P["agent"], where),
@@ -517,6 +526,9 @@ BROKEN = [
     ("an access control resource nothing asks about",
      ("acp:resource <https://a.example/c> ;",
       "acp:resource <https://a.example/c>, <https://a.example/unused> ;"), "never evaluated"),
+    ("a request claiming to be a reserved individual, which §6.5.2 would let through",
+     ("acp:target <https://a.example/c> ; acp:agent <https://b.example/#me>",
+      "acp:target <https://a.example/c> ; acp:agent acp:OwnerAgent"), "describes no request"),
 ]
 
 
