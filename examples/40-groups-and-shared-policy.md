@@ -200,7 +200,8 @@ sweep across every article.
 That reach is the feature and also its price. `manage` on a target permits managing its policy, so
 whoever manages *one* of these articles can rewrite a policy deciding access on the other — authority
 picked up by reference rather than granted. Both articles have the same manager here and nothing goes
-wrong; the concept records how to stop relying on that, and neither closing is free.
+wrong; the concept records how to stop relying on that — and rules out the obvious fix, because
+refusing the edit on account of a target the caller cannot see is a topology leak.
 
 This is what a sub-document needs, and it is worth saying what it does *not* need: no containment
 relation, no ancestor to resolve against, no inheritance. Two resources sharing a policy are not

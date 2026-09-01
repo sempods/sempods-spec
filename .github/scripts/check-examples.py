@@ -135,7 +135,9 @@ ANY_BLOCK = re.compile(r"^ {0,3}(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re
 # CommonMark renders a fence inside a block quote or a deeply nested list, where the raw line carries
 # a container marker. Parsing containers would mean writing a Markdown parser; noticing them costs a
 # line, and an unnoticed one is a fixture that renders for a reader and never runs.
-CONTAINED = re.compile(r"^[ \t>]*(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
+CONTAINED = re.compile(
+    r"^(?:[ \t>]|[-*+][ \t]|\d+[.)][ \t])*(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M
+)
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
@@ -145,6 +147,8 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
 MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
+# The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
+SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
 REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(\S+)", re.M)
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
@@ -737,6 +741,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
     definitions = dict(REFERENCE_DEFINITION.findall(text))
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
+    for shown in SHORTCUT.findall(text):
+        if shown in definitions:
+            citations.append((shown, definitions[shown]))
     for shown, label in REFERENCED.findall(text):
         # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
         # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
@@ -1216,6 +1223,14 @@ BROKEN = [
       "<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context"), "a shared artifact is a policy and its matchers"),
+    ("a fixture fence opened inside a list item",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "- ```turtle grant\n  [] acp:grant acl:Read .\n  ```"),
+     "inside a block quote or a nested list"),
+    ("a shortcut reference resolving to a different requirement",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
@@ -1250,7 +1265,9 @@ def self_test(ids: set[str]) -> int:
             problems.append("the sound fixture does not pass, so no rejection below proves anything")
         for description, (before, after), wording in BROKEN:
             assert before in SOUND, f"self-test fixture no longer contains {before!r}"
-            reported = failures_of(SOUND.replace(before, after))
+            # One occurrence. Replacing every one lets a second guard report the same wording and
+            # keep this case green after the guard it is for has regressed.
+            reported = failures_of(SOUND.replace(before, after, 1))
             if not any(wording in failure for failure in reported):
                 problems.append(f"{description}: not rejected, or not named as {wording!r}")
 
@@ -1271,7 +1288,7 @@ def main(argv: list[str]) -> int:
     if argv == ["--self-test"]:
         return self_test(ids)
 
-    paths = [Path(a).resolve() for a in argv] or sorted(EXAMPLES.glob("*.md"))
+    paths = [Path(a).resolve() for a in argv] or sorted(EXAMPLES.rglob("*.md"))
     paths = [p for p in paths if p.name != "README.md"]
     if not paths:
         # A passing loop over nothing would let the required check stay green while the promised

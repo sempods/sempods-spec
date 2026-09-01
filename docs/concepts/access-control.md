@@ -439,18 +439,21 @@ sweep across every article. It also means a caller holding `manage` on one refer
 rewrite a policy that decides access on targets they hold nothing over — authority acquired by
 reference rather than granted. Two ways to close it, and neither is free:
 
-- **require `manage` on every referring target.** Safe, and it leaks: refusing an edit tells the
-  caller that a target they cannot see references this policy, which is exactly the kind of
-  requirement `AGENTS.md` calls a defect. Answering as though the edit succeeded is not available
-  either, because it did not; and,
+- ~~require `manage` on every referring target~~. **Refused**, not weighed: refusing an edit tells
+  the caller that a target they cannot see references this policy, and the rule this repository holds
+  itself to is that a caller asking about a context they cannot read gets the same answer as one
+  asking about a context that holds nothing. Answering as though the edit succeeded is not available
+  either, because it did not. That is the whole branch, so it is gone rather than listed; and,
 - **give the shared artifact an authorization boundary of its own** — a policy resource is a target,
   with `manage` on it distinct from `manage` on anything applying it. No leak, and a third thing to
   administer, plus a bootstrap question: who holds `manage` on a policy the moment it is created.
 
-Until one is chosen, a shared policy is safe only where every referring target has the same manager,
-which is a condition on the deployment rather than something the pod checks — the same shape as the
-declared authority above, and the third entry for the convention side of that table. It is carried
-below as an open decision.
+What is open is the second shape and any alternative to it, and the criterion is the one the refused
+branch failed: **the answer to an edit must not depend on whether a target the caller cannot see
+references the policy.** Until it is settled, a shared policy is safe only where every referring
+target has the same manager, which is a condition on the deployment rather than something the pod
+checks — the same shape as the declared authority above, and the third entry for the convention side
+of that table. It is carried below as an open decision.
 
 The security boundary is topological:
 
@@ -792,11 +795,13 @@ The rest are ordinary open questions:
   unsatisfied here rather than forbidden, exactly as `acp:vc` is in a pod that presents no
   credentials, and a profile built around documents may state a creator and use it.
   [`examples/60-creator.md`](../../examples/60-creator.md) runs both cases.
-- Decide how a policy referenced by several targets is authorized for editing — `manage` on every
-  referring target, which is safe and leaks topology, or an authorization boundary on the policy
-  resource itself, which does not leak and adds a third thing to administer and a bootstrap question
-  with it. Sharing a policy is what makes an audience change one edit rather than a sweep, so this is
-  not a corner: it is the price of the feature.
+- Decide how a policy referenced by several targets is authorized for editing. An authorization
+  boundary on the policy resource itself is the shape that survives; anything else has to meet the
+  same test, that the answer to an edit does not depend on whether a target the caller cannot see
+  references the policy. Requiring `manage` on every referring target fails it and is refused above.
+  What is still open is the boundary's own bootstrap: who holds `manage` on a policy the moment it
+  exists. Sharing a policy is what makes an audience change one edit rather than a sweep, so this is
+  not a corner — it is the price of the feature.
 - Decide how deleting a context composes with the resource decisions inside it, once the module
   exists: as a mutation requiring `write` on every affected subject, or as a stated exception where
   context `manage` carries the whole context. Leaving it unsaid is the only option that is wrong,
