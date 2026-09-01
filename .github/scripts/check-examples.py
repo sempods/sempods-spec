@@ -132,6 +132,10 @@ BLOCK = re.compile(
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
 ANY_BLOCK = re.compile(r"^ {0,3}(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
+# CommonMark renders a fence inside a block quote or a deeply nested list, where the raw line carries
+# a container marker. Parsing containers would mean writing a Markdown parser; noticing them costs a
+# line, and an unnoticed one is a fixture that renders for a reader and never runs.
+CONTAINED = re.compile(r"^[ \t>]*(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
 # has to fail as malformed rather than validating through its valid prefix — a rendered link can show
@@ -282,9 +286,6 @@ def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
     # Ownership is decided against the pod's recorded owner (SPS-AUTH-051), so it is one thing and
     # the same for every target. Letting it vary would let a resource half name the requester and an
     # acp:OwnerAgent policy grant them.
-    for context in contexts:
-        if len(context.owners) > 1:
-            raise Problem(f"{where}: an access context names {len(context.owners)} owners")
     if len({frozenset(c.owners) for c in contexts}) != 1:
         raise Problem(f"{where}: the halves of one decision disagree about acp:owner")
     return contexts
@@ -312,6 +313,10 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     for value in set(graph.objects(node, RDF_TYPE)):
         if value != URIRef(ACP + "Context"):
             raise Problem(f"access context is typed {short(value)}, not acp:Context")
+    # SPS-AUTH-051: ownership is decided against the pod's *recorded* owner, so there is one.
+    owners = set(graph.objects(node, P["owner"]))
+    if len(owners) > 1:
+        raise Problem(f"access context names {len(owners)} owners, and a pod records one")
     for predicate, value in graph.predicate_objects(node):
         if not isinstance(value, URIRef):
             raise Problem(
@@ -745,6 +750,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     found = blocks_of(text)
     # A block whose kind is misspelled matches no pattern above and would simply vanish, taking its
     # case with it while the rest of the file still passes.
+    if len(CONTAINED.findall(text)) != len(ANY_BLOCK.findall(text)):
+        failures.append(
+            f"{rel}: a turtle fence sits inside a block quote or a nested list, where it renders "
+            "for a reader and is never evaluated — put it at the top level"
+        )
     if len(ANY_BLOCK.findall(text)) != len(found):
         failures.append(
             f"{rel}: a fenced turtle block carries a kind that is not one of {', '.join(KINDS)}"
@@ -1169,6 +1179,15 @@ BROKEN = [
     ("a foreign class on a node no link reaches",
      ("<#p> a acp:Policy ;", "[ a <https://a.example/ns/Condition> ] .\n<#p> a acp:Policy ;"),
      "types a node no link reaches"),
+    ("two owners in a standalone context case",
+     ("acp:agent <https://b.example/#me> ] .\n```\n```turtle grant",
+      "acp:agent <https://b.example/#me> ;\n  acp:owner <https://o.example/#me>, "
+      "<https://p.example/#me> ] .\n```\n```turtle grant"),
+     "and a pod records one"),
+    ("a fixture fence inside a block quote, which renders and never runs",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "> ```turtle grant\n> [] acp:grant acl:Read .\n> ```"),
+     "inside a block quote or a nested list"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

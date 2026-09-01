@@ -554,6 +554,27 @@ covering it ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019),
 [`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)). Nothing more is needed, because a new
 resource is covered by its context's policy from the moment it exists.
 
+**Deleting a context is the operation the composition rule does not yet reach.** It removes every
+statement the context holds ([`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017)) and is
+authorized from the context grant alone
+([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019)), so with the resource module declared a
+caller holding `manage` on a context destroys statements about subjects whose resource policies
+refuse them `write` — the one route where the second decision is skipped rather than applied. The
+rule above covers mutations of an existing resource; a bulk lifecycle operation is not one of those
+and needs saying either way. The two ways to say it:
+
+- **compose it like any other mutation** — deletion requires the resource decision to allow `write`
+  on every affected subject. Consistent, and it makes an operation the chapters describe as a single
+  authorization decision depend on however many subjects the context happens to hold, with a partial
+  failure to define; and,
+- **state it as an exception**, on the ground that `manage` on a context already means creating and
+  deleting the context itself rather than editing what is in it, and that a context nobody may enter
+  is not made safer by the policies inside it. Simpler, and it has to be written down rather than
+  left to be inferred, because it is the one place the words "both must allow" stop being true.
+
+This is carried below as an open decision. It is not reachable today — the module does not exist — but
+it is reachable the moment it does.
+
 The resource module reopens the question, and only there. A new resource has no resource policy yet,
 so creation and that policy have to be one operation from the client's perspective — otherwise the
 resource is born unreachable, or reachable while it should not be. Which bootstrap policy applies is
@@ -774,6 +795,10 @@ The rest are ordinary open questions:
   resource itself, which does not leak and adds a third thing to administer and a bootstrap question
   with it. Sharing a policy is what makes an audience change one edit rather than a sweep, so this is
   not a corner: it is the price of the feature.
+- Decide how deleting a context composes with the resource decisions inside it, once the module
+  exists: as a mutation requiring `write` on every affected subject, or as a stated exception where
+  context `manage` carries the whole context. Leaving it unsaid is the only option that is wrong,
+  because the operation removes statements either way.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Decide whether a pod may declare an ordinary context a principal-set authority at all. Refusing it
   keeps the topological guarantee whole and costs the personal case its best feature — an audience

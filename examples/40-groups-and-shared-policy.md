@@ -341,8 +341,19 @@ Everything above answers *may this person reach this thing*. The other direction
 reach* — is the same expression read the other way: leave the target unbound, bind the agent, and the
 policies that mention her or a set she belongs to come out.
 
-It is exact rather than approximate here, and that is the profile paying for itself. With `acp:deny`
-there would be modes to subtract, with `acp:noneOf` exclusions to check, with member access control
-ancestors to walk — and each would turn the answer into a candidate list. What remains is `acp:allOf`,
-whose conjunction the query has to respect, and after that the only thing outside the graph is the
-OAuth ceiling, which is constant for a request and applies as a mask over the result.
+What the profile buys is that the answer only ever needs **adding to**, never taking away from. With
+`acp:deny` there would be modes to subtract, with `acp:noneOf` exclusions to check, with member access
+control ancestors to walk — and each of those makes a candidate that came out have to be reconsidered
+before it can be trusted. Nothing here does that.
+
+**That is not the same as exact,** and this file is the wrong place to claim it: the space policy
+above names a *set*, not Erin. Reading backwards from her still needs the membership question asked
+against the identity graph, and after that `acp:allOf`, whose conjunction the query has to respect;
+the owner and creator matchers are server-derived; client and issuer come with the request; and the
+context and resource answers still have to be intersected. The OAuth ceiling is the easy one — it is
+constant for a request and masks the result.
+
+So the direction is workable and the shape is monotone, which is what makes an index in that
+direction a strategy an implementation may choose. It is not a property the algebra hands you, and
+the concept says so where it says the positive algebra does not by itself make policies enumerable
+backwards.
