@@ -48,14 +48,21 @@ would otherwise pass for entirely the wrong reason. A term from a namespace it d
 **extension**, and it is reported rather than refused, because that is the portability boundary and
 seeing it is the point.
 
+This applies to every predicate in an authorization graph rather than to matchers alone — misspelling
+`acp:apply` leaves the policy set empty, which reads as a correct refusal — and to the values as
+well: `acp:OwnerAgents` would otherwise pass as an ordinary agent IRI that happens to match nobody.
+
 The same reasoning covers the shapes around them: a block whose kind it cannot read, two access
-control resources claiming one target, and an empty run are all failures, because each is a way for
-coverage to disappear while the check stays green.
+control resources claiming one target, an access control resource nothing asks about, and an empty
+run are all failures, because each is a way for coverage to disappear while the check stays green.
+
+Those guards can rot the same way, so `--self-test` holds each one to a fixture it must reject.
 
 Usage:
 
     .github/scripts/check-examples.py             # every scenario under examples/
     .github/scripts/check-examples.py examples/10-one-context.md
+    .github/scripts/check-examples.py --self-test # the guards still reject what they are for
 """
 
 from __future__ import annotations
@@ -118,6 +125,14 @@ P = {n: URIRef(ACP + n) for n in (
 # Attributes ACP defines for a matcher. Anything else in a matcher is an extension a foreign engine
 # does not know, which is worth reporting rather than ignoring.
 MATCHER_ATTRIBUTES = {P["agent"], P["client"], P["issuer"], P["vc"]}
+
+# The named individuals a matcher attribute may carry. A value in the ACP namespace outside this set
+# is a misspelling: `acp:OwnerAgents` would otherwise fall through as an ordinary agent IRI that
+# happens not to match, so a negative case would pass while the fixture was wrong.
+KNOWN_INDIVIDUALS = {
+    PUBLIC_AGENT, AUTHENTICATED_AGENT, CREATOR_AGENT, OWNER_AGENT,
+    PUBLIC_CLIENT, AUTHENTICATED_CLIENT, PUBLIC_ISSUER, AUTHENTICATED_ISSUER,
+}
 
 
 @dataclass
@@ -319,19 +334,34 @@ def classify(predicates, where: str, on: str) -> tuple[list[str], set]:
     return errors, extensions
 
 
-def inspect_matchers(graph: Graph, where: str) -> tuple[list[str], list[str]]:
-    """Matcher predicates: an ACP misspelling fails, another vocabulary is a portability note."""
-    errors, notes = [], []
-    for link in (P["allOf"], P["anyOf"], P["noneOf"]):
-        for _, _, matcher in graph.triples((None, link, None)):
-            found, extensions = classify(graph.predicates(matcher, None), where, "matcher")
-            errors += found
-            for predicate in extensions:
-                notes.append(
-                    f"{where}: matcher uses {short(predicate)}, which ACP does not define — a "
-                    "conforming ACP engine leaves that matcher unsatisfied"
+def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
+    """Every predicate in an authorization graph, and every matcher value.
+
+    Not only matcher nodes: misspelling `acp:apply` as `acp:applies` leaves the policy set empty, so
+    a negative case would pass while the graph said nothing at all.
+    """
+    errors, extensions = classify(set(graph.predicates(None, None)), where, "authorization graph")
+    notes = [
+        f"{where}: uses {short(predicate)}, which ACP does not define — a conforming ACP engine "
+        "leaves a matcher carrying it unsatisfied"
+        for predicate in extensions
+    ]
+    for attribute in MATCHER_ATTRIBUTES:
+        for value in set(graph.objects(None, attribute)):
+            if str(value).startswith(ACP) and value not in KNOWN_INDIVIDUALS:
+                errors.append(
+                    f"{where}: {short(attribute)} names {short(value)}, which ACP does not define"
                 )
     return errors, notes
+
+
+def inspect_grant(graph: Graph, where: str) -> list[str]:
+    """A grant block states granted modes and nothing else."""
+    return [
+        f"{where}: grant block carries {short(predicate)}, not acp:grant"
+        for predicate in set(graph.predicates(None, None))
+        if predicate not in (P["grant"], RDF_TYPE)
+    ]
 
 
 def inspect_modes(terms, where: str, on: str) -> list[str]:
@@ -386,9 +416,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     # Silently replacing the first mapping would leave its policies never evaluated.
                     failures.append(f"{where}: a second acr claims {short(target)}")
                 by_target[target] = (graph, acr)
-            matcher_errors, matcher_notes = inspect_matchers(graph, where)
-            failures += matcher_errors
-            notes += matcher_notes
+            acr_errors, acr_notes = inspect_acr(graph, where)
+            failures += acr_errors
+            notes += acr_notes
             failures += inspect_modes(
                 set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"])),
                 where, "policy",
@@ -404,6 +434,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
         pending = None
         cases = 0
+        exercised: set = set()
         for offset, block in enumerate(found):
             if block.kind == "context":
                 if pending is not None:
@@ -420,8 +451,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     pending = None
                     continue
                 graph, acr = by_target[ctx.target]
+                exercised.add(ctx.target)
                 got = resolve(graph, acr, ctx)
-                want = read_grant(parse(block, 2000 + offset))
+                grant_graph = parse(block, 2000 + offset)
+                failures += inspect_grant(grant_graph, f"{rel} line {block.line}")
+                want = read_grant(grant_graph)
                 failures += inspect_modes(want, f"{rel} line {block.line}", "grant")
                 if got != want:
                     failures.append(
@@ -434,10 +468,83 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             failures.append(f"{rel} line {pending.line}: context block has no grant block after it")
         if cases == 0:
             failures.append(f"{rel}: no context/grant pair")
+        # An access control resource nothing asks about is prose, not a case: it could say anything
+        # and the file would still pass.
+        for target in sorted(set(by_target) - exercised, key=str):
+            failures.append(f"{rel}: nothing asks about {short(target)}, so its acr is never evaluated")
     except Problem as problem:
         failures.append(f"{rel}: {problem}")
 
     return failures, notes
+
+
+# ------------------------------------------------------------------------------------- self-test
+#
+# Every check above exists because a fixture could be wrong in that particular way and still pass.
+# A check that stops firing brings the silence back without failing anything, so each one is held
+# to a case it must reject. The fixtures live here rather than under `examples/`, where the default
+# glob would pick them up and the regular run would break on purpose.
+
+SOUND = """
+```turtle acr
+[ a acp:AccessControlResource ;
+  acp:resource <https://a.example/c> ;
+  acp:accessControl [ acp:apply <#p> ] ] .
+<#p> a acp:Policy ; acp:allow acl:Read ;
+     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .
+```
+```turtle context
+[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .
+```
+```turtle grant
+[] acp:grant acl:Read .
+```
+"""
+
+# Each: what is broken, the substitution that breaks it, and the wording that must name it. The last
+# two resolve to the expected grant regardless — the fall-through is the whole point of checking.
+BROKEN = [
+    ("a misspelled predicate on the access control resource",
+     ("acp:accessControl [", "acp:accessControls ["), "acp:accessControls"),
+    ("a misspelled predicate inside a policy",
+     ("acp:anyOf [", "acp:anyOfs ["), "acp:anyOfs"),
+    ("a turtle block whose kind is misspelled",
+     ("```turtle grant", "```turtle grants"), "kind that is not one of"),
+    ("a misspelled ACP individual, which would pass as an ordinary IRI",
+     ("<https://b.example/#me>", "acp:OwnerAgents"), "acp:OwnerAgents"),
+    ("a misspelled predicate in a grant block",
+     ("[] acp:grant acl:Read .", "[] acp:grants acl:Read ."), "not acp:grant"),
+    ("an access control resource nothing asks about",
+     ("acp:resource <https://a.example/c> ;",
+      "acp:resource <https://a.example/c>, <https://a.example/unused> ;"), "never evaluated"),
+]
+
+
+def self_test(ids: set[str]) -> int:
+    import tempfile
+
+    problems: list[str] = []
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "fixture.md"
+
+        def failures_of(text: str) -> list[str]:
+            path.write_text(text, encoding="utf-8")
+            return check_scenario(path, ids)[0]
+
+        if failures_of(SOUND):
+            problems.append("the sound fixture does not pass, so no rejection below proves anything")
+        for description, (before, after), wording in BROKEN:
+            assert before in SOUND, f"self-test fixture no longer contains {before!r}"
+            reported = failures_of(SOUND.replace(before, after))
+            if not any(wording in failure for failure in reported):
+                problems.append(f"{description}: not rejected, or not named as {wording!r}")
+
+    for problem in problems:
+        print(f"FAIL self-test: {problem}")
+    if problems:
+        return 1
+    print(f"{len(BROKEN)} way(s) of being wrong are still caught.")
+    return 0
 
 
 def main(argv: list[str]) -> int:
@@ -445,6 +552,9 @@ def main(argv: list[str]) -> int:
         print(f"{INDEX} is missing; run check-requirements.py --write-index first", file=sys.stderr)
         return 1
     ids = {r["id"] for r in json.loads(INDEX.read_text(encoding="utf-8"))["requirements"]}
+
+    if argv == ["--self-test"]:
+        return self_test(ids)
 
     paths = [Path(a).resolve() for a in argv] or sorted(EXAMPLES.glob("*.md"))
     paths = [p for p in paths if p.name != "README.md"]
