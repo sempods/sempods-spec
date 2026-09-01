@@ -123,7 +123,8 @@ KINDS = ("acr-context", "acr-resource", "acr", "policy", "context", "decision", 
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
 FENCE = r"(`{3,}|~{3,})"
 BLOCK = re.compile(
-    r"^ {0,3}" + FENCE + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^ {0,3}\1[ \t]*$",
+    r"^ {0,3}" + FENCE + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)"
+    r"^ {0,3}\1[`~]*[ \t]*$",
     re.M | re.S,
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
@@ -134,6 +135,8 @@ ANY_BLOCK = re.compile(r"^ {0,3}" + FENCE + r"[ \t]*turtle([ \t]+[^\n]*)?$", re.
 # the malformed text while pointing at an anchor that resolves, so nothing else would catch it.
 CITATION = re.compile(r"SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
+# A markdown link whose text is exactly one requirement id, with wherever it actually goes.
+MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
 
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
@@ -519,6 +522,14 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
                     f"{where}: {short(link)} points at the literal \"{value}\" — later lookups find "
                     "no triples for it, which is the silence this runner exists to break"
                 )
+            elif str(value).startswith(ACP):
+                # A policy or matcher is the fixture's own IRI or a blank node, never a term ACP
+                # defines. `acp:apply acp:Polciy` reads as a reserved name and is a misspelling; give
+                # it policy triples and role inference believes it.
+                errors.append(
+                    f"{where}: {short(link)} points at {short(value)}, and ACP's own terms are not "
+                    "policies or matchers"
+                )
 
     # 2 — a predicate belonging to another kind of block
     for predicate in (P["target"], P["owner"], P["creator"], P["grant"]):
@@ -679,6 +690,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # A path outside the repository is legitimate — a scenario can be checked from anywhere while
     # it is being written — so fall back to the path itself rather than failing to name it.
     rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+
+    # A link showing one requirement and ending at another passes both checks that exist: the text
+    # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
+    for shown, destination in MISDIRECTED.findall(text):
+        anchor = destination.partition("#")[2]
+        if anchor and anchor != shown:
+            failures.append(f"{rel}: a link showing {shown} ends at #{anchor}")
 
     for citation in sorted(set(CITATION.findall(text))):
         if not WELL_FORMED.match(citation):
@@ -1073,6 +1091,14 @@ BROKEN = [
       "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context"), "nothing applies"),
+    ("a structural link pointing at a term ACP defines",
+     ("acp:apply <#p> ]", "acp:apply acp:Polciy ]"), "ACP's own terms are not"),
+    ("a citation whose link ends at a different requirement",
+     ("```turtle acr", "See [SPS-GRANT-003](../spec/core/grants.md#SPS-GRANT-009).\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a closing fence longer than its opener, which CommonMark allows",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "```turtle grant\n# nothing\n````"),
+     "expected {—}, got {acl:Read}"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

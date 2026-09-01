@@ -15,7 +15,24 @@ inside, and this file checks both the halves and the whole.
 
 ## What Alice wrote
 
-Names only. Alice has no idea which applications Bob uses and it is not hers to say.
+Two things, because this pod declares the resource module. The context her notes live in, which every
+pod decides:
+
+```turtle acr
+[
+  a acp:AccessControlResource ;
+  acp:resource <https://alice.example/_system/contexts/notes> ;
+  acp:accessControl [ acp:apply <#notesReaders> ]
+] .
+
+<#notesReaders>
+  a acp:Policy ;
+  acp:allow acl:Read ;
+  acp:anyOf [ a acp:Matcher ; acp:agent <https://bob.example/profile#me> ] .
+```
+
+and the document, named only. Alice has no idea which applications Bob uses and it is not hers to
+say.
 
 ```turtle acr
 [
@@ -118,11 +135,18 @@ to go — it needs a second artifact that carries the target, or a rule choosing
 delegation policies, and both are decisions rather than spellings. What the shape above does express
 is a ceiling on **modes**, which is what these two cases exercise.
 
-Two evaluations, two answers. The pod grants what **both** allow — and that is the sentence this
+Three evaluations, three answers. The pod grants what **all** allow — and that is the sentence this
 scenario is about, so it is checked rather than asserted. A `decision` block puts one request to both
 access control resources at once, and the grant below it is what the pod actually returns:
 
 ```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
 [
   acp:target <https://alice.example/notes/roadmap> ;
   acp:agent  <https://bob.example/profile#me> ;
@@ -143,6 +167,13 @@ access control resources at once, and the grant below it is what the pod actuall
 
 ```turtle decision
 [
+  acp:target <https://alice.example/_system/contexts/notes> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
   acp:target <https://alice.example/notes/roadmap> ;
   acp:agent  <https://bob.example/profile#me> ;
   acp:client <did:web:spamtool.example> ;
@@ -162,7 +193,12 @@ access control resources at once, and the grant below it is what the pod actuall
 
 The second is the document opening in one application and being gone in the other, which is where
 this file started. Alice's policy still grants `acl:Read` on its own — that evaluation is unchanged
-above — and the pod returns nothing, because the other half refuses.
+above — and the pod returns nothing, because another half refuses.
+
+The context half is in both, and it is not decoration. Every resource access passes its containing
+context first; leaving it out would let this file certify a read that never met the sandbox every pod
+enforces. Make the context unreadable to Bob and both cases go empty, however generous Alice's
+document policy is.
 
 Both halves are resolved by the plain ACP engine; the intersection is applied to their answers
 afterwards. That separation is the point. ACP has no operator joining two evaluations, so the runner
