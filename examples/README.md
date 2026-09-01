@@ -4,6 +4,24 @@ Scenarios that show what the access-control model does, in cases rather than in 
 the readable half of [`docs/concepts/access-control.md`](../docs/concepts/access-control.md), which
 carries the reasoning and the trade-offs.
 
+**Read the first three in order.** They are the model, and each adds exactly one thing to the one
+before:
+
+| | |
+|---|---|
+| [`10-one-context.md`](10-one-context.md) | a pod with one place to put things — the whole model at its smallest |
+| [`20-several-contexts.md`](20-several-contexts.md) | areas to choose between, one of them public. The shape most pods have |
+| [`30-spaces-and-documents.md`](30-spaces-and-documents.md) | a space whose documents are not all for the same readers, so a second decision narrows inside it |
+
+The rest answer a question somebody asked rather than showing the model, and are worth reading when
+that question comes up:
+
+| | |
+|---|---|
+| [`50-delegation.md`](50-delegation.md) | why an application is not the person acting through it, and where the ceiling leaks |
+| [`60-creator.md`](60-creator.md) | why `acp:CreatorAgent` cannot match here, and what is done instead |
+| [`70-resharing.md`](70-resharing.md) | an open design question: may a reader pass access on, and what a sweep would cost |
+
 **They are fixtures, not prose about the contract.** A friendlier second description of a
 specification is the copy that goes wrong and is believed anyway, which is why this repository
 refuses one everywhere else. These are exempt because they are executable: every scenario is run
@@ -30,6 +48,23 @@ an ordinary outcome and the answer several scenarios turn on.
 `acp:` and `acl:` prefixes are supplied by the runner, so a scenario does not open with lines a
 reader already knows. Each block is parsed under a base of its own, so `<#owner>` in one block never
 collides with `<#owner>` in another.
+
+## Where these live
+
+No scenario says where its access control resource is stored, and that is deliberate: the address is
+an implementation's own business. The boundary around it is not.
+
+An access control resource is **not data**. It is not a context, does not appear in context
+discovery, cannot be selected with `?context=`, and is unreachable through LOD CRUD or SPARQL — which
+is what stops a caller writing a triple that looks like a policy and having it read back as one. A
+client reaches it through the `Link` header ACP requires of a controlled resource, and never by
+constructing a path, the same way it never constructs a context IRI
+([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)).
+
+The structural half — that policy is indexed by the target it controls rather than by the context
+that happens to hold that target's statements — is in
+[`docs/concepts/access-control.md`](../docs/concepts/access-control.md) §"Policy location and control
+plane", with the three reasons it has that shape.
 
 ## Why the runner is a plain ACP engine
 
