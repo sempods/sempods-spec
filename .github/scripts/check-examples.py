@@ -78,7 +78,7 @@ try:
 except ImportError:  # pragma: no cover - the message is the whole point
     sys.exit(
         "check-examples.py needs rdflib to parse the scenarios.\n\n"
-        "    python3 -m pip install rdflib==7.6.0\n\n"
+        "    python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2\n\n"
         "It is the specification's first RDF dependency; docs/roadmaps names that as a decision\n"
         "rather than an oversight."
     )
@@ -100,7 +100,13 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # alone, so a scenario showing two resources under one policy would have to write the policy twice —
 # and a green run would then prove two policies that agree, which is the claim's opposite. A policy
 # block is merged into every acr graph in the file, so deleting it breaks both cases at once.
-KINDS = ("acr", "policy", "context", "grant", "aside")
+#
+# `decision` is one request put to *several* access control resources at once, paired with the modes
+# the pod grants for it. Each half is still resolved by the plain ACP engine below; what the block
+# adds is sempods' composition — both must allow — applied to the answers rather than inside them.
+# That rule is the load-bearing claim of the whole model and ACP has no operator for it, so leaving
+# it as prose meant a scenario could keep its central sentence while the sentence became false.
+KINDS = ("acr", "policy", "context", "decision", "grant", "aside")
 BLOCK = re.compile(
     r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
 )
@@ -206,11 +212,33 @@ def one(graph: Graph, subject, predicate, where: str):
     return values[0] if values else None
 
 
+def read_contexts(graph: Graph, where: str, least: int) -> list[Context]:
+    """Every node carrying acp:target, as the halves of one request's decision."""
+    subjects = {s for s, _, _ in graph if (s, P["target"], None) in graph}
+    if len(subjects) < least:
+        raise Problem(
+            f"{where}: expected at least {least} node(s) carrying acp:target, found {len(subjects)}"
+        )
+    contexts = [read_one_context(graph, node, where) for node in sorted(subjects, key=str)]
+    targets = [c.target for c in contexts]
+    if len(set(targets)) != len(targets):
+        raise Problem(f"{where}: two halves of one decision name the same target")
+    # Every half is the same request, or the intersection below composes answers to different
+    # questions and means nothing.
+    for attribute in ("agent", "client", "issuer"):
+        if len({getattr(c, attribute) for c in contexts}) != 1:
+            raise Problem(f"{where}: the halves of one decision disagree about acp:{attribute}")
+    return contexts
+
+
 def read_context(graph: Graph, where: str) -> Context:
     subjects = {s for s, _, _ in graph if (s, P["target"], None) in graph}
     if len(subjects) != 1:
         raise Problem(f"{where}: expected exactly one node carrying acp:target, found {len(subjects)}")
-    node = subjects.pop()
+    return read_one_context(graph, subjects.pop(), where)
+
+
+def read_one_context(graph: Graph, node, where: str) -> Context:
     errors, _ = classify(graph.predicates(node, None), where, "access context")
     if errors:
         raise Problem(errors[0].split(": ", 1)[1])
@@ -486,24 +514,36 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         pending = None
         cases = 0
         exercised: set = set()
+
+        def modes_for(ctx: Context, where: str) -> set | None:
+            if ctx.target not in by_target:
+                failures.append(f"{where}: no acr controls {short(ctx.target)}")
+                return None
+            exercised.add(ctx.target)
+            graph, acr = by_target[ctx.target]
+            return resolve(graph, acr, ctx)
         for offset, block in enumerate(found):
-            if block.kind == "context":
+            if block.kind in ("context", "decision"):
                 if pending is not None:
-                    failures.append(f"{rel} line {pending.line}: context block has no grant block after it")
+                    failures.append(
+                        f"{rel} line {pending.line}: {pending.kind} block has no grant block after it"
+                    )
                 pending = block
             elif block.kind == "grant":
                 if pending is None:
                     failures.append(f"{rel} line {block.line}: grant block with no context block before it")
                     continue
                 where = f"{rel} line {pending.line}"
-                ctx = read_context(parse(pending, 1000 + offset), where)
-                if ctx.target not in by_target:
-                    failures.append(f"{where}: no acr controls {short(ctx.target)}")
+                halves = read_contexts(parse(pending, 1000 + offset), where,
+                                       least=2 if pending.kind == "decision" else 1)
+                answers = [modes_for(ctx, where) for ctx in halves]
+                if any(a is None for a in answers):
                     pending = None
                     continue
-                graph, acr = by_target[ctx.target]
-                exercised.add(ctx.target)
-                got = resolve(graph, acr, ctx)
+                # sempods' rule, and deliberately here rather than in the engine: each answer above
+                # is what any ACP engine produces, and the intersection is what the pod does with
+                # them. A union would let a resource policy widen what a context refused.
+                got = set.intersection(*answers)
                 grant_graph = parse(block, 2000 + offset)
                 failures += inspect_grant(grant_graph, f"{rel} line {block.line}")
                 want = read_grant(grant_graph)
@@ -516,7 +556,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 cases += 1
                 pending = None
         if pending is not None:
-            failures.append(f"{rel} line {pending.line}: context block has no grant block after it")
+            failures.append(
+                f"{rel} line {pending.line}: {pending.kind} block has no grant block after it"
+            )
         if cases == 0:
             failures.append(f"{rel}: no context/grant pair")
         # An access control resource nothing asks about is prose, not a case: it could say anything
@@ -576,6 +618,14 @@ BROKEN = [
     ("a shared policy no access control resource applies",
      ("```turtle context", "```turtle policy\n<https://a.example/spare> a acp:Policy ; "
       "acp:allow acl:Read .\n```\n```turtle context"), "no acr applies"),
+    ("a decision composed by union rather than intersection",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle acr\n[ a acp:AccessControlResource ; acp:resource <https://a.example/d> ] .\n```\n"
+      "```turtle decision\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n"
+      "[ acp:target <https://a.example/d> ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle grant\n[] acp:grant acl:Read .\n```"),
+     "expected {acl:Read}"),
     ("a matcher mixing an extension with an ACP attribute, which widens the answer",
      ("acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ]",
       "acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ;\n"

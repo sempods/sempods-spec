@@ -43,9 +43,10 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `context` | one attempted access, as the server would describe it |
 | `grant` | the access modes that attempt must be granted |
 | `policy` | one policy artifact several `acr` blocks reference. Merged into every `acr` in the file, so a scenario claiming two resources share a policy demonstrates it rather than writing two copies that agree |
+| `decision` | one request put to several `acr` blocks at once. Each half is resolved by the plain ACP engine; the modes below are what **both** allow, which is sempods' composition applied to the answers rather than inside the engine |
 | `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
 
-A `context` pairs with the next `grant` below it. Its `acp:target` selects the `acr` whose
+A `context` or `decision` pairs with the next `grant` below it. Its `acp:target` selects the `acr` whose
 `acp:resource` matches. A `grant` block containing only a comment means nothing is granted, which is
 an ordinary outcome and the answer several scenarios turn on.
 

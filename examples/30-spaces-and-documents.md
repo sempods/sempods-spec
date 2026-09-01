@@ -139,6 +139,63 @@ Each block above is one decision. The pod asks both and grants what both allow:
 | **Dana** on `salary-round` | `read`, `write` | — | **nothing** |
 | **Erik** on `salary-round` | — | `read` | **nothing** |
 
+The last column is checked rather than read. A `decision` block puts one request to both access
+control resources, and the grant below it is what the pod returns:
+
+```turtle decision
+[
+  acp:target <https://acme.example/_system/contexts/spaces/eng> ;
+  acp:agent  <https://dana.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+
+[
+  acp:target <https://acme.example/docs/roadmap> ;
+  acp:agent  <https://dana.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+```
+
+```turtle grant
+[] acp:grant acl:Read, acl:Write .
+```
+
+```turtle decision
+[
+  acp:target <https://acme.example/_system/contexts/spaces/eng> ;
+  acp:agent  <https://dana.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+
+[
+  acp:target <https://acme.example/docs/salary-round> ;
+  acp:agent  <https://dana.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+```
+
+```turtle grant
+# nothing
+```
+
+```turtle decision
+[
+  acp:target <https://acme.example/_system/contexts/spaces/eng> ;
+  acp:agent  <https://erik.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+
+[
+  acp:target <https://acme.example/docs/salary-round> ;
+  acp:agent  <https://erik.example/profile#me> ;
+  acp:owner  <https://acme.example/profile#me>
+] .
+```
+
+```turtle grant
+# nothing
+```
+
 **Erik is the row that matters.** A document policy names him, and he still gets nothing, because he
 cannot see the space that holds the document. The finer decision can only take away — it never lets
 somebody in through a door the space kept shut.
@@ -146,9 +203,13 @@ somebody in through a door the space kept shut.
 That is why the two compose by intersection and not by union. A document policy that appeared to
 restrict a broad space grant, but could also widen it, would be a control that is not one.
 
-## What this file cannot check for you
+## Where the ACP claim stops and sempods begins
 
-The runner evaluates one access control resource against one request, which is exactly as far as the
-ACP conformance claim goes: each block above is ordinary ACP that any engine would resolve the same
-way. Joining two of them is sempods' composition rule — ACP has no operator for it — so the table is
-the part you have to read rather than run.
+Every `acr` above is ordinary ACP that any engine resolves the same way, and each half of each
+`decision` is resolved by exactly that engine. Joining two of them is not ACP — the specification has
+no operator for it — so the runner intersects the two answers *outside* the engine, which is where
+sempods does it too.
+
+That line matters for what a green run proves. It says every evaluation here is portable ACP **and**
+that the pod composes them by intersection. It does not say ACP requires the second, because ACP has
+nothing to say about it.

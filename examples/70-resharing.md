@@ -65,9 +65,16 @@ Look at what Carla's policy does **not** say: that Bob put it there. Every polic
 statement that somebody may read, and they are indistinguishable in origin. That is not a gap in the
 example — ACP has no issuer, and a policy is a rule rather than a record of who wrote it.
 
-## Alice withdraws Bob, and the sweep runs
+## After Alice withdraws Bob, if the sweep ran
 
 Carla's access existed only because Bob's did. It goes with it.
+
+Read that heading carefully, because the runner cannot check the sweep and it would be worth saying
+so even if it could. What the blocks below hold is an **end state**, supplied rather than derived: an
+implementation whose sweep wrongly kept Carla would produce the other end state further down, and no
+fixture here would notice, because the two are told apart by which policies exist and not by how they
+came to. That is not a gap this file works around — it is the file's finding, and the closing section
+is where it lands.
 
 ```turtle acr
 [
@@ -97,7 +104,7 @@ applications, in a shape one step deeper: revocation is a **recomputation** and 
 because what has to go is derived rather than named. Extending it from *what an application received*
 to *what a person passed on* is the same instruction with a longer chain to walk.
 
-## The same withdrawal, and Carla stays
+## The same withdrawal, if Carla was granted directly too
 
 ```turtle acr
 [

@@ -9,9 +9,9 @@ decided by different people. Alice decides who may read her document. Bob decide
 own access an application receives ([`SPS-GRANT-013`](../spec/core/grants.md#SPS-GRANT-013)), and
 neither can answer for the other.
 
-This scenario is also where the examples stop covering a whole decision. The runner checks **one
-evaluation at a time**, which is exactly as far as the ACP conformance claim reaches; combining two
-evaluations is sempods' rule and not ACP's.
+Two evaluations, and the pod grants what both allow. That composition is sempods' rule rather than
+ACP's — ACP has no operator for it — so the runner applies it outside the ACP engine rather than
+inside, and this file checks both the halves and the whole.
 
 ## What Alice wrote
 
@@ -111,10 +111,56 @@ says whose authority is being bounded, not how far the bounding reaches — whet
 over the whole pod, over a set of contexts, or over something narrower is an open decision, and
 encoding an answer in the target would have decided it by accident.
 
-Two evaluations, two answers. The pod grants what **both** allow, so Bob reads the document through
-the notes application and reads nothing through the tool. That intersection is where the request is
-finally decided, and it is a sempods rule — ACP has no operator that joins two evaluations, which is
-why this file checks them one at a time.
+Two evaluations, two answers. The pod grants what **both** allow — and that is the sentence this
+scenario is about, so it is checked rather than asserted. A `decision` block puts one request to both
+access control resources at once, and the grant below it is what the pod actually returns:
+
+```turtle decision
+[
+  acp:target <https://alice.example/notes/roadmap> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:notes.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
+  acp:target <https://bob.example/profile#me> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:notes.example>
+] .
+```
+
+```turtle grant
+[] acp:grant acl:Read .
+```
+
+```turtle decision
+[
+  acp:target <https://alice.example/notes/roadmap> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
+  acp:target <https://bob.example/profile#me> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example>
+] .
+```
+
+```turtle grant
+# nothing
+```
+
+The second is the document opening in one application and being gone in the other, which is where
+this file started. Alice's policy still grants `acl:Read` on its own — that evaluation is unchanged
+above — and the pod returns nothing, because the other half refuses.
+
+Both halves are resolved by the plain ACP engine; the intersection is applied to their answers
+afterwards. That separation is the point. ACP has no operator joining two evaluations, so the runner
+does not pretend it has one — it composes outside the engine, exactly where sempods does, and a
+`decision` case fails if that composition is ever changed to something wider.
 
 ## Why the client constraint cannot simply be added to Alice's policy
 
