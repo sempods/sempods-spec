@@ -224,6 +224,38 @@ class Problem(Exception):
 
 # --------------------------------------------------------------------------- reading a scenario
 
+COMMENT = re.compile(r"<!--.*?-->", re.S)
+FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$", re.M)
+
+
+def hidden_fixtures(text: str) -> list[str]:
+    """Fixture fences a reader never sees, which the extractor would still run.
+
+    Two ways to reach that: inside an HTML comment, and inside a longer outer fence. Both render as
+    nothing or as literal text, so the scenario a reader meets and the scenario CI checks differ —
+    which is the one failure this file exists to prevent, arrived at from the other side.
+    """
+    problems = []
+    if any("turtle" in m.group(0) for m in COMMENT.finditer(text)):
+        problems.append("a turtle fence sits inside an HTML comment, where no reader sees it")
+
+    open_fence = None
+    for match in FENCE_LINE.finditer(COMMENT.sub("", text)):
+        run, info = match.group(1), match.group(2).strip()
+        if open_fence is None:
+            open_fence = (run[0], len(run))
+            continue
+        char, length = open_fence
+        if run[0] == char and len(run) >= length and not info:
+            open_fence = None
+        elif info.startswith("turtle"):
+            problems.append(
+                "a turtle fence is opened inside another fence, where it is literal text rather "
+                "than a fixture"
+            )
+    return problems
+
+
 def blocks_of(text: str) -> list[Block]:
     return [
         Block(m.group(3), m.group(4), text.count("\n", 0, m.start()) + 1)
@@ -639,7 +671,15 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
         # be harmless and also pointless, since it is satisfied by every request; refusing it there
         # too costs nothing and keeps the rule the one sentence the profile states.
         matchers = set(graph.objects(policy, P["allOf"])) | set(graph.objects(policy, P["anyOf"]))
-        public = any(PUBLIC_AGENT in set(graph.objects(m, P["agent"])) for m in matchers)
+        # Every reserved individual an unauthenticated request satisfies, not just the agent one:
+        # a matcher carrying only acp:client acp:PublicClient is satisfied by a request with no
+        # client and no agent at all, so a policy behind it grants anonymously.
+        public = any(
+            value in (PUBLIC_AGENT, PUBLIC_CLIENT, PUBLIC_ISSUER)
+            for m in matchers
+            for attribute in (P["agent"], P["client"], P["issuer"])
+            for value in graph.objects(m, attribute)
+        )
         if public and modes - {ACL_READ}:
             errors.append(
                 f"{where}: a policy reaching acp:PublicAgent allows "
@@ -739,15 +779,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
     # A link showing one requirement and ending at another passes both checks that exist: the text
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
-    definitions = dict(REFERENCE_DEFINITION.findall(text))
+    definitions = {label.casefold(): d for label, d in REFERENCE_DEFINITION.findall(text)}
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
     for shown in SHORTCUT.findall(text):
-        if shown in definitions:
-            citations.append((shown, definitions[shown]))
+        if shown.casefold() in definitions:
+            citations.append((shown, definitions[shown.casefold()]))
     for shown, label in REFERENCED.findall(text):
         # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
         # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
-        citations.append((shown, definitions.get(label or shown, "")))
+        citations.append((shown, definitions.get((label or shown).casefold(), "")))
     for shown, destination in citations:
         anchor = destination.partition("#")[2]
         if anchor != shown:
@@ -765,6 +805,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     found = blocks_of(text)
     # A block whose kind is misspelled matches no pattern above and would simply vanish, taking its
     # case with it while the rest of the file still passes.
+    for problem in hidden_fixtures(text):
+        failures.append(f"{rel}: {problem}")
     if len(CONTAINED.findall(text)) != len(ANY_BLOCK.findall(text)):
         failures.append(
             f"{rel}: a turtle fence sits inside a block quote or a nested list, where it renders "
@@ -787,6 +829,11 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # A shared block is merged into every access control resource in the file, so an access
             # control resource smuggled into one would be registered as a decision of its own while
             # being displayed under the wrong kind.
+            if (None, RDF_TYPE, URIRef(ACP + "AccessControlResource")) in one:
+                failures.append(
+                    f"{rel} line {block.line}: a policy block types a node "
+                    "acp:AccessControlResource, and a shared artifact is a policy and its matchers"
+                )
             for predicate in (P["resource"], P["accessControl"], P["memberAccessControl"]):
                 if (None, predicate, None) in one:
                     failures.append(
@@ -798,12 +845,22 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             failures += shared_errors
             notes += shared_notes
 
-        shared_policies = set(shared.subjects(None, None))
+        shared_subjects = set(shared.subjects(None, None))
+        shared_policies = shared_subjects
         by_target: dict = {}
         applied: set = set()
         for index, block in enumerate(b for b in found if b.kind.startswith("acr")):
             kind = block.kind[4:] or "unqualified"
-            graph = parse(block, index) + shared
+            own = parse(block, index)
+            # Adding triples to a shared policy's subject makes a private version of it for this
+            # access control resource only — one edit reaching every referrer is the claim these
+            # files make, and two versions that differ is that claim being false.
+            for subject in set(own.subjects(None, None)) & shared_subjects:
+                failures.append(
+                    f"{rel} line {block.line}: says more about {short(subject)}, which a policy "
+                    "block owns — a shared artifact has one version"
+                )
+            graph = own + shared
             where = f"{rel} line {block.line}"
             # Walked from the access control resource rather than read off the graph: a typed but
             # unlinked acp:AccessControl carrying acp:apply would otherwise mark a shared policy
@@ -815,7 +872,6 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     applied |= set(graph.objects(control, P["apply"]))
             # Without this, a block declaring no target adds nothing to by_target and no later check
             # can see it: the file passes on its other blocks while this one is never evaluated.
-            own = parse(block, index)
             subjects = set(own.subjects(P["resource"], None)) | set(
                 own.subjects(RDF_TYPE, URIRef(ACP + "AccessControlResource"))
             )
@@ -851,10 +907,17 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
-            failures += inspect_modes(
-                set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"])),
-                where, "policy", notes,
-            )
+            modes = set(graph.objects(None, P["allow"])) | set(graph.objects(None, P["deny"]))
+            failures += inspect_modes(modes, where, "policy", notes)
+            # `acl:Control` is reading and writing an access control resource. Context management
+            # also creates and deletes contexts and reaches slash-delimited descendants, so the
+            # profile gives it a sempods term of its own — which is not named yet, and until it is
+            # a context policy cannot spell `manage` at all.
+            if kind == "context" and ACL_CONTROL in modes:
+                failures.append(
+                    f"{where}: a context policy allows acl:Control, which is management of an "
+                    "access control resource and smaller than manage on a context"
+                )
 
         # An inline policy nothing applies is the same silence as an unapplied shared one, and it
         # sits inside a graph whose other policy can carry every case in the file.
@@ -900,7 +963,25 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         cases = 0
         exercised: set = set()
 
-        def modes_for(ctx: Context, where: str, composed: bool = False) -> set | None:
+        def public_matcher(graph: Graph, acr) -> bool:
+            """Whether any policy this acr applies can be satisfied by an unauthenticated request."""
+            reachable = set()
+            for control in set(graph.objects(acr, P["accessControl"])) | set(
+                graph.objects(acr, P["memberAccessControl"])
+            ):
+                reachable |= set(graph.objects(control, P["apply"]))
+            for policy in reachable:
+                for link in (P["allOf"], P["anyOf"]):
+                    for matcher in graph.objects(policy, link):
+                        for attribute in (P["agent"], P["client"], P["issuer"]):
+                            if set(graph.objects(matcher, attribute)) & {
+                                PUBLIC_AGENT, PUBLIC_CLIENT, PUBLIC_ISSUER
+                            }:
+                                return True
+            return False
+
+        def modes_for(ctx: Context, where: str, composed: bool = False,
+                      ceiling: bool = False) -> set | None:
             if ctx.target not in by_target:
                 failures.append(f"{where}: no acr controls {short(ctx.target)}")
                 return None
@@ -915,6 +996,21 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 failures.append(
                     f"{where}: {short(ctx.target)} carries two decisions, so a half of a larger "
                     "decision cannot say which of them it means"
+                )
+                return None
+            # The ceiling half — the delegation evaluation, recognisable because its target is the
+            # principal it bounds. The concept applies it to authenticated authority only and then
+            # unions the public branch, so a request that reaches a target through a public matcher
+            # keeps `read` even where the ceiling withholds it. This block intersects every half
+            # uniformly, which is the same answer everywhere except there; rather than quietly give
+            # the wrong one, it refuses the combination it cannot express.
+            if composed and ceiling and any(
+                public_matcher(graph, acr) for _, graph, acr in entries
+            ):
+                failures.append(
+                    f"{where}: composes a delegation ceiling with a target reached publicly, and "
+                    "the public branch unions where this block intersects — write the halves that "
+                    "narrow, and read the ceiling off the authenticated case"
                 )
                 return None
             answers = []
@@ -940,7 +1036,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 halves = (read_contexts(parse(pending, 1000 + offset), where, least=2)
                           if pending.kind == "decision"
                           else [read_context(parse(pending, 1000 + offset), where)])
-                answers = [modes_for(ctx, where, composed=len(halves) > 1) for ctx in halves]
+                # A half whose target is the agent it describes is the delegation evaluation.
+                bounds = any(c.target == c.agent for c in halves)
+                answers = [
+                    modes_for(ctx, where, composed=len(halves) > 1, ceiling=bounds)
+                    for ctx in halves
+                ]
                 if any(a is None for a in answers):
                     pending = None
                     continue
@@ -1231,6 +1332,41 @@ BROKEN = [
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    ("a class assertion smuggled into a policy block",
+     ("```turtle context", "```turtle policy\n[ a acp:AccessControlResource ] .\n```\n```turtle context"),
+     "a shared artifact is a policy and its matchers"),
+    ("a reference definition whose label differs only in case",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n[sps-grant-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("anonymous write through the public *client*",
+     ("acp:allow acl:Read ;\n     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .",
+      "acp:allow acl:Read, acl:Write ;\n"
+      "     acp:anyOf [ a acp:Matcher ; acp:client acp:PublicClient ] ."),
+     "public matcher for read only"),
+    ("an acr block adding triples to a shared policy",
+     ("```turtle context", "```turtle policy\n<https://a.example/shared> a acp:Policy ;\n"
+      "  acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ;\n"
+      "  acp:accessControl [ acp:apply <https://a.example/shared> ] ] .\n"
+      "<https://a.example/shared> acp:allow acl:Write .\n```\n"
+      "```turtle context"), "a shared artifact has one version"),
+    ("acl:Control on a context decision",
+     ("```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/c> ;\n"
+      "  acp:accessControl [ acp:apply <#p> ] ] .\n"
+      "<#p> a acp:Policy ; acp:allow acl:Read ;",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/c> ;\n"
+      "  acp:accessControl [ acp:apply <#p> ] ] .\n"
+      "<#p> a acp:Policy ; acp:allow acl:Read, acl:Write, acl:Control ;"),
+     "smaller than manage on a context"),
+    ("a fixture inside an HTML comment, which no reader sees",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n<!--\n```turtle grant\n# nothing\n```\n-->"),
+     "inside an HTML comment"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
