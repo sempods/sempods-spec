@@ -49,8 +49,14 @@ opinion about applications. If the decision stopped here the tool would be in.
 
 ## What Bob agreed to
 
-His delegation is its own document with its own target: the pod, not the document. A person consents
-to an application once, over a scope, and does not re-consent per resource.
+His delegation is its own document with its own target — **Bob himself**, not the pod and not the
+document. A person consents to an application once and does not re-consent per resource, so the
+question this evaluation answers is about him: how much of Bob's authority did this application
+receive?
+
+The target has to be the principal rather than the pod. Carla's delegation would otherwise declare
+the same target, two canonical documents would claim one IRI, and whichever loaded second would
+silently replace the first — so Bob would lose access because Carla authorised an application.
 
 The application is named by its `did:web:` identifier, which is its origin and is parsed structurally
 rather than fetched ([`SPS-AUTH-003`](../spec/core/auth.md#SPS-AUTH-003)).
@@ -58,7 +64,7 @@ rather than fetched ([`SPS-AUTH-003`](../spec/core/auth.md#SPS-AUTH-003)).
 ```turtle acr
 [
   a acp:AccessControlResource ;
-  acp:resource <https://alice.example/> ;
+  acp:resource <https://bob.example/profile#me> ;
   acp:accessControl [ acp:apply <#bobToNotesApp> ]
 ] .
 
@@ -76,7 +82,7 @@ this person through this application — and neither half alone.
 
 ```turtle context
 [
-  acp:target <https://alice.example/> ;
+  acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
   acp:client <did:web:notes.example>
 ] .
@@ -90,7 +96,7 @@ this person through this application — and neither half alone.
 
 ```turtle context
 [
-  acp:target <https://alice.example/> ;
+  acp:target <https://bob.example/profile#me> ;
   acp:agent  <https://bob.example/profile#me> ;
   acp:client <did:web:spamtool.example>
 ] .
@@ -99,6 +105,11 @@ this person through this application — and neither half alone.
 ```turtle grant
 # nothing
 ```
+
+What this scenario does **not** settle is what the ceiling is scoped to. Naming Bob as the target
+says whose authority is being bounded, not how far the bounding reaches — whether a person delegates
+over the whole pod, over a set of contexts, or over something narrower is an open decision, and
+encoding an answer in the target would have decided it by accident.
 
 Two evaluations, two answers. The pod grants what **both** allow, so Bob reads the document through
 the notes application and reads nothing through the tool. That intersection is where the request is

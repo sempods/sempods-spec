@@ -2,11 +2,18 @@
 
 Alice shares a plan with Bob. Bob shares it on with Carla. Then Alice withdraws Bob's access.
 
-What happens to Carla is a design question this specification has not answered, because today only a
-`manage` grant lets somebody share at all
-([`SPS-CTX-019`](../spec/core/contexts.md#SPS-CTX-019)). The question is whether reading should be
-enough — every reader may pass on what they can already see — with revocation sweeping the shares
-that were made under an access that is now gone.
+What happens to Carla is a design question this specification has not answered, and it is unanswered
+more completely than it looks. **There is no interpersonal sharing operation in the specification at
+all.** Grants for a person are durable stored policy
+([`SPS-GRANT-012`](../spec/core/grants.md#SPS-GRANT-012)) and no requirement says who may write one;
+what the chapters do define is delegation to an *application*, where holding a grant is enough to
+pass a subset of it on ([`SPS-GRANT-030`](../spec/core/grants.md#SPS-GRANT-030)). Sharing a context
+is not that, and neither is `manage`, which governs creating and deleting contexts
+([`SPS-CTX-019`](../spec/core/contexts.md#SPS-CTX-019)) rather than granting access to them.
+
+So the question is not whether to relax an existing rule. It is which rule to write: whether reading
+should be enough — every reader may pass on what they can already see — with revocation sweeping the
+shares made under an access that is now gone.
 
 **This scenario works the question rather than the answer.** The graphs are ordinary ACP either way;
 what changes between them is which policies exist, which is exactly what the design decides.
