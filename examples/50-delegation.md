@@ -21,13 +21,8 @@ Names only. Alice has no idea which applications Bob uses and it is not hers to 
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/roadmap> ;
-  acp:accessControl [ acp:apply <#owner>, <#bob> ]
+  acp:accessControl [ acp:apply <#bob> ]
 ] .
-
-<#owner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#bob>
   a acp:Policy ;

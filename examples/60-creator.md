@@ -39,6 +39,11 @@ in the pod, whatever the statements happen to be about. Alice owns the pod, not 
 
 Both policies below are perfectly good ACP. Nothing here is malformed, unsupported or discouraged.
 
+The owner policy is written out here, which the other scenarios deliberately do not do — a pod gives
+its owner authority without storing it
+([`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011)). It appears because this file is about
+comparing two relational matchers, and a fixture can only evaluate what is in front of it.
+
 ```turtle acr
 [
   a acp:AccessControlResource ;

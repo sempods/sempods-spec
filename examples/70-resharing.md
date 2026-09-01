@@ -28,13 +28,8 @@ names say which:
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/plan> ;
-  acp:accessControl [ acp:apply <#owner>, <#bob>, <#carla> ]
+  acp:accessControl [ acp:apply <#bob>, <#carla> ]
 ] .
-
-<#owner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#bob>
   a acp:Policy ;
@@ -70,15 +65,13 @@ Carla's access existed only because Bob's did. It goes with it.
 ```turtle acr
 [
   a acp:AccessControlResource ;
-  acp:resource <https://alice.example/notes/plan-swept> ;
-  acp:accessControl [ acp:apply <#ownerSwept> ]
+  acp:resource <https://alice.example/notes/plan-swept>
 ] .
-
-<#ownerSwept>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 ```
+
+Nothing is left. Alice still reaches her own plan, but that is the pod giving its owner authority
+without storing it ([`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011)) rather than anything
+written here.
 
 ```turtle context
 [
@@ -92,18 +85,6 @@ Carla's access existed only because Bob's did. It goes with it.
 # nothing
 ```
 
-```turtle context
-[
-  acp:target <https://alice.example/notes/plan-swept> ;
-  acp:agent  <https://alice.example/profile#me> ;
-  acp:owner  <https://alice.example/profile#me>
-] .
-```
-
-```turtle grant
-[] acp:grant acl:Read, acl:Write, acl:Control .
-```
-
 This is what [`SPS-GRANT-016`](../spec/core/grants.md#SPS-GRANT-016) already demands for
 applications, in a shape one step deeper: revocation is a **recomputation** and not a string match,
 because what has to go is derived rather than named. Extending it from *what an application received*
@@ -115,13 +96,8 @@ to *what a person passed on* is the same instruction with a longer chain to walk
 [
   a acp:AccessControlResource ;
   acp:resource <https://alice.example/notes/plan-kept> ;
-  acp:accessControl [ acp:apply <#ownerKept>, <#carlaKept> ]
+  acp:accessControl [ acp:apply <#carlaKept> ]
 ] .
-
-<#ownerKept>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#carlaKept>
   a acp:Policy ;

@@ -14,13 +14,8 @@ This is the shape most pods have, and the one the chapters describe today.
 [
   a acp:AccessControlResource ;
   acp:resource <https://anna.example/_system/contexts/recipes> ;
-  acp:accessControl [ acp:apply <#recipesOwner>, <#recipesPublic> ]
+  acp:accessControl [ acp:apply <#recipesPublic> ]
 ] .
-
-<#recipesOwner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#recipesPublic>
   a acp:Policy ;
@@ -53,15 +48,13 @@ mode and not a degraded one.
 ```turtle acr
 [
   a acp:AccessControlResource ;
-  acp:resource <https://anna.example/_system/contexts/finances> ;
-  acp:accessControl [ acp:apply <#financesOwner> ]
+  acp:resource <https://anna.example/_system/contexts/finances>
 ] .
-
-<#financesOwner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 ```
+
+Nothing at all. Anna reaches this the way she reaches everything — the pod gives its owner authority
+without storing it ([`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011)) — and there is no second
+thing to say.
 
 ```turtle context
 [
@@ -84,13 +77,8 @@ rule anywhere says "Ben may not" — his access simply stops at the areas that m
 [
   a acp:AccessControlResource ;
   acp:resource <https://anna.example/_system/contexts/trip> ;
-  acp:accessControl [ acp:apply <#tripOwner>, <#tripBen> ]
+  acp:accessControl [ acp:apply <#tripBen> ]
 ] .
-
-<#tripOwner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#tripBen>
   a acp:Policy ;
@@ -110,9 +98,13 @@ rule anywhere says "Ben may not" — his access simply stops at the areas that m
 [] acp:grant acl:Read, acl:Write .
 ```
 
-Ben may write here, and `acl:Read` is written out beside `acl:Write` for the same reason as before.
-It is not politeness: a write path is a read oracle — a conditional request, an entity tag, a patch
-that succeeds or fails on what is already there — so
+Ben may write here, and `acl:Read` is written out beside `acl:Write` rather than implied. sempods
+says `write` covers `read` ([`SPS-GRANT-009`](../spec/core/grants.md#SPS-GRANT-009)) and ACP has no
+such rule, so the implication is applied when the policy is written — a policy saying only
+`acl:Write` would grant only that to anyone reading it as plain ACP.
+
+The implication itself is not politeness: a write path is a read oracle — a conditional request, an
+entity tag, a patch that succeeds or fails on what is already there — so
 [`SPS-GRANT-010`](../spec/core/grants.md#SPS-GRANT-010) refuses to pretend that read can be withheld
 from somebody who may write.
 

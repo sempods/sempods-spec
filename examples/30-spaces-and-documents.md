@@ -20,13 +20,8 @@ decision changes when the module is added.
 [
   a acp:AccessControlResource ;
   acp:resource <https://acme.example/_system/contexts/spaces/eng> ;
-  acp:accessControl [ acp:apply <#spaceOwner>, <#spaceMembers> ]
+  acp:accessControl [ acp:apply <#spaceMembers> ]
 ] .
-
-<#spaceOwner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#spaceMembers>
   a acp:Policy ;

@@ -10,17 +10,14 @@ is a policy on it, and there is nothing else in play.
 
 ## The one context, and who may reach it
 
+One rule, and it is the only one Anna wrote.
+
 ```turtle acr
 [
   a acp:AccessControlResource ;
   acp:resource <https://anna.example/_system/contexts/default> ;
-  acp:accessControl [ acp:apply <#owner>, <#ben> ]
+  acp:accessControl [ acp:apply <#ben> ]
 ] .
-
-<#owner>
-  a acp:Policy ;
-  acp:allow acl:Read, acl:Write, acl:Control ;
-  acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ] .
 
 <#ben>
   a acp:Policy ;
@@ -28,34 +25,14 @@ is a policy on it, and there is nothing else in play.
   acp:anyOf [ a acp:Matcher ; acp:agent <https://ben.example/profile#me> ] .
 ```
 
-Two things to notice, because everything later builds on them.
-
 **The target is the context, not a recipe.** One decision covers every statement the context holds.
 Anna has thousands of them and one rule.
 
-**`acp:OwnerAgent` is a role, not a name.** The pod states who owns it and the engine compares; Anna's
-WebID appears nowhere. If the pod ever changed hands the policy would still be right — which is why
-[`SPS-CTX-007`](../spec/core/contexts.md#SPS-CTX-007) keeps an owner's identity out of context paths
-for the same reason.
-
-## Anna works on her recipes
-
-```turtle context
-[
-  acp:target <https://anna.example/_system/contexts/default> ;
-  acp:agent  <https://anna.example/profile#me> ;
-  acp:owner  <https://anna.example/profile#me>
-] .
-```
-
-```turtle grant
-[] acp:grant acl:Read, acl:Write, acl:Control .
-```
-
-The three modes are written out rather than implied. sempods says `manage` covers `write` covers
-`read` ([`SPS-GRANT-009`](../spec/core/grants.md#SPS-GRANT-009)), but ACP has no such rule, so the
-implication is applied when the policy is written. A policy saying only `acl:Control` would grant only
-that to anyone reading it as plain ACP.
+**And Anna herself is not in it.** The pod owner holds everything on every context implicitly, and
+[`SPS-GRANT-011`](../spec/core/grants.md#SPS-GRANT-011) says an implementation must not require those
+grants to be stored. So the authority that matters most appears in no access control resource, and no
+fixture here can show it: what the runner evaluates is what somebody wrote down, and nobody writes
+that down. The pod supplies it.
 
 ## Ben looks something up
 
