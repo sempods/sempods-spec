@@ -74,7 +74,7 @@ patterns can reach are two disjoint sets, assembled from different origins.
   a acp:Policy ;
   acp:allow acl:Read ;
   acp:anyOf [ a acp:Matcher ; acp:agent <https://acme.example/people/carol#me> ] ,
-            [ a acp:Matcher ; <https://schema.sempods.org/principalSet>
+            [ a acp:Matcher ; <https://acme.example/ns/principalSet>
                               <https://acme.example/groups/engineers> ] .
 ```
 
@@ -84,8 +84,14 @@ which is the same deadline [`SPS-GRANT-003`](../spec/core/grants.md#SPS-GRANT-00
 grant, inherited because membership now decides access.
 
 Two matchers rather than one, because within a single matcher the attribute types conjoin: writing
-`[ acp:agent carol ; sps:principalSet engineers ]` would mean *Carol, and only while she is in the
+`[ acp:agent carol ; ex:principalSet engineers ]` would mean *Carol, and only while she is in the
 group*.
+
+That form is not merely unwanted here — the profile forbids it, and this is the one place where a
+foreign engine answers **more**. It cannot see `ex:principalSet`, so it has one conjunct fewer to
+fail and grants Carol whether or not she is in the group. A conjunction between an extension and an
+ACP attribute is written as two matchers under `acp:allOf` instead, where the foreign engine leaves
+the extension matcher unsatisfied and the whole conjunction fails with it.
 
 ## Carol, named directly
 
@@ -117,17 +123,35 @@ group*.
 
 Erin **is** in the group, and a sempods pod grants her `acl:Read` here. The expectation says nothing
 because this file is run by a plain ACP engine, and that engine does not know
-`sps:principalSet`: a matcher carrying none of ACP's four attributes is never satisfied, so it leaves
+`ex:principalSet`: a matcher carrying none of ACP's four attributes is never satisfied, so it leaves
 her out.
+
+The IRI is the deployment's own. sempods will define one, and the concept still lists which as an
+open decision — writing a name into `schema.sempods.org/` here would reserve it before that decision
+is made, in a namespace whose terms cannot later be renamed.
 
 That is the portability boundary, and it is worth seeing rather than being told. Everything else in
 these examples is ACP any engine resolves identically. The group is the one place sempods adds a
 matcher of its own, and the price is exactly this — a foreign engine answers *less*, never more.
 
+That direction holds because of the rule above and not on its own, which is why the rule is worth
+having: a matcher carries ACP's attributes or an extension, never both.
+
 ## Two articles, one policy
 
 The channel's articles are all for the same readers. Rather than repeating a policy per article, each
 access control resource applies the **same** one.
+
+The policy is written once, in a block of its own:
+
+```turtle policy
+<https://acme.example/policies/news-channel-read>
+  a acp:Policy ;
+  acp:allow acl:Read ;
+  acp:anyOf [ a acp:Matcher ; acp:agent <https://acme.example/people/carol#me> ] .
+```
+
+and each access control resource names it:
 
 ```turtle acr
 [
@@ -135,11 +159,6 @@ access control resource applies the **same** one.
   acp:resource <https://acme.example/articles/welcome> ;
   acp:accessControl [ acp:apply <https://acme.example/policies/news-channel-read> ]
 ] .
-
-<https://acme.example/policies/news-channel-read>
-  a acp:Policy ;
-  acp:allow acl:Read ;
-  acp:anyOf [ a acp:Matcher ; acp:agent <https://acme.example/people/carol#me> ] .
 ```
 
 ```turtle acr
@@ -148,11 +167,6 @@ access control resource applies the **same** one.
   acp:resource <https://acme.example/articles/onboarding> ;
   acp:accessControl [ acp:apply <https://acme.example/policies/news-channel-read> ]
 ] .
-
-<https://acme.example/policies/news-channel-read>
-  a acp:Policy ;
-  acp:allow acl:Read ;
-  acp:anyOf [ a acp:Matcher ; acp:agent <https://acme.example/people/carol#me> ] .
 ```
 
 ```turtle context
@@ -187,8 +201,10 @@ This is what a sub-document needs, and it is worth saying what it does *not* nee
 relation, no ancestor to resolve against, no inheritance. Two resources sharing a policy are not
 parent and child — they are two things the same rule is about.
 
-(The policy is repeated in both blocks above only because each block is parsed on its own here. In a
-pod it is one document that both access control resources reference.)
+That is what the shape above demonstrates rather than asserts. Every other block in these files is
+parsed alone; a `policy` block is merged into all of them, so the two resources resolve against one
+artifact. Change the matcher and both answers change; delete the block and both cases fail. Two
+copies that happen to agree would prove neither.
 
 ## The memo, granted to one person
 

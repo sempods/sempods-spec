@@ -39,12 +39,18 @@ jobs:
       # is correct, so a change in parsing behaviour would quietly change results instead of
       # breaking loudly. The version is the one the transcription of ACP §6 was verified against.
       #
+      # `pyparsing` is rdflib's only dependency, and pinning it is what makes the pin mean anything:
+      # otherwise a fresh runner resolves whatever is compatible that day, and a required check can
+      # go red with nothing in the repository having changed — the failure people learn to merge
+      # past. Two names is the whole tree; if rdflib ever grows a third, `--no-deps` and an explicit
+      # list is the next step rather than a lockfile.
+      #
       # It lives here rather than in a requirements file because `site/` is this repository's only
       # dependency tree and stays its only one — see AGENTS.md §"What this repository deliberately
       # does not have".
       - name: Scenarios agree with ACP's resolution algorithm
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet rdflib==7.6.0
+          python3 -m pip install --quiet rdflib==7.6.0 pyparsing==3.3.2
           .github/scripts/check-examples.py --self-test
           .github/scripts/check-examples.py

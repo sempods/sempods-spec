@@ -42,6 +42,7 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `acr` | an authorization graph — one per resource it controls, several per file where a scenario turns on a contrast |
 | `context` | one attempted access, as the server would describe it |
 | `grant` | the access modes that attempt must be granted |
+| `policy` | one policy artifact several `acr` blocks reference. Merged into every `acr` in the file, so a scenario claiming two resources share a policy demonstrates it rather than writing two copies that agree |
 | `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
 
 A `context` pairs with the next `grant` below it. Its `acp:target` selects the `acr` whose

@@ -95,7 +95,12 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # `aside` is Turtle a scenario shows without the runner evaluating it — an identity authority's
 # membership facts, say, which are not ACP and which no ACP engine has any business resolving. It is
 # still parsed, so a malformed one fails; it simply takes no part in a case.
-KINDS = ("acr", "context", "grant", "aside")
+#
+# `policy` is one artifact several access control resources reference. Each block otherwise parses
+# alone, so a scenario showing two resources under one policy would have to write the policy twice —
+# and a green run would then prove two policies that agree, which is the claim's opposite. A policy
+# block is merged into every acr graph in the file, so deleting it breaks both cases at once.
+KINDS = ("acr", "policy", "context", "grant", "aside")
 BLOCK = re.compile(
     r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
 )
@@ -120,6 +125,14 @@ P = {n: URIRef(ACP + n) for n in (
     "allow", "deny", "allOf", "anyOf", "noneOf",
     "agent", "client", "issuer", "vc",
     "target", "owner", "creator", "grant",
+)}
+
+# The classes. Nothing here drives resolution — the runner reaches a matcher through acp:anyOf, not
+# through its type — but a misspelled `a acp:Policyy` is still a fixture that reads as ACP and is not,
+# and a reader believes the type before they trace the links.
+POLICY = URIRef(ACP + "Policy")
+KNOWN_CLASSES = {POLICY} | {URIRef(ACP + n) for n in (
+    "AccessControlResource", "AccessControl", "Matcher", "Context", "AccessGrant",
 )}
 
 # Attributes ACP defines for a matcher. Anything else in a matcher is an extension a foreign engine
@@ -355,11 +368,29 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
         "leaves a matcher carrying it unsatisfied"
         for predicate in extensions
     ]
+    for value in set(graph.objects(None, RDF_TYPE)):
+        if str(value).startswith(ACP) and value not in KNOWN_CLASSES:
+            errors.append(f"{where}: types a node acp:{str(value)[len(ACP):]}, which ACP has no class for")
     for attribute in MATCHER_ATTRIBUTES:
         for value in set(graph.objects(None, attribute)):
             if str(value).startswith(ACP) and value not in KNOWN_INDIVIDUALS:
                 errors.append(
                     f"{where}: {short(attribute)} names {short(value)}, which ACP does not define"
+                )
+    # A matcher mixing an extension attribute with one of ACP's is the one construction where a
+    # foreign engine answers *more*: ACP conjoins the attribute types within a matcher, and an
+    # engine that cannot see the extension has one conjunct fewer to fail. The profile forbids it —
+    # the conjunction goes in two matchers under acp:allOf — and here is where that is enforced.
+    for link in (P["allOf"], P["anyOf"], P["noneOf"]):
+        for _, _, matcher in graph.triples((None, link, None)):
+            predicates = set(graph.predicates(matcher, None))
+            native = predicates & MATCHER_ATTRIBUTES
+            foreign = {p for p in predicates if not str(p).startswith(ACP) and p != RDF_TYPE}
+            if native and foreign:
+                errors.append(
+                    f"{where}: a matcher carries {short(sorted(native, key=str)[0])} beside "
+                    f"{short(sorted(foreign, key=str)[0])} — an engine that cannot see the second "
+                    "grants on the first alone, so write the conjunction as two acp:allOf matchers"
                 )
     return errors, notes
 
@@ -416,9 +447,20 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         return failures, notes
 
     try:
+        # One graph, referenced from every access control resource below — the artifact itself,
+        # rather than a copy per reference.
+        shared = Graph()
+        for index, block in enumerate(b for b in found if b.kind == "policy"):
+            shared += parse(block, 4000 + index)
+            shared_errors, shared_notes = inspect_acr(shared, f"{rel} line {block.line}")
+            failures += shared_errors
+            notes += shared_notes
+
         by_target: dict = {}
+        applied: set = set()
         for index, block in enumerate(b for b in found if b.kind == "acr"):
-            graph = parse(block, index)
+            graph = parse(block, index) + shared
+            applied |= set(graph.objects(None, P["apply"]))
             where = f"{rel} line {block.line}"
             for acr, _, target in graph.triples((None, P["resource"], None)):
                 if target in by_target:
@@ -481,6 +523,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         # and the file would still pass.
         for target in sorted(set(by_target) - exercised, key=str):
             failures.append(f"{rel}: nothing asks about {short(target)}, so its acr is never evaluated")
+        # A shared policy nothing applies is the same silence one level up.
+        for policy in sorted(set(shared.subjects(RDF_TYPE, POLICY)) - applied, key=str):
+            failures.append(f"{rel}: no acr applies {short(policy)}")
     except Problem as problem:
         failures.append(f"{rel}: {problem}")
 
@@ -526,6 +571,16 @@ BROKEN = [
     ("an access control resource nothing asks about",
      ("acp:resource <https://a.example/c> ;",
       "acp:resource <https://a.example/c>, <https://a.example/unused> ;"), "never evaluated"),
+    ("a misspelled ACP class",
+     ("a acp:Policy ;", "a acp:Policyy ;"), "no class for"),
+    ("a shared policy no access control resource applies",
+     ("```turtle context", "```turtle policy\n<https://a.example/spare> a acp:Policy ; "
+      "acp:allow acl:Read .\n```\n```turtle context"), "no acr applies"),
+    ("a matcher mixing an extension with an ACP attribute, which widens the answer",
+     ("acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ]",
+      "acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ;\n"
+      "                            <https://a.example/ns/set> <https://a.example/g> ]"),
+     "two acp:allOf matchers"),
     ("a request claiming to be a reserved individual, which §6.5.2 would let through",
      ("acp:target <https://a.example/c> ; acp:agent <https://b.example/#me>",
       "acp:target <https://a.example/c> ; acp:agent acp:OwnerAgent"), "describes no request"),

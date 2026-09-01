@@ -103,7 +103,7 @@ tag changed while a job was down. A pod can instead leave the question open unti
   a acp:Policy ;
   acp:allow acl:Read ;
   acp:anyOf [ a acp:Matcher ;
-              <https://schema.sempods.org/contactKeyword> "Family" ] .
+              <https://anna.example/ns/contactKeyword> "Family" ] .
 ```
 
 ```turtle context
@@ -119,8 +119,10 @@ tag changed while a job was down. A pod can instead leave the question open unti
 ```
 
 Ben **is** tagged *Family*, and a pod implementing this relation grants him `acl:Read`. The
-expectation is empty because a plain ACP engine does not know `sps:contactKeyword`, so the matcher
-carries none of ACP's four attributes and is never satisfied.
+expectation is empty because a plain ACP engine does not know `ex:contactKeyword`, so the matcher
+carries none of ACP's four attributes and is never satisfied. The relation is named in Anna's own
+namespace rather than sempods', for the same reason the group example gives: which IRI sempods
+publishes is still an open decision, and the namespace does not take names back.
 
 Which is the same boundary the enterprise scenario runs into, reached from the opposite direction: no
 organisation, no directory, no group service — just an address book — and the moment the answer is

@@ -171,6 +171,18 @@ engine leaves the matcher unsatisfied where sempods would resolve it through a t
 authority. Checking such a resource needs an oracle that knows the extension, or it reports a
 difference that is the extension rather than a defect.
 
+The **direction** of that difference is the part worth guaranteeing: a foreign engine should answer
+less, never more. It does not follow on its own. ACP conjoins the attribute types within a single
+matcher, and an engine that does not know an attribute does not see a conjunct to fail — so
+`[ acp:agent carol ; sps:principalSet engineers ]` means *Carol, and only while she is in the group*
+to sempods and plain *Carol* to everyone else. The extension makes the answer wider rather than
+narrower, which is the one outcome the claim rules out.
+
+So the profile requires that **a matcher carries either ACP's attributes or an extension attribute,
+never both**. The conjunction is written as two matchers under `acp:allOf`, where it means the same
+thing to sempods and a foreign engine leaves the extension matcher unsatisfied — failing the whole
+conjunction, which is the safe direction. Nothing is lost but the shorter spelling.
+
 The modes are the ones [`SPS-GRANT-006`](../../spec/core/grants.md#SPS-GRANT-006) names, with the
 implications [`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009) fixes, and the profile keeps
 both by **expanding when the policy is written**. ACP is mode-agnostic and carries no implication of
