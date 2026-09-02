@@ -1,8 +1,15 @@
 # Worked examples
 
-Scenarios that show what the access-control model does, in cases rather than in argument. They are
-the readable half of [`docs/concepts/access-control.md`](../docs/concepts/access-control.md), which
-carries the reasoning and the trade-offs.
+Scenarios that show what the access-control model does, in cases rather than in argument — and, at
+the same time, the evidence for a claim the specification deliberately does not make.
+
+The contract says what a pod decides, never how ([`docs/vision.md`](../docs/vision.md)). The
+behaviour is in [`docs/concepts/access-control.md`](../docs/concepts/access-control.md). These files
+are where the reference implementation's answer to *how* — one small profile of ACP, in
+[`docs/reference-implementation/acp-profile.md`](../docs/reference-implementation/acp-profile.md) —
+is put to an engine that has never heard of sempods, to see whether it holds. A green run says the
+model is expressible in ACP. It says nothing about what a conformant pod must do, and it is not
+meant to.
 
 **Read the first three in order.** They are the model, and each adds exactly one thing to the one
 before:
@@ -72,8 +79,10 @@ collides with `<#owner>` in another.
 
 ## Where these live
 
-No scenario says where its access control resource is stored, and that is deliberate: the address is
-an implementation's own business. The boundary around it is not.
+No scenario says where its access control resource is stored, and that is deliberate twice over:
+the address is an implementation's own business, and so is having an access control resource at all.
+The boundary around it is not — a pod that keeps authorization state anywhere a caller can write has
+a problem whatever shape that state has.
 
 An access control resource is **not data**. It is not a context, does not appear in context
 discovery, cannot be selected with `?context=`, and is unreachable through LOD CRUD or SPARQL — which
@@ -91,16 +100,22 @@ property that matters, rather than composing an address of its own.
 
 The structural half — that policy is indexed by the target it controls rather than by the context
 that happens to hold that target's statements — is in
-[`docs/concepts/access-control.md`](../docs/concepts/access-control.md) §"Policy location and control
-plane", with the three reasons it has that shape.
+[`docs/reference-implementation/acp-profile.md`](../docs/reference-implementation/acp-profile.md)
+§"Policy location and control plane", with the three reasons it has that shape.
 
 ## Why the runner is a plain ACP engine
 
 `check-examples.py` transcribes the pseudocode of ACP §6.1 through §6.5 and knows nothing about
-sempods. That is deliberate. The concept claims sempods access control resources are *pure* ACP —
-that an independent engine, given one of them and a context graph, produces the same access grant
-graph. A runner that shared sempods' reading of the vocabulary could not test that claim; this one
-can, and every green run is evidence for it.
+sempods. That is the whole point. The reference implementation's design claims its access control
+resources are *pure* ACP — that an independent engine, given one of them and a context graph,
+produces the same access grant graph. A runner that shared sempods' reading of the vocabulary could
+not test that claim; this one can, and every green run is evidence for it.
+
+It is worth being clear about what that evidence is *for*. It does not make ACP part of the contract,
+and a pod that produces the same answers by rewriting queries is exactly as conformant. What it
+buys is confidence in a design decision: that one small vocabulary can carry every deployment the
+reference implementation has to serve, including the ones where it cannot — which the scenarios show
+as plainly as the ones where it can.
 
 Two consequences are worth expecting rather than being surprised by.
 

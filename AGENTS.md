@@ -151,9 +151,11 @@ The specification:
   the chapter tables. Six core chapters and three modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
-- [`examples/README.md`](examples/README.md) — worked access-control scenarios. Fixtures rather than
-  prose: each is run through ACP's own resolution algorithm by
-  `.github/scripts/check-examples.py`, so one that stops being true fails rather than misleads
+- [`examples/README.md`](examples/README.md) — worked access-control scenarios, and the evidence that
+  the reference implementation's design can express the behaviour the concept describes. Fixtures
+  rather than prose: each is run through ACP's own resolution algorithm by
+  `.github/scripts/check-examples.py`, so one that stops being true fails rather than misleads. A
+  green run says nothing about what a conformant pod must do
 
 The rendered site — [`site/`](site/):
 
