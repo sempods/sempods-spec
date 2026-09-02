@@ -78,12 +78,23 @@ REPOSITORY = "https://github.com/sempods/sempods-spec"
 
 # The repository paths `stage()` copies. A link that lands inside one of these resolves on the
 # site and stays relative; anything else has to leave.
-STAGED = ("spec/", "vocabulary/", "GOVERNANCE.md")
+# What the site publishes. A trailing slash is a directory taken whole; anything else is one file,
+# staged under its own name at the site root. Read by `staged_content()` below rather than kept
+# beside it — this list was decorative until it was not, and a constant nobody reads is worse than
+# no constant, because the next person edits it and expects an effect.
+#
+# What is deliberately *not* here: `docs/concepts/`, `docs/reference-implementation/`, `examples/`
+# and `docs/agents/`. They are how the specification is worked out and argued about, and publishing
+# them would put a second description of the contract beside the normative one — which is the thing
+# this repository refuses everywhere else. `vision.md` is the exception because it is not a second
+# description: it says what the contract is *shaped like*, which no chapter says and every reader
+# needs before the first requirement makes sense.
+STAGED = ("spec/", "vocabulary/", "GOVERNANCE.md", "docs/vision.md")
 
 RELATIVE_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)]+)\)")
 
 CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
-MODULES = ["oidc", "media", "mcp"]
+MODULES = ["context-management", "oidc", "media", "mcp"]
 
 
 def with_repository_links(text: str, staged_at: str, published: set) -> str:
@@ -148,11 +159,14 @@ def staged_content() -> dict:
     having a source is recognised by its absence here rather than by deleting the tree.
     """
     copied = {}
-    for root in ("spec", "vocabulary"):
-        for source in sorted((ROOT / root).rglob("*")):
-            if source.is_file():
-                copied[f"{root}/{source.relative_to(ROOT / root).as_posix()}"] = source
-    copied["GOVERNANCE.md"] = ROOT / "GOVERNANCE.md"
+    for entry in STAGED:
+        if entry.endswith("/"):
+            root = entry.rstrip("/")
+            for source in sorted((ROOT / root).rglob("*")):
+                if source.is_file():
+                    copied[f"{root}/{source.relative_to(ROOT / root).as_posix()}"] = source
+        else:
+            copied[Path(entry).name] = ROOT / entry
     copied["index.md"] = SITE / "index.md"
 
     generated = {"api/index.html": try_it_page().encode()}
@@ -703,8 +717,8 @@ def main() -> int:
     # `--watch` on each real source, so an edit to a chapter triggers a rebuild; the hook in
     # `mkdocs.yml` re-stages before that rebuild reads anything. Watching the staged copy alone
     # — which is all MkDocs does by default — reacts only to changes nobody makes by hand.
-    watched = [ROOT / "spec", ROOT / "vocabulary", ROOT / "GOVERNANCE.md",
-               ROOT / "openapi", SITE / "index.md", SITE / "api"]
+    watched = [ROOT / entry.rstrip("/") for entry in STAGED] + [
+        ROOT / "openapi", SITE / "index.md", SITE / "api"]
     command = ["mkdocs", "serve"]
     for path in watched:
         command += ["--watch", str(path)]

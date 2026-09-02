@@ -1,6 +1,6 @@
 # The specification
 
-The normative text lives in this directory: six core chapters and three modules, 315 requirements.
+The normative text lives in this directory: six core chapters and four modules, 318 requirements.
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 
@@ -63,7 +63,7 @@ Every sempods implementation provides all of it. There is no opt-out and no part
 | Chapter | Area | Status | Source being extracted from |
 |---|---|---|---|
 | [`core/index.md`](core/index.md) — conformance, addressing, discovery, the error model | `CORE` | **present** | new |
-| [`core/contexts.md`](core/contexts.md) — the context as the permission boundary, the `_system/contexts` namespace, lifecycle and discovery | `CTX` | **present** | `docs/auth/authorization.md` |
+| [`core/contexts.md`](core/contexts.md) — the context as the permission boundary, what a context IRI may be, discovery, and the control-plane boundary | `CTX` | **present** | `docs/auth/authorization.md` |
 | [`core/grants.md`](core/grants.md) — `#read` / `#write` / `#manage`, resolution, delegation, revocation, the `#manage` subtree rule | `GRANT` | **present** | `docs/auth/authorization.md` |
 | [`core/auth.md`](core/auth.md) — OAuth 2.1, PKCE, the three client-identity shapes, consent, refresh rotation, discovery | `AUTH` | **present** | `docs/auth/oauth.md`, `service-clients.md` |
 | [`core/lod-crud.md`](core/lod-crud.md) — the LOD layer and the system layer, `?context=`, base64url addressing, slots and edges | `CRUD` | **present** | `docs/lod-crud/` |
@@ -84,6 +84,7 @@ got has no contract.
 
 | Module | Area | Status | Source being extracted from |
 |---|---|---|---|
+| [`modules/context-management.md`](modules/context-management.md) — creating and deleting contexts: the management route, what it validates at creation, lifecycle | `CTX` | **present** | `spec/core/contexts.md`, split |
 | [`modules/oidc.md`](modules/oidc.md) — the OIDC bridge: identity assertions, how a pod obtains one, federation | `OIDC` | **present** | `docs/auth/identity.md`, split |
 | [`modules/media.md`](modules/media.md) — pod-owned binaries: content addressing, the context-bound registry, delivery, lifecycle | `MEDIA` | **present** | `docs/media.md` |
 | [`modules/mcp.md`](modules/mcp.md) — the per-pod MCP endpoint, authentication modes, the tool catalogue, closed schemas | `MCP` | **present** | `docs/mcp/endpoint.md`, `tools.md`, `authentication.md` |

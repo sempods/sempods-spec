@@ -25,6 +25,7 @@ The cost of hand-writing is that nothing tells you when it drifts. Two things ar
 | File | Covers |
 |---|---|
 | [`sempods-core.yaml`](sempods-core.yaml) | the whole core HTTP surface — conformance, contexts, resources, slots, query, retrieval, auth |
+| [`module-context-management.yaml`](module-context-management.yaml) | the context-management module — creating and deleting contexts |
 | [`module-media.yaml`](module-media.yaml) | the media module |
 | [`module-mcp.yaml`](module-mcp.yaml) | the MCP module |
 | [`module-oidc.yaml`](module-oidc.yaml) | the OIDC module — one route |

@@ -98,7 +98,7 @@ one of them is refused rather than debated.
 ## Core and modules
 
 - **Core**: `contexts`, `grants`, `auth`, `lod-crud`, `sparql`, `find`.
-- **Modules**: `oidc`, `media`, `mcp`.
+- **Modules**: `context-management`, `oidc`, `media`, `mcp`.
 - OpenAPI is **not** a module. It is a view: one description for core, and one per module that adds
   an HTTP surface of its own. Not one per chapter — the core chapters share the context rule, the
   canonical representation, the conditional-write semantics and the error model, and splitting them
@@ -148,7 +148,7 @@ The specification:
   `https://schema.sempods.org/` and the stability guarantees they carry. Normative, and versioned
   with the specification rather than with any implementation
 - [`spec/README.md`](spec/README.md) — how to read a chapter, the requirement-identifier scheme, and
-  the chapter tables. Six core chapters and three modules are present; the tables say which source
+  the chapter tables. Six core chapters and four modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
 - [`examples/README.md`](examples/README.md) — worked access-control scenarios, and the evidence that
@@ -166,7 +166,9 @@ The rendered site — [`site/`](site/):
   skips this directory and the Pages build checks them instead.
 - [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
   try-it page talks to, in the one place it is named, and refuses to build a page whose OpenAPI
-  descriptions would point somewhere else.
+  descriptions would point somewhere else. Its `STAGED` constant is the list of what the site
+  publishes — `spec/`, `vocabulary/`, `GOVERNANCE.md` and `docs/vision.md`, and nothing else from
+  `docs/` or `examples/`
 - [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
   purpose; the Scalar bundle is pinned with an integrity hash.
 
@@ -186,7 +188,8 @@ Concepts and roadmaps:
 - [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
   belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
   proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
-  in an implementation
+  in an implementation. The one document under `docs/` the site publishes, because it is what a
+  reader needs before the first requirement makes sense
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
   specification repository than in an implementation, and the template
 - [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
