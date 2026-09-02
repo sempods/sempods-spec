@@ -96,15 +96,16 @@ says which area a requirement belongs to and nothing about which half. `CTX` is 
 span both, and the alternative was renaming sixteen stable identifiers to gain a naming convention.
 
 What a split does owe: the `Part of` column stops being one value and names the chapters, the module
-needs an entry in `MODULE_VERSIONS`, the area is listed in `SPLIT_AREAS` in
+needs an entry in `MODULE_VERSIONS`, the second home is recorded in `EXTRA_PARTS` in
 [`check-requirements.py`](../../.github/scripts/check-requirements.py), and every citation of a moved
 requirement has to be re-pointed — the link carries the chapter path, so it breaks whether or not the
 identifier changes.
 
-`SPLIT_AREAS` is what keeps the spanning deliberate. Because `part` is read from the chapter, a
+`EXTRA_PARTS` is what keeps the spanning deliberate. Because `part` is read from the chapter, a
 requirement filed in the wrong half changes silently from optional to mandatory or back, and the
-check that an area is *known* would not notice. So every area is required to sit in one half, and an
-area that spans has to say so.
+check that an area is *known* would not notice. So each area declares **which** chapters it may
+appear in — not merely how many — and anything outside that set is an error. `CTX` names
+`context-management` there, and nothing else does.
 
 ### The written form
 

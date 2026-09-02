@@ -86,11 +86,26 @@ MODULE_VERSIONS = {
 # satisfy, and regenerating the index reproduces it, so nothing downstream would ever notice.
 CORE_AREAS = {"CORE", "CTX", "GRANT", "AUTH", "CRUD", "SPARQL", "FIND"}
 
-# The areas allowed to span both halves, listed so that the spanning is a decision and not an
-# accident. Everything else is checked: since `part` is read from the chapter, a requirement filed
-# in the wrong half would flip from optional to mandatory or back, and the area guard below would
-# not notice — the area would still be a known one.
-SPLIT_AREAS = {"CTX"}
+# Where an area's requirements may live, beyond the one place the registries above already imply:
+# a core area belongs under `spec/core/`, a module's area under that module's chapter. An area that
+# sits in more than one place says so here and nowhere else.
+#
+# Counting the halves is not enough, which is what the first version of this guard did. It would
+# have accepted an `SPS-CTX-` requirement filed under `spec/modules/oidc.md` — two halves, and `CTX`
+# was allowed to span — and published it as an OIDC obligation. It would also have accepted a whole
+# core area moving into a module together, because that is one half again. `part` is read from the
+# chapter, so either mistake silently changes whether an implementation must satisfy a requirement.
+EXTRA_PARTS = {"CTX": {"context-management"}}
+
+
+def allowed_parts():
+    """Area → the parts its requirements may be published under."""
+    parts = {area: {"core"} for area in CORE_AREAS}
+    for name, area in modules().items():
+        parts.setdefault(area, set()).add(name)
+    for area, extra in EXTRA_PARTS.items():
+        parts.setdefault(area, set()).update(extra)
+    return parts
 
 
 def modules():
@@ -428,17 +443,19 @@ def build_index(found):
         seen.setdefault(area, {}).setdefault(
             "core" if path.parts[:2] == ("spec", "core") else path.stem, []
         ).append(ident)
+    permitted = allowed_parts()
     for area, halves in sorted(seen.items()):
-        if len(halves) > 1 and area not in SPLIT_AREAS:
-            where = "; ".join(
-                f"{part}: {', '.join(sorted(ids)[:3])}{'…' if len(ids) > 3 else ''}"
-                for part, ids in sorted(halves.items())
-            )
+        allowed = permitted.get(area, set())
+        for part, ids in sorted(halves.items()):
+            if part in allowed:
+                continue
+            shown = ", ".join(sorted(ids)[:3]) + ("\u2026" if len(ids) > 3 else "")
+            may = " or ".join(f"'{a}'" for a in sorted(allowed)) or "nowhere — it is unregistered"
             problems.append(
-                f"area '{area}' is split across {where}. `part` is read from the chapter, so a "
-                f"requirement filed in the wrong half silently changes whether implementations "
-                f"must satisfy it. Move it, or add '{area}' to SPLIT_AREAS and say why in "
-                f"docs/agents/spec-authoring.md."
+                f"area '{area}' has requirements published as '{part}' ({shown}), and may only be "
+                f"{may}. `part` is read from the chapter, so this silently changes whether an "
+                f"implementation must satisfy them. Move them, or record the span in EXTRA_PARTS "
+                f"and in docs/agents/spec-authoring.md."
             )
     for ident in found:
         area = ident.split("-")[1]
