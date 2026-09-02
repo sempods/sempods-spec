@@ -397,7 +397,7 @@
       "id": "SPS-AUTH-056",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "The names in `SPS-AUTH-018`'s prohibition MUST be compared case-sensitively and after percent-decoding, and a name present without a value MUST count as present.",
+      "summary": "A query parameter counts as one of `SPS-AUTH-018`'s prohibited names when its name, percent-decoded and matched case-sensitively, equals that name — whether or not the parameter carries a value.",
       "withdrawn": false
     },
     {

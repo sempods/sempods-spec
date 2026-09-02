@@ -157,14 +157,15 @@ parser rather than of this protocol, and that is the situation the prohibition r
 only confuse itself, and no other client's response is reachable through them.
 
 <a id="SPS-AUTH-056"></a>
-**`SPS-AUTH-056`** — The names in `SPS-AUTH-018`'s prohibition MUST be compared case-sensitively
-and after percent-decoding, and a name present without a value MUST count as present.
+**`SPS-AUTH-056`** — A query parameter counts as one of `SPS-AUTH-018`'s prohibited names when its
+name, percent-decoded and matched case-sensitively, equals that name — whether or not the parameter
+carries a value.
 
-Three spellings decide whether an implementation has this right. `?CODE=` is a different
-parameter and stays acceptable, because it is not the `code` any client reads; `?%63ode=` reaches
-the client as `code`, so it is one; and `?code` with no `=` is still that name. Decoding is per
-parameter name rather than over the whole query — decoding the query first would split a value such
-as `?next=a%26state%3Dx` into a parameter that was never there.
+One recognition rule, and three spellings decide whether an implementation has it right. `?CODE=`
+is a different parameter and stays acceptable, because it is not the `code` any client reads;
+`?%63ode=` reaches the client as `code`, so it is one; and `?code` with no `=` is still that name.
+Decoding is per parameter name rather than over the whole query — decoding the query first would
+split a value such as `?next=a%26state%3Dx` into a parameter that was never there.
 
 <a id="SPS-AUTH-019"></a>
 **`SPS-AUTH-019`** — An implementation MUST apply `SPS-AUTH-018` at registration as well as at
