@@ -188,9 +188,11 @@ Concepts and roadmaps:
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
   specification repository than in an implementation, and the template
 - [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
-  access is decided: every pod decides on contexts, a pod whose audiences are smaller than a context
-  declares a second decision on the resource, and both must allow. Carries the ACP profile, the
-  enterprise matchers, target-indexed policy location, and the load-bearing specification impact
+  access is decided, as behaviour: every pod decides on contexts, a pod whose audiences are smaller
+  than a context declares a second decision, and both must allow. What is decided, never how
+- [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
+  reference implementation's own design, kept here while the specification is descriptive and moved
+  out at `0.1`. SOLL for that implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, the second copy in the
