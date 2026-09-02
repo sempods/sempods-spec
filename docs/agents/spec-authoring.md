@@ -75,7 +75,7 @@ Registered areas:
 | Area | Chapter | Part of |
 |---|---|---|
 | `CORE` | conformance, addressing, discovery, the error model | core |
-| `CTX` | contexts | core |
+| `CTX` | contexts | core **and** module — `core/contexts.md` and `modules/context-management.md` |
 | `GRANT` | grants | core |
 | `AUTH` | authorization and client identity | core |
 | `CRUD` | LOD and system CRUD | core |
@@ -86,8 +86,26 @@ Registered areas:
 | `MCP` | the MCP surface | module |
 
 Adding an area is a change to this table and to the chapter map in
-[`../../spec/README.md`](../../spec/README.md), in the same commit. Splitting an existing area is
-not allowed: the IDs already issued under it would have to move, and they cannot.
+[`../../spec/README.md`](../../spec/README.md), in the same commit.
+
+**An area may span core and a module.** The prohibition that stood here — splitting an area is not
+allowed, because the identifiers issued under it would have to move — assumed a split means
+renumbering. It does not. Whether a requirement is mandatory is decided by the chapter it stands in,
+which is what `check-requirements.py` reads to fill the `part` field of the index; the identifier
+says which area a requirement belongs to and nothing about which half. `CTX` is the first area to
+span both, and the alternative was renaming stable identifiers to gain a naming convention.
+
+What a split does owe: the `Part of` column stops being one value and names the chapters, the module
+needs an entry in `MODULE_VERSIONS`, the second home is recorded in `EXTRA_PARTS` in
+[`check-requirements.py`](../../.github/scripts/check-requirements.py), and every citation of a moved
+requirement has to be re-pointed — the link carries the chapter path, so it breaks whether or not the
+identifier changes.
+
+`EXTRA_PARTS` is what keeps the spanning deliberate. Because `part` is read from the chapter, a
+requirement filed in the wrong half changes silently from optional to mandatory or back, and the
+check that an area is *known* would not notice. So each area declares **which** chapters it may
+appear in — not merely how many — and anything outside that set is an error. `CTX` names
+`context-management` there, and nothing else does.
 
 ### The written form
 
@@ -110,8 +128,10 @@ Two conventions, both load-bearing:
 
 ## 4. Module requirements are conditional
 
-A requirement in a module area binds only an implementation that **advertises** that module at the
-conformance discovery endpoint. Write it as an ordinary requirement; do not hedge every sentence
+A requirement in a module **chapter** binds only an implementation that **advertises** that module at
+the conformance discovery endpoint. The chapter and not the area: `CTX` spans both halves, so
+`SPS-CTX-001` is mandatory and `SPS-CTX-015` is not, and reading conditionality off the identifier
+would make the first of those optional. Write it as an ordinary requirement; do not hedge every sentence
 with "if the media module is implemented". The chapter says once, at the top, that everything in it
 is conditional on advertising the module.
 

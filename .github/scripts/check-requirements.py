@@ -72,6 +72,7 @@ PRE_RELEASE_VERSION = "0.1-dev"
 # module set comes from `spec/modules/`, where a module actually comes into existence, and its
 # area is that name upper-cased.
 MODULE_VERSIONS = {
+    "context-management": "0.1-dev",
     "oidc": "0.1-dev",
     "media": "0.1-dev",
     "mcp": "0.1-dev",
@@ -84,6 +85,27 @@ MODULE_VERSIONS = {
 # direction: a mistyped area would publish an optional obligation as one every implementation must
 # satisfy, and regenerating the index reproduces it, so nothing downstream would ever notice.
 CORE_AREAS = {"CORE", "CTX", "GRANT", "AUTH", "CRUD", "SPARQL", "FIND"}
+
+# Where an area's requirements may live, beyond the one place the registries above already imply:
+# a core area belongs under `spec/core/`, a module's area under that module's chapter. An area that
+# sits in more than one place says so here and nowhere else.
+#
+# Counting the halves is not enough, which is what the first version of this guard did. It would
+# have accepted an `SPS-CTX-` requirement filed under `spec/modules/oidc.md` — two halves, and `CTX`
+# was allowed to span — and published it as an OIDC obligation. It would also have accepted a whole
+# core area moving into a module together, because that is one half again. `part` is read from the
+# chapter, so either mistake silently changes whether an implementation must satisfy a requirement.
+EXTRA_PARTS = {"CTX": {"context-management"}}
+
+
+def allowed_parts():
+    """Area → the parts its requirements may be published under."""
+    parts = {area: {"core"} for area in CORE_AREAS}
+    for name, area in modules().items():
+        parts.setdefault(area, set()).add(name)
+    for area, extra in EXTRA_PARTS.items():
+        parts.setdefault(area, set()).update(extra)
+    return parts
 
 
 def modules():
@@ -382,12 +404,33 @@ def summarise(body):
     return (first[0].strip() if first else text), note
 
 
+def part_of(path):
+    """Which half a chapter publishes under, or None where the path is not a chapter at all.
+
+    The whole path and not the filename. Reducing a module to `path.stem` would accept
+    `spec/archive/oidc.md` as the OIDC module and publish a shelved chapter with optional-module
+    semantics — the same silent flip the area guard exists to prevent, reached through the
+    directory instead of through the identifier.
+    """
+    parts = path.parts
+    if len(parts) == 3 and parts[:2] == ("spec", "core") and path.suffix == ".md":
+        return "core"
+    if len(parts) == 3 and parts[:2] == ("spec", "modules") and path.suffix == ".md":
+        return path.stem
+    return None
+
+
 def entry(ident, path, body):
     """One requirement as the index publishes it."""
     summary, note = summarise(body)
     row = {
         "id": ident,
-        "part": module_areas().get(ident.split("-")[1], "core"),
+        # From the chapter, not from the identifier. `part` answers "must an implementation
+        # satisfy this?", and that is decided by where a requirement stands rather than by what it
+        # is called. The two coincided until one area was split across both halves: context
+        # management is a module while the rest of `CTX` stays core, and identifiers are permanent
+        # (`SPS-CORE-003`), so renaming the moved half to match a chapter was the costlier answer.
+        "part": part_of(path),
         "chapter": str(path).replace("\\", "/"),
         "summary": summary,
         "withdrawn": note is not None,
@@ -408,8 +451,38 @@ def build_index(found):
     regeneration and turn a no-op into a diff.
     """
     problems = []
+    # Where each area's requirements actually live, so an area that spans without being declared to
+    # is caught rather than published.
+    seen = {}
+    for ident, (path, _) in found.items():
+        area = ident.split("-")[1]
+        part = part_of(path)
+        if part is None:
+            problems.append(
+                f"{ident} is in {path}, which is neither a core chapter nor a module chapter. A "
+                f"requirement lives directly under spec/core/ or spec/modules/; anywhere else has "
+                f"no half, so nothing can say whether an implementation must satisfy it."
+            )
+            continue
+        seen.setdefault(area, {}).setdefault(part, []).append(ident)
+    permitted = allowed_parts()
+    for area, halves in sorted(seen.items()):
+        allowed = permitted.get(area, set())
+        for part, ids in sorted(halves.items()):
+            if part in allowed:
+                continue
+            shown = ", ".join(sorted(ids)[:3]) + ("\u2026" if len(ids) > 3 else "")
+            may = " or ".join(f"'{a}'" for a in sorted(allowed)) or "nowhere — it is unregistered"
+            problems.append(
+                f"area '{area}' has requirements published as '{part}' ({shown}), and may only be "
+                f"{may}. `part` is read from the chapter, so this silently changes whether an "
+                f"implementation must satisfy them. Move them, or record the span in EXTRA_PARTS "
+                f"and in docs/agents/spec-authoring.md."
+            )
     for ident in found:
         area = ident.split("-")[1]
+        # An area still has to be known — a mistyped one is caught here. It may now appear in
+        # both halves, so membership in `CORE_AREAS` no longer implies the requirement is core.
         if area not in CORE_AREAS and area not in module_areas():
             problems.append(
                 f"{ident} is in area '{area}', which is neither a core area nor a module. "

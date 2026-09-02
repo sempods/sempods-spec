@@ -4,6 +4,13 @@ A **context** is a named graph in a pod, and it is the permission boundary. Not 
 the property, not a role. One concept carries the whole access-control model, which is why this
 chapter comes before [`grants`](grants.md) rather than inside it.
 
+Creating and deleting contexts is a separate, optional surface:
+[`../modules/context-management.md`](../modules/context-management.md). What is here is what every
+pod has — what a context *is*, what its IRI may be, how a caller discovers the ones it may reach, and
+the boundary that keeps the control plane out of the data path. The naming rules are here rather than
+there for the reason that decides every such split: they bind however a context came into existence,
+and a pod provisioned outside that module still has contexts.
+
 **Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RDF 1.1 (named graphs). Error codes are [`index.md`](index.md) §5.
@@ -33,14 +40,11 @@ disagree the first time somebody edited one of them.
 control-plane state, so it inherits the reserved area's protection rather than needing a rule of its
 own.
 
-<a id="SPS-CTX-005"></a>
-**`SPS-CTX-005`** — The management route and the context IRI MUST be the same string:
-`PUT {pod}/_system/contexts/apps/notes/public` manages exactly the context
-`{pod}/_system/contexts/apps/notes/public`. An implementation MUST NOT decompose the path into an
-identifier on either side.
-
-Identity and route are one string so they cannot drift apart. There is no mapping table to get wrong
-and nothing to migrate when the route changes shape.
+These bind however a context comes into existence. They are about what a context IRI *is* — which
+names are reserved, which shapes can be addressed again, what a path says about delegation — and a
+pod provisioned outside the context-management module holds itself to them exactly as one that
+creates contexts through a route does. What the module adds is the duty to *enforce* them at
+creation.
 
 <a id="SPS-CTX-006"></a>
 **`SPS-CTX-006`** — A context **delegated** to someone MUST carry a delegation type as its first
@@ -77,16 +81,8 @@ What is not settled is how an identity URI occupies a path segment. A WebID such
 an encoding for it before any implementation needs one is how a specification acquires a rule nobody
 can check. It waits for a guest implementation.
 
-## 3. What a context may be called
-
-The rules are permissive about names and strict about structure.
-
-<a id="SPS-CTX-009"></a>
-**`SPS-CTX-009`** — An implementation MUST accept a freely chosen context name that breaks none of
-the structural rules below. `privat`, `2026-sommer` and `projects/alpha` are all valid.
-
 <a id="SPS-CTX-010"></a>
-**`SPS-CTX-010`** — The segment `_system` MUST be rejected anywhere in a context path.
+**`SPS-CTX-010`** — A context path MUST NOT contain the segment `_system`, anywhere in it.
 
 It is held free so that a context IRI can later carry `<context-iri>/_system/<operation>` for
 per-context operations. Context names and operation names are both open sets; without a reserved
@@ -98,15 +94,10 @@ it.
 segment. `users` is reserved without being implemented, so that the name cannot be taken by
 something else first.
 
-<a id="SPS-CTX-012"></a>
-**`SPS-CTX-012`** — A **type root** — a path consisting of a delegation type and one further
-segment, such as `apps/notes` — MUST NOT be creatable through the context management route. Type
-roots are established by the control plane.
-
 <a id="SPS-CTX-013"></a>
-**`SPS-CTX-013`** — A context path that could not be addressed again MUST be rejected. Specifically,
-an implementation MUST reject a path containing an empty segment, a relative segment (`.` or `..`),
-a percent-encoded character, a fragment, or a query, and any path its URI parser cannot parse.
+**`SPS-CTX-013`** — A context path MUST be one that can be addressed again. Specifically, it MUST
+NOT contain an empty segment, a relative segment (`.` or `..`), a percent-encoded character, a
+fragment, or a query, and MUST be one an implementation's URI parser can parse.
 
 Each of these produces a registry entry no route can reach. Percent-encoding is the one that looks
 harmless: both producers receive the path already decoded, so a stored `foo%23bar` is only ever
@@ -115,62 +106,28 @@ entry. A fragment is worse than unreachable: `<pod>/_system/contexts/foo#bar` ca
 out of the grant string `<context-iri>#<permission>`, because `…foo#bar#read` has two candidate
 split points and the wrong one wins.
 
-<a id="SPS-CTX-014"></a>
-**`SPS-CTX-014`** — The naming rules `SPS-CTX-009` through `SPS-CTX-012` MUST apply on **creation
-only**. Reading and deleting MUST keep working for every context that exists, including shapes that
-predate a rule.
+<a id="SPS-CTX-028"></a>
+**`SPS-CTX-028`** — A pod MUST have at least one registered context.
 
-A rule that made an existing context unreadable, or a type root undeletable, would be a one-way
-door. `SPS-CTX-013` is the exception that proves it: a path that was never addressable was never a
-context, whenever it was written.
+Where the context-management module ([`../modules/context-management.md`](../modules/context-management.md))
+is not provided, there is no route that creates one, so the first context comes into existence at
+deployment and outside this interface. Without this requirement the specification would permit a pod
+with no contexts and no specified way to make one — conformant, and unable to hold a statement, since
+`SPS-CTX-001` puts every statement in a context and a write names the one it targets.
 
-## 4. Lifecycle
+<a id="SPS-CTX-030"></a>
+**`SPS-CTX-030`** — A context MUST be private unless it was made public by an explicit choice. This
+holds however the context came into existence, including provisioning outside any interface this
+specification defines.
 
-<a id="SPS-CTX-015"></a>
-**`SPS-CTX-015`** — `PUT {pod}/_system/contexts/{path}` MUST create the context at that IRI. The
-request body is OPTIONAL; where present it MAY carry a human-readable `label`, a `description`, and
-a `public` flag.
+Pods are isolated by default (`AGENTS.md` §"Non-negotiable invariants"), and a context becomes
+readable without a grant because somebody said so — never because nobody said anything. The rule is
+stated here rather than only where a context is created, because the route that creates one is
+optional ([`../modules/context-management.md`](../modules/context-management.md)) and the guarantee
+is not: a pod without that module still has the context `SPS-CTX-028` requires, and it arrived
+without anybody calling anything.
 
-<a id="SPS-CTX-027"></a>
-**`SPS-CTX-027`** — Where the `public` flag is absent — including on a request with no body at all —
-the context MUST be created **private**.
-
-The body is optional, so the quiet path is the one without it, and a default of public would make
-omission the dangerous choice. Pods are isolated by default
-(`AGENTS.md` §"Non-negotiable invariants"); a context becomes readable without a grant because
-somebody said so, never because they said nothing.
-
-<a id="SPS-CTX-016"></a>
-**`SPS-CTX-016`** — `PUT` MUST be idempotent. Creating a context that already exists MUST answer
-`200` with the existing context and MUST NOT alter it. A first creation MUST answer `201`.
-
-Two callers creating the same context concurrently both get their post-condition, so the loser of
-that race is `200` and not an error.
-
-<a id="SPS-CTX-017"></a>
-**`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
-remove the state that rested on it: grants naming it, refresh tokens scoped to it, and the
-context's statements.
-
-<a id="SPS-CTX-018"></a>
-**`SPS-CTX-018`** — Deletion MUST NOT cascade into sub-contexts. Deleting `R` leaves `R/sub` in
-place.
-
-The two preceding requirements read as a contradiction and are not. Deletion cascades through
-everything that *pointed at* the context and stops at everything that merely *sits below* it in the
-path. A sub-context is a separate context that shares a prefix, and [`SPS-GRANT-007`](grants.md#SPS-GRANT-007) already refuses
-to treat a shared prefix as containment.
-
-<a id="SPS-CTX-019"></a>
-**`SPS-CTX-019`** — `PUT` and `DELETE` MUST require the pod owner, or a `#manage` grant covering the
-target context under the slash-delimited rule of [`SPS-GRANT-007`](grants.md#SPS-GRANT-007).
-
-<a id="SPS-CTX-020"></a>
-**`SPS-CTX-020`** — On `DELETE`, an implementation MUST check authorization **before** existence, so
-that a caller outside their sandbox receives `403` and not a `404` that would confirm the context
-exists.
-
-## 5. Discovery
+## 3. Discovery
 
 <a id="SPS-CTX-021"></a>
 **`SPS-CTX-021`** — `GET {pod}/_system/contexts` MUST list the contexts visible to the caller,
@@ -193,7 +150,7 @@ The last two are what let the context namespace move without a client change, an
 **`SPS-CTX-024`** — `GET {pod}/_system/contexts/{path}` MUST return what the registry holds for that
 context. Where the caller cannot see the context, the response MUST be `404` — never `403`.
 
-## 6. `_system` is protected, not undescribable
+## 4. `_system` is protected, not undescribable
 
 This is the distinction most likely to be lost, and losing it costs the model.
 

@@ -108,7 +108,7 @@ interoperability:
 `acl:Control` is *"read and write operations on an ACL resource"* and nothing more, which is exactly
 what managing a resource is. Managing a context is more: it creates one that does not exist yet
 ([`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)), deletes one
-([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019)) and reaches slash-delimited descendants
+([`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019)) and reaches slash-delimited descendants
 ([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007)). Writing `acl:Control` there would name
 a smaller authority than the one that holds, which is the one mistake a shared vocabulary must not
 make. The context mode is therefore sempods' own, and stays **one** term rather than splitting the
@@ -383,7 +383,7 @@ reason to answer them before adopting it rather than after.
 
 **Resource policies stored beside each data context.** It makes policy discovery depend on data
 visibility, duplicates policy for subjects spanning contexts and lets deleting one context destroy
-authority for a resource that still exists elsewhere — [`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017)
+authority for a resource that still exists elsewhere — [`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017)
 removes what rested on a deleted context, which is correct for a grant naming it and wrong for a
 resource that outlives it. Canonical target-indexed ACRs avoid all three.
 

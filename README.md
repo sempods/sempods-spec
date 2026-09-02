@@ -27,7 +27,7 @@ one of them and is linked from the others.
 ## Status
 
 **Pre-`0.1`, and the specification was extracted rather than invented.** All six core chapters and
-all three modules are written — 313 requirements — together with hand-written OpenAPI descriptions
+all four modules are written — 316 requirements — together with hand-written OpenAPI descriptions
 of the HTTP surface. What is not done is the `0.1` release itself, the conformance suite, and
 removing the second copy of this material from the reference implementation.
 
@@ -67,7 +67,7 @@ and applications all copy the same files.
 **Core** is what every sempods implementation must provide: contexts, grants, authorization,
 LOD CRUD, SPARQL, find. There is no opt-out and no partial core.
 
-**Modules** are optional, versioned separately, and named: OIDC, media, MCP. Optional only means
+**Modules** are optional, versioned separately, and named: context management, OIDC, media, MCP. Optional only means
 something if a client can find out, so an implementation advertises what it implements at a
 discovery endpoint rather than in a README. The mechanism is part of the core chapter.
 

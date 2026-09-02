@@ -48,7 +48,9 @@ tags:
   - name: conformance
     description: What this implementation provides.
   - name: contexts
-    description: The permission boundary — creation, deletion, discovery.
+    description: |
+      The permission boundary — discovery, and what a context IRI may be. Creating and deleting
+      them is the context-management module, in its own description.
   - name: resources
     description: RDF CRUD, at the resource's own IRI and at its operations address.
   - name: slots
@@ -125,43 +127,6 @@ paths:
               schema: { $ref: '#/components/schemas/Context' }
         '404':
           $ref: '#/components/responses/NotFoundOrNotVisible'
-    put:
-      tags: [contexts]
-      operationId: putContext
-      summary: Create a context, idempotently.
-      x-sps-requirements: [SPS-CTX-005, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019]
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ContextCreate' }
-      responses:
-        '200':
-          description: The context already existed and was not altered.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Context' }
-        '201':
-          description: Created.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Context' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    delete:
-      tags: [contexts]
-      operationId: deleteContext
-      summary: Remove a context and the state that rested on it.
-      description: |
-        Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
-        **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
-        before existence, so a caller outside their sandbox gets `403` rather than a `404` that
-        would confirm the context exists.
-      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020]
-      responses:
-        '204': { description: Removed. }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
 
   /{resourcePath}:
     description: |
@@ -969,13 +934,6 @@ components:
           type: array
           items: { type: string, enum: [read, write, manage] }
           description: Collapsed — `write` and `manage` imply `read`.
-
-    ContextCreate:
-      type: object
-      properties:
-        label: { type: string }
-        description: { type: string }
-        public: { type: boolean }
 
     CanonicalResource:
       type: object

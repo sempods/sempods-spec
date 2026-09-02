@@ -25,7 +25,8 @@ sandboxed reads and writes, and an agent surface that uses the same rules as eve
 [find](spec/core/find.md) are what makes a pod a pod. Something implementing a subset of them is
 something else, and should not use the name.
 
-**Modules are optional and versioned separately.** [OIDC](spec/modules/oidc.md),
+**Modules are optional and versioned separately.**
+[Context management](spec/modules/context-management.md), [OIDC](spec/modules/oidc.md),
 [media](spec/modules/media.md) and [MCP](spec/modules/mcp.md) each add a surface a pod may choose
 to offer. A pod may implement core `0.1` alongside media `0.2`.
 
