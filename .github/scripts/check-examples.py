@@ -267,16 +267,18 @@ LONE_TAG = re.compile(
     r"(?:\s(?:\"[^\"]*\"|'[^']*'|[^<>\"'])*)?/?>[ \t]*$"
 )
 INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
-COMMENT_OPEN = re.compile(r"^ {0,3}<!--(?!.*-->)")
+BLOCK_COMMENT = re.compile(r"^ {0,3}<!--")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
     r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\|"
-    r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*)+$)"
+    r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*){3,}$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
-SETEXT = re.compile(r"^ {0,3}=+[ \t]*$")
+# Either character underlines a paragraph. A run of three or more hyphens is a thematic break
+# whether or not one precedes it, and is in PARAGRAPH_BREAK; a shorter one is only ever an underline.
+SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
 
@@ -347,11 +349,16 @@ def scan(text: str) -> tuple[list[str], str]:
 
         if opener:
             fence = (opener.group(1)[0], len(opener.group(1)))
-        elif COMMENT_OPEN.match(line):
-            # Only where the comment *begins* the line. One opened mid-paragraph is inline HTML, and
+        elif BLOCK_COMMENT.match(line):
+            # Only where the comment *begins* the line: one opened mid-paragraph is inline HTML, and
             # treating it as a block would end the paragraph and let the next lone tag open a raw
-            # block that CommonMark does not open there.
-            comment = True
+            # block CommonMark does not open there. A comment closing on the line that opened it is
+            # still a block — it just ends where it began, and what follows starts fresh.
+            comment = "-->" not in line
+            if not comment:
+                rendered.append(INLINE_COMMENT.sub("", line))
+                paragraph = False
+                continue
         elif LITERAL_OPEN.match(line):
             tag = LITERAL_OPEN.match(line).group(1)
             # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
@@ -1812,6 +1819,11 @@ BROKEN = [
     ("a fixture inside a custom element whose attribute holds an angle bracket",
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<my-widget title=\">\">\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
+    ("a fixture inside a custom element opened after a one-line block comment",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<!-- note -->\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
