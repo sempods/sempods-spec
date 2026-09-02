@@ -160,15 +160,17 @@ CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
+# A block quote marker needs no space after it; a list marker does, or the line is paragraph text.
+CONTAINERS = r"(?:>[ \t]*|[-*+][ \t]+|\d+[.)][ \t]+)*"
 REFERENCE_DEFINITION = re.compile(
-    r"^ {0,3}(?:(?:>|[-*+]|\d+[.)])[ \t]*)*\[([^\]]+)\]:[ \t]*"
-    r"(?:<([^>]*)>|(\S+)|\n[ \t]*(?:(?:>|[-*+]|\d+[.)])[ \t]*)*(?:<([^>]*)>|(\S+)))", re.M
+    r"^ {0,3}" + CONTAINERS + r"\[([^\]]+)\]:[ \t]*"
+    r"(?:<([^>]*)>|(\S+)|\n[ \t]*" + CONTAINERS + r"(?:<([^>]*)>|(\S+)))", re.M
 )
 
 
 # A definition whose destination is on the next line: that continuation is kept even though the line
 # above it is not blank, because it belongs to a definition that did start a block.
-DEFINITION_HEAD = re.compile(r"^ {0,3}(?:(?:>|[-*+]|\d+[.)])[ \t]*)*\[[^\]]+\]:[ \t]*$")
+DEFINITION_HEAD = re.compile(r"^ {0,3}" + CONTAINERS + r"\[[^\]]+\]:[ \t]*$")
 
 
 def normalized(label: str) -> str:
@@ -1167,6 +1169,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # policy requiring an issuer the probe omits would pass while the real request grants to
             # every client. It has to be unsatisfiable without a named application, whatever else a
             # request carries.
+            # An applied policy exists to allow something. One that allows nothing is satisfied or
+            # not to no effect, so a case expecting no grant passes without saying why — and in the
+            # scenario that turns on an unfinished grant, it stops being about the missing matcher.
+            for policy in applies:
+                if not set(graph.objects(policy, P["allow"])):
+                    failures.append(
+                        f"{where}: {short(policy)} is applied and allows nothing, so nothing it "
+                        "says can be what the case tests"
+                    )
             if kind == "delegation" and acr is not None:
                 principal = one(own, acr, P["resource"], where)
                 for policy in applies:
@@ -1854,6 +1865,14 @@ BROKEN = [
     ("a definition written under paragraph text, which defines nothing",
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\nSome prose.\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("an applied policy that allows nothing",
+     ("<#p> a acp:Policy ; acp:allow acl:Read ;", "<#p> a acp:Policy ;"),
+     "allows nothing, so nothing it says"),
+    ("a definition after a list marker with no space, which is paragraph text",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n-[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
