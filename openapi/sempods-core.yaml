@@ -48,7 +48,9 @@ tags:
   - name: conformance
     description: What this implementation provides.
   - name: contexts
-    description: The permission boundary — creation, deletion, discovery.
+    description: |
+      The permission boundary — discovery, and what a context IRI may be. Creating and deleting
+      them is the context-management module, in its own description.
   - name: resources
     description: RDF CRUD, at the resource's own IRI and at its operations address.
   - name: slots

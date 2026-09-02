@@ -86,7 +86,8 @@ Read as one access-control model, the current chapters say:
   ([`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009));
 - the owner's authority is implicit and unstored
   ([`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011));
-- silence is private ([`SPS-CTX-027`](../../spec/modules/context-management.md#SPS-CTX-027)); and,
+- silence is private ([`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030), which
+  [`SPS-CTX-027`](../../spec/modules/context-management.md#SPS-CTX-027) applies to a creation request); and,
 - OAuth delegation is a ceiling: an application receives no more than the authorizing person holds
   ([`SPS-GRANT-013`](../../spec/core/grants.md#SPS-GRANT-013)).
 

@@ -127,8 +127,10 @@ Two conventions, both load-bearing:
 
 ## 4. Module requirements are conditional
 
-A requirement in a module area binds only an implementation that **advertises** that module at the
-conformance discovery endpoint. Write it as an ordinary requirement; do not hedge every sentence
+A requirement in a module **chapter** binds only an implementation that **advertises** that module at
+the conformance discovery endpoint. The chapter and not the area: `CTX` spans both halves, so
+`SPS-CTX-001` is mandatory and `SPS-CTX-015` is not, and reading conditionality off the identifier
+would make the first of those optional. Write it as an ordinary requirement; do not hedge every sentence
 with "if the media module is implemented". The chapter says once, at the top, that everything in it
 is conditional on advertising the module.
 
