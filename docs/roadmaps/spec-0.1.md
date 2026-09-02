@@ -108,10 +108,12 @@ equally urgent and the announce waits on all of them.
       its own?* the first question an author answers.
       `SPS-CORE-007` says a pod has a base URL and stops prescribing how it decomposes, which is
       what this item is named after. Six others failed the test: `SPS-AUTH-056` and `SPS-AUTH-057`
-      are **deleted**; `SPS-AUTH-054`, `SPS-MCP-004`, `SPS-MCP-031` and `SPS-MEDIA-004` keep their
-      identifiers and lose the clause that reached above the pod. Two are added, `SPS-CORE-019` and
-      `SPS-CORE-020`, fixing the form of a base URL now that `{pod}` is one — the chapters carry
-      what each says and why.
+      are **deleted** — the two numbers returned to the pool the pre-`0.1` window opens and now
+      carry the redirect-URI requirements, so a search for either finds one retired meaning here and
+      one live meaning in the chapter; `SPS-AUTH-054`, `SPS-MCP-004`, `SPS-MCP-031` and
+      `SPS-MEDIA-004` keep their identifiers and lose the clause that reached above the pod. Two are
+      added, `SPS-CORE-019` and `SPS-CORE-020`, fixing the form of a base URL now that `{pod}` is
+      one — the chapters carry what each says and why.
       Deleting needed [`../../GOVERNANCE.md`](../../GOVERNANCE.md) §"Deleting and renumbering,
       before `0.1`" first, and `check-requirements.py` carries the matching exception and its
       expiry. All four OpenAPI descriptions template one `podBaseUrl`, and `site/build.py` holds one
@@ -292,8 +294,10 @@ equally urgent and the announce waits on all of them.
     the MCP module and nothing requires it of one that does not — which is the "invisible until a
     real client arrives" failure the deleted requirement was written against, moved one layer down.
     The chapter's prose already names this as an acknowledged gap.
-  - **Nothing says where RFC 8414 Authorization Server Metadata lives.** `SPS-AUTH-057` carried
-    both its addresses, so deleting it took the pod-relative one with the host-rooted one.
+  - **Nothing says where RFC 8414 Authorization Server Metadata lives.** The then-`SPS-AUTH-057`
+    carried both its addresses, so deleting it took the pod-relative one with the host-rooted one.
+    (That number has since been reissued and names an unrelated redirect-URI rule; this entry is
+    about the requirement that was deleted, not the one that holds the number now.)
     `spec/core/auth.md` still declares it profiles RFC 8414 and
     [`SPS-AUTH-048`](../../spec/core/auth.md#SPS-AUTH-048) still constrains the document's contents,
     but the address is unstated — and RFC 8414's own is host-rooted, so the standard the chapter

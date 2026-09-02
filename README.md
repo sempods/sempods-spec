@@ -27,7 +27,7 @@ one of them and is linked from the others.
 ## Status
 
 **Pre-`0.1`, and the specification was extracted rather than invented.** All six core chapters and
-all four modules are written — 316 requirements — together with hand-written OpenAPI descriptions
+all four modules are written — 318 requirements — together with hand-written OpenAPI descriptions
 of the HTTP surface. What is not done is the `0.1` release itself, the conformance suite, and
 removing the second copy of this material from the reference implementation.
 

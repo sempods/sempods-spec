@@ -1,6 +1,6 @@
 # The specification
 
-The normative text lives in this directory: six core chapters and four modules, 316 requirements.
+The normative text lives in this directory: six core chapters and four modules, 318 requirements.
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 

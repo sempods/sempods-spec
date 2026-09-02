@@ -139,7 +139,7 @@
       "id": "SPS-AUTH-019",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "An implementation MUST apply `SPS-AUTH-018` at registration as well as at authorization, so that an address a login could never honour is refused when it is first offered rather than at first use.",
+      "summary": "An implementation MUST apply `SPS-AUTH-018` and `SPS-AUTH-056` at registration as well as at authorization, so that an address a login could never honour is refused when it is first offered rather than at first use.",
       "withdrawn": false
     },
     {
@@ -392,6 +392,20 @@
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "The response parameters MUST be **added to** the redirect URI's query component per RFC 6749 §4.1.2, preserving any component it already carries.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-056",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A redirect URI MUST NOT carry `code`, `response` or `state` as a query parameter.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-057",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A query parameter counts as one of `SPS-AUTH-056`'s prohibited names when its name, percent-decoded and matched case-sensitively, equals that name — whether or not the parameter carries a value.",
       "withdrawn": false
     },
     {
