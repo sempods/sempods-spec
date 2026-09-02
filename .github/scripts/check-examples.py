@@ -155,7 +155,9 @@ MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*<?([^\s)>]*)>?[^)]*\)")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
-REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(?:(\S+)|\n[ \t]*(\S+))", re.M)
+REFERENCE_DEFINITION = re.compile(
+    r"^ {0,3}\[([^\]]+)\]:[ \t]*(?:<([^>]*)>|(\S+)|\n[ \t]*(?:<([^>]*)>|(\S+)))", re.M
+)
 
 
 def normalized(label: str) -> str:
@@ -247,7 +249,7 @@ BLOCK_TAGS = (
     "p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul"
 )
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$")
-LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")\b", re.I)
+LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")(?=[\s/>]|$)", re.I)
 # CommonMark's other literal raw blocks, each with its own terminator: a processing instruction, a
 # declaration, and CDATA. Type 7 — any complete tag alone on its line — closes at a blank line like
 # the block tags, and is what carries a custom element.
@@ -255,10 +257,13 @@ OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
               (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
               (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
 LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
+INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
-PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}\s|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)")
+PARAGRAPH_BREAK = re.compile(
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)"
+)
 INDENTED = re.compile(r"^ {4,}\S")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
@@ -351,7 +356,12 @@ def scan(text: str) -> tuple[list[str], str]:
             and (paragraph or not INDENTED.match(line))
             and not (fence or comment or literal or closer or ordinary)
         )
-        rendered.append("" if fence or comment or literal or closer or ordinary else line)
+        # A comment closing on the line that opened it never becomes a state, and what it holds
+        # renders as nothing all the same — a reference definition inside one is inert.
+        rendered.append(
+            "" if fence or comment or literal or closer or ordinary
+            else INLINE_COMMENT.sub("", line)
+        )
     return problems, "\n".join(rendered)
 
 
@@ -932,8 +942,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     definitions: dict = {}
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
     # destination while the rendered link followed an earlier, wrong one.
-    for label, same_line, next_line in REFERENCE_DEFINITION.findall(prose):
-        definitions.setdefault(normalized(label), same_line or next_line)
+    for label, *destinations in REFERENCE_DEFINITION.findall(prose):
+        definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(prose)]
     for shown in SHORTCUT.findall(prose):
         if normalized(shown) in definitions:
@@ -1719,6 +1729,16 @@ BROKEN = [
       "  acp:allOf [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
      "a ceiling is a pair"),
+    ("a reference definition commented out on one line, above the real one",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n<!-- [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003 -->\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a fixture inside a custom element opened after an empty heading",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n#\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
