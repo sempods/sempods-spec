@@ -970,22 +970,22 @@
     },
     {
       "id": "SPS-CTX-006",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
       "summary": "A context **delegated** to someone MUST carry a delegation type as its first path segment, followed by the delegate's identifier.",
       "withdrawn": false
     },
     {
       "id": "SPS-CTX-007",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
       "summary": "The pod owner's identity MUST NOT appear in a context path.",
       "withdrawn": false
     },
     {
       "id": "SPS-CTX-008",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
       "summary": "The delegation type `users` is reserved for guest contexts.",
       "withdrawn": false
     },
@@ -993,20 +993,20 @@
       "id": "SPS-CTX-009",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "An implementation MUST accept a freely chosen context name that breaks none of the structural rules below.",
+      "summary": "An implementation MUST accept a freely chosen context name that breaks none of the structural rules — [`SPS-CTX-006`](../core/contexts.md#SPS-CTX-006), [`SPS-CTX-007`](../core/contexts.md#SPS-CTX-007), [`SPS-CTX-010`](../core/contexts.md#SPS-CTX-010), [`SPS-CTX-011`](../core/contexts.md#SPS-CTX-011) and [`SPS-CTX-013`](../core/contexts.md#SPS-CTX-013) in core, and `SPS-CTX-012` below.",
       "withdrawn": false
     },
     {
       "id": "SPS-CTX-010",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
-      "summary": "The segment `_system` MUST be rejected anywhere in a context path.",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
+      "summary": "A context path MUST NOT contain the segment `_system`, anywhere in it.",
       "withdrawn": false
     },
     {
       "id": "SPS-CTX-011",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
       "summary": "The delegation types `apps` and `users` MUST be reserved as the **first** path segment.",
       "withdrawn": false
     },
@@ -1019,16 +1019,16 @@
     },
     {
       "id": "SPS-CTX-013",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
-      "summary": "A context path that could not be addressed again MUST be rejected.",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
+      "summary": "A context path MUST be one that can be addressed again.",
       "withdrawn": false
     },
     {
       "id": "SPS-CTX-014",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "The naming rules `SPS-CTX-009` through `SPS-CTX-012` MUST apply on **creation only**.",
+      "summary": "This route MUST apply the naming rules on **creation only** — the structural ones core states, and `SPS-CTX-012` here.",
       "withdrawn": false
     },
     {

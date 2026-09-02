@@ -181,7 +181,7 @@ The chapters that follow use these status codes with these meanings and do not r
 | `401` | Authentication is required and was missing, or was present and rejected |
 | `403` | Authenticated, but lacking the grant or scope the operation requires |
 | `404` | The resource or context does not exist, or the caller cannot see that it does |
-| `409` | The request was well formed and authorized, and the pod's current state forbids it — because that state changed underneath the request, or because it forbids the request outright |
+| `409` | The request was well formed and authorized, and cannot be completed against the pod's current state — because that state changed underneath the request, or because completing it would break an invariant this specification requires. A target that does not exist is `404` and never this |
 | `500` | Server error |
 
 <a id="SPS-CORE-015"></a>
