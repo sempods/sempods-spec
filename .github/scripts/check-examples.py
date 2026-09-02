@@ -149,12 +149,17 @@ BLOCK = re.compile(
     re.M | re.S,
 )
 # Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^ {0,3}(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M)
+# `[^`\n]*` on the backtick branch: a backtick fence's info string may hold no backtick, and counting
+# a line the scanner reads as prose would fail the file for a block it never extracted.
+ANY_BLOCK = re.compile(
+    r"^ {0,3}(?:`{3,}[ \t]*turtle[^`\n]*|~{3,}[ \t]*turtle[^\n]*)$", re.M
+)
 # CommonMark renders a fence inside a block quote or a deeply nested list, where the raw line carries
 # a container marker. Parsing containers would mean writing a Markdown parser; noticing them costs a
 # line, and an unnoticed one is a fixture that renders for a reader and never runs.
 CONTAINED = re.compile(
-    r"^(?:[ \t>]|[-*+][ \t]|\d+[.)][ \t])*(?:`{3,}|~{3,})[ \t]*turtle([ \t]+[^\n]*)?$", re.M
+    r"^(?:[ \t>]|[-*+][ \t]|\d+[.)][ \t])*(?:`{3,}[ \t]*turtle[^`\n]*|~{3,}[ \t]*turtle[^\n]*)$",
+    re.M,
 )
 # Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
 # and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
@@ -167,7 +172,7 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # as part of the fragment would reject a correctly directed citation for being annotated.
 # The destination runs to whitespace or to a `)` that is not inside a balanced pair — CommonMark
 # allows those — and what follows is the optional title.
-INLINE_START = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*")
+INLINE_START = re.compile(r"(?<!\\)\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*")
 
 
 def inline_citations(text: str) -> list[tuple[str, str]]:
@@ -216,6 +221,23 @@ REFERENCE_DEFINITION = re.compile(
 # A definition whose destination is on the next line: that continuation is kept even though the line
 # above it is not blank, because it belongs to a definition that did start a block.
 DEFINITION_HEAD = re.compile(r"^ {0,3}" + CONTAINERS + r"\[[^\]]+\]:[ \t]*$")
+
+
+def balanced(destination: str) -> bool:
+    """Whether the parentheses close, counting a backslash escape as a literal pair."""
+    depth, escaped = 0, False
+    for character in destination:
+        if escaped:
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        elif character == "(":
+            depth += 1
+        elif character == ")":
+            depth -= 1
+            if depth < 0:
+                return False
+    return depth == 0
 
 
 def normalized(label: str) -> str:
@@ -336,10 +358,25 @@ INDENTED = re.compile(r"^ {4,}\S")
 SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ORDERED = re.compile(r"^ {0,3}\d{1,9}[.)]\s")
 EMPTY_ITEM = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]*$")
-ITEM_WITH_TEXT = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\S")
+ITEM_MARKER = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+")
 STARTABLE_DEFINITION = re.compile(r"^ {0,3}\[[^\]]+\]:[ \t]*\S")
 TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
+
+
+def item_opens_paragraph(line: str) -> bool:
+    """Whether a list item's content is paragraph text, which the next line may continue lazily.
+
+    `- # Heading` opens a heading inside the item and not a paragraph, so nothing continues it and a
+    type-7 block may start on the line below.
+    """
+    marker = ITEM_MARKER.match(line)
+    if not marker:
+        return False
+    content = line[marker.end():]
+    return bool(content.strip()) and not (
+        PARAGRAPH_BREAK.match(content) or FENCE_LINE.match(content) or BLOCK_OPEN.match(content)
+    )
 
 
 def scan(text: str) -> tuple[list[str], str]:
@@ -453,7 +490,7 @@ def scan(text: str) -> tuple[list[str], str]:
             # A nonempty list marker starts an item, and the item starts a paragraph — which the
             # next line may continue lazily, so it is not a boundary for what follows.
             (PARAGRAPH_BREAK.match(line) and not EMPTY_ITEM.match(line)
-             and not ITEM_WITH_TEXT.match(line))
+             and not item_opens_paragraph(line))
             or (paragraph and SETEXT.match(line))
             # A pipe makes a table only where the delimiter row follows.
             or ("|" in line
@@ -1114,7 +1151,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         )
     startable = "\n".join(kept)
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
-        definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
+        destination = next(filter(None, destinations), "")
+        # An unbalanced bare destination is not a definition at all, and recording it would let the
+        # inert line win over the real definition below it.
+        if destination and not balanced(destination):
+            continue
+        definitions.setdefault(normalized(label), destination)
     citations = inline_citations(prose)
     # A definition line defines; the same text mid-sentence is a shortcut link with punctuation
     # after it, and excluding every colon would have left those unchecked.
@@ -1202,6 +1244,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 client, context = one(stated, node, CLIENT, where), one(stated, node, IN, where)
                 modes = set(stated.objects(node, GRANTS))
                 failures += inspect_modes(modes, where, "registration", notes)
+                # A registration grants like a policy does, so it closes like one: SPS-GRANT-009
+                # has write covering read, and a write-only context is a state the model forbids
+                # rather than a narrower one.
+                for mode, implied in ((ACL_WRITE, {ACL_READ}), (ACL_CONTROL, {ACL_READ, ACL_WRITE})):
+                    if mode in modes and implied - modes:
+                        failures.append(
+                            f"{where}: a registration grants {short(mode)} without "
+                            + ", ".join(sorted(short(m) for m in implied - modes))
+                        )
                 registered.setdefault(client, {})[context] = modes
 
         holding: dict = {}
@@ -1499,6 +1550,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # authority it was registered with or grant authority it was not.
                 service = {c.agent for c in halves} == {c.client for c in halves} != {None}
                 if service:
+                    if "delegation" in dimensions:
+                        failures.append(
+                            f"{where}: a service request composes a delegation ceiling, and there "
+                            "is none — nobody delegated to a client that is its own subject"
+                        )
+                        pending = None
+                        continue
                     holder = registered.get(next(iter({c.agent for c in halves})))
                     if holder is None:
                         failures.append(
@@ -2120,6 +2178,32 @@ BROKEN = [
       "[ acp:target <https://a.example/c> ; acp:agent <did:web:svc.example> ;\n"
       "  acp:client <did:web:svc.example> ] .\n```"),
      "a registered block has to say what it was registered with"),
+    ("a registration granting write without read",
+     ("```turtle context", "```turtle registered\n"
+      "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Write ] .\n```\n"
+      "```turtle context"),
+     "a registration grants acl:Write without"),
+    ("a service request composing a ceiling that cannot exist",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/ctx> ] .\n```\n"
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <did:web:svc.example> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:allOf [ a acp:Matcher ; acp:agent <did:web:svc.example> ] ,\n"
+      "            [ a acp:Matcher ; acp:client <did:web:svc.example> ] .\n```\n"
+      "```turtle registered\n[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#in> <https://a.example/ctx> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Read ] .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/ctx> ; acp:agent <did:web:svc.example> ;\n"
+      "  acp:client <did:web:svc.example> ] .\n"
+      "[ acp:target <did:web:svc.example> ; acp:agent <did:web:svc.example> ;\n"
+      "  acp:client <did:web:svc.example> ] .\n```"),
+     "composes a delegation ceiling, and there is none"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
