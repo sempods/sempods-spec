@@ -131,6 +131,12 @@ equally urgent and the announce waits on all of them.
       under [`../../GOVERNANCE.md`](../../GOVERNANCE.md) §"Deleting and renumbering, before `0.1`",
       said out loud here rather than assumed.
       [issue #23](https://github.com/sempods/sempods-spec/issues/23).
+      **Downstream:** two summaries in `requirements.json` moved, so the reference implementation
+      re-vendors at its next sync. The sweep `GOVERNANCE.md` attaches to a change is not triggered —
+      it binds one that *deletes, renumbers or reuses*, and this does none of the three, so every
+      existing citation still points at the requirement it always pointed at. What is worth checking
+      there is the obligation rather than the index, the way item 13 checked one: whether the
+      implementation refuses an ordinary resource under `.well-known` today.
       **Open, in the decisions below:** whether the reservation also binds `{pod}` itself.
 
 ## S3 — Core chapters
