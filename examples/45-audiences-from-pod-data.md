@@ -34,7 +34,8 @@ decision rather than a settled part of the model.
 The rule that decides whether it is safe:
 
 > A context may serve as a principal-set authority exactly when **every agent and client pair whose
-> writes are still in it holds at least `manage` on everything it now grants**.
+> writes are still in it held at least `manage` on everything it now grants, by an authority that did
+> not depend on those writes**.
 
 The pair, not the person, and that is the part that is easy to get wrong. The contacts are written by
 a sync, and a sync is an application acting as Anna — a grant is resolved from the verified client

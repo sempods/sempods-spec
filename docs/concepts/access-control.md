@@ -250,7 +250,7 @@ implementation comes to trust something nothing checks.
 | Authorization facts are read only from stores no data write can reach | topology — the two graph sets are disjoint by construction | **guarantee**, with one declared exception below |
 | Evaluations compose by intersection | the pod, on every request | **guarantee** |
 | An ACR carries no `acp:deny` and no `acp:noneOf` | whatever writes the ACR | convention |
-| A policy states its modes expanded | whatever writes the ACR | convention |
+| A policy states its modes expanded | whatever writes the ACR — and a target requirement, since an unexpanded set is not a smaller grant but an impossible one | convention today, guarantee in the target |
 | An ACR carries no `acp:memberAccessControl` | whatever writes the ACR, and today the server as well | convention, and the one to watch |
 | A shared policy's referring targets have the same manager | the deployment | convention, until the open decision below closes it |
 
@@ -259,11 +259,20 @@ and something turns that into a policy. That layer is where a convention lives, 
 a policy language cannot express — which is also why the distinction matters, because an owner
 holding `manage` can write an ACR directly and step around every convention in it.
 
-That is acceptable for the first two, and the reason is worth stating rather than assumed: they
-**fail towards less access**. A hand-written deny is honoured and narrows; modes left unexpanded grant
-less than intended. Neither hands anybody access the owner could not have granted outright.
+A hand-written deny is honoured and narrows, which is the one that really does **fail towards less
+access**: it hands nobody anything the owner could not have granted outright.
 
-The last two do not. Take member access control first, because it is the one to watch. `acp:memberAccessControl` does not restrict — it adds
+Modes left unexpanded do not. `allow acl:Write` without `acl:Read` resolves to write alone, and this
+concept's own argument is that a write path *is* a read oracle — a conditional request, an entity
+tag, a patch that succeeds or fails on what is there — which is why
+[`SPS-GRANT-010`](../../spec/core/grants.md#SPS-GRANT-010) refuses to pretend read can be withheld
+from somebody who may write. So the resulting grant is not a smaller one; it is one the model says
+cannot exist, and the pod believes it granted less than it did. The same holds for `allow acl:Read,
+acl:Write` beside `deny acl:Read`. **Closure has to be enforced where policy is ingested rather than
+assumed of whoever wrote it** — which is a requirement to write, not a convention to trust, and it is
+carried below.
+
+Nor do the last two. Take member access control first, because it is the one to watch. `acp:memberAccessControl` does not restrict — it adds
 an ancestor's policies to a descendant's effective set, and under union adding policies can only
 widen. A hand-written one is inert today, but **not because this convention holds**: it is inert
 because the server supplies no ancestors for it to resolve against, and ACP expects the resource
@@ -514,7 +523,10 @@ else would be worse than having it. What bounds it:
 - it carries membership, never policy. No `acp:allow` written into such a context is read, so the
   worst it can do is admit somebody to a set some policy already trusts; and,
 - the declaration is sound only while **every agent and client pair whose writes are still in the
-  authority holds at least `manage` on everything it now grants**. Where that holds, everyone whose
+  authority held at least `manage` on everything it now grants, by an authority that did not depend
+  on those writes**. The last clause is not pedantry: where a target policy grants `manage` to
+  members of the set, a caller with `write` on the authority adds itself and the condition then reads
+  as satisfied — validated by the very write it was supposed to bound. Where that holds, everyone whose
   writing is being believed could have written the policy directly, and nothing is reachable that was
   not already.
 
@@ -670,9 +682,10 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
 | [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does, and the set is larger than the two obvious entries: the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) and creation ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)) carry with them freely chosen names ([`SPS-CTX-009`](../../spec/core/contexts.md#SPS-CTX-009)), idempotent creation ([`SPS-CTX-016`](../../spec/core/contexts.md#SPS-CTX-016)), deletion and its cascade boundary ([`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017), [`SPS-CTX-018`](../../spec/core/contexts.md#SPS-CTX-018)), and the lifecycle authorization and its non-enumeration rule ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019), [`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020)). Each of those is a `MUST` about an operation a pod with no management surface does not offer, so a sweep naming only the first two would leave core requiring what the declaration removed. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020) — `GET` returns every statement whose subject is the resource IRI and is visible in the selected contexts | Right for the base decision and too generous once a second one denies individual statements. Only a pod declaring the resource module needs it restated over the authorized statement view — the same move `SPARQL` makes, and it has to move with it or the two chapters describe different results |
+| [`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015) and [`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027) — creation may carry a `public` flag, and its absence creates a private context | Both survive. What the target removes is the **second resolution path**, not the field: `public: true` becomes a request to install a public-agent policy, and `SPS-CTX-027`'"'"'s private default becomes the absence of one, which is the same answer arrived at by the ordinary route. A sweep that withdrew the field would break a creation contract for no gain; one that left it as a flag the evaluator reads would keep the branch the target exists to remove |
 | [`SPS-CORE-011`](../../spec/core/index.md#SPS-CORE-011) and [`SPS-CORE-012`](../../spec/core/index.md#SPS-CORE-012) — every module is announced by IRI in `modules`, and one absent from it is not provided | The resource module needs an IRI of its own and an entry there, or a client has no conforming way to learn that the second decision is being made — and `SPS-CORE-012` says probing the routes is not that way. The same holds for letting a pod omit the management of several contexts, which is a second thing a client has to be told rather than discover |
 | [`SPS-CRUD-040`](../../spec/core/lod-crud.md#SPS-CRUD-040), [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-042`](../../spec/core/lod-crud.md#SPS-CRUD-042) — the resource-node, slot and edge routes offer their mutations with §4's semantics | The second decision applies to each of them **where the subject already exists**. A sweep that gated reads and left writes to the context alone would produce a pod where a caller reads less than they may write, which is not "both must allow" in either direction. Creation is the exception and has to be written as one: a `PUT` bringing a subject into being has no resource policy to consult, so it is authorized from the context and installs the initial policy in the same operation. Gating it on a decision that does not exist yet would deny every creation |
-| [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) — an unwritable context is `403`, an unregistered one `404` | Gains a second way to be refused, and the answer has to be chosen rather than inherited: a subject the resource decision denies is not an unregistered context, and saying `404` there would report on a subject the caller cannot see. This is the denial half of the sweep and belongs in it |
+| [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) and [`SPS-CORE-014`](../../spec/core/index.md#SPS-CORE-014) — the status codes, and which denial gets which | Gains a second way to be refused, and the code has to be chosen rather than inherited. The property to hold on to is the one [`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017) already states for reads: a resource that is absent, one in a context the caller cannot read, and one that does not exist answer alike. Either code can preserve it — `404` because it is already the answer for "absent or invisible", `403` only if it is also given for targets that do not exist — and either can break it if only one branch changes. This is the denial half of the sweep and belongs in it |
 | [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) — a slot `GET` returns all values, across the readable contexts | The same restatement, and it has to be made here too rather than only on the LOD route. A conforming pod would otherwise hide a subject's statements at one address and hand them over at another, which is not a narrower answer but a different one |
 | [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) — the context sandbox applies to `find` exactly as to CRUD and SPARQL | Holds, and stays true by being restated with them rather than despite them: the sentence is that `find` is sandboxed the same way, so the restatement is what keeps it accurate. Matching, ranking and expansion all read statements, so the denied ones have to be gone before any of that, not filtered out of the results afterwards |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
@@ -864,6 +877,10 @@ The rest are ordinary open questions:
   declaration that a pod manages several contexts. Without them a client cannot tell a pod making
   one decision from a pod making two, and `SPS-CORE-012` closes the fallback: a module absent from
   the list is not provided, and probing its routes is not discovery.
+- Write mode closure as a requirement on ingestion: an access control resource whose modes are not
+  closed under [`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009) is refused rather than
+  stored. It cannot stay a convention, because the state it produces is one the model forbids rather
+  than a narrower one, and `manage` on a target is enough to write an ACR by hand.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Decide whether a pod may declare an ordinary context a principal-set authority at all. Refusing it
   keeps the topological guarantee whole and costs the personal case its best feature — an audience

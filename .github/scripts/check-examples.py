@@ -166,6 +166,11 @@ REFERENCE_DEFINITION = re.compile(
 )
 
 
+# A definition whose destination is on the next line: that continuation is kept even though the line
+# above it is not blank, because it belongs to a definition that did start a block.
+DEFINITION_HEAD = re.compile(r"^ {0,3}(?:(?:>|[-*+]|\d+[.)])[ \t]*)*\[[^\]]+\]:[ \t]*$")
+
+
 def normalized(label: str) -> str:
     """A reference label as CommonMark matches one: case-folded, trimmed, runs of space collapsed."""
     return " ".join(label.split()).casefold()
@@ -265,7 +270,10 @@ OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
 # An attribute is a name, optionally a value; a bare quoted string after whitespace is not a tag at
 # all, and treating one as a block boundary rejects a line the renderer shows as text.
 ATTRIBUTE = r"\s+[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?"
-LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:" + ATTRIBUTE + r")*\s*/?>[ \t]*$")
+LONE_TAG = re.compile(
+    r"^ {0,3}(?:<[A-Za-z][A-Za-z0-9-]*(?:" + ATTRIBUTE + r")*\s*/?>"
+    r"|</[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$"
+)
 INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
 BLOCK_COMMENT = re.compile(r"^ {0,3}<!--")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
@@ -999,7 +1007,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     definitions: dict = {}
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
     # destination while the rendered link followed an earlier, wrong one.
-    for label, *destinations in REFERENCE_DEFINITION.findall(prose):
+    # A definition starts a block, so one written under paragraph text is that paragraph's text and
+    # defines nothing. Recording it would let an inert line mask the real definition below.
+    lines = prose.split("\n")
+    startable = "\n".join(
+        line if not previous.strip() or DEFINITION_HEAD.match(previous) else ""
+        for previous, line in zip([""] + lines, lines)
+    )
+    for label, *destinations in REFERENCE_DEFINITION.findall(startable):
         definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
     citations = [
         (shown, bracketed or bare) for shown, bracketed, bare in MISDIRECTED.findall(prose)
@@ -1836,6 +1851,11 @@ BROKEN = [
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<!-- note -->\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
+    ("a definition written under paragraph text, which defines nothing",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\nSome prose.\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
