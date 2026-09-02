@@ -496,7 +496,7 @@ def scan(text: str) -> tuple[list[str], str]:
             # paragraph underlines it rather than being one of these blocks.
             # A nonempty list marker starts an item, and the item starts a paragraph — which the
             # next line may continue lazily, so it is not a boundary for what follows.
-            (PARAGRAPH_BREAK.match(line) and not EMPTY_ITEM.match(line)
+            (PARAGRAPH_BREAK.match(line) and not (paragraph and EMPTY_ITEM.match(line))
              and not item_opens_paragraph(line))
             or (paragraph and SETEXT.match(line))
             # A pipe makes a table only where the delimiter row follows.
@@ -624,6 +624,19 @@ CONTEXT_PREDICATES = {
 } | {SERVICE}
 
 
+def service_marked(graph: Graph, node, where: str) -> bool:
+    """Whether this request says it is a service token — `true` once, and nothing else."""
+    values = list(graph.objects(node, SERVICE))
+    if not values:
+        return False
+    if len(values) > 1 or values[0] not in (Literal(True), Literal("true")):
+        raise Problem(
+            f"{where}: the service marker is `true` once or absent, and this says "
+            + ", ".join(f'"{value}"' for value in values)
+        )
+    return True
+
+
 def read_one_context(graph: Graph, node, where: str) -> Context:
     errors, _ = classify(graph.predicates(node, None), where, "access context")
     if errors:
@@ -658,7 +671,7 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
         if predicate not in (RDF_TYPE, P["target"]) and str(value).startswith(ACP):
             raise Problem(f"access context names {short(value)}, which describes no request")
     return Context(
-        service=bool(set(graph.objects(node, SERVICE))),
+        service=service_marked(graph, node, where),
         target=one(graph, node, P["target"], where),
         agent=one(graph, node, P["agent"], where),
         client=one(graph, node, P["client"], where),
@@ -1254,6 +1267,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     )
             for node in {sub for sub, _, _ in stated}:
                 client, context = one(stated, node, CLIENT, where), one(stated, node, IN, where)
+                # Storing an entry with either missing would let a service case find the client,
+                # get nothing back for its context, and pass an empty expectation over a
+                # registration that is not a per-context grant at all.
+                if not isinstance(client, URIRef) or not isinstance(context, URIRef):
+                    failures.append(
+                        f"{where}: a registration names a client and a context, both as IRIs"
+                    )
+                    continue
                 modes = set(stated.objects(node, GRANTS))
                 failures += inspect_modes(modes, where, "registration", notes)
                 # A registration grants like a policy does, so it closes like one: SPS-GRANT-009
@@ -2267,6 +2288,21 @@ BROKEN = [
       "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
       "  <https://example.invalid/runner#grants> acl:Read, acl:Write, acl:Control ] .\n```\n"
       "```turtle context"), "a registration grants acl:Control"),
+    ("a registration naming no context",
+     ("```turtle context", "```turtle registered\n"
+      "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Read ] .\n```\n"
+      "```turtle context"), "names a client and a context, both as IRIs"),
+    ("a request marked as not being a service token",
+     ("[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
+      "  <https://example.invalid/runner#serviceToken> false ] ."),
+     "the service marker is `true` once or absent"),
+    ("a fixture inside a custom element opened after an empty list item",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n- \n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
