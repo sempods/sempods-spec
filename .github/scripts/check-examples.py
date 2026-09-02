@@ -125,8 +125,16 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # statements are in. Nothing derives it — SPS-CRUD-011 makes subject and context independent on
 # purpose — so a composed decision could otherwise pair a protected subject with an unrelated public
 # context, expect a read, and certify one that never met the sandbox.
+#
+# `registered` is a service client's grants, fixed when it was registered. They are not policy — no
+# ACR carries them — and they take the place of both the ceiling and the context decision, so a
+# request whose subject *is* its client is answered from them. Without the block the runner would
+# quietly apply the formula for a person, which is a different answer.
 KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
-         "grant", "holds", "aside")
+         "grant", "holds", "registered", "aside")
+CLIENT = URIRef("https://example.invalid/runner#client")
+IN = URIRef("https://example.invalid/runner#in")
+GRANTS = URIRef("https://example.invalid/runner#grants")
 IN_CONTEXT = URIRef("https://example.invalid/runner#inContext")
 # ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
 # a list item is the ordinary way it happens. Anchoring at column one would let such a block render
@@ -794,6 +802,16 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
                 f"{where}: {short(predicate)} is outside a matcher, where an ACP engine ignores it "
                 "rather than failing closed"
             )
+    for predicate in extensions:
+        for value in set(graph.objects(None, predicate)):
+            # A blank node names nothing, and no extension can resolve one: a set has an IRI and a
+            # keyword is a literal, and this is neither. A literal is left alone deliberately — a
+            # principal set takes an IRI while a relation like `contactKeyword` takes a value, and
+            # the runner does not know one extension's semantics from another's.
+            if not isinstance(value, (URIRef, Literal)):
+                errors.append(
+                    f"{where}: {short(predicate)} names a blank node, which nothing can resolve"
+                )
     # The resolver below implements these, deliberately: it is an ACP engine and has to answer for
     # graphs the profile would not write. A *fixture* carrying one is a different thing — it would
     # certify an access control resource outside the model these files demonstrate.
@@ -1081,12 +1099,18 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # Whether a block can start on each line, carried forward rather than read off the line above: a
     # definition-shaped line that was itself paragraph text does not let the next one start either.
     kept, can_start = [], True
-    for line in prose.split("\n"):
+    prose_lines = prose.split("\n")
+    for number, line in enumerate(prose_lines):
+        # A pipe makes a table only where the delimiter row follows, and a completed table lets a
+        # definition start under it.
+        heads_a_table = "|" in line and TABLE_DELIMITER.match(
+            prose_lines[number + 1] if number + 1 < len(prose_lines) else ""
+        )
         began = can_start and (REFERENCE_DEFINITION.match(line) or DEFINITION_HEAD.match(line))
         kept.append(line if can_start else "")
         can_start = bool(
             not line.strip() or began or PARAGRAPH_BREAK.match(line) or SETEXT.match(line)
-            or TABLE_DELIMITER.match(line) or ("|" in line and not line.strip().startswith("["))
+            or TABLE_DELIMITER.match(line) or heads_a_table
         )
     startable = "\n".join(kept)
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
@@ -1162,6 +1186,23 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             shared_errors, shared_notes = inspect_acr(shared, f"{rel} line {block.line}")
             failures += shared_errors
             notes += shared_notes
+
+        # {client: {context: modes}}, read from `registered` blocks.
+        registered: dict = {}
+        for index, block in enumerate(b for b in found if b.kind == "registered"):
+            where = f"{rel} line {block.line}"
+            stated = parse(block, 6000 + index)
+            for predicate in set(stated.predicates(None, None)):
+                if predicate not in (CLIENT, IN, GRANTS):
+                    failures.append(
+                        f"{where}: a registered block says {short(predicate)}, and an entry is a "
+                        "client, a context and the modes it was registered with"
+                    )
+            for node in {sub for sub, _, _ in stated}:
+                client, context = one(stated, node, CLIENT, where), one(stated, node, IN, where)
+                modes = set(stated.objects(node, GRANTS))
+                failures += inspect_modes(modes, where, "registration", notes)
+                registered.setdefault(client, {})[context] = modes
 
         holding: dict = {}
         for index, block in enumerate(b for b in found if b.kind == "holds"):
@@ -1452,7 +1493,27 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 if any(a is None for a in answers):
                     pending = None
                     continue
-                authenticated = set.intersection(*answers)
+                # SPS-AUTH-017: for a service token there is no person and the subject *is* the
+                # client. Its grants were fixed at registration and stand in for both the ceiling
+                # and the context decision, so answering it with the person formula would deny
+                # authority it was registered with or grant authority it was not.
+                service = {c.agent for c in halves} == {c.client for c in halves} != {None}
+                if service:
+                    holder = registered.get(next(iter({c.agent for c in halves})))
+                    if holder is None:
+                        failures.append(
+                            f"{where}: the subject is its own client, so this is a service token — "
+                            "a registered block has to say what it was registered with"
+                        )
+                        pending = None
+                        continue
+                    contexts = {c.target for c in halves
+                                if any(k == "context" for k, _, _ in by_target.get(c.target, ()))}
+                    answers = [holder.get(context, set()) for context in contexts] + [
+                        answer for half, answer in zip(halves, answers)
+                        if any(k == "resource" for k, _, _ in by_target.get(half.target, ()))
+                    ]
+                authenticated = set.intersection(*answers) if answers else set()
                 # The formula the concept states: the ceiling bounds authenticated authority, and
                 # the public branch is added to whatever that produced. Public authority comes from
                 # nobody's grant, so nothing anybody was granted takes it away — a request that
@@ -2044,6 +2105,21 @@ BROKEN = [
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    ("a service request with no registration to answer it",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/ctx> ;\n"
+      "  acp:accessControl [ acp:apply <#any> ] ] .\n"
+      "<#any> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:client <did:web:svc.example> ] .\n```\n"
+      "```turtle holds\n<https://a.example/c> <https://example.invalid/runner#inContext> "
+      "<https://a.example/ctx> .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/ctx> ; acp:agent <did:web:svc.example> ;\n"
+      "  acp:client <did:web:svc.example> ] .\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <did:web:svc.example> ;\n"
+      "  acp:client <did:web:svc.example> ] .\n```"),
+     "a registered block has to say what it was registered with"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
