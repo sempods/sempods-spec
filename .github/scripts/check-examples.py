@@ -256,7 +256,7 @@ LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")\b", re.I)
 
 
-def hidden_fixtures(text: str) -> list[str]:
+def scan(text: str) -> tuple[list[str], str]:
     """Fixture fences a reader never sees, which the extractor would still run.
 
     Three ways to reach that: inside an HTML comment, inside a raw HTML block, and inside a longer
@@ -266,7 +266,7 @@ def hidden_fixtures(text: str) -> list[str]:
     One pass, because the states nest: a `<section>` on a line of Turtle is a relative IRI and not an
     HTML block, and only knowing we are inside a fence tells the two apart.
     """
-    problems, seen = [], set()
+    problems, seen, rendered = [], set(), []
 
     def note(where: str) -> None:
         if where not in seen:
@@ -274,7 +274,7 @@ def hidden_fixtures(text: str) -> list[str]:
             problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
 
     fence = comment = literal = closer = None
-    ordinary = False
+    ordinary = paragraph = False
     for line in text.splitlines():
         opener = FENCE_LINE.match(line)
         turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
@@ -284,24 +284,28 @@ def hidden_fixtures(text: str) -> list[str]:
                 note("an HTML comment")
             if "-->" in line:
                 comment = None
+            rendered.append("")
             continue
         if literal:
             if turtle:
                 note("a raw HTML block")
             if re.search(rf"</{literal}\s*>", line, re.I):
                 literal = None
+            rendered.append("")
             continue
         if closer:
             if turtle:
                 note("a raw HTML block")
             if closer in line:
                 closer = None
+            rendered.append("")
             continue
         if ordinary:
             if turtle:
                 note("a raw HTML block")
             if not line.strip():
                 ordinary = False
+            rendered.append("")
             continue
         if fence:
             char, length = fence
@@ -310,6 +314,7 @@ def hidden_fixtures(text: str) -> list[str]:
                 fence = None
             elif turtle:
                 note("another fence, where it is literal text")
+            rendered.append("")
             continue
 
         if opener:
@@ -321,14 +326,19 @@ def hidden_fixtures(text: str) -> list[str]:
             # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
             # every fence after it look hidden and reject fixtures a reader can see perfectly well.
             literal = None if re.search(rf"</{tag}\s*>", line, re.I) else tag
-        elif BLOCK_OPEN.match(line) or LONE_TAG.match(line):
+        elif BLOCK_OPEN.match(line) or (LONE_TAG.match(line) and not paragraph):
+            # A lone tag opens a block only where a paragraph is not already running: CommonMark's
+            # type 7 cannot interrupt one, so after prose the tag is inline HTML and the fence below
+            # it is an ordinary fence a reader can see.
             ordinary = True
         else:
             for pattern, terminator in OTHER_OPEN:
                 if pattern.match(line):
                     closer = None if terminator in line[line.index("<") + 1:] else terminator
                     break
-    return problems
+        paragraph = bool(line.strip()) and not (fence or comment or literal or closer or ordinary)
+        rendered.append("" if fence or comment or literal or closer or ordinary else line)
+    return problems, "\n".join(rendered)
 
 
 def blocks_of(text: str) -> list[Block]:
@@ -453,6 +463,26 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
         creators=set(graph.objects(node, P["creator"])),
         vcs=set(graph.objects(node, P["vc"])),
     )
+
+
+def names_a_client(graph: Graph, policy) -> bool:
+    """Whether every way of satisfying this policy names one application.
+
+    `acp:allOf` conjoins, so one client-bearing matcher there settles it. `acp:anyOf` is a choice, so
+    each alternative has to carry one. A reserved individual is not naming anybody:
+    `acp:AuthenticatedClient` admits every application that logged in, and `acp:PublicClient` admits
+    the ones that did not.
+    """
+    def concrete(matcher) -> bool:
+        return any(
+            isinstance(v, URIRef) and v not in (PUBLIC_CLIENT, AUTHENTICATED_CLIENT)
+            for v in graph.objects(matcher, P["client"])
+        )
+
+    if any(concrete(m) for m in graph.objects(policy, P["allOf"])):
+        return True
+    alternatives = list(graph.objects(policy, P["anyOf"]))
+    return bool(alternatives) and all(concrete(m) for m in alternatives)
 
 
 def read_grant(graph: Graph) -> set:
@@ -868,16 +898,21 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
 
     # A link showing one requirement and ending at another passes both checks that exist: the text
     # names a real id, and the anchor resolves. Only the pair is wrong, and only a reader sees it.
+    # Links and reference definitions are Markdown, so only what Markdown renders is one: a
+    # definition inside a code fence is inert text, and taking it as the first definition would
+    # excuse the real one below it.
+    problems, prose = scan(text)
+
     definitions: dict = {}
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
     # destination while the rendered link followed an earlier, wrong one.
-    for label, destination in REFERENCE_DEFINITION.findall(text):
+    for label, destination in REFERENCE_DEFINITION.findall(prose):
         definitions.setdefault(normalized(label), destination)
-    citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
-    for shown in SHORTCUT.findall(text):
+    citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(prose)]
+    for shown in SHORTCUT.findall(prose):
         if normalized(shown) in definitions:
             citations.append((shown, definitions[normalized(shown)]))
-    for shown, label in REFERENCED.findall(text):
+    for shown, label in REFERENCED.findall(prose):
         # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
         # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
         citations.append((shown, definitions.get(normalized(label or shown), "")))
@@ -898,7 +933,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     found = blocks_of(text)
     # A block whose kind is misspelled matches no pattern above and would simply vanish, taking its
     # case with it while the rest of the file still passes.
-    for problem in hidden_fixtures(text):
+    for problem in problems:
         failures.append(f"{rel}: {problem}")
     if len(CONTAINED.findall(text)) != len(ANY_BLOCK.findall(text)):
         failures.append(
@@ -1001,22 +1036,6 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
-            # A ceiling speaks about a pair — this person through this application. One that grants
-            # with no client named is satisfied by every application acting as them, which is the
-            # opposite of what it is for.
-            if kind == "delegation" and acr is not None:
-                principal = one(own, acr, P["resource"], where)
-                # Probed with an application nobody named rather than with none: no client at all
-                # fails `acp:AuthenticatedClient` too, so that probe passed a ceiling open to every
-                # authenticated application. A ceiling names the one the person authorized, so a
-                # client it has never heard of must get nothing.
-                stranger = Context(target=principal, agent=principal,
-                                   client=URIRef("did:web:stranger.invalid"))
-                if resolve(graph, acr, stranger):
-                    failures.append(
-                        f"{where}: a delegation policy grants to an application it does not name, "
-                        "so it bounds nobody — a ceiling names the client the person authorized"
-                    )
             if acr is None:
                 # The shape failure above says why. Walking from an access control resource that is
                 # not there would raise instead of reporting it, and take the other scenarios with
@@ -1033,6 +1052,18 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             modes = {m for policy in applies
                      for link in (P["allow"], P["deny"])
                      for m in graph.objects(policy, link)}
+            # A ceiling speaks about a pair — this person through this application. Read off the
+            # shape rather than probed: a probe answers for the one request it describes, so a
+            # policy requiring an issuer the probe omits would pass while the real request grants to
+            # every client. It has to be unsatisfiable without a named application, whatever else a
+            # request carries.
+            if kind == "delegation":
+                for policy in applies:
+                    if not names_a_client(graph, policy):
+                        failures.append(
+                            f"{where}: a delegation policy has a path that grants without naming an "
+                            "application — a ceiling names the client the person authorized"
+                        )
             failures += inspect_modes(modes, where, "policy", notes)
             # `acl:Control` is reading and writing an access control resource. Context management
             # also creates and deletes contexts and reaches slash-delimited descendants, so the
@@ -1602,7 +1633,7 @@ BROKEN = [
       "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants to an application it does not name"),
+     "grants without naming an application"),
     ("a ceiling open to every authenticated application",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
@@ -1612,10 +1643,26 @@ BROKEN = [
       "  acp:allOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ,\n"
       "            [ a acp:Matcher ; acp:client acp:AuthenticatedClient ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants to an application it does not name"),
+     "grants without naming an application"),
     ("a reference definition whose label carries surrounding space",
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n[ SPS-GRANT-003 ]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a ceiling whose alternatives do not all name an application",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ;\n"
+      "              acp:issuer <https://issuer.example> ] ,\n"
+      "            [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
+      "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "grants without naming an application"),
+    ("a reference definition inside a code fence, which renders as text",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n```text\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n```\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"

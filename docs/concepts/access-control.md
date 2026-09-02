@@ -336,9 +336,29 @@ public modes = { read } if public context policy allows read
 effective modes = authenticated modes ∪ public modes
 ```
 
+**A service token is the case that formula does not describe**, and it is not a corner: it is a
+mandatory flow. There is no person, the subject **is** the client
+([`SPS-AUTH-017`](../../spec/core/auth.md#SPS-AUTH-017)), and its grants are fixed at registration
+and are per-context only ([`SPS-AUTH-013`](../../spec/core/auth.md#SPS-AUTH-013)) — so there is no
+delegation to bound, because nobody delegated. Reading a per-principal ceiling into it would deny
+every service client or invent an artifact the contract does not have:
+
+```text
+service modes = registered per-context grant
+                ∩ optional resource policy decision
+```
+
+The registered grant takes the place of the ceiling *and* the context policy, which is what
+"fixed at registration" means. The resource decision still narrows where the module is declared, for
+the same reason it narrows anywhere: a decision that can only subtract is not made safe to skip by
+who is asking.
+
 The ceiling is expressible in ACP's own vocabulary, but as **its own evaluation** rather than as
 policies inside a target's ACR: a per-principal ACR whose policies require the agent and the client
-together, with `acp:client` carrying the application's `did:web:` identifier
+together, with `acp:client` carrying the **verified client identifier**, whatever shape it has —
+`did:web:` for a client that identifies itself by origin, `dyn:` for one registered dynamically
+([`SPS-AUTH-008`](../../spec/core/auth.md#SPS-AUTH-008)), and a grant is keyed by that identifier
+either way
 ([`SPS-AUTH-003`](../../spec/core/auth.md#SPS-AUTH-003)). Merged into a target's ACR it would fail,
 because ACP composes policies by union while a ceiling can only restrict. And ACP can hold it but
 not produce it: `granted = requested ∩ effective`
