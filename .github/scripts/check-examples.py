@@ -153,10 +153,31 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # as part of the fragment would reject a correctly directed citation for being annotated.
 # The destination runs to whitespace or to a `)` that is not inside a balanced pair — CommonMark
 # allows those — and what follows is the optional title.
-MISDIRECTED = re.compile(
-    r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*(?:<([^>]*)>|((?:[^\s()]|\([^\s()]*\))*))"
-)
+INLINE_START = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*")
+
+
+def inline_citations(text: str) -> list[tuple[str, str]]:
+    """Every `[SPS-…](destination)`, with the destination read by counting parentheses.
+
+    A regex cannot: CommonMark lets a destination nest them, and stopping at the first `)` reported a
+    correctly directed citation as ending at its chapter.
+    """
+    found = []
+    for match in INLINE_START.finditer(text):
+        rest = text[match.end():]
+        if rest.startswith("<"):
+            found.append((match.group(1), rest[1:rest.index(">")] if ">" in rest else ""))
+            continue
+        depth, destination = 0, []
+        for character in rest:
+            if character in " \t\n" or (character == ")" and depth == 0):
+                break
+            depth += {"(": 1, ")": -1}.get(character, 0)
+            destination.append(character)
+        found.append((match.group(1), "".join(destination)))
+    return found
 CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
+CODE_LABEL = re.compile(r"\[`(SPS-[A-Z]+-\d+)`\]")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
@@ -282,13 +303,14 @@ BLOCK_COMMENT = re.compile(r"^ {0,3}<!--")
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s"
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|1[.)]\s"
     r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*){3,}$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
 # Either character underlines a paragraph. A run of three or more hyphens is a thematic break
 # whether or not one precedes it, and is in PARAGRAPH_BREAK; a shorter one is only ever an underline.
 SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
+ORDERED = re.compile(r"^ {0,3}\d{1,9}[.)]\s")
 TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
@@ -392,11 +414,14 @@ def scan(text: str) -> tuple[list[str], str]:
             bool(line.strip())
             and not PARAGRAPH_BREAK.match(line)
             # A leading pipe is a table only when the delimiter row follows; on its own it is text.
-            and not (line.lstrip().startswith("|")
+            and not ("|" in line
                      and TABLE_DELIMITER.match(lines[number + 1] if number + 1 < len(lines) else ""))
             # A run of `=` underlines a paragraph, and starts one where there is none to underline.
             and not (paragraph and SETEXT.match(line))
             and (paragraph or not INDENTED.match(line))
+            # An ordered marker other than `1.` starts a list only outside a paragraph, and a marker
+            # runs to nine digits at most.
+            and not (not paragraph and ORDERED.match(line))
             and not (fence or comment or literal or closer or ordinary)
         )
         # A comment closing on the line that opened it never becomes a state, and what it holds
@@ -1003,7 +1028,10 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # excuse the real one below it.
     problems, prose = scan(text)
     # A code span renders as the characters it holds, so link syntax inside one is an example rather
-    # than a link — and a file about malformed citations ought to be able to show one.
+    # than a link — and a file about malformed citations ought to be able to show one. But this
+    # repository writes its citations as [`SPS-…`](…), where the backticks are *inside* the label:
+    # blanking those first would have left the check with nothing to look at in the style it is for.
+    prose = CODE_LABEL.sub(r"[\1]", prose)
     prose = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), prose)
 
     definitions: dict = {}
@@ -1013,14 +1041,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # defines nothing. Recording it would let an inert line mask the real definition below.
     lines = prose.split("\n")
     startable = "\n".join(
-        line if not previous.strip() or DEFINITION_HEAD.match(previous) else ""
+        line if not previous.strip() or DEFINITION_HEAD.match(previous)
+        or REFERENCE_DEFINITION.match(previous) else ""
         for previous, line in zip([""] + lines, lines)
     )
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
         definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
-    citations = [
-        (shown, bracketed or bare) for shown, bracketed, bare in MISDIRECTED.findall(prose)
-    ]
+    citations = inline_citations(prose)
     for shown in SHORTCUT.findall(prose):
         if normalized(shown) in definitions:
             citations.append((shown, definitions[normalized(shown)]))
@@ -1875,6 +1902,17 @@ BROKEN = [
       "See [SPS-GRANT-003].\n\n-[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    # The style this repository actually writes: the backticks are inside the label, and blanking
+    # code spans had made the check unreachable for every citation in the set.
+    ("a misdirected citation in the code-formatted style",
+     ("```turtle acr",
+      "See [`SPS-GRANT-003`](../spec/core/grants.md#SPS-GRANT-009).\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("the second of two definitions written on adjacent lines",
+     ("```turtle acr",
+      "See [SPS-GRANT-009].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
+      "[SPS-GRANT-009]: ../spec/core/grants.md#SPS-GRANT-011\n\n```turtle acr"),
+     "ends at #SPS-GRANT-011"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
