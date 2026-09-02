@@ -281,6 +281,10 @@ def scan(text: str) -> tuple[list[str], str]:
     HTML block, and only knowing we are inside a fence tells the two apart.
     """
     problems, seen, rendered = [], set(), []
+    # A comment span opened mid-line runs to its closer however many lines later. It changes nothing
+    # about fences or paragraphs — it is inline HTML — but what it holds renders as nothing, so a
+    # reference definition inside one must not reach the prose.
+    span = False
 
     def note(where: str) -> None:
         if where not in seen:
@@ -363,10 +367,18 @@ def scan(text: str) -> tuple[list[str], str]:
         )
         # A comment closing on the line that opened it never becomes a state, and what it holds
         # renders as nothing all the same — a reference definition inside one is inert.
-        rendered.append(
-            "" if fence or comment or literal or closer or ordinary
-            else INLINE_COMMENT.sub("", line)
-        )
+        if fence or comment or literal or closer or ordinary:
+            rendered.append("")
+            continue
+        visible = INLINE_COMMENT.sub("", line)
+        if span:
+            head, marker, visible = visible.partition("-->")
+            span = not marker
+            if span:
+                visible = ""
+        if "<!--" in visible:
+            visible, span = visible[:visible.index("<!--")], True
+        rendered.append(visible)
     return problems, "\n".join(rendered)
 
 
@@ -1752,6 +1764,13 @@ BROKEN = [
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\nHeading\n=\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
+    ("a reference definition inside a comment span opened mid-paragraph",
+     ("```turtle acr",
+      "See [SPS-GRANT-003]. Prose that opens a comment <!--\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
+      "--> and closes it here.\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

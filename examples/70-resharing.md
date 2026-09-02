@@ -91,7 +91,13 @@ it that way is what keeps this file from certifying a read that skipped the sand
 
 Look at what Carla's policy does **not** say: that Bob put it there. Every policy here is a flat
 statement that somebody may read, and they are indistinguishable in origin. That is not a gap in the
-example — ACP has no issuer, and a policy is a rule rather than a record of who wrote it.
+example — a policy is a rule rather than a record of who wrote it.
+
+Be exact about what is missing, because ACP does have an issuer: `acp:issuer` is one of its four
+matcher attributes, and a policy may perfectly well ask who issued the credential a request carries.
+What no ACP vocabulary records is **who wrote the policy** — its provenance rather than the request's.
+An implementer reading "ACP has no issuer" would drop a matcher that exists; what they need is a
+place to keep authorship, and that is not in the ACR.
 
 ## After Alice withdraws Bob, if the sweep ran
 
