@@ -131,7 +131,7 @@
       "id": "SPS-AUTH-018",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A redirect URI MUST be absolute, MUST NOT carry a fragment, MUST use `https` on any host, and MAY use `http` only on a loopback address.",
+      "summary": "A redirect URI MUST be absolute, MUST NOT carry a fragment, MUST use `https` on any host, MAY use `http` only on a loopback address, and MUST NOT carry `code`, `response` or `state` as a query parameter.",
       "withdrawn": false
     },
     {
@@ -391,6 +391,13 @@
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "The response parameters MUST be **added to** the redirect URI's query component per RFC 6749 §4.1.2, preserving any component it already carries.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-056",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "The names in `SPS-AUTH-018`'s prohibition MUST be compared case-sensitively and after percent-decoding, and a name present without a value MUST count as present.",
       "withdrawn": false
     },
     {

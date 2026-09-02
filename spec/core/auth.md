@@ -140,7 +140,31 @@ attribute it to.
 
 <a id="SPS-AUTH-018"></a>
 **`SPS-AUTH-018`** — A redirect URI MUST be absolute, MUST NOT carry a fragment, MUST use `https`
-on any host, and MAY use `http` only on a loopback address.
+on any host, MAY use `http` only on a loopback address, and MUST NOT carry `code`, `response` or
+`state` as a query parameter.
+
+RFC 6749 §3.1.2 permits a query component, and the first four clauses profile it unchanged. The
+last one is this specification's deviation, and it has the same reason as the fragment: those three
+names belong to the authorization response. An implementation that builds a response either
+overwrites what the address already carried — breaking the client that registered it — or leaves it
+in place, and then hands that client a value it cannot distinguish from the one the server chose.
+A redirect URI registered as `…/cb?state=x` receives its own `x` back as the `state` of a request
+that carried none; one registered as `…/cb?code=old` can, depending on how the response is
+assembled, arrive carrying two codes. Which of the two such a client redeems is a property of its
+parser rather than of this protocol, and that is the situation the prohibition removes.
+
+`error` and `error_description` are deliberately not prohibited. A client that registers them can
+only confuse itself, and no other client's response is reachable through them.
+
+<a id="SPS-AUTH-056"></a>
+**`SPS-AUTH-056`** — The names in `SPS-AUTH-018`'s prohibition MUST be compared case-sensitively
+and after percent-decoding, and a name present without a value MUST count as present.
+
+Three spellings decide whether an implementation has this right. `?CODE=` is a different
+parameter and stays acceptable, because it is not the `code` any client reads; `?%63ode=` reaches
+the client as `code`, so it is one; and `?code` with no `=` is still that name. Decoding is per
+parameter name rather than over the whole query — decoding the query first would split a value such
+as `?next=a%26state%3Dx` into a parameter that was never there.
 
 <a id="SPS-AUTH-019"></a>
 **`SPS-AUTH-019`** — An implementation MUST apply `SPS-AUTH-018` at registration as well as at
@@ -189,6 +213,11 @@ NOT construct the redirect by appending `?` to the registered value.
 A registered address may legitimately carry a query — `https://app.example/cb?tenant=a` is an
 ordinary redirect URI. Appending `?code=…` to it produces a second `?`, which puts the
 authorization response inside the value of `tenant` and loses the code.
+
+Preserving a component the client chose is safe only because
+[`SPS-AUTH-018`](#SPS-AUTH-018) keeps the response's own names out of it. Without that
+prohibition this requirement is what makes a registered `code` reach the client alongside the
+issued one.
 
 ## 5. Consent
 

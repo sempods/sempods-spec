@@ -611,7 +611,7 @@ paths:
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
         - { name: prompt, in: query, required: false, schema: { type: string } }
-      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044]
+      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044]
       responses:
         '302':
           description: Redirect carrying `code` and `state`, or `error` and `error_description`.
@@ -660,7 +660,7 @@ paths:
         so PKCE is required of it, and it always sees the consent screen. Re-registering with the
         same stable metadata returns the existing identifier rather than minting a new one.
       security: [{}]
-      x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-019, SPS-AUTH-020]
+      x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-019, SPS-AUTH-020]
       requestBody:
         required: true
         content:
