@@ -219,9 +219,14 @@ here rather than copied.
    ```bash
    lychee --offline --include-fragments --no-progress --exclude-path site .
    .github/scripts/check-requirements.py origin/main
+   .github/scripts/check-examples.py --self-test
    .github/scripts/check-examples.py
    python3 site/build.py
    ```
+
+   `--self-test` first, and CI runs it the same way round. The scenarios say the fixtures are right;
+   the self-test says the runner would still notice if they were not, which is the half that a change
+   to the runner can break while everything stays green.
 
    The last one is the full render, not `--check`. `site/index.md` is the one published page
    written by hand, its links are written against the staged layout, and lychee is told to skip
