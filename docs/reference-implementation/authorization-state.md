@@ -65,13 +65,22 @@ The boundary runs along direction rather than along syntax:
 - **accepted** — what maps onto the native structures: one policy, one matcher, one attribute, plus
   `acp:allOf` for conjunction. That is the whole shape the read path emits, so it is the whole shape
   a round trip needs;
-- **accepted** — anything that can only *narrow*: `acp:deny`, `acp:noneOf`. Honouring an unexpected
-  one fails safe; ignoring it does not;
-- **refused**, with `400` and the supported shape named — everything else.
+- **refused**, with `400` and the supported shape named — everything else, `acp:deny` and
+  `acp:noneOf` included.
 
 Refusing beats a general fallback. An opaque policy stored for later evaluation puts a full ACP
 engine back on the hot path for every context carrying one, which is what the native structures exist
 to avoid.
+
+Refusing the negative constructs needs its own reason, because
+[`acp-profile.md`](acp-profile.md) says honouring an unexpected `acp:deny` fails safe while ignoring
+it does not — and that is true of an **engine**, which sees the whole policy set and can subtract
+from it. A store holding positive rows has nothing to subtract from: a `deny` is equivalent to an
+absent row only when no other policy grants the same holder, and deciding *that* is the evaluation
+this design does not do. So a restriction accepted here would be a restriction dropped, which is the
+failure the fail-safe argument warns about, reached from the other end. The two rules are not in
+conflict; they answer different questions, and conflating what an engine may honour with what a store
+may accept is what makes them look alike.
 
 Two things a write does regardless of which branch it takes.
 
