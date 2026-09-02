@@ -181,6 +181,10 @@ Agent instructions — [`docs/agents/`](docs/agents/):
 
 Concepts and roadmaps:
 
+- [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
+  belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
+  proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
+  in an implementation
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
   specification repository than in an implementation, and the template
 - [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
