@@ -217,6 +217,78 @@ afterwards. That separation is the point. ACP has no operator joining two evalua
 does not pretend it has one — it composes outside the engine, exactly where sempods does, and a
 `decision` case fails if that composition is ever changed to something wider.
 
+## What the ceiling cannot take away
+
+Alice also publishes a reading list. It is public, and that changes what the tool Bob never
+authorised can see.
+
+```turtle acr-context
+[
+  a acp:AccessControlResource ;
+  acp:resource <https://alice.example/_system/contexts/published> ;
+  acp:accessControl [ acp:apply <#anyone> ]
+] .
+
+<#anyone>
+  a acp:Policy ;
+  acp:allow acl:Read ;
+  acp:anyOf [ a acp:Matcher ; acp:agent acp:PublicAgent ] .
+```
+
+```turtle acr-resource
+[
+  a acp:AccessControlResource ;
+  acp:resource <https://alice.example/notes/reading-list> ;
+  acp:accessControl [ acp:apply <#anyoneToo> ]
+] .
+
+<#anyoneToo>
+  a acp:Policy ;
+  acp:allow acl:Read ;
+  acp:anyOf [ a acp:Matcher ; acp:agent acp:PublicAgent ] .
+```
+
+```turtle holds
+<https://alice.example/notes/reading-list>
+  <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/published> .
+```
+
+```turtle decision
+[
+  acp:target <https://alice.example/_system/contexts/published> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
+  acp:target <https://alice.example/notes/reading-list> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+
+[
+  acp:target <https://bob.example/profile#me> ;
+  acp:agent  <https://bob.example/profile#me> ;
+  acp:client <did:web:spamtool.example> ;
+  acp:owner  <https://alice.example/profile#me>
+] .
+```
+
+```turtle grant
+[] acp:grant acl:Read .
+```
+
+Bob's ceiling grants this tool nothing, and the tool reads anyway. That is not a leak in the ceiling —
+it is what a ceiling is for. It bounds **Bob's** authority, and this document needs none of it: an
+anonymous request reads the list perfectly well, so a request that happens to carry Bob's token cannot
+be given *less* than one that carries nothing.
+
+Which is why the two combine by union rather than by intersection: the ceiling narrows what Bob was
+delegated, and the public branch is added to whatever that leaves. Take the public policy away and
+this case goes empty, because then there is nothing to add.
+
 ## Why the client constraint cannot simply be added to Alice's policy
 
 The obvious shortcut is to put `acp:client` into the document's own policy and drop the second

@@ -196,7 +196,7 @@ CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 CODE_LABEL = re.compile(r"\[`(SPS-[A-Z]+-\d+)`\]")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
-SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
+SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(])")
 # A block quote marker needs no space after it; a list marker does, or the line is paragraph text.
 CONTAINERS = r"(?:>[ \t]*|[-*+][ \t]+|\d+[.)][ \t]+)*"
 REFERENCE_DEFINITION = re.compile(
@@ -328,6 +328,7 @@ INDENTED = re.compile(r"^ {4,}\S")
 SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ORDERED = re.compile(r"^ {0,3}\d{1,9}[.)]\s")
 EMPTY_ITEM = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]*$")
+ITEM_WITH_TEXT = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\S")
 STARTABLE_DEFINITION = re.compile(r"^ {0,3}\[[^\]]+\]:[ \t]*\S")
 TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
@@ -434,13 +435,17 @@ def scan(text: str) -> tuple[list[str], str]:
             for pattern, terminator in OTHER_OPEN:
                 if pattern.match(line):
                     closer = None if terminator in line[line.index("<") + 1:] else terminator
+                    closed_block = closer is None
                     break
         # Whether this line leaves a paragraph open for the next one, which is what decides if a
         # type-7 HTML block may start there. Each clause is a CommonMark rule about interruption.
         breaks = bool(
             # A marker with nothing after it interrupts nothing, and a run of `=` or `-` under a
             # paragraph underlines it rather than being one of these blocks.
-            (PARAGRAPH_BREAK.match(line) and not (paragraph and EMPTY_ITEM.match(line)))
+            # A nonempty list marker starts an item, and the item starts a paragraph — which the
+            # next line may continue lazily, so it is not a boundary for what follows.
+            (PARAGRAPH_BREAK.match(line) and not EMPTY_ITEM.match(line)
+             and not ITEM_WITH_TEXT.match(line))
             or (paragraph and SETEXT.match(line))
             # A pipe makes a table only where the delimiter row follows.
             or ("|" in line
@@ -1081,12 +1086,19 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         kept.append(line if can_start else "")
         can_start = bool(
             not line.strip() or began or PARAGRAPH_BREAK.match(line) or SETEXT.match(line)
+            or TABLE_DELIMITER.match(line) or ("|" in line and not line.strip().startswith("["))
         )
     startable = "\n".join(kept)
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
         definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
     citations = inline_citations(prose)
-    for shown in SHORTCUT.findall(prose):
+    # A definition line defines; the same text mid-sentence is a shortcut link with punctuation
+    # after it, and excluding every colon would have left those unchecked.
+    linked = "\n".join(
+        "" if REFERENCE_DEFINITION.match(line) or DEFINITION_HEAD.match(line) else line
+        for line in startable.split("\n")
+    )
+    for shown in SHORTCUT.findall(linked):
         if normalized(shown) in definitions:
             citations.append((shown, definitions[normalized(shown)]))
     for shown, label in REFERENCED.findall(prose):
@@ -1339,8 +1351,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             """
             return bool(resolve(graph, acr, Context(target=target)))
 
-        def modes_for(ctx: Context, where: str, composed: bool = False,
-                      ceiling: bool = False) -> set | None:
+        def modes_for(ctx: Context, where: str, composed: bool = False) -> set | None:
             if ctx.target not in by_target:
                 failures.append(f"{where}: no acr controls {short(ctx.target)}")
                 return None
@@ -1357,6 +1368,16 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     "decision cannot say which of them it means"
                 )
                 return None
+            if len(entries) > 1 and not composed:
+                # Subject and context are independent, so "the context of the same name" is an
+                # assumption rather than a fact: the statement could sit in a context the caller
+                # cannot read while this answered from the one whose IRI happens to match.
+                if ctx.target not in holding.get(ctx.target, set()):
+                    failures.append(
+                        f"{where}: {short(ctx.target)} carries two decisions, so a holds block has "
+                        "to say which context the statement is in"
+                    )
+                    return None
             answers = []
             for kind, graph, acr in entries:
                 exercised.add((kind, ctx.target))
@@ -1396,28 +1417,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                                 f"request is {short(half.agent)} — a ceiling bounds the principal "
                                 "it names"
                             )
-                # The concept applies the ceiling to authenticated authority and then unions the
-                # public branch, while this block intersects uniformly — the same answer everywhere
-                # except where a public branch exists. It exists only if *every* narrowing half
-                # admits an anonymous read, so that is what is asked, rather than whether any single
-                # half happens to be public.
                 bounds = "delegation" in dimensions
-                if bounds:
-                    anonymous = [
-                        resolve(graph, acr, Context(target=half.target))
-                        for half in halves
-                        for k, graph, acr in by_target.get(half.target, ())
-                        if k != "delegation"
-                    ]
-                    if anonymous and ACL_READ in set.intersection(*anonymous):
-                        failures.append(
-                            f"{where}: composes a delegation ceiling with a target every half opens "
-                            "to anonymous read, and the public branch unions where this block "
-                            "intersects — write the halves that narrow, and read the ceiling off "
-                            "the authenticated case"
-                        )
-                        pending = None
-                        continue
                 if composed:
                     for kind_name, allowed in (("context", 1), ("resource", 1), ("delegation", 1),
                                                ("unqualified", 0)):
@@ -1448,16 +1448,28 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                                 f"{where}: composes {short(half.target)} with a context that does "
                                 "not hold it"
                             )
-                answers = [
-                    modes_for(ctx, where, composed=composed, ceiling=bounds) for ctx in halves
-                ]
+                answers = [modes_for(ctx, where, composed=composed) for ctx in halves]
                 if any(a is None for a in answers):
                     pending = None
                     continue
+                authenticated = set.intersection(*answers)
+                # The formula the concept states: the ceiling bounds authenticated authority, and
+                # the public branch is added to whatever that produced. Public authority comes from
+                # nobody's grant, so nothing anybody was granted takes it away — a request that
+                # presents a token keeps what an anonymous one would have had.
+                narrowing = [
+                    resolve(graph, acr, Context(target=half.target))
+                    for half in halves
+                    for k, graph, acr in by_target.get(half.target, ())
+                    if k != "delegation"
+                ]
+                public = {ACL_READ} if narrowing and all(
+                    ACL_READ in answer for answer in narrowing
+                ) else set()
+                got = authenticated | public
                 # sempods' rule, and deliberately here rather than in the engine: each answer above
                 # is what any ACP engine produces, and the intersection is what the pod does with
                 # them. A union would let a resource policy widen what a context refused.
-                got = set.intersection(*answers)
                 grant_graph = parse(block, 2000 + offset)
                 failures += inspect_grant(grant_graph, f"{rel} line {block.line}")
                 want = read_grant(grant_graph)
@@ -1785,7 +1797,7 @@ BROKEN = [
       "<https://a.example/q> ] .\n<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context"), "a shared artifact is a policy and its matchers"),
-    ("a ceiling composed with a target anyone can read",
+    ("a composed decision claiming the ceiling removes public access",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr\n[ a acp:AccessControlResource ;\n"
       "  acp:resource <https://a.example/open> ;\n"
@@ -1799,8 +1811,9 @@ BROKEN = [
       "  acp:anyOf [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
       "```turtle decision\n"
       "[ acp:target <https://a.example/open> ; acp:agent <https://b.example/#me> ] .\n"
-      "[ acp:target <https://b.example/#me> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "the public branch unions where this block intersects"),
+      "[ acp:target <https://b.example/#me> ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle grant\n# nothing\n```"),
+     "expected {—}, got {acl:Read}"),
     ("a composed decision with no context half",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-resource\n[ a acp:AccessControlResource ;\n"

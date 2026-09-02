@@ -18,6 +18,13 @@ context, which inverts the rule that the finer decision only ever subtracts.
 So the key is **which decision, and which IRI**. The blocks below say which by their kind, and the
 runner keeps them apart the same way a pod has to.
 
+The label is stored in the space it is about, which nothing derives and the fixture therefore says:
+
+```turtle holds
+<https://acme.example/_system/contexts/spaces/eng>
+  <https://example.invalid/runner#inContext> <https://acme.example/_system/contexts/spaces/eng> .
+```
+
 ## Who may read in the space
 
 ```turtle acr-context
