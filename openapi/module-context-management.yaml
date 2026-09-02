@@ -17,8 +17,9 @@ info:
     context does not provide this module, and reading its contexts still works: `GET
     /_system/contexts` and `GET /_system/contexts/{contextPath}` are core.
 
-    Requirements here keep their `SPS-CTX-` identifiers. They were core before this module existed
-    and moved unchanged rather than being renumbered to match the chapter.
+    Requirements here carry `SPS-CTX-` identifiers, the same area the core contexts chapter uses.
+    An identifier is permanent, so it says which area a requirement belongs to and nothing about
+    whether an implementation must satisfy it — the chapter says that.
   license:
     name: CC BY 4.0
     identifier: CC-BY-4.0

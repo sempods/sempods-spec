@@ -16,11 +16,11 @@ once — has no use for this and is conformant without it. Its contexts come int
 deployment, outside this interface, and core says a pod always has at least one
 ([`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028)).
 
-The requirements here keep their `SPS-CTX-` identifiers. They were core before this module existed
-and moved unchanged; `SPS-CORE-003` makes an identifier permanent from the `0.1` tag, and renaming
-them to match a chapter would have cost sixteen stable names to gain a naming convention. What
-decides whether a requirement is mandatory is the chapter it stands in, which is what
-`requirements.json` reports in its `part` field.
+The requirements here carry `SPS-CTX-` identifiers, which is the same area the core contexts
+chapter uses. That is deliberate: `SPS-CORE-003` makes an identifier permanent from the `0.1` tag,
+so a requirement that becomes conditional keeps the name it already had. **What decides whether a
+requirement is mandatory is the chapter it stands in**, which is what `requirements.json` reports in
+its `part` field — never the identifier.
 
 **Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
@@ -122,6 +122,9 @@ else and `204` where it holds contexts they cannot see, so the response would re
 namespace [`SPS-CTX-024`](../core/contexts.md#SPS-CTX-024) hides from them.
 
 Asked of what the caller can see, the answer is the same either way and the invariant still holds.
+That is also which clause of [`SPS-CORE-014`](../core/index.md#SPS-CORE-014) the `409` falls under:
+where the pod holds contexts this caller cannot see, deleting would leave one standing and break no
+invariant — the refusal is there so that the outcome does not depend on state they may not see.
 The pod owner sees every context ([`SPS-GRANT-011`](../core/grants.md#SPS-GRANT-011)), so for them
 the two conditions are one. Nobody else can empty the pod, because reaching zero would mean deleting
 a context while seeing a second one — and where the pod has one context, there is no second one for

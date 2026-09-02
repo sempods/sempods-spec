@@ -404,6 +404,22 @@ def summarise(body):
     return (first[0].strip() if first else text), note
 
 
+def part_of(path):
+    """Which half a chapter publishes under, or None where the path is not a chapter at all.
+
+    The whole path and not the filename. Reducing a module to `path.stem` would accept
+    `spec/archive/oidc.md` as the OIDC module and publish a shelved chapter with optional-module
+    semantics — the same silent flip the area guard exists to prevent, reached through the
+    directory instead of through the identifier.
+    """
+    parts = path.parts
+    if len(parts) == 3 and parts[:2] == ("spec", "core") and path.suffix == ".md":
+        return "core"
+    if len(parts) == 3 and parts[:2] == ("spec", "modules") and path.suffix == ".md":
+        return path.stem
+    return None
+
+
 def entry(ident, path, body):
     """One requirement as the index publishes it."""
     summary, note = summarise(body)
@@ -414,7 +430,7 @@ def entry(ident, path, body):
         # is called. The two coincided until one area was split across both halves: context
         # management is a module while the rest of `CTX` stays core, and identifiers are permanent
         # (`SPS-CORE-003`), so renaming the moved half to match a chapter was the costlier answer.
-        "part": "core" if path.parts[:2] == ("spec", "core") else path.stem,
+        "part": part_of(path),
         "chapter": str(path).replace("\\", "/"),
         "summary": summary,
         "withdrawn": note is not None,
@@ -440,9 +456,15 @@ def build_index(found):
     seen = {}
     for ident, (path, _) in found.items():
         area = ident.split("-")[1]
-        seen.setdefault(area, {}).setdefault(
-            "core" if path.parts[:2] == ("spec", "core") else path.stem, []
-        ).append(ident)
+        part = part_of(path)
+        if part is None:
+            problems.append(
+                f"{ident} is in {path}, which is neither a core chapter nor a module chapter. A "
+                f"requirement lives directly under spec/core/ or spec/modules/; anywhere else has "
+                f"no half, so nothing can say whether an implementation must satisfy it."
+            )
+            continue
+        seen.setdefault(area, {}).setdefault(part, []).append(ident)
     permitted = allowed_parts()
     for area, halves in sorted(seen.items()):
         allowed = permitted.get(area, set())

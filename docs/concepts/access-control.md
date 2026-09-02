@@ -129,13 +129,14 @@ the context holds, and a pod that never hears of anything below it is complete.
 
 Two things vary around that, and they are independent of each other.
 
-**The management of several contexts.** A pod that provides it exposes the lifecycle and the read
-downscope the chapters specify today. The catalogue and the explicit write target are not on that
-list: a write names its context either way, and the route a client reads that name from is needed
-most where there is only one. A pod that does not has
-one canonical context — carrying policy exactly like any other, so sharing is still a policy on a
-context — and nothing for a client to select between. Every statement still belongs to exactly one
-context either way; what is absent is the choosing, not the context.
+**Creating and deleting contexts.** A pod that provides it exposes the lifecycle — `PUT` and
+`DELETE` — and the rules its route enforces at creation. Nothing else is on that list, and the
+boundary is narrower than it first looks: the catalogue, the explicit write target and the read
+downscope are all core, so a pod without the module still discovers its contexts, still names one on
+every write, and still selects between them. It may hold several; core requires at least one and
+sets no ceiling. What it cannot do is make or remove them through this interface — they arrive at
+deployment. Every statement belongs to exactly one context either way; what is absent is the
+lifecycle, not the choosing.
 
 **A second decision on a finer target.** Where audiences are smaller than a context — a space whose
 documents are not all for the same readers — a pod declares the finer decision, and it is made
