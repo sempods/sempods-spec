@@ -75,7 +75,7 @@ Registered areas:
 | Area | Chapter | Part of |
 |---|---|---|
 | `CORE` | conformance, addressing, discovery, the error model | core |
-| `CTX` | contexts | core |
+| `CTX` | contexts | core **and** module — `core/contexts.md` and `modules/context-management.md` |
 | `GRANT` | grants | core |
 | `AUTH` | authorization and client identity | core |
 | `CRUD` | LOD and system CRUD | core |
@@ -86,8 +86,18 @@ Registered areas:
 | `MCP` | the MCP surface | module |
 
 Adding an area is a change to this table and to the chapter map in
-[`../../spec/README.md`](../../spec/README.md), in the same commit. Splitting an existing area is
-not allowed: the IDs already issued under it would have to move, and they cannot.
+[`../../spec/README.md`](../../spec/README.md), in the same commit.
+
+**An area may span core and a module.** The prohibition that stood here — splitting an area is not
+allowed, because the identifiers issued under it would have to move — assumed a split means
+renumbering. It does not. Whether a requirement is mandatory is decided by the chapter it stands in,
+which is what `check-requirements.py` reads to fill the `part` field of the index; the identifier
+says which area a requirement belongs to and nothing about which half. `CTX` is the first area to
+span both, and the alternative was renaming sixteen stable identifiers to gain a naming convention.
+
+What a split does owe: the `Part of` column stops being one value and names the chapters, the module
+needs an entry in `MODULE_VERSIONS`, and every citation of a moved requirement has to be re-pointed
+— the link carries the chapter path, so it breaks whether or not the identifier changes.
 
 ### The written form
 

@@ -9,7 +9,7 @@ person are durable stored policy
 what the chapters do define is delegation to an *application*, where holding a grant is enough to
 pass a subset of it on ([`SPS-GRANT-030`](../spec/core/grants.md#SPS-GRANT-030)). Sharing a context
 is not that, and neither is `manage` as the chapters use it, which governs creating and deleting
-contexts ([`SPS-CTX-019`](../spec/core/contexts.md#SPS-CTX-019)).
+contexts ([`SPS-CTX-019`](../spec/modules/context-management.md#SPS-CTX-019)).
 
 So the question was never whether to relax an existing rule. It was which rule to write, and there
 were two candidates: **reading is enough**, where every reader may pass on what they can already see

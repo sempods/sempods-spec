@@ -61,6 +61,7 @@ nav:
       - spec/core/sparql.md
       - spec/core/find.md
   - Modules:
+      - spec/modules/context-management.md
       - spec/modules/oidc.md
       - spec/modules/media.md
       - spec/modules/mcp.md

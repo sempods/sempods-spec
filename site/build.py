@@ -94,7 +94,7 @@ STAGED = ("spec/", "vocabulary/", "GOVERNANCE.md", "docs/vision.md")
 RELATIVE_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)]+)\)")
 
 CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
-MODULES = ["oidc", "media", "mcp"]
+MODULES = ["context-management", "oidc", "media", "mcp"]
 
 
 def with_repository_links(text: str, staged_at: str, published: set) -> str:

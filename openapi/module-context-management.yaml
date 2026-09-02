@@ -1,0 +1,157 @@
+openapi: 3.1.0
+
+# The context-management module's HTTP surface. Optional: where the module is not provided these
+# routes do not exist. Reading contexts stays in the core description — a pod always has at least
+# one and always says which ones a caller may reach; what is optional is making and removing them.
+
+info:
+  title: sempods — context management module
+  version: '0.1-dev'
+  summary: Creating and deleting the contexts a pod holds.
+  description: |
+    Binds only an implementation advertising
+    `https://schema.sempods.org/module/context-management` at the conformance endpoint.
+
+    The route and the context IRI are one string, so there is no identifier to map and nothing to
+    migrate when the namespace moves. A pod that is provisioned once and never grows a second
+    context does not provide this module, and reading its contexts still works: `GET
+    /_system/contexts` and `GET /_system/contexts/{contextPath}` are core.
+
+    Requirements here keep their `SPS-CTX-` identifiers. They were core before this module existed
+    and moved unchanged rather than being renumbered to match the chapter.
+  license:
+    name: CC BY 4.0
+    identifier: CC-BY-4.0
+
+externalDocs:
+  description: The module chapter
+  url: https://github.com/sempods/sempods-spec/blob/main/spec/modules/context-management.md
+
+servers:
+  - url: '{podBaseUrl}'
+    variables:
+      podBaseUrl: { default: 'https://example.org/alice' }
+
+security:
+  - bearerAuth: []
+  - oauth2: []
+
+paths:
+
+  /_system/contexts/{contextPath}:
+    parameters:
+      - $ref: '#/components/parameters/ContextPath'
+    put:
+      operationId: putContext
+      summary: Create a context, idempotently.
+      description: |
+        The body is optional. Where the `public` flag is absent — including on a request with no
+        body at all — the context is created **private**: the quiet path is the one without a body,
+        and a context becomes readable without a grant because somebody said so, never because they
+        said nothing.
+      x-sps-requirements: [SPS-CTX-005, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContextCreate' }
+      responses:
+        '200':
+          description: The context already existed and was not altered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Context' }
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Context' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteContext
+      summary: Remove a context and the state that rested on it.
+      description: |
+        Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
+        **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
+        before existence, so a caller outside their sandbox gets `403` rather than a `404` that
+        would confirm the context exists. A pod's last remaining context is refused, because core
+        requires a pod to have one.
+      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020, SPS-CTX-029]
+      responses:
+        '204': { description: Removed. }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '409': { $ref: '#/components/responses/LastContext' }
+
+components:
+
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    oauth2:
+      type: oauth2
+      description: |
+        The same pod-issued token the core surface uses, obtained the same way — this module adds
+        no authorization surface of its own. `spec/core/auth.md` is where the flow is specified.
+        It is repeated here because an OpenAPI description stands alone: a client that authorized
+        against the core description holds a credential this one has to name before it may be
+        attached, and without that its operations stay anonymous.
+
+        The endpoint URLs name the same placeholder pod as `servers` and do not follow it —
+        substitute your pod here as well as there. The core description says why.
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://example.org/alice/_system/auth/authorize'
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          refreshUrl: 'https://example.org/alice/_system/auth/token'
+          scopes:
+            public-read: >-
+              The pod's currently public contexts, unioned into the caller's readable set on top of
+              the grants resolved from storage (`SPS-GRANT-020`). A token issued for it carries no
+              refresh token (`SPS-AUTH-035`).
+        clientCredentials:
+          tokenUrl: 'https://example.org/alice/_system/auth/token'
+          scopes: {}
+
+  parameters:
+    ContextPath:
+      name: contextPath
+      in: path
+      required: true
+      schema: { type: string }
+      description: |
+        The context IRI's path, and the same string as the IRI's own. May contain slashes.
+
+  responses:
+    BadRequest:
+      description: The request could not be understood, or names a context path that is refused.
+    Forbidden:
+      description: |
+        A valid token whose grants do not cover this operation. The pod owner, or a `#manage` grant
+        covering the target under the slash-delimited rule, is what this route requires.
+    NotFoundOrNotVisible:
+      description: No such context, or not visible to this caller. Deliberately indistinguishable.
+    LastContext:
+      description: |
+        The pod's only remaining context. Core requires a pod to have at least one, so this route
+        refuses rather than letting the pod repair itself afterwards.
+
+  schemas:
+    Context:
+      type: object
+      properties:
+        contextUri: { type: string, format: uri }
+        label: { type: string }
+        description: { type: string }
+        public: { type: boolean }
+        permissions:
+          type: array
+          items: { type: string, enum: [read, write, manage] }
+          description: Collapsed — `write` and `manage` imply `read`.
+
+    ContextCreate:
+      type: object
+      properties:
+        label: { type: string }
+        description: { type: string }
+        public: { type: boolean }

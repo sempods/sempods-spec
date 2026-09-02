@@ -147,6 +147,7 @@ module's IRI — and a `version` string.
 {
   "specVersion": "0.1-dev",
   "modules": [
+    { "id": "https://schema.sempods.org/module/context-management", "version": "0.1-dev" },
     { "id": "https://schema.sempods.org/module/media", "version": "0.1-dev" },
     { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1-dev" }
   ]
@@ -223,7 +224,7 @@ rather than accepting a list, so enumeration costs one request per guess.
 What an implementation is asked to weigh, given that this requirement will change: answering `404`
 for both costs a caller the ability to tell "no such context" from "not yours", and a client that
 cannot tell them apart retries a permission problem forever. Checking authorization *before*
-existence — which context deletion already does ([`SPS-CTX-020`](contexts.md#SPS-CTX-020)) — gives
+existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
 `403` without confirming anything, and is the shape this should take. Closing it is on the
 specification's roadmap, before `0.1` becomes prescriptive.
 

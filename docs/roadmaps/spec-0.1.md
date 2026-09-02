@@ -322,7 +322,7 @@ equally urgent and the announce waits on all of them.
   recorded rather than silently corrected — but it contradicts the security stance in `AGENTS.md`,
   which calls a requirement leaking context topology a defect. The shape of the fix is already in
   the specification: authorize **before** testing existence, the way context deletion does
-  ([`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020)). Changing it means a matching change in
+  ([`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020)). Changing it means a matching change in
   the reference implementation, which is why it is a decision and not a text edit.
 
 - **`NAMESPACE.md` overstates what the vocabulary is used for.** It says the three `sps:` terms are

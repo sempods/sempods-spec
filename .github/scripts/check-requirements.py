@@ -72,6 +72,7 @@ PRE_RELEASE_VERSION = "0.1-dev"
 # module set comes from `spec/modules/`, where a module actually comes into existence, and its
 # area is that name upper-cased.
 MODULE_VERSIONS = {
+    "context-management": "0.1-dev",
     "oidc": "0.1-dev",
     "media": "0.1-dev",
     "mcp": "0.1-dev",
@@ -387,7 +388,12 @@ def entry(ident, path, body):
     summary, note = summarise(body)
     row = {
         "id": ident,
-        "part": module_areas().get(ident.split("-")[1], "core"),
+        # From the chapter, not from the identifier. `part` answers "must an implementation
+        # satisfy this?", and that is decided by where a requirement stands rather than by what it
+        # is called. The two coincided until one area was split across both halves: context
+        # management is a module while the rest of `CTX` stays core, and identifiers are permanent
+        # (`SPS-CORE-003`), so renaming the moved half to match a chapter was the costlier answer.
+        "part": "core" if path.parts[:2] == ("spec", "core") else path.stem,
         "chapter": str(path).replace("\\", "/"),
         "summary": summary,
         "withdrawn": note is not None,
@@ -410,6 +416,8 @@ def build_index(found):
     problems = []
     for ident in found:
         area = ident.split("-")[1]
+        # An area still has to be known — a mistyped one is caught here. It may now appear in
+        # both halves, so membership in `CORE_AREAS` no longer implies the requirement is core.
         if area not in CORE_AREAS and area not in module_areas():
             problems.append(
                 f"{ident} is in area '{area}', which is neither a core area nor a module. "
