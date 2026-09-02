@@ -51,6 +51,14 @@ Markdown, with fenced `turtle` blocks carrying a kind in the info string:
 | `holds` | which context a subject'"'"'s statements are in, stated because nothing derives it — subject and context are independent by [`SPS-CRUD-011`](../spec/core/lod-crud.md#SPS-CRUD-011). A composed `decision` needs it: without it the context half could be any context at all, and a fixture could certify a read that never met the sandbox |
 | `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
 
+Two rules about the files themselves, which is why this runner is a runner and not a Markdown
+parser. **A fixture fence starts at column zero, with exactly three backticks, outside any block
+quote, list or other fence, and an examples file holds no HTML comment.** What renders is then what
+runs, and the alternative — deciding from CommonMark'"'"'s containers and HTML blocks whether a fence
+is real — cost more code than the ACP engine and rejected three correct files while it lasted.
+**And a requirement is cited as an inline link**, `[SPS-…](chapter#SPS-…)`: a reference-style link
+needs the same block structure to resolve, and no file here uses one.
+
 A `context` or `decision` pairs with the next `grant` below it. A composed `decision` carries the
 dimensions the model has: exactly one context decision, and at most one resource decision and one
 ceiling — so files with `decision` blocks qualify every `acr`, and plain `acr` stays for the files

@@ -52,6 +52,11 @@ This applies to every predicate in an authorization graph rather than to matcher
 `acp:apply` leaves the policy set empty, which reads as a correct refusal — and to the values as
 well: `acp:OwnerAgents` would otherwise pass as an ordinary agent IRI that happens to match nobody.
 
+Two rules about the files keep this a checker rather than a Markdown parser: a fixture fence starts
+at column zero with exactly three backticks and outside any container, an examples file holds no HTML
+comment, and a citation is an inline link. Deciding those from CommonMark instead cost more code than
+the ACP engine below and rejected three correct files while it lasted.
+
 The same reasoning covers the shapes around them: a block whose kind it cannot read, two access
 control resources claiming one target **and one decision kind**, an access control resource nothing
 asks about, a policy nothing applies, and an empty run are all failures, because each is a way for
@@ -140,35 +145,18 @@ CLIENT = URIRef("https://example.invalid/runner#client")
 IN = URIRef("https://example.invalid/runner#in")
 GRANTS = URIRef("https://example.invalid/runner#grants")
 IN_CONTEXT = URIRef("https://example.invalid/runner#inContext")
-# ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
-# a list item is the ordinary way it happens. Anchoring at column one would let such a block render
-# for a reader and vanish from the runner, which is the failure this file exists to prevent.
-# The two fence characters are captured separately so the closing run can be required to use the
-# opener's, and to run longer but never shorter. A backreference to a group that did not participate
-# cannot match, which is what keeps a backtick block from being closed by tildes.
-OPEN = r"(?:(`{3,})|(~{3,}))"
-CLOSE = r"^ {0,3}(?:\1`*|\2~*)[ \t]*$"
+# A fixture fence starts at column zero with exactly three backticks. That is a rule about the files
+# rather than about Markdown, and it is what lets this checker stay a checker: modelling CommonMark's
+# containers, HTML blocks and paragraph continuation to decide whether a fence renders cost more code
+# than the ACP engine, produced three rejections of correct files, and guarded a case nobody writes.
 BLOCK = re.compile(
-    r"^ {0,3}" + OPEN + r"[ \t]*turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)" + CLOSE,
-    re.M | re.S,
+    r"^```turtle[ \t]+(" + "|".join(KINDS) + r")[ \t]*$(.*?)^```[ \t]*$", re.M | re.S
 )
-# Any fenced turtle block, so one whose kind is misspelled is reported rather than skipped.
-# `[^`\n]*` on the backtick branch: a backtick fence's info string may hold no backtick, and counting
-# a line the scanner reads as prose would fail the file for a block it never extracted.
-ANY_BLOCK = re.compile(
-    r"^ {0,3}(?:`{3,}[ \t]*turtle[^`\n]*|~{3,}[ \t]*turtle[^\n]*)$", re.M
-)
-# CommonMark renders a fence inside a block quote or a deeply nested list, where the raw line carries
-# a container marker. Parsing containers would mean writing a Markdown parser; noticing them costs a
-# line, and an unnoticed one is a fixture that renders for a reader and never runs.
-CONTAINED = re.compile(
-    r"^(?:[ \t>]|[-*+][ \t]|\d+[.)][ \t])*(?:`{3,}[ \t]*turtle[^`\n]*|~{3,}[ \t]*turtle[^\n]*)$",
-    re.M,
-)
-# Every `SPS-` token, not every token that *starts* like one. `SPS-GRANT-0099` has to come out whole
-# and fail as unknown rather than matching the real `SPS-GRANT-009` inside it, and `SPS-GRANT-003x`
-# has to fail as malformed rather than validating through its valid prefix — a rendered link can show
-# the malformed text while pointing at an anchor that resolves, so nothing else would catch it.
+# Anything that could be meant as one, so a kind that is misspelled — or a fence the rule refuses —
+# is reported rather than skipped.
+ANY_BLOCK = re.compile(r"^[ \t>*+-]*(?:`{3,}|~{3,})[ \t]*turtle", re.M)
+STRICT_BLOCK = re.compile(r"^```turtle", re.M)
+
 CITATION = re.compile(r"(?<![\w-])SPS-[\w-]+|[\w-]+SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
@@ -218,41 +206,7 @@ CODE_LABEL = re.compile(r"\[`(SPS-[A-Z]+-\d+)`\]")
 REFERENCED = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(])")
-# A block quote marker needs no space after it; a list marker does, or the line is paragraph text.
-CONTAINERS = r"(?:>[ \t]*|[-*+][ \t]+|\d+[.)][ \t]+)*"
-REFERENCE_DEFINITION = re.compile(
-    r"^ {0,3}" + CONTAINERS + r"\[([^\]]+)\]:[ \t]*"
-    r"(?:<([^>\n]*)>|(\S+)|\n[ \t]*" + CONTAINERS + r"(?:<([^>\n]*)>|(\S+)))", re.M
-)
 
-
-# A definition whose destination is on the next line: that continuation is kept even though the line
-# above it is not blank, because it belongs to a definition that did start a block.
-DEFINITION_HEAD = re.compile(r"^ {0,3}" + CONTAINERS + r"\[[^\]]+\]:[ \t]*$")
-
-
-def balanced(destination: str) -> bool:
-    """Whether the parentheses close, counting a backslash escape as a literal pair."""
-    depth, escaped = 0, False
-    for character in destination:
-        if escaped:
-            escaped = False
-        elif character == "\\":
-            escaped = True
-        elif character == "(":
-            depth += 1
-        elif character == ")":
-            depth -= 1
-            if depth < 0:
-                return False
-    return depth == 0
-
-
-def normalized(label: str) -> str:
-    """A reference label as CommonMark matches one: case-folded, trimmed, runs of space collapsed."""
-    return " ".join(label.split()).casefold()
-
-# The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
 AUTHENTICATED_AGENT = URIRef(ACP + "AuthenticatedAgent")
 CREATOR_AGENT = URIRef(ACP + "CreatorAgent")
@@ -326,222 +280,58 @@ class Problem(Exception):
 
 # --------------------------------------------------------------------------- reading a scenario
 
-# CommonMark's block-level tags. Inside a raw HTML block a fence is text a reader sees as backticks
-# rather than a fixture anybody runs — as it is inside an HTML comment, and inside a longer outer
-# fence. All three are found by one pass below rather than by matching regions, because a region
-# pattern also matches a relative IRI at the start of a Turtle line and would reject a real fixture.
-LITERAL_TAGS = ("pre", "script", "style", "textarea")
-BLOCK_TAGS = (
-    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|"
-    "dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|"
-    "head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|"
-    "p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul"
-)
-FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$")
-LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")(?=[\s/>]|$)", re.I)
-# CommonMark's other literal raw blocks, each with its own terminator: a processing instruction, a
-# declaration, and CDATA. Type 7 — any complete tag alone on its line — closes at a blank line like
-# the block tags, and is what carries a custom element.
-OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
-              (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
-              (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
-# An attribute is a name, optionally a value; a bare quoted string after whitespace is not a tag at
-# all, and treating one as a block boundary rejects a line the renderer shows as text.
-ATTRIBUTE = r"\s+[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?"
-LONE_TAG = re.compile(
-    r"^ {0,3}(?:<[A-Za-z][A-Za-z0-9-]*(?:" + ATTRIBUTE + r")*\s*/?>"
-    r"|</[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$"
-)
-INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
-BLOCK_COMMENT = re.compile(r"^ {0,3}<!--")
-# Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
-# interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
-# paragraph text would hide a fixture that a reader really does see as raw HTML.
-PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|1[.)]\s"
-    r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*){3,}$)"
-)
-INDENTED = re.compile(r"^ {4,}\S")
-# Either character underlines a paragraph. A run of three or more hyphens is a thematic break
-# whether or not one precedes it, and is in PARAGRAPH_BREAK; a shorter one is only ever an underline.
-SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
-ORDERED = re.compile(r"^ {0,3}\d{1,9}[.)]\s")
-EMPTY_ITEM = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]*$")
-ITEM_MARKER = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+")
-STARTABLE_DEFINITION = re.compile(r"^ {0,3}\[[^\]]+\]:[ \t]*\S")
-TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
-BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
+def misplaced_fixtures(text: str) -> list[str]:
+    """Turtle fences the rule refuses, and fences a reader would not see.
 
-
-def item_opens_paragraph(line: str) -> bool:
-    """Whether a list item's content is paragraph text, which the next line may continue lazily.
-
-    `- # Heading` opens a heading inside the item and not a paragraph, so nothing continues it and a
-    type-7 block may start on the line below.
+    Three ways a fixture and its rendering can come apart, and all three are cheap once the rule
+    fixes where a fixture may sit: a fence that is indented, in a container or not exactly three
+    backticks; one that opens while another fence is already open, so it renders as literal text;
+    and one inside an HTML comment, which renders as nothing. An examples file has no use for an
+    HTML comment, so refusing them outright is simpler than tracking where they end.
     """
-    marker = ITEM_MARKER.match(line)
-    if not marker:
-        return False
-    content = line[marker.end():]
-    return bool(content.strip()) and not (
-        PARAGRAPH_BREAK.match(content) or FENCE_LINE.match(content) or BLOCK_OPEN.match(content)
-    )
+    problems = []
+    if len(ANY_BLOCK.findall(text)) != len(STRICT_BLOCK.findall(text)):
+        problems.append(
+            "a turtle fence is indented, in a container, or not exactly three backticks — a fixture "
+            "starts at column zero with ``` so that what renders is what runs"
+        )
+    opened, inside = 0, False
+    for line in text.splitlines():
+        if line.startswith("<!--"):
+            problems.append("an HTML comment: an examples file has no use for one, and a fixture "
+                            "inside it would render as nothing")
+        if line.startswith("```") or line.startswith("~~~"):
+            if not inside and line.startswith("```turtle"):
+                opened += 1
+            inside = not inside
+    if opened != len(STRICT_BLOCK.findall(text)):
+        problems.append("a turtle fence opens inside another fence, where it is literal text")
+    return problems
 
 
-def scan(text: str) -> tuple[list[str], str]:
-    """Fixture fences a reader never sees, which the extractor would still run.
+def rendered_prose(text: str) -> str:
+    """The text a reader sees outside fenced code, with each fence's lines blanked.
 
-    Three ways to reach that: inside an HTML comment, inside a raw HTML block, and inside a longer
-    outer fence. Each renders as nothing or as literal backticks, so the scenario a reader meets and
-    the scenario CI checks differ — the one failure this file exists to prevent, from the other side.
-
-    One pass, because the states nest: a `<section>` on a line of Turtle is a relative IRI and not an
-    HTML block, and only knowing we are inside a fence tells the two apart.
+    Blanked rather than dropped, so a reported line number still means what it says. This is all the
+    structure the link checks need: the fixture rule keeps fences at column zero, so a fence scanner
+    of five lines replaces what a CommonMark subset used to do.
     """
-    problems, seen, rendered = [], set(), []
-    # A comment span opened mid-line runs to its closer however many lines later. It changes nothing
-    # about fences or paragraphs — it is inline HTML — but what it holds renders as nothing, so a
-    # reference definition inside one must not reach the prose.
-    span = False
+    kept, inside = [], False
+    for line in text.splitlines():
+        fence = line.startswith("```") or line.startswith("~~~")
+        # Four spaces is an indented code block, so a citation shown there is an example of the
+        # syntax. A list continuation indented that far loses its check, which is the harmless
+        # direction to be wrong in.
+        code = line.startswith("    ") and line.strip()
+        kept.append("" if inside or fence or code else line)
+        inside = inside != fence
+    return "\n".join(kept)
 
-    def note(where: str) -> None:
-        if where not in seen:
-            seen.add(where)
-            problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
-
-    lines = text.splitlines()
-    fence = comment = literal = closer = None
-    # A block that opened and closed on one line: gone by the next, and no paragraph in its place.
-    closed_block = False
-    ordinary = paragraph = False
-    for number, line in enumerate(lines):
-        was_closed_block, closed_block = closed_block, False
-        opener = FENCE_LINE.match(line)
-        # A backtick fence's info string cannot contain a backtick: such a line is paragraph text,
-        # and opening a fence on it would report the real fixture below as literal content.
-        if opener and opener.group(1)[0] == "`" and "`" in opener.group(2):
-            opener = None
-        turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
-
-        if comment:
-            if turtle:
-                note("an HTML comment")
-            if "-->" in line:
-                comment = None
-            rendered.append("")
-            continue
-        if literal:
-            if turtle:
-                note("a raw HTML block")
-            if re.search(rf"</{literal}\s*>", line, re.I):
-                literal = None
-            rendered.append("")
-            continue
-        if closer:
-            if turtle:
-                note("a raw HTML block")
-            if closer in line:
-                closer = None
-            rendered.append("")
-            continue
-        if ordinary:
-            if turtle:
-                note("a raw HTML block")
-            if not line.strip():
-                ordinary = False
-            rendered.append("")
-            continue
-        if fence:
-            char, length = fence
-            if opener and opener.group(1)[0] == char and len(opener.group(1)) >= length \
-                    and not opener.group(2).strip():
-                fence = None
-            elif turtle:
-                note("another fence, where it is literal text")
-            rendered.append("")
-            continue
-
-        if opener:
-            fence = (opener.group(1)[0], len(opener.group(1)))
-        elif BLOCK_COMMENT.match(line):
-            # Only where the comment *begins* the line: one opened mid-paragraph is inline HTML, and
-            # treating it as a block would end the paragraph and let the next lone tag open a raw
-            # block CommonMark does not open there. A comment closing on the line that opened it is
-            # still a block — it just ends where it began, and what follows starts fresh.
-            comment = "-->" not in line
-            if not comment:
-                # The whole line is the block, closer and anything after it included.
-                rendered.append("")
-                closed_block = True
-                continue
-        elif LITERAL_OPEN.match(line):
-            tag = LITERAL_OPEN.match(line).group(1)
-            # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
-            # every fence after it look hidden and reject fixtures a reader can see perfectly well.
-            literal = None if re.search(rf"</{tag}\s*>", line, re.I) else tag
-            closed_block = literal is None
-        elif BLOCK_OPEN.match(line) or (LONE_TAG.match(line) and not paragraph):
-            # A lone tag opens a block only where a paragraph is not already running: CommonMark's
-            # type 7 cannot interrupt one, so after prose the tag is inline HTML and the fence below
-            # it is an ordinary fence a reader can see.
-            ordinary = True
-        else:
-            for pattern, terminator in OTHER_OPEN:
-                if pattern.match(line):
-                    closer = None if terminator in line[line.index("<") + 1:] else terminator
-                    closed_block = closer is None
-                    break
-        # Whether this line leaves a paragraph open for the next one, which is what decides if a
-        # type-7 HTML block may start there. Each clause is a CommonMark rule about interruption.
-        breaks = bool(
-            # A marker with nothing after it interrupts nothing, and a run of `=` or `-` under a
-            # paragraph underlines it rather than being one of these blocks.
-            # A nonempty list marker starts an item, and the item starts a paragraph — which the
-            # next line may continue lazily, so it is not a boundary for what follows.
-            (PARAGRAPH_BREAK.match(line) and not (paragraph and EMPTY_ITEM.match(line))
-             and not item_opens_paragraph(line))
-            or (paragraph and SETEXT.match(line))
-            # A pipe makes a table only where the delimiter row follows.
-            or ("|" in line
-                and TABLE_DELIMITER.match(lines[number + 1] if number + 1 < len(lines) else ""))
-            # Indented text continues a paragraph and starts a code block where there is none.
-            or (not paragraph and INDENTED.match(line))
-            # An ordered marker other than `1.` starts a list only outside a paragraph.
-            or (not paragraph and ORDERED.match(line))
-            # A definition is a block of its own, and closes the one before it.
-            or (not paragraph and STARTABLE_DEFINITION.match(line))
-        )
-        paragraph = (
-            bool(line.strip())
-            and not breaks
-            and not (fence or comment or literal or closer or ordinary or closed_block
-                     or was_closed_block)
-        )
-        # A comment closing on the line that opened it never becomes a state, and what it holds
-        # renders as nothing all the same — a reference definition inside one is inert.
-        if fence or comment or literal or closer or ordinary:
-            rendered.append("")
-            continue
-        if INDENTED.match(line) and not paragraph:
-            # An indented code block: what it holds renders as characters, so a citation in one is
-            # an example of the syntax rather than a link.
-            rendered.append("")
-            continue
-        visible = INLINE_COMMENT.sub("", line)
-        if span:
-            head, marker, visible = visible.partition("-->")
-            span = not marker
-            if span:
-                visible = ""
-        if "<!--" in visible:
-            visible, span = visible[:visible.index("<!--")], True
-        rendered.append(visible)
-    return problems, "\n".join(rendered)
 
 
 def blocks_of(text: str) -> list[Block]:
     return [
-        Block(m.group(3), m.group(4), text.count("\n", 0, m.start()) + 1)
+        Block(m.group(1), m.group(2), text.count("\n", 0, m.start()) + 1)
         for m in BLOCK.finditer(text)
     ]
 
@@ -1147,64 +937,30 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # Links and reference definitions are Markdown, so only what Markdown renders is one: a
     # definition inside a code fence is inert text, and taking it as the first definition would
     # excuse the real one below it.
-    problems, prose = scan(text)
-    # A code span renders as the characters it holds, so link syntax inside one is an example rather
-    # than a link — and a file about malformed citations ought to be able to show one. But this
-    # repository writes its citations as [`SPS-…`](…), where the backticks are *inside* the label:
-    # blanking those first would have left the check with nothing to look at in the style it is for.
+    prose = rendered_prose(text)
+    # This repository writes a citation as [`SPS-…`](…), with the backticks *inside* the label, so
+    # the label is unwrapped before code spans are blanked — otherwise the check would have nothing
+    # to look at in the only style the files use. A whole link inside a code span stays an example.
     prose = CODE_LABEL.sub(r"[\1]", prose)
     prose = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), prose)
 
-    definitions: dict = {}
-    # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
-    # destination while the rendered link followed an earlier, wrong one.
-    # A definition starts a block, so one written under paragraph text is that paragraph's text and
-    # defines nothing. Recording it would let an inert line mask the real definition below.
-    # Whether a block can start on each line, carried forward rather than read off the line above: a
-    # definition-shaped line that was itself paragraph text does not let the next one start either.
-    kept, can_start = [], True
-    prose_lines = prose.split("\n")
-    for number, line in enumerate(prose_lines):
-        # A pipe makes a table only where the delimiter row follows, and a completed table lets a
-        # definition start under it.
-        heads_a_table = "|" in line and TABLE_DELIMITER.match(
-            prose_lines[number + 1] if number + 1 < len(prose_lines) else ""
-        )
-        began = can_start and (REFERENCE_DEFINITION.match(line) or DEFINITION_HEAD.match(line))
-        kept.append(line if can_start else "")
-        can_start = bool(
-            not line.strip() or began or PARAGRAPH_BREAK.match(line) or SETEXT.match(line)
-            or TABLE_DELIMITER.match(line) or heads_a_table
-        )
-    startable = "\n".join(kept)
-    for label, *destinations in REFERENCE_DEFINITION.findall(startable):
-        destination = next(filter(None, destinations), "")
-        # An unbalanced bare destination is not a definition at all, and recording it would let the
-        # inert line win over the real definition below it.
-        if destination and not balanced(destination):
-            continue
-        definitions.setdefault(normalized(label), destination)
-    citations = inline_citations(prose)
-    # A definition line defines; the same text mid-sentence is a shortcut link with punctuation
-    # after it, and excluding every colon would have left those unchecked.
-    linked = "\n".join(
-        "" if REFERENCE_DEFINITION.match(line) or DEFINITION_HEAD.match(line) else line
-        for line in startable.split("\n")
-    )
-    for shown in SHORTCUT.findall(linked):
-        if normalized(shown) in definitions:
-            citations.append((shown, definitions[normalized(shown)]))
-    for shown, label in REFERENCED.findall(prose):
-        # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
-        # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
-        citations.append((shown, definitions.get(normalized(label or shown), "")))
-    for shown, destination in citations:
+    # A citation is an inline link. Reference-style links are refused rather than resolved: no file
+    # here uses one, and deciding which definition a label resolves to needs the paragraph and block
+    # structure that the fixture rule exists to avoid modelling.
+    for form in (REFERENCED, SHORTCUT):
+        for shown in (m if isinstance(m, str) else m[0] for m in form.findall(prose)):
+            failures.append(
+                f"{rel}: {shown} is cited as a reference-style link — write it inline, "
+                "[SPS-…](chapter#SPS-…), so the destination is beside what it claims"
+            )
+    for shown, destination in inline_citations(prose):
         anchor = destination.partition("#")[2]
         if anchor != shown:
             failures.append(
                 f"{rel}: a link showing {shown} ends at "
                 + (f"#{anchor}" if anchor else "the chapter rather than the requirement")
             )
+
 
     for citation in sorted(set(CITATION.findall(text))):
         if not WELL_FORMED.match(citation):
@@ -1215,14 +971,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     found = blocks_of(text)
     # A block whose kind is misspelled matches no pattern above and would simply vanish, taking its
     # case with it while the rest of the file still passes.
-    for problem in problems:
+    for problem in misplaced_fixtures(text):
         failures.append(f"{rel}: {problem}")
-    if len(CONTAINED.findall(text)) != len(ANY_BLOCK.findall(text)):
-        failures.append(
-            f"{rel}: a turtle fence sits inside a block quote or a nested list, where it renders "
-            "for a reader and is never evaluated — put it at the top level"
-        )
-    if len(ANY_BLOCK.findall(text)) != len(found):
+    if len(STRICT_BLOCK.findall(text)) != len(found):
         failures.append(
             f"{rel}: a fenced turtle block carries a kind that is not one of {', '.join(KINDS)}"
         )
@@ -1757,9 +1508,6 @@ BROKEN = [
     # Not that an indented block is refused — it is valid Markdown and now valid here. What must
     # fail is its *content*, which is only possible if the block was seen at all: were fences still
     # anchored at column one, this would report a context with no grant instead.
-    ("a wrong expectation in a fence indented the three spaces CommonMark allows",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```", "   ```turtle grant\n   # nothing\n   ```"),
-     "expected {—}, got {acl:Read}"),
     ("a literal where an access mode belongs",
      ("acp:allow acl:Read ;", 'acp:allow "acl:Read" ;'), "and a mode is an IRI"),
     ("a construct the sempods profile excludes",
@@ -1814,9 +1562,6 @@ BROKEN = [
      ("<#p> a acp:Policy ;", "<#spare> a acp:Policy ; acp:allow acl:Read ;\n"
       "     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n"
       "<#p> a acp:Policy ;"), "nothing applies"),
-    ("a fence opened with four backticks, which CommonMark allows",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```", "````turtle grant\n# nothing\n````"),
-     "expected {—}, got {acl:Read}"),
     ("a misplaced known predicate on an access context",
      ("acp:agent <https://b.example/#me> ] .\n```\n```turtle grant",
       "acp:agent <https://b.example/#me> ; acp:allow acl:Write ] .\n```\n```turtle grant"),
@@ -1873,9 +1618,6 @@ BROKEN = [
       "<#p> a acp:Policy ;"), "no policy references"),
     ("a class disagreeing with the role the links give the node",
      ("<#p> a acp:Policy ;", "<#p> a acp:AccessControl ;"), "is typed acp:AccessControl"),
-    ("an info string separated from its fence, which CommonMark renders",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```", "``` turtle grant\n# nothing\n```"),
-     "expected {—}, got {acl:Read}"),
     ("an unapplied inline policy whose IRI another block applies",
      ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
       "  acp:resource <https://a.example/d> ;\n"
@@ -1892,9 +1634,6 @@ BROKEN = [
     ("a citation whose link ends at a different requirement",
      ("```turtle acr", "See [SPS-GRANT-003](../spec/core/grants.md#SPS-GRANT-009).\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
-    ("a closing fence longer than its opener, which CommonMark allows",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```", "```turtle grant\n# nothing\n````"),
-     "expected {—}, got {acl:Read}"),
     ("a closing fence of the other fence character, which does not close the block",
      ("```turtle grant\n[] acp:grant acl:Read .\n```", "```turtle grant\n# nothing\n~~~"),
      "kind that is not one of"),
@@ -1925,13 +1664,6 @@ BROKEN = [
       "acp:agent <https://b.example/#me> ;\n  acp:owner <https://o.example/#me>, "
       "<https://p.example/#me> ] .\n```\n```turtle grant"),
      "and a pod records one"),
-    ("a fixture fence inside a block quote, which renders and never runs",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "> ```turtle grant\n> [] acp:grant acl:Read .\n> ```"),
-     "inside a block quote or a nested list"),
-    ("a reference-style citation resolving to a different requirement",
-     ("```turtle acr", "See [SPS-GRANT-003][wrong].\n\n[wrong]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("an access control resource smuggled into a policy block",
      ("```turtle context", "```turtle policy\n[ a acp:AccessControlResource ;\n"
       "  acp:resource <https://a.example/d> ;\n"
@@ -1939,21 +1671,9 @@ BROKEN = [
       "<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context"), "a shared artifact is a policy and its matchers"),
-    ("a fixture fence opened inside a list item",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "- ```turtle grant\n  [] acp:grant acl:Read .\n  ```"),
-     "inside a block quote or a nested list"),
-    ("a shortcut reference resolving to a different requirement",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("a class assertion smuggled into a policy block",
      ("```turtle context", "```turtle policy\n[ a acp:AccessControlResource ] .\n```\n```turtle context"),
      "a shared artifact is a policy and its matchers"),
-    ("a reference definition whose label differs only in case",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n[sps-grant-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("anonymous write through the public *client*",
      ("acp:allow acl:Read ;\n     acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .",
       "acp:allow acl:Read, acl:Write ;\n"
@@ -1978,14 +1698,6 @@ BROKEN = [
       "  acp:accessControl [ acp:apply <#p> ] ] .\n"
       "<#p> a acp:Policy ; acp:allow acl:Read, acl:Write, acl:Control ;"),
      "outside an acr-resource or acr-delegation block"),
-    ("a fixture inside an HTML comment, which no reader sees",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n<!--\n```turtle grant\n# nothing\n```\n-->"),
-     "inside an HTML comment"),
-    ("a fixture inside a raw HTML block, which renders as backticks",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n<pre>\n```turtle grant\n# nothing\n```\n</pre>"),
-     "inside a raw HTML block"),
     ("an access control smuggled into a policy block",
      ("```turtle context", "```turtle policy\n[ a acp:AccessControl ; acp:apply "
       "<https://a.example/q> ] .\n<https://a.example/q> a acp:Policy ; acp:allow acl:Read ;\n"
@@ -2031,25 +1743,10 @@ BROKEN = [
     ("a requirement id with a word character stuck to its front",
      ("```turtle acr", "See XSPS-GRANT-003.\n\n```turtle acr"),
      "not the shape of a requirement id"),
-    ("a repeated reference label whose first definition is the wrong one",
-     ("```turtle acr", "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    # Two the checker used to get wrong itself: it crashed on the first and rejected the second.
     ("an acr block typed but carrying no target",
      ("```turtle acr", "```turtle acr\n[ a acp:AccessControlResource ] .\n```\n```turtle acr"),
      "0 target(s)"),
     # `<!DOCTYPE html>` would close on its own line, so the declaration is left open on purpose.
-    ("a fixture inside a CommonMark declaration block",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n<!DOCTYPE\n"
-      "```turtle grant\n# nothing\n```\nhtml>"),
-     "inside a raw HTML block"),
-    ("a fixture inside a custom element, which CommonMark treats as raw HTML",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
     ("acp:attribute, the super-property, used as an attribute",
      ("acp:agent <https://b.example/#me> ]", "acp:attribute <https://b.example/#me> ]"),
      "the super-property rather than an attribute"),
@@ -2075,10 +1772,6 @@ BROKEN = [
       "            [ a acp:Matcher ; acp:client acp:AuthenticatedClient ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
      "and one application — a ceiling is a pair"),
-    ("a reference definition whose label carries surrounding space",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n[ SPS-GRANT-003 ]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("a ceiling whose alternatives do not all name an application",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
@@ -2090,11 +1783,6 @@ BROKEN = [
       "            [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
      "and one application — a ceiling is a pair"),
-    ("a reference definition inside a code fence, which renders as text",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n```text\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n```\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("a ceiling naming an application and every authenticated one beside it",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
@@ -2105,15 +1793,6 @@ BROKEN = [
       "            [ a acp:Matcher ; acp:client <did:web:app.example>, acp:AuthenticatedClient ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
      "and one application — a ceiling is a pair"),
-    ("a reference definition whose destination is on the next line",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]:\n  ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a fixture inside a custom element opened after a heading",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n## Heading\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
     ("a ceiling naming an application but not the person it bounds",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
@@ -2123,102 +1802,15 @@ BROKEN = [
       "  acp:allOf [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
      "a ceiling is a pair"),
-    ("a reference definition commented out on one line, above the real one",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n<!-- [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003 -->\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a fixture inside a custom element opened after an empty heading",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n#\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a fixture inside a custom element opened after a one-character Setext underline",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\nHeading\n=\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a reference definition inside a comment span opened mid-paragraph",
-     ("```turtle acr",
-      "See [SPS-GRANT-003]. Prose that opens a comment <!--\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
-      "--> and closes it here.\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a fixture inside a custom element opened after a compact thematic break",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\nSome prose.\n***\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a reference definition inside a block quote",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n> [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("a foreign class on a node ACP reaches, which reads as a condition",
      ("acp:anyOf [ a acp:Matcher ;", "acp:anyOf [ a acp:Matcher, <https://a.example/ns/Employees> ;"),
      "where a class is not a condition"),
-    ("a definition inside a list item",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n- [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a fixture inside a custom element whose attribute holds an angle bracket",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<my-widget title=\">\">\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a fixture inside a custom element opened after a one-line block comment",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<!-- note -->\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a definition written under paragraph text, which defines nothing",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\nSome prose.\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("an applied policy that allows nothing",
      ("<#p> a acp:Policy ; acp:allow acl:Read ;", "<#p> a acp:Policy ;"),
      "allows nothing, so nothing it says"),
-    ("a definition after a list marker with no space, which is paragraph text",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n-[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    # The style this repository actually writes: the backticks are inside the label, and blanking
-    # code spans had made the check unreachable for every citation in the set.
     ("a misdirected citation in the code-formatted style",
      ("```turtle acr",
       "See [`SPS-GRANT-003`](../spec/core/grants.md#SPS-GRANT-009).\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("the second of two definitions written on adjacent lines",
-     ("```turtle acr",
-      "See [SPS-GRANT-009].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
-      "[SPS-GRANT-009]: ../spec/core/grants.md#SPS-GRANT-011\n\n```turtle acr"),
-     "ends at #SPS-GRANT-011"),
-    ("a definition straight under a heading, which does start a block",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n## Sources\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
-      "```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a definition hidden behind a one-line comment block",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\n<!-- -->[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
-    ("a fixture inside a custom element opened after a definition",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n"
-      "[x]: ../spec/core/grants.md\n<my-widget>\n```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a fixture inside a custom element opened after a one-line literal block",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<pre></pre>\n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
-    ("a definition straight under a Setext heading",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\nSources\n===\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
-      "```turtle acr"),
      "ends at #SPS-GRANT-009"),
     ("one policy IRI defined privately by two acr blocks",
      ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
@@ -2232,12 +1824,6 @@ BROKEN = [
       "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read, acl:Write ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context"), "already defines"),
-    ("a definition-shaped line under prose, then another under it",
-     ("```turtle acr",
-      "See [SPS-GRANT-003].\n\nProse.\n[x]: ../spec/core/grants.md\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
-      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
-     "ends at #SPS-GRANT-009"),
     ("a service request with no registration to answer it",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
@@ -2313,11 +1899,6 @@ BROKEN = [
       "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
       "  <https://example.invalid/runner#serviceToken> false ] ."),
      "the service marker is `true` once or absent"),
-    ("a fixture inside a custom element opened after an empty list item",
-     ("```turtle grant\n[] acp:grant acl:Read .\n```",
-      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n- \n<my-widget>\n"
-      "```turtle grant\n# nothing\n```"),
-     "inside a raw HTML block"),
     ("a composed decision naming an application with no ceiling to bound it",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
@@ -2330,6 +1911,29 @@ BROKEN = [
       "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
       "  acp:client <did:web:app.example> ] .\n```"),
      "composes no delegation ceiling"),
+    # The two file rules, each held to what it promises.
+    ("a fixture fence indented by one space",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", " ```turtle grant\n [] acp:grant acl:Read .\n ```"),
+     "starts at column zero"),
+    ("a fixture fence of four backticks",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "````turtle grant\n[] acp:grant acl:Read .\n````"),
+     "starts at column zero"),
+    ("a fixture fence inside a block quote",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "> ```turtle grant\n> [] acp:grant acl:Read .\n> ```"),
+     "starts at column zero"),
+    ("a fixture fence inside a list item",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```", "- ```turtle grant\n  [] acp:grant acl:Read .\n  ```"),
+     "starts at column zero"),
+    ("an HTML comment, where a fixture would render as nothing",
+     ("```turtle acr", "<!-- a note -->\n\n```turtle acr"), "an HTML comment"),
+    ("a fixture fence opened inside another fence",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "````text\n```turtle grant\n[] acp:grant acl:Read .\n```\n````"),
+     "opens inside another fence"),
+    ("a citation written as a reference-style link",
+     ("```turtle acr", "See [SPS-GRANT-003][g].\n\n```turtle acr"), "reference-style link"),
+    ("a citation written as a shortcut link",
+     ("```turtle acr", "See [SPS-GRANT-003].\n\n```turtle acr"), "reference-style link"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
