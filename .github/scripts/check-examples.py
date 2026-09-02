@@ -211,16 +211,18 @@ def inline_citations(text: str) -> list[tuple[str, str]]:
             destination.append(character)
         found.append((match.group(1), "".join(destination)))
     return found
-CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
+# `(?<![\\`])`: a backtick a backslash escapes opens no code span, and treating it as one removed a
+# live link from the prose before the citation checks could see it.
+CODE_SPAN = re.compile(r"(?<![\\`])(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 CODE_LABEL = re.compile(r"\[`(SPS-[A-Z]+-\d+)`\]")
-REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
+REFERENCED = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
-SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(])")
+SHORTCUT = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(])")
 # A block quote marker needs no space after it; a list marker does, or the line is paragraph text.
 CONTAINERS = r"(?:>[ \t]*|[-*+][ \t]+|\d+[.)][ \t]+)*"
 REFERENCE_DEFINITION = re.compile(
     r"^ {0,3}" + CONTAINERS + r"\[([^\]]+)\]:[ \t]*"
-    r"(?:<([^>]*)>|(\S+)|\n[ \t]*" + CONTAINERS + r"(?:<([^>]*)>|(\S+)))", re.M
+    r"(?:<([^>\n]*)>|(\S+)|\n[ \t]*" + CONTAINERS + r"(?:<([^>\n]*)>|(\S+)))", re.M
 )
 
 
@@ -1602,6 +1604,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # and the context decision, so answering it with the person formula would deny
                 # authority it was registered with or grant authority it was not.
                 service = any(c.service for c in halves)
+                # A lone `context` block is one evaluation and says so. A `decision` claims the
+                # whole answer, and the formula intersects the delegated ceiling into it — so a
+                # composed case naming an application without one skips a half.
+                if composed and not service and any(c.client for c in halves) \
+                        and "delegation" not in dimensions:
+                    failures.append(
+                        f"{where}: names an application and composes no delegation ceiling, which "
+                        "the authenticated formula intersects in"
+                    )
                 if service and not all(c.service for c in halves):
                     failures.append(f"{where}: some halves are a service request and some are not")
                 if service and {c.agent for c in halves} != {c.client for c in halves}:
@@ -1625,8 +1636,12 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                         )
                         pending = None
                         continue
+                    # `acr` unqualified is the documented form where one decision is in play, and
+                    # a service scenario may well have only one. Ignoring it would answer from an
+                    # empty registration lookup and pass an empty expectation.
                     contexts = {c.target for c in halves
-                                if any(k == "context" for k, _, _ in by_target.get(c.target, ()))}
+                                if any(k in ("context", "unqualified")
+                                       for k, _, _ in by_target.get(c.target, ()))}
                     answers = [holder.get(context, set()) for context in contexts] + [
                         answer for half, answer in zip(halves, answers)
                         if any(k == "resource" for k, _, _ in by_target.get(half.target, ()))
@@ -2303,6 +2318,18 @@ BROKEN = [
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n- \n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
+    ("a composed decision naming an application with no ceiling to bound it",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-context\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/ctx> ] .\n```\n"
+      "```turtle holds\n<https://a.example/c> <https://example.invalid/runner#inContext> "
+      "<https://a.example/ctx> .\n```\n"
+      "```turtle decision\n"
+      "[ acp:target <https://a.example/ctx> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:client <did:web:app.example> ] .\n"
+      "[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
+      "  acp:client <did:web:app.example> ] .\n```"),
+     "composes no delegation ceiling"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
