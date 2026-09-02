@@ -154,7 +154,10 @@ BLOCK = re.compile(
 )
 # Anything that could be meant as one, so a kind that is misspelled — or a fence the rule refuses —
 # is reported rather than skipped.
-ANY_BLOCK = re.compile(r"^[ \t>*+-]*(?:`{3,}|~{3,})[ \t]*turtle", re.M)
+# The container prefix includes ordered-list markers: a fence opened as `1. ```turtle` renders
+# inside a list item exactly as a bullet one does, and a prefix that misses it would let a visible
+# fixture be silently skipped rather than reported.
+ANY_BLOCK = re.compile(r"^(?:[ \t>*+-]|\d{1,9}[.)])*(?:`{3,}|~{3,})[ \t]*turtle", re.M)
 STRICT_BLOCK = re.compile(r"^```turtle", re.M)
 
 CITATION = re.compile(r"(?<![\w-])SPS-[\w-]+|[\w-]+SPS-[\w-]+")
@@ -202,6 +205,8 @@ def inline_citations(text: str) -> list[tuple[str, str]]:
 # `(?<![\\`])`: a backtick a backslash escapes opens no code span, and treating it as one removed a
 # live link from the prose before the citation checks could see it.
 CODE_SPAN = re.compile(r"(?<![\\`])(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
+# Every backslash escape, left to right, so what survives is what CommonMark still reads as markup.
+ESCAPE_PAIR = re.compile(r"\\[!-/:-@\[-`{-~]")
 CODE_LABEL = re.compile(r"\[`(SPS-[A-Z]+-\d+)`\]")
 REFERENCED = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
@@ -297,7 +302,9 @@ def misplaced_fixtures(text: str) -> list[str]:
         )
     opened, inside = 0, False
     for line in text.splitlines():
-        if line.startswith("<!--"):
+        # Up to three spaces still opens an HTML block; at four the line is an indented code
+        # block and opens nothing, so the comment would hide no fence below it.
+        if line[: len(line) - len(line.lstrip(" "))].count(" ") <= 3 and line.lstrip(" ").startswith("<!--"):
             problems.append("an HTML comment: an examples file has no use for one, and a fixture "
                             "inside it would render as nothing")
         if line.startswith("```") or line.startswith("~~~"):
@@ -421,7 +428,10 @@ def service_marked(graph: Graph, node, where: str) -> bool:
     values = list(graph.objects(node, SERVICE))
     if not values:
         return False
-    if len(values) > 1 or values[0] not in (Literal(True), Literal("true")):
+    # The RDF boolean only. `"true"` is a string, and accepting it would let a fixture take the
+    # service path — which stands in for both the ceiling and the context decision — without
+    # carrying the claim SPS-AUTH-017 asks the token to be marked with.
+    if len(values) > 1 or values[0] != Literal(True):
         raise Problem(
             f"{where}: the service marker is `true` once or absent, and this says "
             + ", ".join(f'"{value}"' for value in values)
@@ -587,6 +597,21 @@ def effective_policies(graph: Graph, acr, ancestors: list = ()) -> set:
         for control in ancestor_graph.objects(ancestor, P["memberAccessControl"]):
             policies.update(ancestor_graph.objects(control, P["apply"]))
     return policies
+
+
+def inspected(graph: Graph, acr, predicate) -> set:
+    """The values a matcher *this* ACR can reach asks about, under one attribute.
+
+    Reachability matters rather than the whole graph: a `policy` block is merged into every ACR in
+    the file, so a shared owner matcher applied to one target would otherwise make a request against
+    a different target supply request data its own policies never inspect.
+    """
+    values = set()
+    for policy in effective_policies(graph, acr):
+        for link in (P["allOf"], P["anyOf"], P["noneOf"]):
+            for matcher in graph.objects(policy, link):
+                values.update(graph.objects(matcher, predicate))
+    return values
 
 
 def resolve(graph: Graph, acr, ctx: Context) -> set:
@@ -845,6 +870,11 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
             predicates = set(graph.predicates(matcher, None))
             native = predicates & MATCHER_ATTRIBUTES
             foreign = {p for p in predicates if not str(p).startswith(ACP) and p != RDF_TYPE}
+            if not (predicates - {RDF_TYPE}):
+                errors.append(
+                    f"{where}: a matcher carries no attribute at all. ACP leaves it unsatisfied, so "
+                    "a case expecting no grant keeps passing after its only condition was deleted"
+                )
             if native and foreign:
                 errors.append(
                     f"{where}: a matcher carries {short(sorted(native, key=str)[0])} beside "
@@ -854,13 +884,20 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
     return errors, notes
 
 
-def inspect_grant(graph: Graph, where: str) -> list[str]:
+def inspect_grant(graph: Graph, where: str, body: str = "#") -> list[str]:
     """A grant block states granted modes and nothing else.
 
     Its `rdf:type` is checked here rather than left exempt: a grant graph never reaches the class
     validation an authorization graph gets, so `a acp:AccessGrannt` would compare equal to the
     expectation and certify a misspelling in ACP's own namespace.
     """
+    # "nothing granted" is an ordinary outcome several scenarios turn on, and it is written as a
+    # comment. A blank block parses to the same empty graph, so without this the expectation could
+    # be *missing* rather than negative and the case would pass for the wrong reason — the silent
+    # green this runner exists to prevent.
+    if not body.strip():
+        return [f"{where}: grant block is empty. A case granting nothing says so with a comment, "
+                "so an omitted expectation is not mistaken for a negative one"]
     errors = [
         f"{where}: grant block carries {short(predicate)}, not acp:grant"
         for predicate in set(graph.predicates(None, None))
@@ -942,6 +979,10 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # the label is unwrapped before code spans are blanked — otherwise the check would have nothing
     # to look at in the only style the files use. A whole link inside a code span stays an example.
     prose = CODE_LABEL.sub(r"[\1]", prose)
+    # A backslash escape is two characters, and only an *odd* run before a backtick escapes it —
+    # `\\` is an escaped backslash and the backtick after it still opens a span. Neutralising every
+    # escape pair first is what makes the lookbehind on CODE_SPAN read parity rather than adjacency.
+    prose = ESCAPE_PAIR.sub("\u0000\u0000", prose)
     prose = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), prose)
 
     # A citation is an inline link. Reference-style links are refused rather than resolved: no file
@@ -1273,10 +1314,22 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # A pod always knows its owner (SPS-AUTH-051). Leaving it out of a case whose
                 # policies ask about one makes the matcher fail on an empty set, so a denial passes
                 # that the pod would not have produced.
-                if not ctx.owners and OWNER_AGENT in set(graph.objects(None, P["agent"])):
+                if not ctx.owners and OWNER_AGENT in inspected(graph, acr, P["agent"]):
                     failures.append(
                         f"{where}: a policy here asks about acp:OwnerAgent and the request names no "
                         "acp:owner, so the matcher fails on a fact the pod would have supplied"
+                    )
+                    return None
+                # The same shape for the issuer, which the request carries rather than the pod:
+                # every access token is a signed JWT naming its issuer (SPS-AUTH-028), so an
+                # authenticated case whose policies ask about one and whose request omits it
+                # certifies a denial the pod would not produce. An anonymous request has no issuer
+                # and is left alone.
+                if ctx.agent is not None and ctx.agent != PUBLIC_AGENT and ctx.issuer is None \
+                        and inspected(graph, acr, P["issuer"]):
+                    failures.append(
+                        f"{where}: a policy here asks about acp:issuer and this authenticated "
+                        "request names none, so the matcher fails on a fact the token would carry"
                     )
                     return None
                 answers.append(resolve(graph, acr, ctx))
@@ -1416,7 +1469,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # is what any ACP engine produces, and the intersection is what the pod does with
                 # them. A union would let a resource policy widen what a context refused.
                 grant_graph = parse(block, 2000 + offset)
-                failures += inspect_grant(grant_graph, f"{rel} line {block.line}")
+                failures += inspect_grant(grant_graph, f"{rel} line {block.line}", block.body)
                 want = read_grant(grant_graph)
                 failures += inspect_modes(want, f"{rel} line {block.line}", "grant", notes)
                 if got != want:
@@ -1474,6 +1527,24 @@ SOUND = """
 # Each: what is broken, the substitution that breaks it, and the wording that must name it. The last
 # two resolve to the expected grant regardless — the fall-through is the whole point of checking.
 BROKEN = [
+    ("a turtle fence opened inside an ordered list, which renders but was skipped",
+     ("```turtle grant", "1. ```turtle grant"), "starts at column zero"),
+    ("an HTML comment indented far enough to still open an HTML block",
+     ("```turtle grant", " <!-- hidden\n```turtle grant"), "an HTML comment"),
+    ("a service marker written as a string rather than the RDF boolean",
+     ("acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .",
+      "acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ;\n"
+      '  <https://example.invalid/runner#serviceToken> "true" ] .'),
+     "service marker is `true` once or absent"),
+    ("a matcher whose only condition was deleted, leaving it typed and empty",
+     ("[ a acp:Matcher ; acp:agent <https://b.example/#me> ]", "[ a acp:Matcher ]"),
+     "carries no attribute at all"),
+    ("a grant block left blank rather than saying nothing is granted",
+     ("[] acp:grant acl:Read .", ""), "grant block is empty"),
+    ("a policy asking about an issuer the request does not carry",
+     ("acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .",
+      "acp:anyOf [ a acp:Matcher ; acp:issuer <https://idp.example/> ] ."),
+     "asks about acp:issuer"),
     ("a misspelled predicate on the access control resource",
      ("acp:accessControl [", "acp:accessControls ["), "acp:accessControls"),
     ("a misspelled predicate inside a policy",
