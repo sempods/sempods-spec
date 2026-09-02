@@ -455,7 +455,12 @@ graphs, not registered sempods data contexts: they do not appear in context disc
 selected by `?context=`, and are unreachable through LOD CRUD. That distinction ends the apparent
 recursion in which the graph carrying policy would need a user policy of its own.
 
-An ACR is reached through a control-plane route and linked from the target. Reading or changing it is
+An ACR is reached through a control-plane route and linked from the target — and *from the target*
+needs saying carefully, because a resource decision may control a subject that has no LOD address at
+all. [`SPS-CRUD-003`](../../spec/core/lod-crud.md#SPS-CRUD-003) makes the system layer the route that
+exists for `did:`, `urn:` and foreign `https:` IRIs, so that is the response carrying the link: the
+client follows it from the answer it already has, rather than composing an address, which it may not
+do here for the same reason it may not compose a context IRI. Reading or changing it is
 itself authorized: `manage` on the target permits policy management, subject to the implicit owner
 policy and the OAuth ceiling. The client-facing answer to “what may I do?” remains an effective-
 permission view; clients are not expected to reimplement policy evaluation from raw RDF.
@@ -653,6 +658,7 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
 | [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)) and the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) are core obligations today, and moving them behind a declaration relocates them. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020) — `GET` returns every statement whose subject is the resource IRI and is visible in the selected contexts | Right for the base decision and too generous once a second one denies individual statements. Only a pod declaring the resource module needs it restated over the authorized statement view — the same move `SPARQL` makes, and it has to move with it or the two chapters describe different results |
+| [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) — a slot `GET` returns all values, across the readable contexts | The same restatement, and it has to be made here too rather than only on the LOD route. A conforming pod would otherwise hide a subject's statements at one address and hand them over at another, which is not a narrower answer but a different one |
 | [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) — the context sandbox applies to `find` exactly as to CRUD and SPARQL | Holds, and stays true by being restated with them rather than despite them: the sentence is that `find` is sandboxed the same way, so the restatement is what keeps it accurate. Matching, ranking and expansion all read statements, so the denied ones have to be gone before any of that, not filtered out of the results afterwards |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
 

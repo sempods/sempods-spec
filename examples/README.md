@@ -71,6 +71,13 @@ client reaches it through the `Link` header ACP requires of a controlled resourc
 constructing a path, the same way it never constructs a context IRI
 ([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)).
 
+Which raises a question worth answering here rather than leaving to be discovered: a subject outside
+the pod namespace has no LOD address at all
+([`SPS-CRUD-003`](../spec/core/lod-crud.md#SPS-CRUD-003)), so there is no response on the target to
+carry that header. The system layer is the route that exists for those IRIs, so it is the response
+that carries the link — the client still follows one from an answer it already has, which is the
+property that matters, rather than composing an address of its own.
+
 The structural half — that policy is indexed by the target it controls rather than by the context
 that happens to hold that target's statements — is in
 [`docs/concepts/access-control.md`](../docs/concepts/access-control.md) §"Policy location and control

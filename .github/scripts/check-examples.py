@@ -152,6 +152,7 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # The destination stops at whitespace: what follows is CommonMark's optional title, and reading it
 # as part of the fragment would reject a correctly directed citation for being annotated.
 MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*<?([^\s)>]*)>?[^)]*\)")
+CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
@@ -258,11 +259,12 @@ OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
               (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
 LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
 INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
+COMMENT_OPEN = re.compile(r"^ {0,3}<!--(?!.*-->)")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)"
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||=+\s*$|-+\s*$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
@@ -331,7 +333,10 @@ def scan(text: str) -> tuple[list[str], str]:
 
         if opener:
             fence = (opener.group(1)[0], len(opener.group(1)))
-        elif "<!--" in line and "-->" not in line:
+        elif COMMENT_OPEN.match(line):
+            # Only where the comment *begins* the line. One opened mid-paragraph is inline HTML, and
+            # treating it as a block would end the paragraph and let the next lone tag open a raw
+            # block that CommonMark does not open there.
             comment = True
         elif LITERAL_OPEN.match(line):
             tag = LITERAL_OPEN.match(line).group(1)
@@ -938,6 +943,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # definition inside a code fence is inert text, and taking it as the first definition would
     # excuse the real one below it.
     problems, prose = scan(text)
+    # A code span renders as the characters it holds, so link syntax inside one is an example rather
+    # than a link — and a file about malformed citations ought to be able to show one.
+    prose = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), prose)
 
     definitions: dict = {}
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
@@ -1737,6 +1745,11 @@ BROKEN = [
     ("a fixture inside a custom element opened after an empty heading",
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n#\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
+    ("a fixture inside a custom element opened after a one-character Setext underline",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\nHeading\n=\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
