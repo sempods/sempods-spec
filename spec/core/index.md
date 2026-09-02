@@ -116,9 +116,25 @@ are refused whatever they would have resolved to — which is a test an implemen
 its own configuration, once, rather than against every client that will ever reach it.
 
 <a id="SPS-CORE-008"></a>
-**`SPS-CORE-008`** — The path segment `_system` immediately below a pod base URL is reserved for the
-control plane. An implementation MUST NOT serve ordinary Linked Data resources from
-`{pod}/_system/…`, and MUST NOT allow RDF writes to alter control-plane state.
+**`SPS-CORE-008`** — The path segments `_system` and `.well-known`, immediately below a pod base
+URL, are reserved for the control plane. An implementation MUST NOT serve ordinary Linked Data
+resources from `{pod}/_system/…` or `{pod}/.well-known/…`, and MUST NOT allow RDF writes to alter
+control-plane state.
+
+Two names, reserved for different reasons. `_system` is the one this specification chose, and
+everything it defines below a pod base URL sits under it: the conformance route, the system layer,
+the context registry, the authorization endpoints, and every module. No module takes a name beside
+it.
+
+`.well-known` is not chosen. RFC 8615 fixes the name and [`SPS-AUTH-045`](auth.md#SPS-AUTH-045)
+obliges a pod to answer inside it, so it can neither move under `_system` nor stay addressable as
+data. The whole segment is reserved rather than the one route below it, because a deployment that
+later serves `acme-challenge` or `security.txt` from the same directory would otherwise mint
+resource IRIs the LOD layer also claims.
+
+A segment beginning `.` is not reserved as a class. Doing so would spend every such name a pod
+might legitimately hold, to insure against a second fixed name that RFC 8615 exists to prevent: a
+new registry entry goes below `.well-known`, not beside it.
 
 <a id="SPS-CORE-009"></a>
 **`SPS-CORE-009`** — A pod's resource IRIs are minted from the address the server is publicly known
