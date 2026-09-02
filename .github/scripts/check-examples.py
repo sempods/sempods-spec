@@ -149,7 +149,9 @@ CONTAINED = re.compile(
 CITATION = re.compile(r"(?<![\w-])SPS-[\w-]+|[\w-]+SPS-[\w-]+")
 WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
-MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
+# The destination stops at whitespace: what follows is CommonMark's optional title, and reading it
+# as part of the fragment would reject a correctly directed citation for being annotated.
+MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*<?([^\s)>]*)>?[^)]*\)")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
@@ -256,8 +258,9 @@ LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
-PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}\s|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)|^ {4,}")
-BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")\b", re.I)
+PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}\s|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)")
+INDENTED = re.compile(r"^ {4,}\S")
+BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
 
 def scan(text: str) -> tuple[list[str], str]:
@@ -340,9 +343,12 @@ def scan(text: str) -> tuple[list[str], str]:
                 if pattern.match(line):
                     closer = None if terminator in line[line.index("<") + 1:] else terminator
                     break
+        # An indented line continues a paragraph and only starts a code block outside one, so it
+        # breaks the paragraph state only where there was none to continue.
         paragraph = (
             bool(line.strip())
             and not PARAGRAPH_BREAK.match(line)
+            and (paragraph or not INDENTED.match(line))
             and not (fence or comment or literal or closer or ordinary)
         )
         rendered.append("" if fence or comment or literal or closer or ordinary else line)
@@ -476,26 +482,33 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     )
 
 
-def names_a_client(graph: Graph, policy) -> bool:
-    """Whether every way of satisfying this policy names one application.
+def bounds_the_pair(graph: Graph, policy, principal) -> bool:
+    """Whether every way of satisfying this policy names both the person and one application.
 
-    `acp:allOf` conjoins, so one client-bearing matcher there settles it. `acp:anyOf` is a choice, so
-    each alternative has to carry one. A reserved individual is not naming anybody:
-    `acp:AuthenticatedClient` admits every application that logged in, and `acp:PublicClient` admits
-    the ones that did not.
+    A ceiling says *this person through this application*, so a policy naming only the application
+    grants through it to anybody, and one naming only the person grants to every application acting
+    as them. `acp:allOf` conjoins, so one matcher carrying a half settles that half. `acp:anyOf` is a
+    choice, so every alternative has to carry it. A reserved individual names nobody:
+    `acp:AuthenticatedClient` admits every application that logged in, `acp:PublicClient` the ones
+    that did not.
     """
-    def concrete(matcher) -> bool:
-        values = set(graph.objects(matcher, P["client"]))
-        # Values of one attribute are alternatives, so a reserved one beside a named application
-        # widens rather than narrows: every authenticated client satisfies the matcher anyway.
-        if values & {PUBLIC_CLIENT, AUTHENTICATED_CLIENT}:
-            return False
-        return any(isinstance(v, URIRef) for v in values)
+    def carries(matcher, attribute, only) -> bool:
+        values = set(graph.objects(matcher, attribute))
+        # Values of one attribute are alternatives, so a broad one beside a name widens rather than
+        # narrows — the matcher is satisfied by everything the broad value admits.
+        return bool(values) and values <= only
 
-    if any(concrete(m) for m in graph.objects(policy, P["allOf"])):
-        return True
-    alternatives = list(graph.objects(policy, P["anyOf"]))
-    return bool(alternatives) and all(concrete(m) for m in alternatives)
+    def held(attribute, only) -> bool:
+        if any(carries(m, attribute, only) for m in graph.objects(policy, P["allOf"])):
+            return True
+        alternatives = list(graph.objects(policy, P["anyOf"]))
+        return bool(alternatives) and all(carries(m, attribute, only) for m in alternatives)
+
+    named_clients = {
+        v for v in graph.objects(None, P["client"])
+        if isinstance(v, URIRef) and v not in (PUBLIC_CLIENT, AUTHENTICATED_CLIENT)
+    }
+    return held(P["agent"], {principal}) and held(P["client"], named_clients)
 
 
 def read_grant(graph: Graph) -> set:
@@ -1070,12 +1083,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # policy requiring an issuer the probe omits would pass while the real request grants to
             # every client. It has to be unsatisfiable without a named application, whatever else a
             # request carries.
-            if kind == "delegation":
+            if kind == "delegation" and acr is not None:
+                principal = one(own, acr, P["resource"], where)
                 for policy in applies:
-                    if not names_a_client(graph, policy):
+                    if not bounds_the_pair(graph, policy, principal):
                         failures.append(
-                            f"{where}: a delegation policy has a path that grants without naming an "
-                            "application — a ceiling names the client the person authorized"
+                            f"{where}: a delegation policy has a path that grants without naming "
+                            "both " + short(principal) + " and one application — a ceiling is a pair"
                         )
             failures += inspect_modes(modes, where, "policy", notes)
             # `acl:Control` is reading and writing an access control resource. Context management
@@ -1646,7 +1660,7 @@ BROKEN = [
       "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants without naming an application"),
+     "and one application — a ceiling is a pair"),
     ("a ceiling open to every authenticated application",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
@@ -1656,7 +1670,7 @@ BROKEN = [
       "  acp:allOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ,\n"
       "            [ a acp:Matcher ; acp:client acp:AuthenticatedClient ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants without naming an application"),
+     "and one application — a ceiling is a pair"),
     ("a reference definition whose label carries surrounding space",
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n[ SPS-GRANT-003 ]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
@@ -1671,7 +1685,7 @@ BROKEN = [
       "              acp:issuer <https://issuer.example> ] ,\n"
       "            [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants without naming an application"),
+     "and one application — a ceiling is a pair"),
     ("a reference definition inside a code fence, which renders as text",
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n```text\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n```\n\n"
@@ -1686,7 +1700,7 @@ BROKEN = [
       "  acp:allOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ,\n"
       "            [ a acp:Matcher ; acp:client <did:web:app.example>, acp:AuthenticatedClient ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants without naming an application"),
+     "and one application — a ceiling is a pair"),
     ("a reference definition whose destination is on the next line",
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]:\n  ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
@@ -1696,6 +1710,15 @@ BROKEN = [
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n## Heading\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
+    ("a ceiling naming an application but not the person it bounds",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:allOf [ a acp:Matcher ; acp:client <did:web:app.example> ] .\n```\n"
+      "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "a ceiling is a pair"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
