@@ -161,8 +161,8 @@ REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
 REFERENCE_DEFINITION = re.compile(
-    r"^ {0,3}(?:>[ \t]*)*\[([^\]]+)\]:[ \t]*"
-    r"(?:<([^>]*)>|(\S+)|\n {0,3}(?:>[ \t]*)*(?:<([^>]*)>|(\S+)))", re.M
+    r"^ {0,3}(?:(?:>|[-*+]|\d+[.)])[ \t]*)*\[([^\]]+)\]:[ \t]*"
+    r"(?:<([^>]*)>|(\S+)|\n[ \t]*(?:(?:>|[-*+]|\d+[.)])[ \t]*)*(?:<([^>]*)>|(\S+)))", re.M
 )
 
 
@@ -262,17 +262,21 @@ LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")(?=[\s/>]|$
 OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
               (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
               (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
-LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
+LONE_TAG = re.compile(
+    r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*"
+    r"(?:\s(?:\"[^\"]*\"|'[^']*'|[^<>\"'])*)?/?>[ \t]*$"
+)
 INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
 COMMENT_OPEN = re.compile(r"^ {0,3}<!--(?!.*-->)")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||=+[ \t]*$"
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\|"
     r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*)+$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
+SETEXT = re.compile(r"^ {0,3}=+[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
 
@@ -368,6 +372,8 @@ def scan(text: str) -> tuple[list[str], str]:
         paragraph = (
             bool(line.strip())
             and not PARAGRAPH_BREAK.match(line)
+            # A run of `=` underlines a paragraph, and starts one where there is none to underline.
+            and not (paragraph and SETEXT.match(line))
             and (paragraph or not INDENTED.match(line))
             and not (fence or comment or literal or closer or ordinary)
         )
@@ -796,6 +802,14 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
             if node not in reached:
                 errors.append(
                     f"{where}: {short(value)} types a node no link reaches, so ACP never sees it"
+                )
+            else:
+                # On a node ACP does reach, the class reads as a condition and is not one: §6.5
+                # looks at the four attributes, so resolution grants from those alone and the type
+                # narrows nothing.
+                errors.append(
+                    f"{where}: {short(value)} types a node ACP reaches, where a class is not a "
+                    "condition — resolution reads the attributes and ignores it"
                 )
             continue
         declared = ROLE_OF.get(value)
@@ -1788,6 +1802,18 @@ BROKEN = [
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\n> [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    ("a foreign class on a node ACP reaches, which reads as a condition",
+     ("acp:anyOf [ a acp:Matcher ;", "acp:anyOf [ a acp:Matcher, <https://a.example/ns/Employees> ;"),
+     "where a class is not a condition"),
+    ("a definition inside a list item",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n- [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a fixture inside a custom element whose attribute holds an angle bracket",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<my-widget title=\">\">\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

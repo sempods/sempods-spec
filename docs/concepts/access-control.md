@@ -168,13 +168,22 @@ it does not.
 The gain is that conformance becomes checkable instead of asserted: an independent ACP engine, given
 a sempods ACR and a context graph, must produce the same access grant graph.
 
-Two limits on that, and both matter. It holds **per evaluation** and not for the whole decision,
+Three limits on that, and each matters. It holds **per evaluation** and not for the whole decision,
 because the conjunction between evaluations and the OAuth ceiling are sempods' and not ACP's. And it
 holds for **ACP's own matcher attributes** and not beyond them: an access control resource using the
 principal-set matcher defined below carries an attribute a plain ACP engine does not know, so that
 engine leaves the matcher unsatisfied where sempods would resolve it through a trusted membership
 authority. Checking such a resource needs an oracle that knows the extension, or it reports a
 difference that is the extension rather than a defect.
+
+And it holds for **what an access control resource says**, not for everything a pod decides. The
+owner holds every mode on every context implicitly, and
+[`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011) forbids requiring those grants to be
+stored — so an independent engine given the ACR and the access context returns nothing for an owner
+request where sempods returns full authority. That is not a difference between two readings of the
+policy; it is authority the policy was never asked to carry. Any conformance harness has to exclude
+it, which is what [`examples/10-one-context.md`](../../examples/10-one-context.md) means when it says
+no fixture there can show Anna's own access.
 
 The **direction** of that difference is the part worth guaranteeing: a foreign engine should answer
 less, never more. It does not follow on its own. ACP conjoins the attribute types within a single
@@ -658,6 +667,8 @@ debated and that rule cannot be applied to a proposal which does not name what i
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
 | [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does: the lifecycle ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)) and the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) are core obligations today, and moving them behind a declaration relocates them. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020) — `GET` returns every statement whose subject is the resource IRI and is visible in the selected contexts | Right for the base decision and too generous once a second one denies individual statements. Only a pod declaring the resource module needs it restated over the authorized statement view — the same move `SPARQL` makes, and it has to move with it or the two chapters describe different results |
+| [`SPS-CRUD-040`](../../spec/core/lod-crud.md#SPS-CRUD-040), [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-042`](../../spec/core/lod-crud.md#SPS-CRUD-042) — the resource-node, slot and edge routes offer their mutations with §4's semantics | The same second decision applies to each of them. A sweep that gated reads and left writes to the context alone would produce a pod where a caller reads less than they may write, which is not "both must allow" in either direction |
+| [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) — an unwritable context is `403`, an unregistered one `404` | Gains a second way to be refused, and the answer has to be chosen rather than inherited: a subject the resource decision denies is not an unregistered context, and saying `404` there would report on a subject the caller cannot see. This is the denial half of the sweep and belongs in it |
 | [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) — a slot `GET` returns all values, across the readable contexts | The same restatement, and it has to be made here too rather than only on the LOD route. A conforming pod would otherwise hide a subject's statements at one address and hand them over at another, which is not a narrower answer but a different one |
 | [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) — the context sandbox applies to `find` exactly as to CRUD and SPARQL | Holds, and stays true by being restated with them rather than despite them: the sentence is that `find` is sandboxed the same way, so the restatement is what keeps it accurate. Matching, ranking and expansion all read statements, so the denied ones have to be gone before any of that, not filtered out of the results afterwards |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007) and [`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009) — a query sees exactly the readable contexts, and the dataset carries the restriction | Exactly right for the base decision, which is graph-granular and expressible as a dataset against any store. Only a pod enabling the resource module needs them restated over an authorized statement view |
@@ -872,13 +883,14 @@ The rest are ordinary open questions:
   filtering facility in that store, or local construction and evaluation of the effective dataset.
   Passing an unchanged query down with a list of permitted graph IRIs is the one answer that is not
   sufficient, because it is graph-granular by construction.
+- Define when a resource ACR is **retired**. It is indexed by subject and independent of any data
+  context, so deleting a subject's last statement leaves its policies standing; recreating that
+  subject then publishes new content under old grants, with no bootstrap in between. A subject whose
+  statements span several contexts makes "its last statement" a question rather than an event, and
+  two pods answering it differently answer the same request differently — which is why this sits
+  with the blockers rather than beside installation, where it started.
 - Define how a pod installs complete resource policies before declaring the resource module, given
-  that an evaluator with no matching policy denies — and, in the same decision, when a resource ACR
-  is **retired**. A resource ACR is indexed by subject and independent of any data context, so
-  deleting a subject's last statement leaves its policies standing; recreating that subject then
-  publishes new content under old grants, with no bootstrap in between. A subject whose statements
-  span several contexts makes "its last statement" a question rather than an event, which is why
-  retirement belongs beside installation rather than after it.
+  that an evaluator with no matching policy denies.
 
 These are not all the same kind of open. Every one above except the last is a **contract blocker**:
 until it is answered there is no target contract to implement, so nothing can be conformant against
@@ -888,6 +900,8 @@ partial query support claims no conformance.
 
 The last is an **adoption blocker** — a pod that never declares the resource module has nothing to
 install, and a pod that does needs its policies in place before the second decision starts denying.
+Installation happens once, before anything is enabled; retirement keeps happening afterwards, which
+is the line between the two kinds and why the retirement half was moved above.
 
 None of them blocks an experiment. Core is indivisible
 ([`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)), so an implementation that answers before
