@@ -86,7 +86,7 @@ paths:
       responses:
         '204': { description: Removed. }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '404': { $ref: '#/components/responses/NoSuchContext' }
         '409': { $ref: '#/components/responses/LastContext' }
 
 components:
@@ -134,17 +134,21 @@ components:
       description: |
         A valid token whose grants do not cover this operation. The pod owner, or a `#manage` grant
         covering the target under the slash-delimited rule, is what this route requires.
-    NotFoundOrNotVisible:
-      description: No such context, or not visible to this caller. Deliberately indistinguishable.
+    NoSuchContext:
+      description: |
+        No such context, for a caller whose grant covers the path. Authorization is checked before
+        existence on this route, so a caller outside their sandbox gets `403` whether the target
+        exists or not — this status is never how they learn that it does not.
     LastContext:
       description: |
         The only context visible to this caller. Core requires a pod to have at least one, so this
-        route refuses rather than letting the pod repair itself afterwards. `409` under
-        `SPS-CORE-014`: well formed, authorized, and completing it would break an invariant.
+        route refuses rather than letting the pod repair itself afterwards.
 
-        The condition is what the caller can see rather than what the pod holds. Written against the
-        pod's count, the status would tell a delegated manager whether contexts exist that they may
-        not see.
+        `409` under `SPS-CORE-014`, and which of its clauses depends on what the pod holds. Where
+        this really is the pod's only context, completing the request would break an invariant.
+        Where the pod holds others the caller cannot see, it would not — and the refusal is there so
+        that the outcome does not depend on state they may not see, which is the same row's third
+        clause. Both give the identical response, which is the point.
 
   schemas:
     Context:
