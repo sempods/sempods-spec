@@ -241,6 +241,13 @@ BLOCK_TAGS = (
 )
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([^\n]*)$")
 LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")\b", re.I)
+# CommonMark's other literal raw blocks, each with its own terminator: a processing instruction, a
+# declaration, and CDATA. Type 7 — any complete tag alone on its line — closes at a blank line like
+# the block tags, and is what carries a custom element.
+OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
+              (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
+              (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
+LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")\b", re.I)
 
 
@@ -261,7 +268,7 @@ def hidden_fixtures(text: str) -> list[str]:
             seen.add(where)
             problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
 
-    fence = comment = literal = None
+    fence = comment = literal = closer = None
     ordinary = False
     for line in text.splitlines():
         opener = FENCE_LINE.match(line)
@@ -278,6 +285,12 @@ def hidden_fixtures(text: str) -> list[str]:
                 note("a raw HTML block")
             if re.search(rf"</{literal}\s*>", line, re.I):
                 literal = None
+            continue
+        if closer:
+            if turtle:
+                note("a raw HTML block")
+            if closer in line:
+                closer = None
             continue
         if ordinary:
             if turtle:
@@ -303,8 +316,13 @@ def hidden_fixtures(text: str) -> list[str]:
             # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
             # every fence after it look hidden and reject fixtures a reader can see perfectly well.
             literal = None if re.search(rf"</{tag}\s*>", line, re.I) else tag
-        elif BLOCK_OPEN.match(line):
+        elif BLOCK_OPEN.match(line) or LONE_TAG.match(line):
             ordinary = True
+        else:
+            for pattern, terminator in OTHER_OPEN:
+                if pattern.match(line):
+                    closer = None if terminator in line[line.index("<") + 1:] else terminator
+                    break
     return problems
 
 
@@ -643,6 +661,12 @@ def inspect_acr(graph: Graph, where: str) -> tuple[list[str], list[str]]:
                 )
 
     # 2 — a predicate belonging to another kind of block
+    if (None, URIRef(ACP + "attribute"), None) in graph:
+        errors.append(
+            f"{where}: uses acp:attribute, which is the super-property rather than an attribute — "
+            "§6.5 reads the four ACP names, so a matcher carrying it is satisfied by nobody and the "
+            "condition it displays is evaluated by no one"
+        )
     for predicate in (P["target"], P["owner"], P["creator"], P["grant"]):
         if (None, predicate, None) in graph:
             errors.append(
@@ -1518,6 +1542,20 @@ BROKEN = [
     ("an acr block typed but carrying no target",
      ("```turtle acr", "```turtle acr\n[ a acp:AccessControlResource ] .\n```\n```turtle acr"),
      "0 target(s)"),
+    # `<!DOCTYPE html>` would close on its own line, so the declaration is left open on purpose.
+    ("a fixture inside a CommonMark declaration block",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n<!DOCTYPE\n"
+      "```turtle grant\n# nothing\n```\nhtml>"),
+     "inside a raw HTML block"),
+    ("a fixture inside a custom element, which CommonMark treats as raw HTML",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
+    ("acp:attribute, the super-property, used as an attribute",
+     ("acp:agent <https://b.example/#me> ]", "acp:attribute <https://b.example/#me> ]"),
+     "the super-property rather than an attribute"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
