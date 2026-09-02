@@ -618,6 +618,15 @@ paths:
           headers:
             Location: { schema: { type: string, format: uri } }
         '200': { description: The consent screen. }
+        '400':
+          description: |
+            Served directly rather than redirected, because `redirect_uri` is the parameter that
+            failed: absent, not a usable address (`SPS-AUTH-018`, `SPS-AUTH-056`), or not one this
+            `client_id` may be answered at. RFC 6749 §4.1.2.1 forbids sending an error to an
+            address that did not validate, so there is no `Location` to carry it.
+          content:
+            text/plain:
+              schema: { type: string }
 
   /_system/auth/token:
     post:

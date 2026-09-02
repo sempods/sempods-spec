@@ -156,11 +156,13 @@ RFC 6749 §3.1.2 permits a query component, and `SPS-AUTH-055` requires an imple
 preserve it. This is where that permission stops, and the reason is the fragment's: those three
 names belong to the authorization response. An implementation that builds a response either
 overwrites what the address already carried — breaking the client that registered it — or leaves it
-in place, and then hands that client a value it cannot distinguish from the one the server chose.
-A redirect URI registered as `…/cb?state=x` receives its own `x` back as the `state` of a request
-that carried none; one registered as `…/cb?code=old` can, depending on how the response is
-assembled, arrive carrying two codes. Which of the two such a client redeems is a property of its
-parser rather than of this protocol, and that is the situation the prohibition removes.
+in place, and then hands that client a value it cannot distinguish from the response's own — the
+`code` this server issues, or the `state` the client itself chose and RFC 6749 §4.1.2 obliges this
+server to return unchanged. A redirect URI registered as `…/cb?state=x` receives its own `x` back
+as the `state` of a request that carried none; one registered as `…/cb?code=old` can, depending on
+how the response is assembled, arrive carrying two codes. Which of the two such a client redeems is
+a property of its parser rather than of this protocol, and that is the situation the prohibition
+removes.
 
 `error` and `error_description` are deliberately not prohibited. A client that registers them can
 only confuse itself, and no other client's response is reachable through them.
