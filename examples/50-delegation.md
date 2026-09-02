@@ -13,6 +13,14 @@ Two evaluations, and the pod grants what both allow. That composition is sempods
 ACP's — ACP has no operator for it — so the runner applies it outside the ACP engine rather than
 inside, and this file checks both the halves and the whole.
 
+Alice's notes live in one context, which the fixture states because no policy does:
+
+```turtle holds
+<https://alice.example/notes/roadmap>  <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+<https://alice.example/notes/finance>  <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+<https://alice.example/notes/shortcut> <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+```
+
 ## What Alice wrote
 
 Two things, because this pod declares the resource module. The context her notes live in, which every

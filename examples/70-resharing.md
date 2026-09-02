@@ -31,6 +31,12 @@ names say which:
 
 ## While the chain stands
 
+```turtle holds
+<https://alice.example/notes/plan>       <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+<https://alice.example/notes/plan-swept> <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+<https://alice.example/notes/plan-kept>  <https://example.invalid/runner#inContext> <https://alice.example/_system/contexts/notes> .
+```
+
 Alice's notes are a context, and it decides first — every one of the states below is a read that has
 to pass it before any policy on a plan is consulted.
 

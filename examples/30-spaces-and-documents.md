@@ -11,6 +11,15 @@ space.
 **Both must allow.** The space decides which statements are reachable at all; the resource decision
 narrows further, per subject, within them.
 
+Which subject sits in which space is something the pod knows and no policy records — subject and
+context are independent by
+[`SPS-CRUD-011`](../spec/core/lod-crud.md#SPS-CRUD-011) — so the fixture says it:
+
+```turtle holds
+<https://acme.example/docs/roadmap>       <https://example.invalid/runner#inContext> <https://acme.example/_system/contexts/spaces/eng> .
+<https://acme.example/docs/salary-round>  <https://example.invalid/runner#inContext> <https://acme.example/_system/contexts/spaces/eng> .
+```
+
 ## The space
 
 Exactly the kind of access control resource the previous scenario used. Nothing about the base

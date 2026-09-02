@@ -120,8 +120,14 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # `acr-delegation` is the ceiling: how much of a person's authority an application received. It is
 # named rather than inferred, because its target is the principal and a perfectly ordinary resource
 # decision can be about the requester's own WebID too.
+#
+# `holds` is the fixture saying what the pod knows and no policy records: which context a subject'"'"'s
+# statements are in. Nothing derives it — SPS-CRUD-011 makes subject and context independent on
+# purpose — so a composed decision could otherwise pair a protected subject with an unrelated public
+# context, expect a read, and certify one that never met the sandbox.
 KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
-         "grant", "aside")
+         "grant", "holds", "aside")
+IN_CONTEXT = URIRef("https://example.invalid/runner#inContext")
 # ` {0,3}` because CommonMark lets a fence be indented that far and still be a fence — a block under
 # a list item is the ordinary way it happens. Anchoring at column one would let such a block render
 # for a reader and vanish from the runner, which is the failure this file exists to prevent.
@@ -1041,8 +1047,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # defines nothing. Recording it would let an inert line mask the real definition below.
     lines = prose.split("\n")
     startable = "\n".join(
-        line if not previous.strip() or DEFINITION_HEAD.match(previous)
-        or REFERENCE_DEFINITION.match(previous) else ""
+        line if not previous.strip() or PARAGRAPH_BREAK.match(previous)
+        or DEFINITION_HEAD.match(previous) or REFERENCE_DEFINITION.match(previous) else ""
         for previous, line in zip([""] + lines, lines)
     )
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
@@ -1112,6 +1118,16 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             shared_errors, shared_notes = inspect_acr(shared, f"{rel} line {block.line}")
             failures += shared_errors
             notes += shared_notes
+
+        holding: dict = {}
+        for index, block in enumerate(b for b in found if b.kind == "holds"):
+            where = f"{rel} line {block.line}"
+            stated = parse(block, 5000 + index)
+            for predicate in set(stated.predicates(None, None)):
+                if predicate != IN_CONTEXT:
+                    failures.append(f"{where}: a holds block says {short(predicate)}, not inContext")
+            for subject, _, context in stated.triples((None, IN_CONTEXT, None)):
+                holding.setdefault(subject, set()).add(context)
 
         shared_subjects = set(shared.subjects(None, None))
         shared_policies = shared_subjects
@@ -1373,6 +1389,23 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                             f"{where}: composes no context decision, and every access passes the "
                             "context it is in first"
                         )
+                    # The context half has to be the one holding the subject, and only the fixture
+                    # can say which that is.
+                    contexts = {c.target for c in halves
+                                if any(k == "context" for k, _, _ in by_target.get(c.target, ()))}
+                    for half in halves:
+                        if not any(k == "resource" for k, _, _ in by_target.get(half.target, ())):
+                            continue
+                        if not holding.get(half.target):
+                            failures.append(
+                                f"{where}: no holds block says which context "
+                                f"{short(half.target)} is in, so the context half is unchecked"
+                            )
+                        elif not (holding[half.target] & contexts):
+                            failures.append(
+                                f"{where}: composes {short(half.target)} with a context that does "
+                                "not hold it"
+                            )
                 answers = [
                     modes_for(ctx, where, composed=composed, ceiling=bounds) for ctx in halves
                 ]
@@ -1913,6 +1946,11 @@ BROKEN = [
       "See [SPS-GRANT-009].\n\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
       "[SPS-GRANT-009]: ../spec/core/grants.md#SPS-GRANT-011\n\n```turtle acr"),
      "ends at #SPS-GRANT-011"),
+    ("a definition straight under a heading, which does start a block",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n## Sources\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
+      "```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

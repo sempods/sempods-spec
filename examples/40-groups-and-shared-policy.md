@@ -61,6 +61,17 @@ unreachable to the **client's** half. That double role is what the trust boundar
 by construction rather than by remembering: the graphs a guard consults and the graphs a client's
 patterns can reach are two disjoint sets, assembled from different origins.
 
+## What sits where
+
+Subject and context are independent, so the fixture states the arrangement a pod would know:
+
+```turtle holds
+<https://acme.example/articles/welcome>    <https://example.invalid/runner#inContext> <https://acme.example/pod/_system/contexts/spaces/engineering> .
+<https://acme.example/articles/onboarding> <https://example.invalid/runner#inContext> <https://acme.example/pod/_system/contexts/spaces/engineering> .
+<https://acme.example/memo>                <https://example.invalid/runner#inContext> <https://acme.example/pod/_system/contexts/spaces/engineering> .
+<https://acme.example/draft>               <https://example.invalid/runner#inContext> <https://acme.example/pod/_system/contexts/spaces/engineering> .
+```
+
 ## The space, admitting a group and a person
 
 ```turtle acr-context
