@@ -346,12 +346,19 @@ every service client or invent an artifact the contract does not have:
 ```text
 service modes = registered per-context grant
                 ∩ optional resource policy decision
+
+effective modes = service modes ∪ public modes
 ```
 
 The registered grant takes the place of the ceiling *and* the context policy, which is what
 "fixed at registration" means. The resource decision still narrows where the module is declared, for
 the same reason it narrows anywhere: a decision that can only subtract is not made safe to skip by
 who is asking.
+
+The public branch unions here too, and for the reason it does everywhere: public authority does not
+come from anybody's grant, so nothing anybody was granted can take it away. Leaving it out would make
+a service client the one caller that loses access by presenting a token — the same request without it
+reads the public context perfectly well.
 
 The ceiling is expressible in ACP's own vocabulary, but as **its own evaluation** rather than as
 policies inside a target's ACR: a per-principal ACR whose policies require the agent and the client

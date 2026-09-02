@@ -153,7 +153,7 @@ MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(([^)]*)\)")
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
-REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(\S+)", re.M)
+REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(?:(\S+)|\n[ \t]*(\S+))", re.M)
 
 
 def normalized(label: str) -> str:
@@ -253,6 +253,10 @@ OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
               (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
               (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
 LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>[ \t]*$")
+# Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
+# interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
+# paragraph text would hide a fixture that a reader really does see as raw HTML.
+PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}\s|>|[-*+]\s|\d+[.)]\s|\||={2,}\s*$|-{3,}\s*$)|^ {4,}")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")\b", re.I)
 
 
@@ -336,7 +340,11 @@ def scan(text: str) -> tuple[list[str], str]:
                 if pattern.match(line):
                     closer = None if terminator in line[line.index("<") + 1:] else terminator
                     break
-        paragraph = bool(line.strip()) and not (fence or comment or literal or closer or ordinary)
+        paragraph = (
+            bool(line.strip())
+            and not PARAGRAPH_BREAK.match(line)
+            and not (fence or comment or literal or closer or ordinary)
+        )
         rendered.append("" if fence or comment or literal or closer or ordinary else line)
     return problems, "\n".join(rendered)
 
@@ -451,8 +459,11 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     # tried and does not return early — so a request claiming to *be* acp:OwnerAgent satisfies an
     # owner matcher without owning anything. That step is transcribed faithfully below; the fixture
     # that would abuse it is refused here instead.
+    # `acp:target` is exempt: a resource decision may control statements about any IRI, ACP's own
+    # among them. The other fields are compared to a matcher's values by equality, which is where a
+    # request claiming to *be* a reserved individual would satisfy a matcher meant for somebody else.
     for predicate, value in graph.predicate_objects(node):
-        if predicate != RDF_TYPE and str(value).startswith(ACP):
+        if predicate not in (RDF_TYPE, P["target"]) and str(value).startswith(ACP):
             raise Problem(f"access context names {short(value)}, which describes no request")
     return Context(
         target=one(graph, node, P["target"], where),
@@ -474,10 +485,12 @@ def names_a_client(graph: Graph, policy) -> bool:
     the ones that did not.
     """
     def concrete(matcher) -> bool:
-        return any(
-            isinstance(v, URIRef) and v not in (PUBLIC_CLIENT, AUTHENTICATED_CLIENT)
-            for v in graph.objects(matcher, P["client"])
-        )
+        values = set(graph.objects(matcher, P["client"]))
+        # Values of one attribute are alternatives, so a reserved one beside a named application
+        # widens rather than narrows: every authenticated client satisfies the matcher anyway.
+        if values & {PUBLIC_CLIENT, AUTHENTICATED_CLIENT}:
+            return False
+        return any(isinstance(v, URIRef) for v in values)
 
     if any(concrete(m) for m in graph.objects(policy, P["allOf"])):
         return True
@@ -906,8 +919,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     definitions: dict = {}
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
     # destination while the rendered link followed an earlier, wrong one.
-    for label, destination in REFERENCE_DEFINITION.findall(prose):
-        definitions.setdefault(normalized(label), destination)
+    for label, same_line, next_line in REFERENCE_DEFINITION.findall(prose):
+        definitions.setdefault(normalized(label), same_line or next_line)
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(prose)]
     for shown in SHORTCUT.findall(prose):
         if normalized(shown) in definitions:
@@ -1664,6 +1677,25 @@ BROKEN = [
       "See [SPS-GRANT-003].\n\n```text\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n```\n\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    ("a ceiling naming an application and every authenticated one beside it",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:allOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ,\n"
+      "            [ a acp:Matcher ; acp:client <did:web:app.example>, acp:AuthenticatedClient ] .\n```\n"
+      "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "grants without naming an application"),
+    ("a reference definition whose destination is on the next line",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n[SPS-GRANT-003]:\n  ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a fixture inside a custom element opened after a heading",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n## Heading\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
