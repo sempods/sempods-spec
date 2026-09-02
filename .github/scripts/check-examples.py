@@ -151,13 +151,18 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # A markdown link whose text is exactly one requirement id, with wherever it actually goes.
 # The destination stops at whitespace: what follows is CommonMark's optional title, and reading it
 # as part of the fragment would reject a correctly directed citation for being annotated.
-MISDIRECTED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*<?([^\s)>]*)>?[^)]*\)")
+# The destination runs to whitespace or to a `)` that is not inside a balanced pair — CommonMark
+# allows those — and what follows is the optional title.
+MISDIRECTED = re.compile(
+    r"\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*(?:<([^>]*)>|((?:[^\s()]|\([^\s()]*\))*))"
+)
 CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 # The shortcut form: `[SPS-GRANT-003]` with a definition further down and no second bracket pair.
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
 REFERENCE_DEFINITION = re.compile(
-    r"^ {0,3}\[([^\]]+)\]:[ \t]*(?:<([^>]*)>|(\S+)|\n[ \t]*(?:<([^>]*)>|(\S+)))", re.M
+    r"^ {0,3}(?:>[ \t]*)*\[([^\]]+)\]:[ \t]*"
+    r"(?:<([^>]*)>|(\S+)|\n {0,3}(?:>[ \t]*)*(?:<([^>]*)>|(\S+)))", re.M
 )
 
 
@@ -264,7 +269,8 @@ COMMENT_OPEN = re.compile(r"^ {0,3}<!--(?!.*-->)")
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||=+\s*$|-+\s*$)"
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\||=+[ \t]*$"
+    r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*)+$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
@@ -964,7 +970,9 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # destination while the rendered link followed an earlier, wrong one.
     for label, *destinations in REFERENCE_DEFINITION.findall(prose):
         definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
-    citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(prose)]
+    citations = [
+        (shown, bracketed or bare) for shown, bracketed, bare in MISDIRECTED.findall(prose)
+    ]
     for shown in SHORTCUT.findall(prose):
         if normalized(shown) in definitions:
             citations.append((shown, definitions[normalized(shown)]))
@@ -1770,6 +1778,15 @@ BROKEN = [
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n"
       "--> and closes it here.\n\n"
       "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a fixture inside a custom element opened after a compact thematic break",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\nSome prose.\n***\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
+    ("a reference definition inside a block quote",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n> [SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
