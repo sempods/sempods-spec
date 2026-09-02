@@ -262,23 +262,24 @@ LITERAL_OPEN = re.compile(r"^ {0,3}<(" + "|".join(LITERAL_TAGS) + r")(?=[\s/>]|$
 OTHER_OPEN = ((re.compile(r"^ {0,3}<\?"), "?>"),
               (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>"),
               (re.compile(r"^ {0,3}<![A-Za-z]"), ">"))
-LONE_TAG = re.compile(
-    r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*"
-    r"(?:\s(?:\"[^\"]*\"|'[^']*'|[^<>\"'])*)?/?>[ \t]*$"
-)
+# An attribute is a name, optionally a value; a bare quoted string after whitespace is not a tag at
+# all, and treating one as a block boundary rejects a line the renderer shows as text.
+ATTRIBUTE = r"\s+[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?"
+LONE_TAG = re.compile(r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:" + ATTRIBUTE + r")*\s*/?>[ \t]*$")
 INLINE_COMMENT = re.compile(r"<!--.*?-->", re.S)
 BLOCK_COMMENT = re.compile(r"^ {0,3}<!--")
 # Lines that are a block of their own rather than paragraph text. A type-7 HTML block cannot
 # interrupt a paragraph, but it may follow any of these, so treating every non-blank line as
 # paragraph text would hide a fixture that a reader really does see as raw HTML.
 PARAGRAPH_BREAK = re.compile(
-    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s|\|"
+    r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+]\s|\d+[.)]\s"
     r"|(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|(?:-[ \t]*){3,}$)"
 )
 INDENTED = re.compile(r"^ {4,}\S")
 # Either character underlines a paragraph. A run of three or more hyphens is a thematic break
 # whether or not one precedes it, and is in PARAGRAPH_BREAK; a shorter one is only ever an underline.
 SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
+TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
 
@@ -303,9 +304,10 @@ def scan(text: str) -> tuple[list[str], str]:
             seen.add(where)
             problems.append(f"a turtle fence sits inside {where}, where no reader sees a fixture")
 
+    lines = text.splitlines()
     fence = comment = literal = closer = None
     ordinary = paragraph = False
-    for line in text.splitlines():
+    for number, line in enumerate(lines):
         opener = FENCE_LINE.match(line)
         turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
 
@@ -379,6 +381,9 @@ def scan(text: str) -> tuple[list[str], str]:
         paragraph = (
             bool(line.strip())
             and not PARAGRAPH_BREAK.match(line)
+            # A leading pipe is a table only when the delimiter row follows; on its own it is text.
+            and not (line.lstrip().startswith("|")
+                     and TABLE_DELIMITER.match(lines[number + 1] if number + 1 < len(lines) else ""))
             # A run of `=` underlines a paragraph, and starts one where there is none to underline.
             and not (paragraph and SETEXT.match(line))
             and (paragraph or not INDENTED.match(line))
@@ -387,6 +392,11 @@ def scan(text: str) -> tuple[list[str], str]:
         # A comment closing on the line that opened it never becomes a state, and what it holds
         # renders as nothing all the same — a reference definition inside one is inert.
         if fence or comment or literal or closer or ordinary:
+            rendered.append("")
+            continue
+        if INDENTED.match(line) and not paragraph:
+            # An indented code block: what it holds renders as characters, so a citation in one is
+            # an example of the syntax rather than a link.
             rendered.append("")
             continue
         visible = INLINE_COMMENT.sub("", line)
