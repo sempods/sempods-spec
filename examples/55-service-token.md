@@ -63,6 +63,7 @@ An ordinary context policy, and one that does **not** name the shipper.
   acp:target <https://acme.example/_system/contexts/logs> ;
   acp:agent  <did:web:shipper.example> ;
   acp:client <did:web:shipper.example> ;
+  <https://example.invalid/runner#serviceToken> true ;
   acp:owner  <https://acme.example/profile#me>
 ] .
 
@@ -70,6 +71,7 @@ An ordinary context policy, and one that does **not** name the shipper.
   acp:target <https://acme.example/logs/2026-09-02> ;
   acp:agent  <did:web:shipper.example> ;
   acp:client <did:web:shipper.example> ;
+  <https://example.invalid/runner#serviceToken> true ;
   acp:owner  <https://acme.example/profile#me>
 ] .
 ```

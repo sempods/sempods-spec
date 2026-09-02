@@ -132,6 +132,10 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # quietly apply the formula for a person, which is a different answer.
 KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
          "grant", "holds", "registered", "aside")
+# SPS-AUTH-017 asks for two things, and one of them is a marker: a token's subject being its client
+# does not make it a service token, and a request that only looks like one must not be answered as
+# one. The fixture carries the class the way the token does.
+SERVICE = URIRef("https://example.invalid/runner#serviceToken")
 CLIENT = URIRef("https://example.invalid/runner#client")
 IN = URIRef("https://example.invalid/runner#in")
 GRANTS = URIRef("https://example.invalid/runner#grants")
@@ -172,7 +176,9 @@ WELL_FORMED = re.compile(r"^SPS-[A-Z]+-\d+$")
 # as part of the fragment would reject a correctly directed citation for being annotated.
 # The destination runs to whitespace or to a `)` that is not inside a balanced pair — CommonMark
 # allows those — and what follows is the optional title.
-INLINE_START = re.compile(r"(?<!\\)\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*")
+# `(?<!\\)\\\\*` before the bracket: an even run of backslashes escapes itself and leaves the bracket
+# active, so only an odd one makes the opener literal.
+INLINE_START = re.compile(r"(?<!\\)(?:\\\\)*\[`?(SPS-[A-Z]+-\d+)`?\]\(\s*")
 
 
 def inline_citations(text: str) -> list[tuple[str, str]]:
@@ -295,6 +301,7 @@ KNOWN_INDIVIDUALS = {
 class Context:
     """One attempted access, as ACP §3.1 describes it."""
 
+    service: bool = False
     target: URIRef | None = None
     agent: URIRef | None = None
     client: URIRef | None = None
@@ -612,7 +619,9 @@ def read_context(graph: Graph, where: str) -> Context:
 
 # What an access context may say. `acp:allow` is spelled correctly, belongs to ACP, and confers
 # nothing here — a fixture carrying it displays request data that looks like a grant.
-CONTEXT_PREDICATES = {P[n] for n in ("target", "agent", "client", "issuer", "owner", "creator", "vc")}
+CONTEXT_PREDICATES = {
+    P[n] for n in ("target", "agent", "client", "issuer", "owner", "creator", "vc")
+} | {SERVICE}
 
 
 def read_one_context(graph: Graph, node, where: str) -> Context:
@@ -630,7 +639,9 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
     if len(owners) > 1:
         raise Problem(f"access context names {len(owners)} owners, and a pod records one")
     for predicate, value in graph.predicate_objects(node):
-        if not isinstance(value, URIRef):
+        # The service marker is a flag rather than a name — everything else here identifies
+        # something, and an identity is an IRI.
+        if predicate != SERVICE and not isinstance(value, URIRef):
             raise Problem(
                 f"access context gives {short(predicate)} a literal, and every one of these is an IRI"
             )
@@ -647,6 +658,7 @@ def read_one_context(graph: Graph, node, where: str) -> Context:
         if predicate not in (RDF_TYPE, P["target"]) and str(value).startswith(ACP):
             raise Problem(f"access context names {short(value)}, which describes no request")
     return Context(
+        service=bool(set(graph.objects(node, SERVICE))),
         target=one(graph, node, P["target"], where),
         agent=one(graph, node, P["agent"], where),
         client=one(graph, node, P["client"], where),
@@ -1247,12 +1259,23 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # A registration grants like a policy does, so it closes like one: SPS-GRANT-009
                 # has write covering read, and a write-only context is a state the model forbids
                 # rather than a narrower one.
+                if ACL_CONTROL in modes:
+                    failures.append(
+                        f"{where}: a registration grants acl:Control, which is management of an "
+                        "access control resource — SPS-AUTH-013 gives a service per-context grants, "
+                        "and context management has a sempods term of its own that is not named yet"
+                    )
                 for mode, implied in ((ACL_WRITE, {ACL_READ}), (ACL_CONTROL, {ACL_READ, ACL_WRITE})):
                     if mode in modes and implied - modes:
                         failures.append(
                             f"{where}: a registration grants {short(mode)} without "
                             + ", ".join(sorted(short(m) for m in implied - modes))
                         )
+                if context in registered.get(client, {}):
+                    failures.append(
+                        f"{where}: a second registration for {short(client)} in {short(context)} — "
+                        "grants fixed at registration are fixed once"
+                    )
                 registered.setdefault(client, {})[context] = modes
 
         holding: dict = {}
@@ -1473,6 +1496,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             answers = []
             for kind, graph, acr in entries:
                 exercised.add((kind, ctx.target))
+                # A pod always knows its owner (SPS-AUTH-051). Leaving it out of a case whose
+                # policies ask about one makes the matcher fail on an empty set, so a denial passes
+                # that the pod would not have produced.
+                if not ctx.owners and OWNER_AGENT in set(graph.objects(None, P["agent"])):
+                    failures.append(
+                        f"{where}: a policy here asks about acp:OwnerAgent and the request names no "
+                        "acp:owner, so the matcher fails on a fact the pod would have supplied"
+                    )
+                    return None
                 answers.append(resolve(graph, acr, ctx))
             return set.intersection(*answers)
         for offset, block in enumerate(found):
@@ -1548,7 +1580,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 # client. Its grants were fixed at registration and stand in for both the ceiling
                 # and the context decision, so answering it with the person formula would deny
                 # authority it was registered with or grant authority it was not.
-                service = {c.agent for c in halves} == {c.client for c in halves} != {None}
+                service = any(c.service for c in halves)
+                if service and not all(c.service for c in halves):
+                    failures.append(f"{where}: some halves are a service request and some are not")
+                if service and {c.agent for c in halves} != {c.client for c in halves}:
+                    failures.append(
+                        f"{where}: a service token's subject is its client (SPS-AUTH-017), and "
+                        "these disagree"
+                    )
                 if service:
                     if "delegation" in dimensions:
                         failures.append(
@@ -2174,8 +2213,10 @@ BROKEN = [
       "<https://a.example/ctx> .\n```\n"
       "```turtle decision\n"
       "[ acp:target <https://a.example/ctx> ; acp:agent <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#serviceToken> true ;\n"
       "  acp:client <did:web:svc.example> ] .\n"
       "[ acp:target <https://a.example/c> ; acp:agent <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#serviceToken> true ;\n"
       "  acp:client <did:web:svc.example> ] .\n```"),
      "a registered block has to say what it was registered with"),
     ("a registration granting write without read",
@@ -2200,10 +2241,32 @@ BROKEN = [
       "  <https://example.invalid/runner#grants> acl:Read ] .\n```\n"
       "```turtle decision\n"
       "[ acp:target <https://a.example/ctx> ; acp:agent <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#serviceToken> true ;\n"
       "  acp:client <did:web:svc.example> ] .\n"
       "[ acp:target <did:web:svc.example> ; acp:agent <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#serviceToken> true ;\n"
       "  acp:client <did:web:svc.example> ] .\n```"),
      "composes a delegation ceiling, and there is none"),
+    ("an owner matcher judged against a request that names no owner",
+     ("acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ]",
+      "acp:anyOf [ a acp:Matcher ; acp:agent acp:OwnerAgent ]"),
+     "the matcher fails on a fact the pod would have supplied"),
+    ("two registrations for one client and context",
+     ("```turtle context", "```turtle registered\n"
+      "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Read ] .\n```\n"
+      "```turtle registered\n"
+      "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Read, acl:Write ] .\n```\n"
+      "```turtle context"), "grants fixed at registration are fixed once"),
+    ("a registration granting acl:Control",
+     ("```turtle context", "```turtle registered\n"
+      "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
+      "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
+      "  <https://example.invalid/runner#grants> acl:Read, acl:Write, acl:Control ] .\n```\n"
+      "```turtle context"), "a registration grants acl:Control"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
