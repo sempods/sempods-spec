@@ -993,7 +993,7 @@
       "id": "SPS-CTX-009",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "An implementation MUST accept a freely chosen context name that breaks none of the structural rules — [`SPS-CTX-006`](../core/contexts.md#SPS-CTX-006), [`SPS-CTX-007`](../core/contexts.md#SPS-CTX-007), [`SPS-CTX-010`](../core/contexts.md#SPS-CTX-010), [`SPS-CTX-011`](../core/contexts.md#SPS-CTX-011) and [`SPS-CTX-013`](../core/contexts.md#SPS-CTX-013) in core, and `SPS-CTX-012` below.",
+      "summary": "An implementation MUST accept a freely chosen context name that breaks none of the structural rules — [`SPS-CTX-006`](../core/contexts.md#SPS-CTX-006), [`SPS-CTX-007`](../core/contexts.md#SPS-CTX-007), [`SPS-CTX-008`](../core/contexts.md#SPS-CTX-008), [`SPS-CTX-010`](../core/contexts.md#SPS-CTX-010), [`SPS-CTX-011`](../core/contexts.md#SPS-CTX-011) and [`SPS-CTX-013`](../core/contexts.md#SPS-CTX-013) in core, and `SPS-CTX-012` below.",
       "withdrawn": false
     },
     {
@@ -1133,7 +1133,7 @@
       "id": "SPS-CTX-029",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "`DELETE` MUST refuse to remove a pod's last remaining context, with `409`.",
+      "summary": "`DELETE` MUST refuse to remove the only context **visible to the caller**, with `409`.",
       "withdrawn": false
     },
     {

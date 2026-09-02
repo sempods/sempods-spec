@@ -49,7 +49,7 @@ paths:
         body at all — the context is created **private**: the quiet path is the one without a body,
         and a context becomes readable without a grant because somebody said so, never because they
         said nothing.
-      x-sps-requirements: [SPS-CTX-005, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027]
+      x-sps-requirements: [SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027]
       requestBody:
         required: false
         content:
@@ -133,9 +133,13 @@ components:
       description: No such context, or not visible to this caller. Deliberately indistinguishable.
     LastContext:
       description: |
-        The pod's only remaining context. Core requires a pod to have at least one, so this route
-        refuses rather than letting the pod repair itself afterwards. `409` under `SPS-CORE-014`:
-        the request was well formed and authorized, and the pod's current state forbids it.
+        The only context visible to this caller. Core requires a pod to have at least one, so this
+        route refuses rather than letting the pod repair itself afterwards. `409` under
+        `SPS-CORE-014`: well formed, authorized, and completing it would break an invariant.
+
+        The condition is what the caller can see rather than what the pod holds. Written against the
+        pod's count, the status would tell a delegated manager whether contexts exist that they may
+        not see.
 
   schemas:
     Context:

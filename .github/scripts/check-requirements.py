@@ -86,6 +86,12 @@ MODULE_VERSIONS = {
 # satisfy, and regenerating the index reproduces it, so nothing downstream would ever notice.
 CORE_AREAS = {"CORE", "CTX", "GRANT", "AUTH", "CRUD", "SPARQL", "FIND"}
 
+# The areas allowed to span both halves, listed so that the spanning is a decision and not an
+# accident. Everything else is checked: since `part` is read from the chapter, a requirement filed
+# in the wrong half would flip from optional to mandatory or back, and the area guard below would
+# not notice — the area would still be a known one.
+SPLIT_AREAS = {"CTX"}
+
 
 def modules():
     """Module name → area, derived from the chapters that define them."""
@@ -414,6 +420,26 @@ def build_index(found):
     regeneration and turn a no-op into a diff.
     """
     problems = []
+    # Where each area's requirements actually live, so an area that spans without being declared to
+    # is caught rather than published.
+    seen = {}
+    for ident, (path, _) in found.items():
+        area = ident.split("-")[1]
+        seen.setdefault(area, {}).setdefault(
+            "core" if path.parts[:2] == ("spec", "core") else path.stem, []
+        ).append(ident)
+    for area, halves in sorted(seen.items()):
+        if len(halves) > 1 and area not in SPLIT_AREAS:
+            where = "; ".join(
+                f"{part}: {', '.join(sorted(ids)[:3])}{'…' if len(ids) > 3 else ''}"
+                for part, ids in sorted(halves.items())
+            )
+            problems.append(
+                f"area '{area}' is split across {where}. `part` is read from the chapter, so a "
+                f"requirement filed in the wrong half silently changes whether implementations "
+                f"must satisfy it. Move it, or add '{area}' to SPLIT_AREAS and say why in "
+                f"docs/agents/spec-authoring.md."
+            )
     for ident in found:
         area = ident.split("-")[1]
         # An area still has to be known — a mistyped one is caught here. It may now appear in

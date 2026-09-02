@@ -45,7 +45,8 @@ The rules are permissive about names and strict about structure.
 <a id="SPS-CTX-009"></a>
 **`SPS-CTX-009`** — An implementation MUST accept a freely chosen context name that breaks none of
 the structural rules — [`SPS-CTX-006`](../core/contexts.md#SPS-CTX-006),
-[`SPS-CTX-007`](../core/contexts.md#SPS-CTX-007), [`SPS-CTX-010`](../core/contexts.md#SPS-CTX-010),
+[`SPS-CTX-007`](../core/contexts.md#SPS-CTX-007), [`SPS-CTX-008`](../core/contexts.md#SPS-CTX-008),
+[`SPS-CTX-010`](../core/contexts.md#SPS-CTX-010),
 [`SPS-CTX-011`](../core/contexts.md#SPS-CTX-011) and
 [`SPS-CTX-013`](../core/contexts.md#SPS-CTX-013) in core, and `SPS-CTX-012` below. `privat`,
 `2026-sommer` and `projects/alpha` are all valid.
@@ -107,11 +108,24 @@ to treat a shared prefix as containment.
 target context under the slash-delimited rule of [`SPS-GRANT-007`](../core/grants.md#SPS-GRANT-007).
 
 <a id="SPS-CTX-029"></a>
-**`SPS-CTX-029`** — `DELETE` MUST refuse to remove a pod's last remaining context, with `409`.
+**`SPS-CTX-029`** — `DELETE` MUST refuse to remove the only context **visible to the caller**, with
+`409`.
 
 Core requires a pod to have one ([`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028)), and this is the
 only route that could take it away. Refusing here rather than letting the pod repair itself
 afterwards is what keeps the core requirement true at every moment rather than eventually.
+
+**The condition is the caller's view and not the pod's count**, which is the part worth reading
+twice. Written against the pod's last context, the status answers a question the caller may not ask:
+a delegated manager deleting the one context they can see would get `409` where the pod holds nothing
+else and `204` where it holds contexts they cannot see, so the response would report the size of a
+namespace [`SPS-CTX-024`](../core/contexts.md#SPS-CTX-024) hides from them.
+
+Asked of what the caller can see, the answer is the same either way and the invariant still holds.
+The pod owner sees every context ([`SPS-GRANT-011`](../core/grants.md#SPS-GRANT-011)), so for them
+the two conditions are one. Nobody else can empty the pod, because reaching zero would mean deleting
+a context while seeing a second one — and where the pod has one context, there is no second one for
+anybody to see.
 
 <a id="SPS-CTX-020"></a>
 **`SPS-CTX-020`** — On `DELETE`, an implementation MUST check authorization **before** existence, so
