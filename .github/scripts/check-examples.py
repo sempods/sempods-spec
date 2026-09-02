@@ -795,6 +795,11 @@ def inspect_grant(graph: Graph, where: str) -> list[str]:
         for predicate in set(graph.predicates(None, None))
         if predicate not in (P["grant"], RDF_TYPE)
     ]
+    errors += [
+        f"{where}: a node in this grant block carries no acp:grant, so it says nothing"
+        for subject in set(graph.subjects(None, None))
+        if (subject, P["grant"], None) not in graph
+    ]
     return errors + [
         f"{where}: grant block is typed {short(value)}, not acp:AccessGrant"
         for value in set(graph.objects(None, RDF_TYPE))
@@ -908,23 +913,23 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
         # rather than a copy per reference.
         shared = Graph()
         for index, block in enumerate(b for b in found if b.kind == "policy"):
-            one = parse(block, 4000 + index)
+            artifact = parse(block, 4000 + index)
             # A shared block is merged into every access control resource in the file, so an access
             # control resource smuggled into one would be registered as a decision of its own while
             # being displayed under the wrong kind.
             for name in ("AccessControlResource", "AccessControl"):
-                if (None, RDF_TYPE, URIRef(ACP + name)) in one:
+                if (None, RDF_TYPE, URIRef(ACP + name)) in artifact:
                     failures.append(
                         f"{rel} line {block.line}: a policy block types a node acp:{name}, and a "
                         "shared artifact is a policy and its matchers"
                     )
             for predicate in (P["resource"], P["accessControl"], P["memberAccessControl"]):
-                if (None, predicate, None) in one:
+                if (None, predicate, None) in artifact:
                     failures.append(
                         f"{rel} line {block.line}: a policy block carries {short(predicate)}, and a "
                         "shared artifact is a policy and its matchers"
                     )
-            shared += one
+            shared += artifact
             shared_errors, shared_notes = inspect_acr(shared, f"{rel} line {block.line}")
             failures += shared_errors
             notes += shared_notes
@@ -991,6 +996,16 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             acr_errors, acr_notes = inspect_acr(graph, where)
             failures += acr_errors
             notes += acr_notes
+            # A ceiling speaks about a pair — this person through this application. One that grants
+            # with no client named is satisfied by every application acting as them, which is the
+            # opposite of what it is for.
+            if kind == "delegation" and acr is not None:
+                principal = one(own, acr, P["resource"], where)
+                if resolve(graph, acr, Context(target=principal, agent=principal)):
+                    failures.append(
+                        f"{where}: a delegation policy grants without naming a client, so every "
+                        "application acting as the principal receives it"
+                    )
             if acr is None:
                 # The shape failure above says why. Walking from an access control resource that is
                 # not there would raise instead of reporting it, and take the other scenarios with
@@ -1012,11 +1027,14 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # also creates and deletes contexts and reaches slash-delimited descendants, so the
             # profile gives it a sempods term of its own — which is not named yet, and until it is
             # a context policy cannot spell `manage` at all.
-            if ACL_CONTROL in modes and kind != "resource":
+            # A ceiling may carry it too: bounding an application's *resource* management means
+            # spelling out what resource management is.
+            if ACL_CONTROL in modes and kind not in ("resource", "delegation"):
                 failures.append(
-                    f"{where}: allows acl:Control outside an acr-resource block. It is management "
-                    "of an access control resource; context management also creates, deletes and "
-                    "reaches descendants, and has a sempods term of its own that is not named yet"
+                    f"{where}: allows acl:Control outside an acr-resource or acr-delegation block. "
+                    "It is management of an access control resource; context management also "
+                    "creates, deletes and reaches descendants, and has a sempods term of its own "
+                    "that is not named yet"
                 )
 
         # An inline policy nothing applies is the same silence as an unapplied shared one, and it
@@ -1090,21 +1108,6 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     "decision cannot say which of them it means"
                 )
                 return None
-            # The ceiling half — the delegation evaluation, recognisable because its target is the
-            # principal it bounds. The concept applies it to authenticated authority only and then
-            # unions the public branch, so a request that reaches a target through a public matcher
-            # keeps `read` even where the ceiling withholds it. This block intersects every half
-            # uniformly, which is the same answer everywhere except there; rather than quietly give
-            # the wrong one, it refuses the combination it cannot express.
-            if composed and ceiling and any(
-                reachable_anonymously(graph, acr, ctx.target) for _, graph, acr in entries
-            ):
-                failures.append(
-                    f"{where}: composes a delegation ceiling with a target reached publicly, and "
-                    "the public branch unions where this block intersects — write the halves that "
-                    "narrow, and read the ceiling off the authenticated case"
-                )
-                return None
             answers = []
             for kind, graph, acr in entries:
                 exercised.add((kind, ctx.target))
@@ -1144,6 +1147,28 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                                 f"request is {short(half.agent)} — a ceiling bounds the principal "
                                 "it names"
                             )
+                # The concept applies the ceiling to authenticated authority and then unions the
+                # public branch, while this block intersects uniformly — the same answer everywhere
+                # except where a public branch exists. It exists only if *every* narrowing half
+                # admits an anonymous read, so that is what is asked, rather than whether any single
+                # half happens to be public.
+                bounds = "delegation" in dimensions
+                if bounds:
+                    anonymous = [
+                        resolve(graph, acr, Context(target=half.target))
+                        for half in halves
+                        for k, graph, acr in by_target.get(half.target, ())
+                        if k != "delegation"
+                    ]
+                    if anonymous and ACL_READ in set.intersection(*anonymous):
+                        failures.append(
+                            f"{where}: composes a delegation ceiling with a target every half opens "
+                            "to anonymous read, and the public branch unions where this block "
+                            "intersects — write the halves that narrow, and read the ceiling off "
+                            "the authenticated case"
+                        )
+                        pending = None
+                        continue
                 if composed:
                     for kind_name, allowed in (("context", 1), ("resource", 1), ("delegation", 1),
                                                ("unqualified", 0)):
@@ -1157,7 +1182,6 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                             f"{where}: composes no context decision, and every access passes the "
                             "context it is in first"
                         )
-                bounds = "delegation" in dimensions
                 answers = [
                     modes_for(ctx, where, composed=composed, ceiling=bounds) for ctx in halves
                 ]
@@ -1481,7 +1505,7 @@ BROKEN = [
       "  acp:resource <https://a.example/c> ;\n"
       "  acp:accessControl [ acp:apply <#p> ] ] .\n"
       "<#p> a acp:Policy ; acp:allow acl:Read, acl:Write, acl:Control ;"),
-     "outside an acr-resource block"),
+     "outside an acr-resource or acr-delegation block"),
     ("a fixture inside an HTML comment, which no reader sees",
      ("```turtle grant\n[] acp:grant acl:Read .\n```",
       "```turtle grant\n[] acp:grant acl:Read .\n```\n<!--\n```turtle grant\n# nothing\n```\n-->"),
@@ -1556,6 +1580,18 @@ BROKEN = [
     ("acp:attribute, the super-property, used as an attribute",
      ("acp:agent <https://b.example/#me> ]", "acp:attribute <https://b.example/#me> ]"),
      "the super-property rather than an attribute"),
+    ("a grant block node that carries no acp:grant",
+     ("[] acp:grant acl:Read .", "[] acp:grant acl:Read .\n[ a acp:AccessGrant ] ."),
+     "carries no acp:grant, so it says nothing"),
+    ("a ceiling that names no client, so every application acting as the person has it",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "grants without naming a client"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",

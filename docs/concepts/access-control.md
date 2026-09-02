@@ -569,17 +569,20 @@ refuse them `write` — the one route where the second decision is skipped rathe
 rule above covers mutations of an existing resource; a bulk lifecycle operation is not one of those
 and needs saying either way. The two ways to say it:
 
-- **compose it like any other mutation** — deletion requires the resource decision to allow `write`
-  on every affected subject. Consistent, and it makes an operation the chapters describe as a single
-  authorization decision depend on however many subjects the context happens to hold, with a partial
-  failure to define; and,
+- ~~compose it like any other mutation~~, requiring the resource decision to allow `write` on every
+  affected subject. **Refused for the same reason as the shared-policy version above**: a caller who
+  manages the context and is denied one hidden subject gets a failure the same request against an
+  empty context does not get, so the outcome reports that the context holds something they may not
+  see. That is the pattern this repository keeps — the same answer for a context you cannot read as
+  for one that holds nothing — and it is not a cost to weigh against the alternative; and,
 - **state it as an exception**, on the ground that `manage` on a context already means creating and
   deleting the context itself rather than editing what is in it, and that a context nobody may enter
-  is not made safer by the policies inside it. Simpler, and it has to be written down rather than
-  left to be inferred, because it is the one place the words "both must allow" stop being true.
+  is not made safer by the policies inside it.
 
-This is carried below as an open decision. It is not reachable today — the module does not exist — but
-it is reachable the moment it does.
+Which leaves the exception, and what is open is writing it down rather than choosing it: it is the
+one place the words "both must allow" stop being true, so it has to be stated where the composition
+rule is rather than left to be inferred. Not reachable today — the module does not exist — but
+reachable the moment it does.
 
 The resource module reopens the question, and only there. A new resource has no resource policy yet,
 so creation and that policy have to be one operation from the client's perspective — otherwise the
@@ -805,10 +808,10 @@ The rest are ordinary open questions:
   What is still open is the boundary's own bootstrap: who holds `manage` on a policy the moment it
   exists. Sharing a policy is what makes an audience change one edit rather than a sweep, so this is
   not a corner — it is the price of the feature.
-- Decide how deleting a context composes with the resource decisions inside it, once the module
-  exists: as a mutation requiring `write` on every affected subject, or as a stated exception where
-  context `manage` carries the whole context. Leaving it unsaid is the only option that is wrong,
-  because the operation removes statements either way.
+- State, once the module exists, that deleting a context is authorized by context `manage` alone and
+  that the resource decision does not narrow it — the one exception to "both must allow". Composing
+  it instead is refused above, because failing on a subject the caller cannot see reports that the
+  subject exists. What needs deciding is the wording and where it sits, not which way it goes.
 - Define the concrete sempods mode and principal-set vocabulary IRIs.
 - Decide whether a pod may declare an ordinary context a principal-set authority at all. Refusing it
   keeps the topological guarantee whole and costs the personal case its best feature — an audience
