@@ -31,7 +31,7 @@ that question comes up:
 |---|---|
 | [`50-delegation.md`](50-delegation.md) | why an application is not the person acting through it, and where the ceiling leaks |
 | [`60-creator.md`](60-creator.md) | why `acp:CreatorAgent` cannot match here, and what is done instead |
-| [`70-resharing.md`](70-resharing.md) | an open design question: may a reader pass access on, and what a sweep would cost |
+| [`70-resharing.md`](70-resharing.md) | the refused alternative: what letting a reader pass access on would have cost, which is why sharing needs `manage` |
 
 **They are fixtures, not prose about the contract.** A friendlier second description of a
 specification is the copy that goes wrong and is believed anyway, which is why this repository

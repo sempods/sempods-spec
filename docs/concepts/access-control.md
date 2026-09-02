@@ -330,6 +330,42 @@ unknown target and an inaccessible target indistinguishable to a caller outside 
 is the open half of [`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018), and the shape it needs is
 the one [`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020) already uses for deletion.
 
+## Who may share, and why there is no chain (SOLL)
+
+Passing access to another person requires `manage` on the context. Reading it is not enough, and the
+difference is the whole design: a reader who may pass on what they can already see turns every grant
+into the root of a tree somebody has to keep.
+
+Every holder of `manage` on a context is a peer of every other. There is no first among them and no
+order of precedence — a person granted `manage` yesterday may remove the grants of the person who
+granted it, and either may remove anybody else's. What makes that safe rather than reckless is a
+floor the pod supplies and nobody can edit: the owner holds every mode on every context implicitly,
+and [`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011) forbids requiring those grants to be
+stored, so there is no row for a peer to delete. A peer set cannot empty itself out from under the
+pod.
+
+**And that is what removes the chain.** A share is always issued directly by somebody holding
+`manage` at the moment they issue it, so there is no derived access to trace and no provenance to
+keep: deciding whether a grant may be removed never requires knowing who wrote it. What a peer does
+on revocation is recompute the remaining authority — the instruction
+[`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016) already gives for delegations, and not one
+step deeper.
+
+The alternative was reading being enough, and its cost is measured rather than asserted.
+[`examples/70-resharing.md`](../../examples/70-resharing.md) shows two states that compile to the
+same access control resource — a defect and a correct outcome, told apart by nothing in the graph —
+because what separates them is who issued which grant, and a policy has no room for that. Provenance
+kept beside the access control resource is the price, and a resource whose policy no longer explains
+itself is what it buys.
+
+Because `manage` is slash-delimited ([`SPS-GRANT-007`](../../spec/core/grants.md#SPS-GRANT-007)),
+this is a tree of peer sets rather than one: a peer on `projects` is a peer on `projects/alpha`, and
+a peer on `projects/alpha` is not a peer anywhere above it.
+
+What none of this decides is whether a pod offers a sharing surface at all. **None is specified.** No
+route writes a grant for a person, and the model above is the shape such a route would need rather
+than one that exists — which is what makes leaving it out a decision instead of an omission.
+
 ## What becomes smaller (SOLL)
 
 The target state removes parallel authorization concepts rather than merely renaming them:

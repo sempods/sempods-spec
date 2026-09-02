@@ -2,21 +2,24 @@
 
 Alice shares a plan with Bob. Bob shares it on with Carla. Then Alice withdraws Bob's access.
 
-What happens to Carla is a design question this specification has not answered, and it is unanswered
-more completely than it looks. **There is no interpersonal sharing operation in the specification at
-all.** Grants for a person are durable stored policy
+What happens to Carla turned on a rule that was not obvious, and this file is the measurement that
+decided it. **There is no interpersonal sharing operation in the specification at all.** Grants for a
+person are durable stored policy
 ([`SPS-GRANT-012`](../spec/core/grants.md#SPS-GRANT-012)) and no requirement says who may write one;
 what the chapters do define is delegation to an *application*, where holding a grant is enough to
 pass a subset of it on ([`SPS-GRANT-030`](../spec/core/grants.md#SPS-GRANT-030)). Sharing a context
-is not that, and neither is `manage`, which governs creating and deleting contexts
-([`SPS-CTX-019`](../spec/core/contexts.md#SPS-CTX-019)) rather than granting access to them.
+is not that, and neither is `manage` as the chapters use it, which governs creating and deleting
+contexts ([`SPS-CTX-019`](../spec/core/contexts.md#SPS-CTX-019)).
 
-So the question is not whether to relax an existing rule. It is which rule to write: whether reading
-should be enough — every reader may pass on what they can already see — with revocation sweeping the
-shares made under an access that is now gone.
+So the question was never whether to relax an existing rule. It was which rule to write, and there
+were two candidates: **reading is enough**, where every reader may pass on what they can already see
+and revocation sweeps the shares made under an access that is now gone — or **`manage` is required**,
+which is the answer the concept now carries
+([`../docs/concepts/access-control.md`](../docs/concepts/access-control.md) §"Who may share, and why
+there is no chain").
 
-**This scenario works the question rather than the answer.** The graphs are ordinary ACP either way;
-what changes between them is which policies exist, which is exactly what the design decides.
+**This scenario works the branch that was refused.** The graphs are ordinary ACP either way; what
+changes between them is which policies exist, which is exactly what the design decides.
 
 ## How three moments fit in a file
 
@@ -183,7 +186,7 @@ to *what a person passed on* is the same instruction with a longer chain to walk
 [] acp:grant acl:Read .
 ```
 
-## The point of the file
+## What the file measures
 
 That last state is **two different stories with one policy**, and nothing in the graph tells them
 apart:
@@ -213,3 +216,15 @@ then it may issue grants — which is precisely the spread the delegation ceilin
 Saying otherwise means separating *Bob acting* from *Bob's application acting* for this one
 operation. The pair makes that expressible; what it does not do is decide it, and left undecided it
 falls the application's way.
+
+
+## What was decided
+
+`manage`, not reading. A share is issued directly by somebody who holds it, every holder is a peer of
+every other, and any of them may remove what another granted — so none of the above is reachable:
+there is no chain to walk, no provenance to keep beside the access control resource, and no blast
+radius travelling further than the person who acted.
+
+The three states stay in this file as they are. What they measure is the price of the branch nobody
+took, and a refused alternative is worth more with its cost attached than as a sentence saying it was
+refused.
