@@ -352,6 +352,10 @@ def scan(text: str) -> tuple[list[str], str]:
     for number, line in enumerate(lines):
         was_closed_block, closed_block = closed_block, False
         opener = FENCE_LINE.match(line)
+        # A backtick fence's info string cannot contain a backtick: such a line is paragraph text,
+        # and opening a fence on it would report the real fixture below as literal content.
+        if opener and opener.group(1)[0] == "`" and "`" in opener.group(2):
+            opener = None
         turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
 
         if comment:
@@ -1061,7 +1065,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # defines nothing. Recording it would let an inert line mask the real definition below.
     lines = prose.split("\n")
     startable = "\n".join(
-        line if not previous.strip() or PARAGRAPH_BREAK.match(previous)
+        line if not previous.strip() or PARAGRAPH_BREAK.match(previous) or SETEXT.match(previous)
         or DEFINITION_HEAD.match(previous) or REFERENCE_DEFINITION.match(previous) else ""
         for previous, line in zip([""] + lines, lines)
     )
@@ -1980,6 +1984,11 @@ BROKEN = [
       "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<pre></pre>\n<my-widget>\n"
       "```turtle grant\n# nothing\n```"),
      "inside a raw HTML block"),
+    ("a definition straight under a Setext heading",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\nSources\n===\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
+      "```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
