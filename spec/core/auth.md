@@ -140,11 +140,20 @@ attribute it to.
 
 <a id="SPS-AUTH-018"></a>
 **`SPS-AUTH-018`** — A redirect URI MUST be absolute, MUST NOT carry a fragment, MUST use `https`
-on any host, MAY use `http` only on a loopback address, and MUST NOT carry `code`, `response` or
-`state` as a query parameter.
+on any host, and MAY use `http` only on a loopback address.
 
-RFC 6749 §3.1.2 permits a query component, and the first four clauses profile it unchanged. The
-last one is this specification's deviation, and it has the same reason as the fragment: those three
+Absolute and fragment-free are RFC 6749 §3.1.2 unchanged. The scheme half is not: §3.1.2.1 only
+says the redirection endpoint `SHOULD` require TLS, and this requirement raises that to a `MUST` with
+OAuth 2.1, then re-opens plain `http` for the loopback case RFC 8252 §7.3 describes. A reader
+distinguishing inherited behaviour from this specification's own should read the first two clauses
+as the profile and the last two as the deviation.
+
+<a id="SPS-AUTH-056"></a>
+**`SPS-AUTH-056`** — A redirect URI MUST NOT carry `code`, `response` or `state` as a query
+parameter.
+
+RFC 6749 §3.1.2 permits a query component, and `SPS-AUTH-055` requires an implementation to
+preserve it. This is where that permission stops, and the reason is the fragment's: those three
 names belong to the authorization response. An implementation that builds a response either
 overwrites what the address already carried — breaking the client that registered it — or leaves it
 in place, and then hands that client a value it cannot distinguish from the one the server chose.
@@ -156,8 +165,8 @@ parser rather than of this protocol, and that is the situation the prohibition r
 `error` and `error_description` are deliberately not prohibited. A client that registers them can
 only confuse itself, and no other client's response is reachable through them.
 
-<a id="SPS-AUTH-056"></a>
-**`SPS-AUTH-056`** — A query parameter counts as one of `SPS-AUTH-018`'s prohibited names when its
+<a id="SPS-AUTH-057"></a>
+**`SPS-AUTH-057`** — A query parameter counts as one of `SPS-AUTH-056`'s prohibited names when its
 name, percent-decoded and matched case-sensitively, equals that name — whether or not the parameter
 carries a value.
 
@@ -168,9 +177,9 @@ Decoding is per parameter name rather than over the whole query — decoding the
 split a value such as `?next=a%26state%3Dx` into a parameter that was never there.
 
 <a id="SPS-AUTH-019"></a>
-**`SPS-AUTH-019`** — An implementation MUST apply `SPS-AUTH-018` at registration as well as at
-authorization, so that an address a login could never honour is refused when it is first offered
-rather than at first use.
+**`SPS-AUTH-019`** — An implementation MUST apply `SPS-AUTH-018` and `SPS-AUTH-056` at registration
+as well as at authorization, so that an address a login could never honour is refused when it is
+first offered rather than at first use.
 
 <a id="SPS-AUTH-020"></a>
 **`SPS-AUTH-020`** — A loopback redirect URI MUST be matched with its port ignored (RFC 8252 §7.3).
@@ -216,7 +225,7 @@ ordinary redirect URI. Appending `?code=…` to it produces a second `?`, which 
 authorization response inside the value of `tenant` and loses the code.
 
 Preserving a component the client chose is safe only because
-[`SPS-AUTH-018`](#SPS-AUTH-018) keeps the response's own names out of it. Without that
+[`SPS-AUTH-056`](#SPS-AUTH-056) keeps the response's own names out of it. Without that
 prohibition this requirement is what makes a registered `code` reach the client alongside the
 issued one.
 
