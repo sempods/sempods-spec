@@ -151,6 +151,11 @@ The specification:
   the chapter tables. Six core chapters and three modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
+- [`examples/README.md`](examples/README.md) — worked access-control scenarios, and the evidence that
+  the reference implementation's design can express the behaviour the concept describes. Fixtures
+  rather than prose: each is run through ACP's own resolution algorithm by
+  `.github/scripts/check-examples.py`, so one that stops being true fails rather than misleads. A
+  green run says nothing about what a conformant pod must do
 
 The rendered site — [`site/`](site/):
 
@@ -178,8 +183,18 @@ Agent instructions — [`docs/agents/`](docs/agents/):
 
 Concepts and roadmaps:
 
+- [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
+  belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
+  proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
+  in an implementation
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
-  specification repository than in an implementation, and the template. None exist yet
+  specification repository than in an implementation, and the template
+- [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
+  access is decided, as behaviour: every pod decides on contexts, a pod whose audiences are smaller
+  than a context declares a second decision, and both must allow. What is decided, never how
+- [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
+  reference implementation's own design, kept here while the specification is descriptive and moved
+  out at `0.1`. SOLL for that implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, the second copy in the
@@ -207,15 +222,21 @@ here rather than copied.
 
 ## Before you commit
 
-1. All three checks pass. CI runs them; locally:
+1. All four checks pass. CI runs them; locally:
 
    ```bash
    lychee --offline --include-fragments --no-progress --exclude-path site .
    .github/scripts/check-requirements.py origin/main
+   .github/scripts/check-examples.py --self-test
+   .github/scripts/check-examples.py
    python3 site/build.py
    ```
 
-   The third one is the full render, not `--check`. `site/index.md` is the one published page
+   `--self-test` first, and CI runs it the same way round. The scenarios say the fixtures are right;
+   the self-test says the runner would still notice if they were not, which is the half that a change
+   to the runner can break while everything stays green.
+
+   The last one is the full render, not `--check`. `site/index.md` is the one published page
    written by hand, its links are written against the staged layout, and lychee is told to skip
    that directory for exactly that reason — so the strict build is the only thing here that
    reads them. `--check` returns before staging and would not.
@@ -248,11 +269,12 @@ and not before — a build file that exists to run nothing is a dependency to ma
 `site/` is the exception and stays one: it renders the published site and has a locked dependency
 tree of its own. Nothing under `spec/` depends on it, and the specification is complete without it.
 
-Three checks, all in CI and all runnable by hand:
+Four checks, all in CI and all runnable by hand:
 
 ```bash
 lychee --offline --include-fragments --no-progress --exclude-path site .   # links, and requirement anchors
 .github/scripts/check-requirements.py origin/main      # the identifier promises
+.github/scripts/check-examples.py                      # the worked scenarios, against ACP itself
 python3 site/build.py                                  # the site's inputs, then a strict render
 ```
 

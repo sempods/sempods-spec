@@ -24,10 +24,17 @@ requirement.
 
 ## Here today
 
-None. The permanent reasoning that exists so far lives in the documents that own it:
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and the descriptive-to-prescriptive
-switch, [`../../spec/README.md`](../../spec/README.md) for the core/module split, and
-[`../agents/spec-authoring.md`](../agents/spec-authoring.md) for the requirement scheme. A concept
+- [`access-control.md`](access-control.md) — at what granularity access is decided, and why
+  [`contexts`](../../spec/core/contexts.md) and [`grants`](../../spec/core/grants.md) answer that
+  question differently from [`lod-crud`](../../spec/core/lod-crud.md). The target keeps the context as
+  the deciding unit and adds a declared second decision where audiences are smaller than one. It says
+  what is decided and never how — the reference implementation's own answer is in
+  [`../reference-implementation/`](../reference-implementation/README.md).
+
+Reasoning that belongs to another document is not repeated here:
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and the descriptive-to-prescriptive
+switch, [`../../spec/README.md`](../../spec/README.md) the core/module split, and
+[`../agents/spec-authoring.md`](../agents/spec-authoring.md) the requirement scheme. A concept
 is written for the first chapter whose content needs one, not in advance.
 
 ## Template

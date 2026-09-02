@@ -1,0 +1,160 @@
+# Worked examples
+
+Scenarios that show what the access-control model does, in cases rather than in argument — and, at
+the same time, the evidence for a claim the specification deliberately does not make.
+
+The contract says what a pod decides, never how ([`docs/vision.md`](../docs/vision.md)). The
+behaviour is in [`docs/concepts/access-control.md`](../docs/concepts/access-control.md). These files
+are where the reference implementation's answer to *how* — one small profile of ACP, in
+[`docs/reference-implementation/acp-profile.md`](../docs/reference-implementation/acp-profile.md) —
+is put to an engine that has never heard of sempods, to see whether it holds. A green run says the
+model is expressible in ACP. It says nothing about what a conformant pod must do, and it is not
+meant to.
+
+**Read the first three in order.** They are the model, and each adds exactly one thing to the one
+before:
+
+| | |
+|---|---|
+| [`10-one-context.md`](10-one-context.md) | a pod with one place to put things — the whole model at its smallest |
+| [`20-several-contexts.md`](20-several-contexts.md) | areas to choose between, one of them public. The shape most pods have |
+| [`30-spaces-and-documents.md`](30-spaces-and-documents.md) | a space whose documents are not all for the same readers, so a second decision narrows inside it |
+| [`35-subject-is-a-context.md`](35-subject-is-a-context.md) | a statement whose subject is the context holding it, so one IRI carries two decisions and the lookup key has to be a pair |
+| [`55-service-token.md`](55-service-token.md) | a client with no person behind it, whose registered grants stand where a context decision stands for everybody else |
+| [`40-groups-and-shared-policy.md`](40-groups-and-shared-policy.md) | the same shape at enterprise scale: an audience that is a group, one policy governing several resources, and the one place sempods adds a matcher ACP does not have |
+| [`45-audiences-from-pod-data.md`](45-audiences-from-pod-data.md) | the same wish on a personal pod — "everyone tagged Family" — and why the answer there is the mechanism the enterprise case cannot use |
+
+The rest answer a question somebody asked rather than showing the model, and are worth reading when
+that question comes up:
+
+| | |
+|---|---|
+| [`50-delegation.md`](50-delegation.md) | why an application is not the person acting through it, and where the ceiling leaks |
+| [`60-creator.md`](60-creator.md) | why `acp:CreatorAgent` cannot match here, and what is done instead |
+| [`70-resharing.md`](70-resharing.md) | the refused alternative: what letting a reader pass access on would have cost, which is why sharing needs `manage` |
+
+**They are fixtures, not prose about the contract.** A friendlier second description of a
+specification is the copy that goes wrong and is believed anyway, which is why this repository
+refuses one everywhere else. These are exempt because they are executable: every scenario is run
+through ACP's own resolution algorithm, and one that stops being true fails the build.
+
+```bash
+.github/scripts/check-examples.py
+```
+
+## What a scenario looks like
+
+Markdown, with fenced `turtle` blocks carrying a kind in the info string:
+
+| Block | Holds |
+|---|---|
+| `acr` | an authorization graph — one per resource it controls, several per file where a scenario turns on a contrast |
+| `context` | one attempted access, as the server would describe it |
+| `grant` | the access modes that attempt must be granted |
+| `acr-context`, `acr-resource`, `acr-delegation` | the same block, qualified. `acr-delegation` is the ceiling — how much of a person's authority an application received — and is named rather than inferred, because its target is the principal and an ordinary resource decision can be about the requester's own WebID too. Policy is keyed by the pair — which decision, and which IRI — because a subject IRI and a context IRI can be the same string with two separate decisions on it. Plain `acr` is the unqualified form, for the files where only one decision is in play. A `context` block naming an IRI that carries both is the subject-equals-context case and puts the request to each; naming it as one half of a larger `decision` is refused, because a half means one of the two and cannot say which |
+| `policy` | one policy artifact several `acr` blocks reference. Merged into every `acr` in the file, so a scenario claiming two resources share a policy demonstrates it rather than writing two copies that agree |
+| `decision` | one request put to several `acr` blocks at once. It composes the decisions that **narrow** and then adds the public branch, which is the formula the concept states: a ceiling bounds what a person was delegated, and public authority comes from nobody'"'"'s grant, so a request carrying a token is never given less than an anonymous one would get. Each half is resolved by the plain ACP engine; the modes below are what **both** allow, which is sempods' composition applied to the answers rather than inside the engine |
+| `registered` | a service client'"'"'s grants, fixed when it was registered. The request says it is one, with `runner#serviceToken`: [`SPS-AUTH-017`](../spec/core/auth.md#SPS-AUTH-017) asks both that the subject be the client *and* that the token be marked, so a request that merely looks like one is not answered like one. Not policy — no access control resource carries them — and they take the place of both the ceiling and the context decision, so a request whose subject *is* its client is answered from them |
+| `holds` | which context a subject'"'"'s statements are in, stated because nothing derives it — subject and context are independent by [`SPS-CRUD-011`](../spec/core/lod-crud.md#SPS-CRUD-011). A composed `decision` needs it: without it the context half could be any context at all, and a fixture could certify a read that never met the sandbox |
+| `aside` | Turtle a scenario shows without the runner evaluating it — an identity authority's membership facts, for instance, which are not ACP. Parsed, so a malformed one still fails; it takes no part in a case |
+
+Two rules about the files themselves, which is why this runner is a runner and not a Markdown
+parser. **A fixture fence starts at column zero, with exactly three backticks, outside any block
+quote, list or other fence, and an examples file holds no HTML comment.** What renders is then what
+runs, and the alternative — deciding from CommonMark'"'"'s containers and HTML blocks whether a fence
+is real — cost more code than the ACP engine and rejected three correct files while it lasted.
+**And a requirement is cited as an inline link**, `[SPS-…](chapter#SPS-…)`: a reference-style link
+needs the same block structure to resolve, and no file here uses one.
+
+A `context` or `decision` pairs with the next `grant` below it. A composed `decision` carries the
+dimensions the model has: exactly one context decision, and at most one resource decision and one
+ceiling — so files with `decision` blocks qualify every `acr`, and plain `acr` stays for the files
+where one decision is in play. Its `acp:target` selects the `acr` whose
+`acp:resource` matches. A `grant` block containing only a comment means nothing is granted, which is
+an ordinary outcome and the answer several scenarios turn on.
+
+`acp:` and `acl:` prefixes are supplied by the runner, so a scenario does not open with lines a
+reader already knows. Each block is parsed under a base of its own, so `<#owner>` in one block never
+collides with `<#owner>` in another.
+
+## Where these live
+
+No scenario says where its access control resource is stored, and that is deliberate twice over:
+the address is an implementation's own business, and so is having an access control resource at all.
+The boundary around it is not — a pod that keeps authorization state anywhere a caller can write has
+a problem whatever shape that state has.
+
+An access control resource is **not data**. It is not a context, does not appear in context
+discovery, cannot be selected with `?context=`, and is unreachable through LOD CRUD or SPARQL — which
+is what stops a caller writing a triple that looks like a policy and having it read back as one. A
+client reaches it through the `Link` header ACP requires of a controlled resource, and never by
+constructing a path, the same way it never constructs a context IRI
+([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)).
+
+Which raises a question worth answering here rather than leaving to be discovered: a subject outside
+the pod namespace has no LOD address at all
+([`SPS-CRUD-003`](../spec/core/lod-crud.md#SPS-CRUD-003)), so there is no response on the target to
+carry that header. The system layer is the route that exists for those IRIs, so it is the response
+that carries the link — the client still follows one from an answer it already has, which is the
+property that matters, rather than composing an address of its own.
+
+The structural half — that policy is indexed by the target it controls rather than by the context
+that happens to hold that target's statements — is in
+[`docs/reference-implementation/acp-profile.md`](../docs/reference-implementation/acp-profile.md)
+§"Policy location and control plane", with the three reasons it has that shape.
+
+## Why the runner is a plain ACP engine
+
+`check-examples.py` transcribes the pseudocode of ACP §6.1 through §6.5 and knows nothing about
+sempods. That is the whole point. The reference implementation's design claims its access control
+resources are *pure* ACP — that an independent engine, given one of them and a context graph,
+produces the same access grant graph. A runner that shared sempods' reading of the vocabulary could
+not test that claim; this one can, and every green run is evidence for it.
+
+It is worth being clear about what that evidence is *for*. It does not make ACP part of the contract,
+and a pod that produces the same answers by rewriting queries is exactly as conformant. What it
+buys is confidence in a design decision: that one small vocabulary can carry every deployment the
+reference implementation has to serve, including the ones where it cannot — which the scenarios show
+as plainly as the ones where it can.
+
+Two consequences are worth expecting rather than being surprised by.
+
+**Mode implications must be written out.** `manage` implies `write` implies `read`
+([`SPS-GRANT-009`](../spec/core/grants.md#SPS-GRANT-009)), and ACP has no such rule — so a policy
+that states only `acl:Control` grants only `acl:Control` here. The implication belongs in the policy
+when it is written, not in the engine when it runs.
+
+**An attribute ACP does not define leaves its matcher unsatisfied.** A matcher carrying only a
+sempods principal set has none of ACP's four attributes, and ACP's rule is that such a matcher is
+never satisfied. The runner reports it as a note and the scenario's expectation has to reflect it.
+That is not a defect to work around — it is the portability boundary, and a scenario is the honest
+place to see it.
+
+## Adding one
+
+Keep the story first and short: who wants what, and why the answer is what it is. Cite a requirement
+where it explains something, not as a footnote on every clause — the runner checks that every
+`SPS-…` a scenario names is one a chapter actually defines.
+
+Prefer several small cases over one large one. Two cases that end in "nothing" for different reasons
+teach more than one that ends in a long list.
+
+## Dependency
+
+The runner needs [rdflib](https://rdflib.readthedocs.io/) to parse Turtle:
+
+```bash
+python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2
+```
+
+Both names, because pinning only the first leaves the parser stack resolving fresh on every machine
+and a contributor can then be running a different one from CI. CI installs the same pinned version
+and runs the scenarios on every pull request
+([`.github/workflows/examples.yml`](../.github/workflows/examples.yml)). The pin is tighter than the
+`pyyaml` the OpenAPI job installs because this dependency decides whether a scenario is *correct*:
+a change in Turtle parsing would move results quietly rather than break loudly.
+
+It is the specification's first RDF dependency outside `site/`, and it lives in the workflow step
+rather than in a requirements file so that `site/` stays this repository's only dependency tree.
+Hand-parsing the subset of Turtle these scenarios use was the alternative and was rejected: a
+checker with a parser bug is worse than no checker, because it is believed.
