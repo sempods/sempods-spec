@@ -48,7 +48,9 @@ tags:
   - name: conformance
     description: What this implementation provides.
   - name: contexts
-    description: The permission boundary — creation, deletion, discovery.
+    description: |
+      The permission boundary — discovery, and what a context IRI may be. Creating and deleting
+      them is the context-management module, in its own description.
   - name: resources
     description: RDF CRUD, at the resource's own IRI and at its operations address.
   - name: slots
@@ -125,43 +127,6 @@ paths:
               schema: { $ref: '#/components/schemas/Context' }
         '404':
           $ref: '#/components/responses/NotFoundOrNotVisible'
-    put:
-      tags: [contexts]
-      operationId: putContext
-      summary: Create a context, idempotently.
-      x-sps-requirements: [SPS-CTX-005, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019]
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ContextCreate' }
-      responses:
-        '200':
-          description: The context already existed and was not altered.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Context' }
-        '201':
-          description: Created.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Context' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    delete:
-      tags: [contexts]
-      operationId: deleteContext
-      summary: Remove a context and the state that rested on it.
-      description: |
-        Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
-        **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
-        before existence, so a caller outside their sandbox gets `403` rather than a `404` that
-        would confirm the context exists.
-      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020]
-      responses:
-        '204': { description: Removed. }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
 
   /{resourcePath}:
     description: |
@@ -612,13 +577,22 @@ paths:
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
         - { name: prompt, in: query, required: false, schema: { type: string } }
-      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044]
+      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044]
       responses:
         '302':
           description: Redirect carrying `code` and `state`, or `error` and `error_description`.
           headers:
             Location: { schema: { type: string, format: uri } }
         '200': { description: The consent screen. }
+        '400':
+          description: |
+            Served directly rather than redirected, because `redirect_uri` is the parameter that
+            failed: absent, not a usable address (`SPS-AUTH-018`, `SPS-AUTH-056`), or not one this
+            `client_id` may be answered at. RFC 6749 §4.1.2.1 forbids sending an error to an
+            address that did not validate, so there is no `Location` to carry it.
+          content:
+            text/plain:
+              schema: { type: string }
 
   /_system/auth/token:
     post:
@@ -661,7 +635,7 @@ paths:
         so PKCE is required of it, and it always sees the consent screen. Re-registering with the
         same stable metadata returns the existing identifier rather than minting a new one.
       security: [{}]
-      x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-019, SPS-AUTH-020]
+      x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-019, SPS-AUTH-020]
       requestBody:
         required: true
         content:
@@ -970,13 +944,6 @@ components:
           type: array
           items: { type: string, enum: [read, write, manage] }
           description: Collapsed — `write` and `manage` imply `read`.
-
-    ContextCreate:
-      type: object
-      properties:
-        label: { type: string }
-        description: { type: string }
-        public: { type: boolean }
 
     CanonicalResource:
       type: object

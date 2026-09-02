@@ -11,10 +11,12 @@ The target model keeps the context as the deciding unit and adds the finer one w
 needs it. **Every pod decides on contexts. A pod that needs audiences smaller than a context declares
 a second decision, and both must allow.**
 
-What becomes optional is not the context. Every statement belongs to exactly one, always. What a pod
-may leave out is the **management of several** — the lifecycle — and a pod that leaves it out has one
-canonical context, carrying policy like any other, with nothing for a client to choose between. The
-catalogue is not on that list: it is where a client reads the name a write has to carry.
+What becomes optional is not the context, and not how many of them a pod has. Every statement
+belongs to exactly one, always. What a pod may leave out is the **lifecycle** — creating and deleting
+contexts through this interface — and a pod that leaves it out is provisioned with the contexts it
+needs, which may be several. The catalogue is not on that list, and neither is the read downscope or
+the explicit write target: a client of any pod discovers its contexts, names one on every write, and
+selects between them.
 
 A write still names it. Invariant 4 forbids an implicit fallback context, and having only one
 candidate is exactly the situation where a fallback is tempting and where it costs nothing to refuse:
@@ -70,7 +72,7 @@ out, carrying its own permission boundary. That is what
 context, not a summary of everything within it, which is why finer policy inside an area does not
 contradict it, any more than a readable folder is contradicted by a file it hides. The reading has two
 limits, and both are deliberate rules rather than oversights: deleting an area leaves the areas
-beneath it standing ([`SPS-CTX-018`](../../spec/core/contexts.md#SPS-CTX-018)), and a resource does not
+beneath it standing ([`SPS-CTX-018`](../../spec/modules/context-management.md#SPS-CTX-018)), and a resource does not
 live *in* one — a subject may hold statements in several areas at once, and a read returns the union
 of those the caller may see.
 
@@ -86,7 +88,8 @@ Read as one access-control model, the current chapters say:
   ([`SPS-GRANT-009`](../../spec/core/grants.md#SPS-GRANT-009));
 - the owner's authority is implicit and unstored
   ([`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011));
-- silence is private ([`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027)); and,
+- silence is private ([`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030), which
+  [`SPS-CTX-027`](../../spec/modules/context-management.md#SPS-CTX-027) applies to a creation request); and,
 - OAuth delegation is a ceiling: an application receives no more than the authorizing person holds
   ([`SPS-GRANT-013`](../../spec/core/grants.md#SPS-GRANT-013)).
 
@@ -128,13 +131,14 @@ the context holds, and a pod that never hears of anything below it is complete.
 
 Two things vary around that, and they are independent of each other.
 
-**The management of several contexts.** A pod that provides it exposes the lifecycle and the read
-downscope the chapters specify today. The catalogue and the explicit write target are not on that
-list: a write names its context either way, and the route a client reads that name from is needed
-most where there is only one. A pod that does not has
-one canonical context — carrying policy exactly like any other, so sharing is still a policy on a
-context — and nothing for a client to select between. Every statement still belongs to exactly one
-context either way; what is absent is the choosing, not the context.
+**Creating and deleting contexts.** A pod that provides it exposes the lifecycle — `PUT` and
+`DELETE` — and the rules its route enforces at creation. Nothing else is on that list, and the
+boundary is narrower than it first looks: the catalogue, the explicit write target and the read
+downscope are all core, so a pod without the module still discovers its contexts, still names one on
+every write, and still selects between them. It may hold several; core requires at least one and
+sets no ceiling. What it cannot do is make or remove them through this interface — they arrive at
+deployment. Every statement belongs to exactly one context either way; what is absent is the
+lifecycle, not the choosing.
 
 **A second decision on a finer target.** Where audiences are smaller than a context — a space whose
 documents are not all for the same readers — a pod declares the finer decision, and it is made
@@ -287,7 +291,7 @@ statement view ([`SPS-SPARQL-008`](../../spec/core/sparql.md#SPS-SPARQL-008)).
 
 Creation keeps the rule the chapters already carry: its authority comes from the destination, so
 creating a resource needs `write` on the target context and creating a context needs `manage`
-covering it ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019),
+covering it ([`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019),
 [`SPS-GRANT-033`](../../spec/core/grants.md#SPS-GRANT-033)). Where the resource module is not
 declared that is the whole operation, because a new resource is covered by its context's policy from
 the moment it exists. Where it is, context `write` still says who may *begin* the creation, and
@@ -295,9 +299,9 @@ finishing it also installs the resource policy described below — one operation
 born unreachable or reachable when it should not be.
 
 **Deleting a context is the operation the composition rule does not yet reach.** It removes every
-statement the context holds ([`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017)) and is
+statement the context holds ([`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017)) and is
 authorized from the context grant alone
-([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019)), so with the resource module declared a
+([`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019)), so with the resource module declared a
 caller holding `manage` on a context destroys statements about subjects whose resource policies
 refuse them `write` — the one route where the second decision is skipped rather than applied. The
 rule above covers mutations of an existing resource; a bulk lifecycle operation is not one of those
@@ -328,7 +332,7 @@ Authorization is checked before target existence wherever different responses wo
 topology. A policy model does not close an enumeration oracle by itself: the HTTP contract still has to make an
 unknown target and an inaccessible target indistinguishable to a caller outside its authority. That
 is the open half of [`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018), and the shape it needs is
-the one [`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020) already uses for deletion.
+the one [`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020) already uses for deletion.
 
 ## Who may share, and why there is no chain (SOLL)
 
@@ -379,8 +383,8 @@ The target state removes parallel authorization concepts rather than merely rena
   mechanisms;
 - context policy and resource policy are one vocabulary and one algorithm differing only in what
   the decision binds to, so a tool that reads one reads the other; and,
-- a pod that manages one context has no context management surface, without the context ceasing to
-  exist.
+- a pod that never creates or deletes a context has no context management surface, without the
+  contexts ceasing to exist or being reduced to one.
 
 The remaining complexity is visible where it belongs: a deployment whose audiences are smaller than
 its contexts opts into a second decision, and every other deployment never meets it.
@@ -394,16 +398,16 @@ debated and that rule cannot be applied to a proposal which does not name what i
 
 | In force today | What the target state does to it |
 |---|---|
-| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | A pod that does not manage several has one, canonical and carrying policy. The invariant it serves — every statement in exactly one context — survives untouched |
+| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001) — there is no default context | A pod without the lifecycle module still has contexts — one at least, and as many as it was provisioned with — each carrying policy like any other. The invariant this serves, every statement in exactly one context, survives untouched |
 | Invariant 4 and [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007) — a write names its target context explicitly | Untouched. A pod with one context has no choice to offer and still takes the name, because an implicit fallback is what the invariant forbids and one candidate is where it would appear |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025) — no implicit or default write context | The same, seen from the grants chapter |
 | [`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) — no permission abstraction above or beside the context | Has to permit a **narrowing** layer below one. The rule was written against a second concept competing with the context; a decision that can only subtract from it is not that |
-| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *management* of several contexts does, and the set is larger than the two obvious entries: the management route ([`SPS-CTX-005`](../../spec/core/contexts.md#SPS-CTX-005)) and creation ([`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015)) carry with them freely chosen names ([`SPS-CTX-009`](../../spec/core/contexts.md#SPS-CTX-009)), idempotent creation ([`SPS-CTX-016`](../../spec/core/contexts.md#SPS-CTX-016)), deletion and its cascade boundary ([`SPS-CTX-017`](../../spec/core/contexts.md#SPS-CTX-017), [`SPS-CTX-018`](../../spec/core/contexts.md#SPS-CTX-018)), and the lifecycle authorization and its non-enumeration rule ([`SPS-CTX-019`](../../spec/core/contexts.md#SPS-CTX-019), [`SPS-CTX-020`](../../spec/core/contexts.md#SPS-CTX-020)). Each of those is a `MUST` about an operation a pod with no management surface does not offer, so a sweep naming only the first two would leave core requiring what the declaration removed. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
+| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004) — every `MUST` in `contexts` is core, with no partial core | Adding the resource module does not touch it. Letting a pod omit the *lifecycle* did, and **that sweep has since run** — the requirements below now stand in [`modules/context-management.md`](../../spec/modules/context-management.md), keeping their identifiers. It is recorded here because the set was larger than the two obvious entries: the management route ([`SPS-CTX-005`](../../spec/modules/context-management.md#SPS-CTX-005)) and creation ([`SPS-CTX-015`](../../spec/modules/context-management.md#SPS-CTX-015)) carry with them freely chosen names ([`SPS-CTX-009`](../../spec/modules/context-management.md#SPS-CTX-009)), idempotent creation ([`SPS-CTX-016`](../../spec/modules/context-management.md#SPS-CTX-016)), deletion and its cascade boundary ([`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017), [`SPS-CTX-018`](../../spec/modules/context-management.md#SPS-CTX-018)), and the lifecycle authorization and its non-enumeration rule ([`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019), [`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020)). Each of those is a `MUST` about an operation a pod with no management surface does not offer, so a sweep naming only the first two would leave core requiring what the declaration removed. Discovery ([`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)) stays where it is: a write names its context and a client may not construct that IRI, so the route it reads the name from is needed most in the pod with the fewest contexts |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020) — `GET` returns every statement whose subject is the resource IRI and is visible in the selected contexts | Right for the base decision and too generous once a second one denies individual statements. Only a pod declaring the resource module needs it restated over the authorized statement view — the same move `SPARQL` makes, and it has to move with it or the two chapters describe different results |
-| [`SPS-CTX-015`](../../spec/core/contexts.md#SPS-CTX-015) and [`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027) — creation may carry a `public` flag, and its absence creates a private context | Both survive. What the target removes is the **second resolution path**, not the field: `public: true` becomes a request to install a public-agent policy, and `SPS-CTX-027`'"'"'s private default becomes the absence of one, which is the same answer arrived at by the ordinary route. A sweep that withdrew the field would break a creation contract for no gain; one that left it as a flag the evaluator reads would keep the branch the target exists to remove |
+| [`SPS-CTX-015`](../../spec/modules/context-management.md#SPS-CTX-015) and [`SPS-CTX-027`](../../spec/modules/context-management.md#SPS-CTX-027) — creation may carry a `public` flag, and its absence creates a private context | Both survive. What the target removes is the **second resolution path**, not the field: `public: true` becomes a request to install a public-agent policy, and `SPS-CTX-027`'"'"'s private default becomes the absence of one, which is the same answer arrived at by the ordinary route. A sweep that withdrew the field would break a creation contract for no gain; one that left it as a flag the evaluator reads would keep the branch the target exists to remove |
 | [`SPS-MCP-008`](../../spec/modules/mcp.md#SPS-MCP-008), [`SPS-MCP-018`](../../spec/modules/mcp.md#SPS-MCP-018) and [`SPS-MCP-019`](../../spec/modules/mcp.md#SPS-MCP-019) — a bearer'"'"'s sandbox is the resolved context grants, and every tool is a projection of the HTTP surface | `SPS-MCP-018` is the one that saves the sweep work and the one that makes it unavoidable: a tool may not have an authority the HTTP surface lacks, so the tools narrow with the routes automatically — but only if `SPS-MCP-008` stops defining the sandbox from context grants alone. Left as it is, the projection rule and the sandbox rule contradict each other the moment the module is declared |
 | [`SPS-MEDIA-009`](../../spec/modules/media.md#SPS-MEDIA-009) — a media is readable exactly when its assignment set intersects the caller'"'"'s readable contexts, and no media-specific authorization is added | "Exactly when" is the part that moves. A media whose bytes are described by statements a resource decision denies is not made readable by its context assignment, and the requirement as written says it is. The rule against media-*specific* authorization stays and is the reason this is a restatement rather than a new check |
-| [`SPS-CORE-011`](../../spec/core/index.md#SPS-CORE-011) and [`SPS-CORE-012`](../../spec/core/index.md#SPS-CORE-012) — every module is announced by IRI in `modules`, and one absent from it is not provided | The resource module needs an IRI of its own and an entry there, or a client has no conforming way to learn that the second decision is being made — and `SPS-CORE-012` says probing the routes is not that way. The same holds for letting a pod omit the management of several contexts, which is a second thing a client has to be told rather than discover |
+| [`SPS-CORE-011`](../../spec/core/index.md#SPS-CORE-011) and [`SPS-CORE-012`](../../spec/core/index.md#SPS-CORE-012) — every module is announced by IRI in `modules`, and one absent from it is not provided | The resource module needs an IRI of its own and an entry there, or a client has no conforming way to learn that the second decision is being made — and `SPS-CORE-012` says probing the routes is not that way. The same holds for the lifecycle module, which is a second thing a client has to be told rather than discover — and telling it apart from a pod that simply never creates a context is exactly what the announcement is for |
 | [`SPS-CRUD-040`](../../spec/core/lod-crud.md#SPS-CRUD-040), [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-042`](../../spec/core/lod-crud.md#SPS-CRUD-042) — the resource-node, slot and edge routes offer their mutations with §4's semantics | The second decision applies to each of them **where the subject already exists**. A sweep that gated reads and left writes to the context alone would produce a pod where a caller reads less than they may write, which is not "both must allow" in either direction. Creation is the exception and has to be written as one: a `PUT` bringing a subject into being has no resource policy to consult, so it is authorized from the context and installs the initial policy in the same operation. Gating it on a decision that does not exist yet would deny every creation. **What the split needs before it can be written is a collision rule** — see the open decisions |
 | [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) and [`SPS-CORE-014`](../../spec/core/index.md#SPS-CORE-014) — the status codes, and which denial gets which | Gains a second way to be refused, and the code has to be chosen rather than inherited. The property to hold on to is the one [`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017) already states for reads: a resource that is absent, one in a context the caller cannot read, and one that does not exist answer alike. Either code can preserve it — `404` because it is already the answer for "absent or invisible", `403` only if it is also given for targets that do not exist — and either can break it if only one branch changes. This is the denial half of the sweep and belongs in it |
 | [`SPS-CRUD-041`](../../spec/core/lod-crud.md#SPS-CRUD-041) and [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) — a slot `GET` returns all values, across the readable contexts | The same restatement, and it has to be made here too rather than only on the LOD route. A conforming pod would otherwise hide a subject's statements at one address and hand them over at another, which is not a narrower answer but a different one |
@@ -493,7 +497,7 @@ The rest are ordinary open questions:
 - Decide whether `public-read` still earns a scope. Nothing about public access has to be withdrawn —
   the `public` flag, its private default and the guarantee that an unauthenticated caller reads
   exactly the public contexts all keep their subject
-  ([`SPS-CTX-027`](../../spec/core/contexts.md#SPS-CTX-027),
+  ([`SPS-CTX-027`](../../spec/modules/context-management.md#SPS-CTX-027),
   [`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031)). But once a public context carries an
   ordinary policy matched by whatever stands for "anybody", an anonymous request is already satisfied
   by the policy, and the scope
@@ -505,7 +509,7 @@ The rest are ordinary open questions:
   it instead is refused above, because failing on a subject the caller cannot see reports that the
   subject exists. What needs deciding is the wording and where it sits, not which way it goes.
 - Mint the resource module's IRI and say what its `modules` entry carries, and do the same for the
-  declaration that a pod manages several contexts. Without them a client cannot tell a pod making
+  lifecycle module. Without them a client cannot tell a pod making
   one decision from a pod making two, and `SPS-CORE-012` closes the fallback: a module absent from
   the list is not provided, and probing its routes is not discovery.
 - Write mode closure as a requirement on what a pod accepts: a decision whose modes are not

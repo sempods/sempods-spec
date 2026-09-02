@@ -16,7 +16,7 @@ and reads it back as authority.
 
 It lives in a graph of its own, beside the access control resources rather than among the data. Note
 the address: **outside** `_system/contexts/`, because everything under that path is a context IRI and
-its own management route ([`SPS-CTX-005`](../spec/core/contexts.md#SPS-CTX-005)), and a graph holding
+its own management route ([`SPS-CTX-005`](../spec/modules/context-management.md#SPS-CTX-005)), and a graph holding
 authorization facts must not be something a caller can name there.
 
 ```turtle aside

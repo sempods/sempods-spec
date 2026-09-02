@@ -54,16 +54,22 @@ part of this specification.
 `sparql` and `find`. There is no partial core.
 
 <a id="SPS-CORE-005"></a>
-**`SPS-CORE-005`** — A **module** is an optional chapter set with its own area prefix and its own
-version. An implementation that advertises a module MUST satisfy every `MUST` and `REQUIRED`
-statement in it. An implementation that does not advertise a module MAY omit it entirely.
+**`SPS-CORE-005`** — A **module** is an optional chapter set with its own version. An
+implementation that advertises a module MUST satisfy every `MUST` and `REQUIRED` statement in it. An
+implementation that does not advertise a module MAY omit it entirely.
+
+A module usually has an area prefix of its own, and `oidc`, `media` and `mcp` do. It is not what
+makes one: an area may span core and a module, and `CTX` does — contexts are core, creating and
+deleting them is not. What decides whether a requirement is mandatory is **the chapter it stands
+in**, which is what the index reports in its `part` field. Reading it from the identifier would
+work only until an area was split, and one now is.
 
 <a id="SPS-CORE-006"></a>
 **`SPS-CORE-006`** — An implementation MUST NOT advertise a module it satisfies only in part. There
 is no partial module, for the same reason there is no partial core: a client that has to probe which
 half it received has no contract.
 
-The modules defined by this specification are `oidc`, `media` and `mcp`.
+The modules defined by this specification are `context-management`, `oidc`, `media` and `mcp`.
 
 ## 3. Addressing
 
@@ -163,6 +169,7 @@ module's IRI — and a `version` string.
 {
   "specVersion": "0.1-dev",
   "modules": [
+    { "id": "https://schema.sempods.org/module/context-management", "version": "0.1-dev" },
     { "id": "https://schema.sempods.org/module/media", "version": "0.1-dev" },
     { "id": "https://schema.sempods.org/module/mcp",   "version": "0.1-dev" }
   ]
@@ -190,7 +197,7 @@ The chapters that follow use these status codes with these meanings and do not r
 | `401` | Authentication is required and was missing, or was present and rejected |
 | `403` | Authenticated, but lacking the grant or scope the operation requires |
 | `404` | The resource or context does not exist, or the caller cannot see that it does |
-| `409` | The request was well formed and authorized on arrival, and the state changed underneath it |
+| `409` | The request was well formed and authorized, and cannot be completed against the pod's current state — because that state changed underneath the request, because completing it would break an invariant this specification requires, or because the outcome would otherwise depend on state the caller may not see. A target that does not exist is `404` and never this |
 | `500` | Server error |
 
 <a id="SPS-CORE-015"></a>
@@ -239,7 +246,7 @@ rather than accepting a list, so enumeration costs one request per guess.
 What an implementation is asked to weigh, given that this requirement will change: answering `404`
 for both costs a caller the ability to tell "no such context" from "not yours", and a client that
 cannot tell them apart retries a permission problem forever. Checking authorization *before*
-existence — which context deletion already does ([`SPS-CTX-020`](contexts.md#SPS-CTX-020)) — gives
+existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
 `403` without confirming anything, and is the shape this should take. Closing it is on the
 specification's roadmap, before `0.1` becomes prescriptive.
 
