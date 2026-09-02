@@ -174,8 +174,18 @@ def inline_citations(text: str) -> list[tuple[str, str]]:
         if rest.startswith("<"):
             found.append((match.group(1), rest[1:rest.index(">")] if ">" in rest else ""))
             continue
-        depth, destination = 0, []
+        depth, destination, escaped = 0, [], False
         for character in rest:
+            if escaped:
+                # A backslash escape is a literal pair: the character after it is part of the
+                # destination whatever it is, including the parenthesis that would end it.
+                destination.append(character)
+                escaped = False
+                continue
+            if character == "\\":
+                escaped = True
+                destination.append(character)
+                continue
             if character in " \t\n" or (character == ")" and depth == 0):
                 break
             depth += {"(": 1, ")": -1}.get(character, 0)
@@ -1063,12 +1073,16 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # destination while the rendered link followed an earlier, wrong one.
     # A definition starts a block, so one written under paragraph text is that paragraph's text and
     # defines nothing. Recording it would let an inert line mask the real definition below.
-    lines = prose.split("\n")
-    startable = "\n".join(
-        line if not previous.strip() or PARAGRAPH_BREAK.match(previous) or SETEXT.match(previous)
-        or DEFINITION_HEAD.match(previous) or REFERENCE_DEFINITION.match(previous) else ""
-        for previous, line in zip([""] + lines, lines)
-    )
+    # Whether a block can start on each line, carried forward rather than read off the line above: a
+    # definition-shaped line that was itself paragraph text does not let the next one start either.
+    kept, can_start = [], True
+    for line in prose.split("\n"):
+        began = can_start and (REFERENCE_DEFINITION.match(line) or DEFINITION_HEAD.match(line))
+        kept.append(line if can_start else "")
+        can_start = bool(
+            not line.strip() or began or PARAGRAPH_BREAK.match(line) or SETEXT.match(line)
+        )
+    startable = "\n".join(kept)
     for label, *destinations in REFERENCE_DEFINITION.findall(startable):
         definitions.setdefault(normalized(label), next(filter(None, destinations), ""))
     citations = inline_citations(prose)
@@ -1148,6 +1162,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 holding.setdefault(subject, set()).add(context)
 
         shared_subjects = set(shared.subjects(None, None))
+        owned: set = set()
         shared_policies = shared_subjects
         by_target: dict = {}
         applied: set = set()
@@ -1162,6 +1177,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     f"{rel} line {block.line}: says more about {short(subject)}, which a policy "
                     "block owns — a shared artifact has one version"
                 )
+            # Two acr blocks defining the same policy IRI privately is the drift a policy block
+            # exists to prevent: the runner resolves each copy against its own graph, so the file
+            # can claim one artifact while testing two that may differ.
+            for subject in set(own.subjects(None, None)) & owned:
+                failures.append(
+                    f"{rel} line {block.line}: defines {short(subject)}, which another acr block "
+                    "already defines — an artifact two of them share belongs in a policy block"
+                )
+            owned |= {s for s in own.subjects(None, None) if isinstance(s, URIRef)}
             graph = own + shared
             where = f"{rel} line {block.line}"
             # Walked from the access control resource rather than read off the graph: a typed but
@@ -1988,6 +2012,24 @@ BROKEN = [
      ("```turtle acr",
       "See [SPS-GRANT-003].\n\nSources\n===\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
       "```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("one policy IRI defined privately by two acr blocks",
+     ("```turtle context", "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/d> ;\n"
+      "  acp:accessControl [ acp:apply <https://a.example/shared> ] ] .\n"
+      "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle acr\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://a.example/e> ;\n"
+      "  acp:accessControl [ acp:apply <https://a.example/shared> ] ] .\n"
+      "<https://a.example/shared> a acp:Policy ; acp:allow acl:Read, acl:Write ;\n"
+      "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
+      "```turtle context"), "already defines"),
+    ("a definition-shaped line under prose, then another under it",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\nProse.\n[x]: ../spec/core/grants.md\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
      "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
