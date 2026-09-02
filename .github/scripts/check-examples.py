@@ -317,6 +317,8 @@ INDENTED = re.compile(r"^ {4,}\S")
 # whether or not one precedes it, and is in PARAGRAPH_BREAK; a shorter one is only ever an underline.
 SETEXT = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ORDERED = re.compile(r"^ {0,3}\d{1,9}[.)]\s")
+EMPTY_ITEM = re.compile(r"^ {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]*$")
+STARTABLE_DEFINITION = re.compile(r"^ {0,3}\[[^\]]+\]:[ \t]*\S")
 TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$")
 BLOCK_OPEN = re.compile(r"^ {0,3}</?(?:" + BLOCK_TAGS + r")(?=[\s/>]|$)", re.I)
 
@@ -344,8 +346,11 @@ def scan(text: str) -> tuple[list[str], str]:
 
     lines = text.splitlines()
     fence = comment = literal = closer = None
+    # A block that opened and closed on one line: gone by the next, and no paragraph in its place.
+    closed_block = False
     ordinary = paragraph = False
     for number, line in enumerate(lines):
+        was_closed_block, closed_block = closed_block, False
         opener = FENCE_LINE.match(line)
         turtle = bool(opener) and opener.group(2).strip().startswith("turtle")
 
@@ -396,14 +401,16 @@ def scan(text: str) -> tuple[list[str], str]:
             # still a block — it just ends where it began, and what follows starts fresh.
             comment = "-->" not in line
             if not comment:
-                rendered.append(INLINE_COMMENT.sub("", line))
-                paragraph = False
+                # The whole line is the block, closer and anything after it included.
+                rendered.append("")
+                closed_block = True
                 continue
         elif LITERAL_OPEN.match(line):
             tag = LITERAL_OPEN.match(line).group(1)
             # `<pre></pre>` on one line closes where it opens. Leaving the state set would make
             # every fence after it look hidden and reject fixtures a reader can see perfectly well.
             literal = None if re.search(rf"</{tag}\s*>", line, re.I) else tag
+            closed_block = literal is None
         elif BLOCK_OPEN.match(line) or (LONE_TAG.match(line) and not paragraph):
             # A lone tag opens a block only where a paragraph is not already running: CommonMark's
             # type 7 cannot interrupt one, so after prose the tag is inline HTML and the fence below
@@ -414,21 +421,28 @@ def scan(text: str) -> tuple[list[str], str]:
                 if pattern.match(line):
                     closer = None if terminator in line[line.index("<") + 1:] else terminator
                     break
-        # An indented line continues a paragraph and only starts a code block outside one, so it
-        # breaks the paragraph state only where there was none to continue.
+        # Whether this line leaves a paragraph open for the next one, which is what decides if a
+        # type-7 HTML block may start there. Each clause is a CommonMark rule about interruption.
+        breaks = bool(
+            # A marker with nothing after it interrupts nothing, and a run of `=` or `-` under a
+            # paragraph underlines it rather than being one of these blocks.
+            (PARAGRAPH_BREAK.match(line) and not (paragraph and EMPTY_ITEM.match(line)))
+            or (paragraph and SETEXT.match(line))
+            # A pipe makes a table only where the delimiter row follows.
+            or ("|" in line
+                and TABLE_DELIMITER.match(lines[number + 1] if number + 1 < len(lines) else ""))
+            # Indented text continues a paragraph and starts a code block where there is none.
+            or (not paragraph and INDENTED.match(line))
+            # An ordered marker other than `1.` starts a list only outside a paragraph.
+            or (not paragraph and ORDERED.match(line))
+            # A definition is a block of its own, and closes the one before it.
+            or (not paragraph and STARTABLE_DEFINITION.match(line))
+        )
         paragraph = (
             bool(line.strip())
-            and not PARAGRAPH_BREAK.match(line)
-            # A leading pipe is a table only when the delimiter row follows; on its own it is text.
-            and not ("|" in line
-                     and TABLE_DELIMITER.match(lines[number + 1] if number + 1 < len(lines) else ""))
-            # A run of `=` underlines a paragraph, and starts one where there is none to underline.
-            and not (paragraph and SETEXT.match(line))
-            and (paragraph or not INDENTED.match(line))
-            # An ordered marker other than `1.` starts a list only outside a paragraph, and a marker
-            # runs to nine digits at most.
-            and not (not paragraph and ORDERED.match(line))
-            and not (fence or comment or literal or closer or ordinary)
+            and not breaks
+            and not (fence or comment or literal or closer or ordinary or closed_block
+                     or was_closed_block)
         )
         # A comment closing on the line that opened it never becomes a state, and what it holds
         # renders as nothing all the same — a reference definition inside one is inert.
@@ -1951,6 +1965,21 @@ BROKEN = [
       "See [SPS-GRANT-003].\n\n## Sources\n[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n"
       "```turtle acr"),
      "ends at #SPS-GRANT-009"),
+    ("a definition hidden behind a one-line comment block",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n<!-- -->[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-003\n\n"
+      "[SPS-GRANT-003]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
+    ("a fixture inside a custom element opened after a definition",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n"
+      "[x]: ../spec/core/grants.md\n<my-widget>\n```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
+    ("a fixture inside a custom element opened after a one-line literal block",
+     ("```turtle grant\n[] acp:grant acl:Read .\n```",
+      "```turtle grant\n[] acp:grant acl:Read .\n```\n\n<pre></pre>\n<my-widget>\n"
+      "```turtle grant\n# nothing\n```"),
+     "inside a raw HTML block"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
