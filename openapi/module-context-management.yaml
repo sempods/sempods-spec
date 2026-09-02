@@ -75,8 +75,12 @@ paths:
         Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
         **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
         before existence, so a caller outside their sandbox gets `403` rather than a `404` that
-        would confirm the context exists. A pod's last remaining context is refused, because core
-        requires a pod to have one.
+        would confirm the context exists.
+
+        The **only context visible to the caller** is refused with `409`. Core requires a pod to
+        have one, and the condition is the caller's view rather than the pod's count: written
+        against the pod's last context, the status would tell a delegated manager whether contexts
+        exist that they may not see.
       x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020, SPS-CTX-029]
       responses:
         '204': { description: Removed. }
