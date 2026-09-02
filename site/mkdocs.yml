@@ -50,6 +50,7 @@ markdown_extensions:
 
 nav:
   - Start here: index.md
+  - Vision: vision.md
   - The specification: spec/README.md
   - Core:
       - spec/core/index.md

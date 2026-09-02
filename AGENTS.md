@@ -166,7 +166,9 @@ The rendered site — [`site/`](site/):
   skips this directory and the Pages build checks them instead.
 - [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
   try-it page talks to, in the one place it is named, and refuses to build a page whose OpenAPI
-  descriptions would point somewhere else.
+  descriptions would point somewhere else. Its `STAGED` constant is the list of what the site
+  publishes — `spec/`, `vocabulary/`, `GOVERNANCE.md` and `docs/vision.md`, and nothing else from
+  `docs/` or `examples/`
 - [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
   purpose; the Scalar bundle is pinned with an integrity hash.
 
@@ -186,7 +188,8 @@ Concepts and roadmaps:
 - [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
   belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
   proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
-  in an implementation
+  in an implementation. The one document under `docs/` the site publishes, because it is what a
+  reader needs before the first requirement makes sense
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
   specification repository than in an implementation, and the template
 - [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
