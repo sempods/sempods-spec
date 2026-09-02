@@ -16,6 +16,7 @@ specification prescriptive, this moves to the implementation repository**, and n
 | | |
 |---|---|
 | [`acp-profile.md`](acp-profile.md) | Expressing every deployment in one small ACP profile: the primitive, what the profile excludes and why, what is guaranteed against what rests on convention, matchers for groups and audiences, and where policy lives |
+| [`authorization-state.md`](authorization-state.md) | Where that state is actually held and what it costs to answer from it: native storage with ACP as a projection, what a read renders and a write accepts, service clients as ordinary rows, the sandbox before a query, and audience resolution |
 
 Read a document here as **SOLL for the implementation**, never as a requirement. Nothing in it has a
 requirement ID, and that is not an oversight.
