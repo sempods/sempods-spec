@@ -155,6 +155,11 @@ REFERENCED = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\]\[([^\]]*)\]")
 SHORTCUT = re.compile(r"\[`?(SPS-[A-Z]+-\d+)`?\](?![\[(:])")
 REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[([^\]]+)\]:[ \t]*(\S+)", re.M)
 
+
+def normalized(label: str) -> str:
+    """A reference label as CommonMark matches one: case-folded, trimmed, runs of space collapsed."""
+    return " ".join(label.split()).casefold()
+
 # The named individuals, spelled out so a typo in a scenario is a mismatch rather than a silent miss.
 PUBLIC_AGENT = URIRef(ACP + "PublicAgent")
 AUTHENTICATED_AGENT = URIRef(ACP + "AuthenticatedAgent")
@@ -867,15 +872,15 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
     # The first wins, as CommonMark resolves it. Keeping the last would validate a correct
     # destination while the rendered link followed an earlier, wrong one.
     for label, destination in REFERENCE_DEFINITION.findall(text):
-        definitions.setdefault(label.casefold(), destination)
+        definitions.setdefault(normalized(label), destination)
     citations = [(shown, dest) for shown, dest in MISDIRECTED.findall(text)]
     for shown in SHORTCUT.findall(text):
-        if shown.casefold() in definitions:
-            citations.append((shown, definitions[shown.casefold()]))
+        if normalized(shown) in definitions:
+            citations.append((shown, definitions[normalized(shown)]))
     for shown, label in REFERENCED.findall(text):
         # `[SPS-GRANT-003][wrong]` names a real id and resolves to a real anchor, so both existing
         # checks are satisfied and only the pairing is wrong. `[id][]` points at its own text.
-        citations.append((shown, definitions.get((label or shown).casefold(), "")))
+        citations.append((shown, definitions.get(normalized(label or shown), "")))
     for shown, destination in citations:
         anchor = destination.partition("#")[2]
         if anchor != shown:
@@ -1001,10 +1006,16 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
             # opposite of what it is for.
             if kind == "delegation" and acr is not None:
                 principal = one(own, acr, P["resource"], where)
-                if resolve(graph, acr, Context(target=principal, agent=principal)):
+                # Probed with an application nobody named rather than with none: no client at all
+                # fails `acp:AuthenticatedClient` too, so that probe passed a ceiling open to every
+                # authenticated application. A ceiling names the one the person authorized, so a
+                # client it has never heard of must get nothing.
+                stranger = Context(target=principal, agent=principal,
+                                   client=URIRef("did:web:stranger.invalid"))
+                if resolve(graph, acr, stranger):
                     failures.append(
-                        f"{where}: a delegation policy grants without naming a client, so every "
-                        "application acting as the principal receives it"
+                        f"{where}: a delegation policy grants to an application it does not name, "
+                        "so it bounds nobody — a ceiling names the client the person authorized"
                     )
             if acr is None:
                 # The shape failure above says why. Walking from an access control resource that is
@@ -1583,7 +1594,7 @@ BROKEN = [
     ("a grant block node that carries no acp:grant",
      ("[] acp:grant acl:Read .", "[] acp:grant acl:Read .\n[ a acp:AccessGrant ] ."),
      "carries no acp:grant, so it says nothing"),
-    ("a ceiling that names no client, so every application acting as the person has it",
+    ("a ceiling naming no client, so every application acting as the person has it",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
       "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
       "  acp:resource <https://b.example/#me> ;\n"
@@ -1591,7 +1602,21 @@ BROKEN = [
       "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
       "  acp:anyOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
-     "grants without naming a client"),
+     "grants to an application it does not name"),
+    ("a ceiling open to every authenticated application",
+     ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```",
+      "```turtle acr-delegation\n[ a acp:AccessControlResource ;\n"
+      "  acp:resource <https://b.example/#me> ;\n"
+      "  acp:accessControl [ acp:apply <#ceil> ] ] .\n"
+      "<#ceil> a acp:Policy ; acp:allow acl:Read ;\n"
+      "  acp:allOf [ a acp:Matcher ; acp:agent <https://b.example/#me> ] ,\n"
+      "            [ a acp:Matcher ; acp:client acp:AuthenticatedClient ] .\n```\n"
+      "```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```"),
+     "grants to an application it does not name"),
+    ("a reference definition whose label carries surrounding space",
+     ("```turtle acr",
+      "See [SPS-GRANT-003].\n\n[ SPS-GRANT-003 ]: ../spec/core/grants.md#SPS-GRANT-009\n\n```turtle acr"),
+     "ends at #SPS-GRANT-009"),
     ("a decision composed by union rather than intersection",
      ("```turtle context\n[ acp:target <https://a.example/c> ; acp:agent <https://b.example/#me> ] .\n```\n"
       "```turtle grant\n[] acp:grant acl:Read .\n```",
