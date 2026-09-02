@@ -134,7 +134,8 @@ components:
     LastContext:
       description: |
         The pod's only remaining context. Core requires a pod to have at least one, so this route
-        refuses rather than letting the pod repair itself afterwards.
+        refuses rather than letting the pod repair itself afterwards. `409` under `SPS-CORE-014`:
+        the request was well formed and authorized, and the pod's current state forbids it.
 
   schemas:
     Context:

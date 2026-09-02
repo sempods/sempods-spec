@@ -98,7 +98,7 @@ one of them is refused rather than debated.
 ## Core and modules
 
 - **Core**: `contexts`, `grants`, `auth`, `lod-crud`, `sparql`, `find`.
-- **Modules**: `oidc`, `media`, `mcp`.
+- **Modules**: `context-management`, `oidc`, `media`, `mcp`.
 - OpenAPI is **not** a module. It is a view: one description for core, and one per module that adds
   an HTTP surface of its own. Not one per chapter — the core chapters share the context rule, the
   canonical representation, the conditional-write semantics and the error model, and splitting them
@@ -148,7 +148,7 @@ The specification:
   `https://schema.sempods.org/` and the stability guarantees they carry. Normative, and versioned
   with the specification rather than with any implementation
 - [`spec/README.md`](spec/README.md) — how to read a chapter, the requirement-identifier scheme, and
-  the chapter tables. Six core chapters and three modules are present; the tables say which source
+  the chapter tables. Six core chapters and four modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
 - [`examples/README.md`](examples/README.md) — worked access-control scenarios, and the evidence that

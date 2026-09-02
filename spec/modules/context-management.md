@@ -126,10 +126,10 @@ a `public` flag.
 **`SPS-CTX-027`** — Where the `public` flag is absent — including on a request with no body at all —
 the context MUST be created **private**.
 
-The body is optional, so the quiet path is the one without it, and a default of public would make
-omission the dangerous choice. Pods are isolated by default
-(`AGENTS.md` §"Non-negotiable invariants"); a context becomes readable without a grant because
-somebody said so, never because they said nothing.
+This is [`SPS-CTX-030`](../core/contexts.md#SPS-CTX-030) applied to a request body: core requires a
+context to be private unless an explicit choice made it public, and here the choice is a field that
+may be absent. The body is optional, so the quiet path is the one without it, and a default of public
+would make omission the dangerous choice.
 
 <a id="SPS-CTX-016"></a>
 **`SPS-CTX-016`** — `PUT` MUST be idempotent. Creating a context that already exists MUST answer
@@ -157,7 +157,7 @@ to treat a shared prefix as containment.
 target context under the slash-delimited rule of [`SPS-GRANT-007`](../core/grants.md#SPS-GRANT-007).
 
 <a id="SPS-CTX-029"></a>
-**`SPS-CTX-029`** — `DELETE` MUST refuse to remove a pod's last remaining context.
+**`SPS-CTX-029`** — `DELETE` MUST refuse to remove a pod's last remaining context, with `409`.
 
 Core requires a pod to have one ([`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028)), and this is the
 only route that could take it away. Refusing here rather than letting the pod repair itself

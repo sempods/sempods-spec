@@ -47,6 +47,18 @@ deployment and outside this interface. Without this requirement the specificatio
 with no contexts and no specified way to make one — conformant, and unable to hold a statement, since
 `SPS-CTX-001` puts every statement in a context and a write names the one it targets.
 
+<a id="SPS-CTX-030"></a>
+**`SPS-CTX-030`** — A context MUST be private unless it was made public by an explicit choice. This
+holds however the context came into existence, including provisioning outside any interface this
+specification defines.
+
+Pods are isolated by default (`AGENTS.md` §"Non-negotiable invariants"), and a context becomes
+readable without a grant because somebody said so — never because nobody said anything. The rule is
+stated here rather than only where a context is created, because the route that creates one is
+optional ([`../modules/context-management.md`](../modules/context-management.md)) and the guarantee
+is not: a pod without that module still has the context `SPS-CTX-028` requires, and it arrived
+without anybody calling anything.
+
 ## 3. Discovery
 
 <a id="SPS-CTX-021"></a>

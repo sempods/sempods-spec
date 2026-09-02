@@ -426,7 +426,7 @@
       "id": "SPS-CORE-005",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "A **module** is an optional chapter set with its own area prefix and its own version.",
+      "summary": "A **module** is an optional chapter set with its own version.",
       "withdrawn": false
     },
     {
@@ -1133,7 +1133,14 @@
       "id": "SPS-CTX-029",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "`DELETE` MUST refuse to remove a pod's last remaining context.",
+      "summary": "`DELETE` MUST refuse to remove a pod's last remaining context, with `409`.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-CTX-030",
+      "part": "core",
+      "chapter": "spec/core/contexts.md",
+      "summary": "A context MUST be private unless it was made public by an explicit choice.",
       "withdrawn": false
     },
     {
