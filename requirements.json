@@ -461,7 +461,7 @@
       "id": "SPS-CORE-008",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "The path segment `_system` immediately below a pod base URL is reserved for the control plane.",
+      "summary": "The path segments `_system` and `.well-known`, immediately below a pod base URL, are reserved for the control plane.",
       "withdrawn": false
     },
     {
@@ -573,7 +573,7 @@
       "id": "SPS-CRUD-004",
       "part": "core",
       "chapter": "spec/core/lod-crud.md",
-      "summary": "A resource path equal to `_system` or beginning `_system/` MUST NOT be addressable through the LOD layer.",
+      "summary": "A resource path equal to a segment reserved by [`SPS-CORE-008`](index.md#SPS-CORE-008) — `_system` or `.well-known` — or beginning with one of them followed by `/`, MUST NOT be addressable through the LOD layer.",
       "withdrawn": false
     },
     {

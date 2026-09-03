@@ -120,6 +120,24 @@ equally urgent and the announce waits on all of them.
       `DEMO_POD_BASE_URL`.
       **Open, in the decisions below:** `auth` §10 has two holes the deletions left, both before
       `0.1`.
+- [x] 39 — **The control-plane reservation names both of its segments.** Numbered after the items
+      already issued, for the reason 38 gives. `SPS-CORE-008` reserved `_system` alone, while
+      [`SPS-AUTH-045`](../../spec/core/auth.md#SPS-AUTH-045) obliged a pod to answer under
+      `.well-known` with nothing reserving it — so an ordinary Linked Data resource could stand
+      exactly where RFC 8615 puts a control-plane document, which is the collision `SPS-CORE-008`
+      exists to prevent, one path over. Both sides now name both segments: `SPS-CORE-008` for what a
+      pod serves, `SPS-CRUD-004` for what the LOD layer addresses, and the segment rather than the
+      one route below it. Neither identifier changes and neither is withdrawn — both meanings widen
+      under [`../../GOVERNANCE.md`](../../GOVERNANCE.md) §"Deleting and renumbering, before `0.1`",
+      said out loud here rather than assumed.
+      [issue #23](https://github.com/sempods/sempods-spec/issues/23).
+      **Downstream:** two summaries in `requirements.json` moved, so the reference implementation
+      re-vendors at its next sync. The sweep `GOVERNANCE.md` attaches to a change is not triggered —
+      it binds one that *deletes, renumbers or reuses*, and this does none of the three, so every
+      existing citation still points at the requirement it always pointed at. What is worth checking
+      there is the obligation rather than the index, the way item 13 checked one: whether the
+      implementation refuses an ordinary resource under `.well-known` today.
+      **Open, in the decisions below:** whether the reservation also binds `{pod}` itself.
 
 ## S3 — Core chapters
 
@@ -304,6 +322,17 @@ equally urgent and the announce waits on all of them.
     profiles names a place a path-scoped pod cannot serve. Unlike the hint above this is not a
     reinstatement: the append form was never the standard's, and requiring it is a decision about
     blessing a convention rather than about writing down what everyone already does.
+
+- **Whether the control-plane reservation binds `{pod}` itself.** `SPS-CORE-008` reserves two
+  segments *below* a pod base URL and says nothing about a pod whose base ends in one —
+  `https://example.org/_system`, or a pod named `.well-known`, in a path-scoped deployment. Item 38
+  stopped prescribing how a base URL decomposes
+  ([`SPS-CORE-007`](../../spec/core/index.md#SPS-CORE-007)), and
+  [`spec-authoring.md`](../agents/spec-authoring.md) §1 sends anything a single pod cannot satisfy
+  on its own to whatever hosts the pods — which is what a rule about *which* pods may exist is.
+  Recorded rather than decided, because "it is a deployment concern" is also the answer that leaves
+  the collision unowned. Raised in
+  [issue #23](https://github.com/sempods/sempods-spec/issues/23).
 
 - **How an implementation's version relates to the specification's.** **Decided: it does not.** The
   two lines are independent in both directions, and `GOVERNANCE.md` §"Versioning" owns the

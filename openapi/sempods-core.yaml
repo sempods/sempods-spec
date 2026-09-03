@@ -133,7 +133,8 @@ paths:
       The LOD layer. `resourcePath` is everything after the pod's base URL — not after a pod path
       segment, which a pod that is an entire origin does not have — and **may contain slashes**.
       OpenAPI path templating has no multi-segment parameter, so tooling will show it as one
-      segment. A path equal to `_system` or beginning `_system/` is not addressable here.
+      segment. A path equal to `_system` or `.well-known`, or beginning with either of them
+      followed by `/`, is not addressable here.
     parameters:
       - $ref: '#/components/parameters/ResourcePath'
     get:

@@ -33,8 +33,9 @@ MUST be the route that exists, and it MUST accept any IRI scheme — `did:`, `ur
 foreign `https:` — without special-casing.
 
 <a id="SPS-CRUD-004"></a>
-**`SPS-CRUD-004`** — A resource path equal to `_system` or beginning `_system/` MUST NOT be
-addressable through the LOD layer.
+**`SPS-CRUD-004`** — A resource path equal to a segment reserved by
+[`SPS-CORE-008`](index.md#SPS-CORE-008) — `_system` or `.well-known` — or beginning with one of
+them followed by `/`, MUST NOT be addressable through the LOD layer.
 
 ## 2. Embedding an IRI in a path
 
