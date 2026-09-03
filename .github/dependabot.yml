@@ -3,6 +3,9 @@ version: 2
 
 updates:
   # A pinned action is a supply-chain dependency, and nothing but this bumps it.
+  #
+  # Major bumps stay ungrouped: a major is where the licence changes and not only the API, and
+  # a licence change reads as two routine lines when it arrives inside a group PR.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -11,6 +14,9 @@ updates:
       github-actions:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # The renderer behind spec.sempods.org, locked with hashes in `site/requirements.txt`. That
   # lock is what makes the published page reproducible, and it is also what makes the packages
@@ -19,7 +25,9 @@ updates:
   # moves them.
   #
   # Grouped, because a lock is regenerated as a whole: twenty-nine separate pull requests to
-  # raise one transitive dependency would each conflict with the last.
+  # raise one transitive dependency would each conflict with the last. Majors included, for
+  # that same reason — which makes this the one place here where a major arrives without a
+  # pull request of its own, and the one place where reading the diff is the only check.
   - package-ecosystem: "pip"
     directory: "/site"
     schedule:
