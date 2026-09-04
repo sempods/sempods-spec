@@ -282,8 +282,10 @@ here rather than copied.
    done with an AI assistant also carries `Co-Authored-By` for the model, and it is the human who
    signs off who is the author.
 4. Commit messages are **full imperative sentences in plain English**, not Conventional Commits —
-   "Say what a context is before saying who may read one", not `docs: …`. The body explains what was
-   wrong and why the fix has the shape it does.
+   "Say what a context is before saying who may read one", not `docs: …`. The subject names the
+   change directly, in the fewest words that stay correct — writing rule 3 in
+   [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md). The body
+   explains what was wrong and why the fix has the shape it does.
 
 ## What this repository deliberately does not have
 
