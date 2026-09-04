@@ -409,13 +409,6 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-058",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "Where an implementation can issue a refresh token, its consent screen MUST present the resulting credential's lifetime as a decision of its own, separately from the selection of contexts.",
-      "withdrawn": false
-    },
-    {
       "id": "SPS-AUTH-059",
       "part": "core",
       "chapter": "spec/core/auth.md",
@@ -430,13 +423,6 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-061",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "Where an application is left holding nothing for a person — no context grant and no `public-read` — the implementation MUST revoke the refresh-token families it holds for them.",
-      "withdrawn": false
-    },
-    {
       "id": "SPS-AUTH-062",
       "part": "core",
       "chapter": "spec/core/auth.md",
@@ -447,7 +433,7 @@
       "id": "SPS-AUTH-063",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "Where an implementation supports `offline_access`, it MUST list the scope in the `scopes_supported` of every metadata document it serves.",
+      "summary": "Where an implementation supports `offline_access`, it SHOULD list the scope in the `scopes_supported` of every metadata document it serves.",
       "withdrawn": false
     },
     {

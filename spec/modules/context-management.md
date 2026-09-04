@@ -96,8 +96,7 @@ remove the state that rested on it: the grants naming it, and the context's stat
 Nothing else rests on it. This specification gives a refresh token no binding to a context at all:
 authority over one is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)), and the grants
 are what the removal above covers. What closes the window a re-created IRI would otherwise open is
-that removal, and where it leaves an application holding nothing,
-[`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061) ends its families too.
+that removal.
 
 <a id="SPS-CTX-018"></a>
 **`SPS-CTX-018`** — Deletion MUST NOT cascade into sub-contexts. Deleting `R` leaves `R/sub` in

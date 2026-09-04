@@ -243,16 +243,6 @@ lifted out of a page cannot be spent without the session; the session alone does
 to anything. The single-use half is what stops a replay: a submission writes the selection as *the*
 grant set, so a replayable form could restore a selection the person has since narrowed.
 
-<a id="SPS-AUTH-058"></a>
-**`SPS-AUTH-058`** — Where an implementation can issue a refresh token, its consent screen MUST
-present the resulting credential's lifetime as a decision of its own, separately from the selection
-of contexts.
-
-What the person is choosing between is a credential that expires with the access token and one that
-outlives it, so that is what the screen has to say. Naming the scope instead tells somebody the
-protocol word for the thing they are being asked about and not the thing itself, and an authority
-whose duration is invisible is consented to only in the arithmetic sense.
-
 ## 6. Token endpoint
 
 <a id="SPS-AUTH-027"></a>
@@ -310,6 +300,14 @@ other authorization's.
 **`SPS-AUTH-059`** — An implementation MUST NOT issue a refresh token unless the person authorizing
 the request granted a durable connection at consent time.
 
+So an implementation that issues them has to ask, and what it asks about is a lifetime: a credential
+that expires with the access token, or one that outlives it. How that reaches the person is the
+implementation's own — this specification describes what travels between a pod and a client, and a
+consent screen does not. What is worth saying anyway, because it is the failure this requirement
+exists to end: an authority whose duration is never shown is consented to in the arithmetic sense
+only, and naming the scope in place of the thing tells somebody the protocol word for what they are
+deciding rather than the decision.
+
 <a id="SPS-AUTH-060"></a>
 **`SPS-AUTH-060`** — An implementation MUST NOT make `offline_access` in the authorization request a
 condition of issuing one. A client that never sent the scope receives a refresh token where consent
@@ -332,19 +330,6 @@ Without this the decision governs only what is issued next, and the person who h
 not want this application to stay connected stays connected — through a credential that renews its
 own lifetime on every rotation, so nothing expires it either. The reach is
 [`SPS-AUTH-062`](#SPS-AUTH-062)'s: the person, not the URI the consent screen happened to run under.
-
-<a id="SPS-AUTH-061"></a>
-**`SPS-AUTH-061`** — Where an application is left holding nothing for a person — no context grant
-and no `public-read` — the implementation MUST revoke the refresh-token families it holds for them.
-
-A family that outlives everything it was issued beside authorizes nothing until the same context IRI
-exists again, at which point it authorizes whatever the new context holds. Ending it closes that
-window without needing to know why the grants went.
-
-Holding nothing is the condition, not losing a context grant.
-[`SPS-GRANT-022`](grants.md#SPS-GRANT-022) keeps `public-read` through a revocation of those, and an
-application that still holds it still holds something: its family stands, and the session that rests
-on it is not ended by a narrowing elsewhere.
 
 ### Abuse
 
@@ -494,15 +479,17 @@ The URIs would be a topology leak on an unauthenticated route — the same rule 
 [`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
 
 <a id="SPS-AUTH-063"></a>
-**`SPS-AUTH-063`** — Where an implementation supports `offline_access`, it MUST list the scope in
+**`SPS-AUTH-063`** — Where an implementation supports `offline_access`, it SHOULD list the scope in
 the `scopes_supported` of every metadata document it serves.
+
+`SHOULD`, because nothing breaks without it: [`SPS-AUTH-060`](#SPS-AUTH-060) keeps a client that
+cannot ask from being refused, so an unadvertised extension costs a preselected control and nothing
+else. What it does cost is a metadata document that answers untruthfully — `scopes_supported` naming
+everything but a scope the pod accepts says the extension is not there.
 
 `offline_access` is a sempods extension that borrows an OpenID Connect name. It is requested bare: a
 pod is not an OpenID Provider, issues no `id_token`, and does not advertise `openid`, so a client
-that pairs the two is asking for something no pod offers. The metadata is where a client that has
-read none of this discovers the extension exists, which is the only reason the requirement is worth
-stating — an implementation is otherwise free not to support it at all, and one that does not is
-still conformant.
+that pairs the two is asking for something no pod offers.
 
 <a id="SPS-AUTH-047"></a>
 **`SPS-AUTH-047`** — A consumer MUST tolerate members of the metadata document it does not
