@@ -600,7 +600,7 @@ paths:
       operationId: token
       summary: Exchange a code, refresh a token, or obtain a service token.
       security: [{}, { basicAuth: [] }]
-      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-035, SPS-AUTH-036, SPS-AUTH-037, SPS-AUTH-038]
+      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-035, SPS-AUTH-036, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-060, SPS-AUTH-064]
       requestBody:
         required: true
         content:
