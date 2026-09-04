@@ -25,6 +25,16 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 STAGE = SITE / "_stage"
 
+# `site/` is the one part of this repository with a dependency tree, so it is also the one place a
+# reader can be stopped by something that is not in the checkout. Both guards below quote these
+# three lines rather than sending that reader to AGENTS.md to find them: the point of a guard is
+# that the person it stops can carry on.
+INSTALL_RENDERER = (
+    "    python3 -m venv site/.venv\n"
+    "    site/.venv/bin/pip install --require-hashes -r site/requirements.txt\n"
+    '    export PATH="$PWD/site/.venv/bin:$PATH"\n'
+)
+
 # The public pod the try-it button talks to. THIS IS THE ONLY PLACE IT IS WRITTEN.
 #
 # It is deliberately not in the OpenAPI descriptions: those are normative, and a
@@ -623,7 +633,16 @@ def check() -> int:
     # have to name the same host. Checked rather than derived: reading the host out of
     # `mkdocs.yml` would make the build depend on parsing it, and the failure this guards against
     # is silent in every rendered page — the site would look right and be unindexable.
-    import yaml
+    try:
+        import yaml
+    except ImportError:  # the message is the whole point
+        sys.exit(
+            "site/build.py needs PyYAML to read site/mkdocs.yml.\n\n"
+            + INSTALL_RENDERER
+            + "\nIt is one of the locked packages, so this covers the render below as well. "
+            "site/requirements.txt owns the versions."
+        )
+
     site_url = (yaml.safe_load((SITE / "mkdocs.yml").read_text()) or {}).get("site_url", "")
     if site_url.rstrip("/") != f"https://{SITE_HOST}":
         problems.append(
@@ -709,17 +728,37 @@ def main() -> int:
     if failed or args.check:
         return failed
 
+    # Everything from here renders, which means calling out to `mkdocs`. Resolved once and then
+    # called by absolute path, because both renders below run with `cwd=STAGE`: a bare name is
+    # looked up again from there, and a relative PATH entry — `site/.venv/bin`, which is the
+    # obvious thing to write — resolves against the staging directory and is not found. Without
+    # the guard that arrives as a FileNotFoundError out of `subprocess` naming `mkdocs`, with
+    # nothing in it to act on; `check-examples.py` turns the same class of failure into an
+    # instruction.
+    found = shutil.which("mkdocs")
+    if found is None:
+        sys.exit(
+            "site/build.py needs mkdocs on PATH to render.\n\n"
+            + INSTALL_RENDERER
+            + "\nInstalling it into the virtualenv is not enough on its own: the renderer is "
+            "looked up on PATH, so the virtualenv's `bin` has to be on it. `--check` stops before "
+            "the render and needs only the import above."
+        )
+    # `which` answers in the shape of the PATH entry it matched, so a relative entry gives back a
+    # relative path. Made absolute here, once, for the same `cwd=STAGE` reason.
+    mkdocs = str(Path(found).resolve())
+
     configure()
     stage()
     if not args.serve:
-        return subprocess.call(["mkdocs", "build", "--strict"], cwd=STAGE)
+        return subprocess.call([mkdocs, "build", "--strict"], cwd=STAGE)
 
     # `--watch` on each real source, so an edit to a chapter triggers a rebuild; the hook in
     # `mkdocs.yml` re-stages before that rebuild reads anything. Watching the staged copy alone
     # — which is all MkDocs does by default — reacts only to changes nobody makes by hand.
     watched = [ROOT / entry.rstrip("/") for entry in STAGED] + [
         ROOT / "openapi", SITE / "index.md", SITE / "api"]
-    command = ["mkdocs", "serve"]
+    command = [mkdocs, "serve"]
     for path in watched:
         command += ["--watch", str(path)]
     return subprocess.call(command, cwd=STAGE)
