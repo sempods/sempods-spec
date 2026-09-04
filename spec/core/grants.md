@@ -19,11 +19,17 @@ strings, and both say something about permission.
 | **Grant** | no | `<context-iri>#read`, `#write`, `#manage` |
 | **Scope** (RFC 6749) | yes | `public-read` |
 
-`offline_access` is a scope in the request and in the token response, and belongs to neither row: it
-asks about the *lifetime* of what is issued rather than about authority, so it is not a feature scope
-and [`SPS-AUTH-029`](auth.md#SPS-AUTH-029) keeps it out of the `scope` claim. It is also a sempods
-extension rather than the OpenID Connect scope of that name, and a pod does not advertise `openid`
-at all — [`SPS-AUTH-063`](auth.md#SPS-AUTH-063) is where that is stated.
+`offline_access` belongs to neither row, and the reason is worth stating rather than discovering. It
+asks about the *lifetime* of what is issued rather than about authority, so it is no feature scope
+and [`SPS-AUTH-029`](auth.md#SPS-AUTH-029) keeps it out of the `scope` claim. It does appear in the
+token response, where RFC 6749 §5.1 would have the value describe the access token's own scope —
+the same latitude OpenID Connect takes for the scope this one borrows its name from. What the
+response reports there is what the person granted, and a durable connection is not authority the
+bearer carries: a client reads it to learn the answer it was given, not to learn what its token may
+do.
+
+It is also a sempods extension rather than the OpenID Connect scope of that name, and a pod does not
+advertise `openid` at all — [`SPS-AUTH-063`](auth.md#SPS-AUTH-063) is where that is stated.
 
 <a id="SPS-GRANT-001"></a>
 **`SPS-GRANT-001`** — A **grant** is durable server-side policy on one context. An implementation

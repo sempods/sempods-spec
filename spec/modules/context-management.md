@@ -96,8 +96,8 @@ remove the state that rested on it: the grants naming it, and the context's stat
 No refresh token rests on it. This specification gives one no binding to a context at all: authority
 over a context is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)), and the grants are
 what the removal above covers. A module an implementation advertises may rest more on a context than
-core does — [`SPS-MEDIA-021`](media.md#SPS-MEDIA-021) has the deletion reach media assignments —
-and this requirement is the core half rather than the whole lifecycle. What closes the window a re-created IRI would otherwise open is
+this chapter does — [`SPS-MEDIA-021`](media.md#SPS-MEDIA-021) has the deletion reach media
+assignments — so what stands above is this module's half of the cascade and not the whole of it. What closes the window a re-created IRI would otherwise open is
 that removal.
 
 <a id="SPS-CTX-018"></a>

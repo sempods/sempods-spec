@@ -297,8 +297,10 @@ other authorization's.
 **`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
 
 <a id="SPS-AUTH-059"></a>
-**`SPS-AUTH-059`** — An implementation MUST NOT issue a refresh token unless the person authorizing
-the request granted a durable connection at consent time.
+**`SPS-AUTH-059`** — An implementation MUST NOT seed a refresh-token family unless the person
+authorizing the request granted a durable connection at consent time. A token issued into a family
+that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
+decision and needs no second one.
 
 So an implementation that issues them has to ask, and what it asks about is a lifetime: a credential
 that expires with the access token, or one that outlives it. How that reaches the person is the
