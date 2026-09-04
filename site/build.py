@@ -29,10 +29,16 @@ STAGE = SITE / "_stage"
 # reader can be stopped by something that is not in the checkout. Both guards below quote these
 # three lines rather than sending that reader to AGENTS.md to find them: the point of a guard is
 # that the person it stops can carry on.
+#
+# Written out from `SITE` and not in the relative shape AGENTS.md uses, because this script takes
+# its own location from `__file__` and therefore runs from any directory. Started by absolute path
+# from somewhere else, a relative recovery line would build the virtualenv beside whatever the
+# caller happened to be standing in and look for a `requirements.txt` that is not there.
+VENV_BIN = SITE / ".venv" / "bin"
 INSTALL_RENDERER = (
-    "    python3 -m venv site/.venv\n"
-    "    site/.venv/bin/pip install --require-hashes -r site/requirements.txt\n"
-    '    export PATH="$PWD/site/.venv/bin:$PATH"\n'
+    f"    python3 -m venv {SITE / '.venv'}\n"
+    f"    {VENV_BIN / 'pip'} install --require-hashes -r {SITE / 'requirements.txt'}\n"
+    f'    export PATH="{VENV_BIN}:$PATH"\n'
 )
 
 # The public pod the try-it button talks to. THIS IS THE ONLY PLACE IT IS WRITTEN.

@@ -262,8 +262,10 @@ here rather than copied.
    export PATH="$PWD/site/.venv/bin:$PATH"
    ```
 
-   The lock is resolved on Python 3.14, and `--require-hashes` refuses an interpreter it was not
-   built for. The last line is what makes the commands above work as written: `site/build.py` looks
+   The lock was resolved on Python 3.14 and CI installs it under 3.14. `--require-hashes` checks
+   the artefacts and not the interpreter, so another `python3` installs it without complaint and
+   then renders with a dependency tree nobody resolved — read `python3 -V` before creating the
+   virtualenv. The last line is what makes the commands above work as written: `site/build.py` looks
    `mkdocs` up on `PATH`, and every script takes its interpreter from `python3`. `check-examples.py`
    needs rdflib on top of the lock and prints the pinned line that installs it — those two versions
    are owned there and nowhere else.
