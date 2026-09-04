@@ -17,7 +17,10 @@ strings, and both say something about permission.
 | | Travels in the access token | Example |
 |---|---|---|
 | **Grant** | no | `<context-iri>#read`, `#write`, `#manage` |
-| **Scope** (RFC 6749) | yes | `public-read`, `openid`, `offline_access` |
+| **Scope** (RFC 6749) | yes | `public-read`, and `offline_access` where supported |
+
+`offline_access` is a sempods extension rather than the OpenID Connect scope of that name, and a pod
+does not advertise `openid` at all — [`SPS-AUTH-063`](auth.md#SPS-AUTH-063) is where that is stated.
 
 <a id="SPS-GRANT-001"></a>
 **`SPS-GRANT-001`** — A **grant** is durable server-side policy on one context. An implementation

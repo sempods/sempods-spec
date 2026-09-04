@@ -251,7 +251,7 @@
       "id": "SPS-AUTH-035",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A token issued for `public-read` MUST NOT carry a refresh token.",
+      "summary": "A token issued to an anonymous `public-read` subject MUST NOT carry a refresh token.",
       "withdrawn": false
     },
     {
@@ -406,6 +406,48 @@
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "A query parameter counts as one of `SPS-AUTH-056`'s prohibited names when its name, percent-decoded and matched case-sensitively, equals that name — whether or not the parameter carries a value.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-058",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "Where an implementation can issue a refresh token, its consent screen MUST present the resulting credential's lifetime as a decision of its own, separately from the selection of contexts.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-059",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "An implementation MUST NOT issue a refresh token unless the person authorizing the request granted a durable connection at consent time.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-060",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "An implementation MUST NOT make `offline_access` in the authorization request a condition of issuing one.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-061",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "Where the last grant an application holds for a person is removed, the implementation MUST revoke the refresh-token families that application holds for them.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-062",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "Ending a person's access is on the writing side of [`SPS-AUTH-052`](#SPS-AUTH-052).",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-063",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "Where an implementation supports `offline_access`, it MUST list the scope in the `scopes_supported` of every metadata document it serves.",
       "withdrawn": false
     },
     {
@@ -1063,7 +1105,7 @@
       "id": "SPS-CTX-017",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "`DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also remove the state that rested on it: grants naming it, refresh tokens scoped to it, and the context's statements.",
+      "summary": "`DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also remove the state that rested on it: the grants naming it, and the context's statements.",
       "withdrawn": false
     },
     {
@@ -1637,7 +1679,7 @@
       "id": "SPS-MCP-012",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and MUST revoke the refresh tokens of the affected `(pod, client, subject)`.",
+      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and MUST revoke the refresh tokens the affected `(pod, client)` holds for the person the bearer names — every equivalent identity URI, per [`SPS-AUTH-062`](../core/auth.md#SPS-AUTH-062), and not only the subject it carries.",
       "withdrawn": false
     },
     {

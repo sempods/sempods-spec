@@ -96,11 +96,13 @@ recover access stops working across implementations, which is the one thing it c
 
 <a id="SPS-MCP-012"></a>
 **`SPS-MCP-012`** — Where `reauthorize` is true, the implementation MUST issue the challenge even
-for a bearer that would otherwise suffice, and MUST revoke the refresh tokens of the affected
-`(pod, client, subject)`.
+for a bearer that would otherwise suffice, and MUST revoke the refresh tokens the affected
+`(pod, client)` holds for the person the bearer names — every equivalent identity URI, per
+[`SPS-AUTH-062`](../core/auth.md#SPS-AUTH-062), and not only the subject it carries.
 
 An explicit re-authorization means *review the current consent*. Leaving parallel sessions able to
-rotate around the consent screen would make the review cosmetic.
+rotate around the consent screen would make the review cosmetic, and a family recorded under
+another of the person's URIs is such a session.
 
 <a id="SPS-MCP-013"></a>
 **`SPS-MCP-013`** — An implementation MUST distinguish the client's automatic replay after the OAuth

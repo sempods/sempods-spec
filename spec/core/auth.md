@@ -243,6 +243,16 @@ lifted out of a page cannot be spent without the session; the session alone does
 to anything. The single-use half is what stops a replay: a submission writes the selection as *the*
 grant set, so a replayable form could restore a selection the person has since narrowed.
 
+<a id="SPS-AUTH-058"></a>
+**`SPS-AUTH-058`** — Where an implementation can issue a refresh token, its consent screen MUST
+present the resulting credential's lifetime as a decision of its own, separately from the selection
+of contexts.
+
+What the person is choosing between is a credential that expires with the access token and one that
+outlives it, so that is what the screen has to say. Naming the scope instead tells somebody the
+protocol word for the thing they are being asked about and not the thing itself, and an authority
+whose duration is invisible is consented to only in the arithmetic sense.
+
 ## 6. Token endpoint
 
 <a id="SPS-AUTH-027"></a>
@@ -285,11 +295,42 @@ whole family.
 be recovered.
 
 <a id="SPS-AUTH-035"></a>
-**`SPS-AUTH-035`** — A token issued for `public-read` MUST NOT carry a refresh token. The client
-re-authorizes when it expires.
+**`SPS-AUTH-035`** — A token issued to an anonymous `public-read` subject MUST NOT carry a refresh
+token. The client re-authorizes when it expires.
+
+There is no person to have decided anything and no grant to bind a rotation against, so the
+question [`SPS-AUTH-059`](#SPS-AUTH-059) asks has no one to ask. Where an identity is established,
+`public-read` is an ordinary additive scope and the lifetime follows that requirement like any
+other authorization's.
 
 <a id="SPS-AUTH-036"></a>
 **`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
+
+<a id="SPS-AUTH-059"></a>
+**`SPS-AUTH-059`** — An implementation MUST NOT issue a refresh token unless the person authorizing
+the request granted a durable connection at consent time.
+
+<a id="SPS-AUTH-060"></a>
+**`SPS-AUTH-060`** — An implementation MUST NOT make `offline_access` in the authorization request a
+condition of issuing one. A client that never sent the scope receives a refresh token where consent
+granted a durable connection.
+
+The two directions are what keep the grant the person's rather than the client's. Asking does not
+grant: a request parameter is what a client wants, and treating it as the decision hands the client
+a credential the person was never asked about. Not asking does not forbid: a client may be unable
+to send a scope its authorization server never advertised, and denying it a durable connection on
+that ground would let a client's vocabulary overrule a person's answer.
+
+An implementation MAY let the request preselect the control the consent screen presents, and that
+is the whole of what the parameter may do.
+
+<a id="SPS-AUTH-061"></a>
+**`SPS-AUTH-061`** — Where the last grant an application holds for a person is removed, the
+implementation MUST revoke the refresh-token families that application holds for them.
+
+A family that outlives the grants it was issued beside authorizes nothing until the same context IRI
+exists again, at which point it authorizes whatever the new context holds. Ending it with the grants
+closes that window without needing to know why they went.
 
 ### Abuse
 
@@ -379,6 +420,16 @@ A request carries one identity URI. Resolving equivalences on the read path woul
 join on every authenticated request and make the answer depend on state that changed since the
 grant was made.
 
+<a id="SPS-AUTH-062"></a>
+**`SPS-AUTH-062`** — Ending a person's access is on the writing side of
+[`SPS-AUTH-052`](#SPS-AUTH-052). An implementation that revokes their grants or their refresh-token
+families MUST reach every equivalent identity URI it holds for them, not only the URI the request
+carries.
+
+Otherwise a credential issued under one of a person's URIs survives their withdrawal under another,
+and the survivor is the one nobody was looking at. The read-path prohibition is untouched: this is
+about what a revocation covers, not about resolving equivalences to answer a request.
+
 <a id="SPS-AUTH-053"></a>
 **`SPS-AUTH-053`** — An identity assertion MUST NOT be usable as a pod credential. An implementation
 MUST consume it once, at the login callback, and MUST NOT accept it as a bearer token afterwards.
@@ -428,6 +479,17 @@ A count MAY be advertised.
 
 The URIs would be a topology leak on an unauthenticated route — the same rule as
 [`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
+
+<a id="SPS-AUTH-063"></a>
+**`SPS-AUTH-063`** — Where an implementation supports `offline_access`, it MUST list the scope in
+the `scopes_supported` of every metadata document it serves.
+
+`offline_access` is a sempods extension that borrows an OpenID Connect name. It is requested bare: a
+pod is not an OpenID Provider, issues no `id_token`, and does not advertise `openid`, so a client
+that pairs the two is asking for something no pod offers. The metadata is where a client that has
+read none of this discovers the extension exists, which is the only reason the requirement is worth
+stating — an implementation is otherwise free not to support it at all, and one that does not is
+still conformant.
 
 <a id="SPS-AUTH-047"></a>
 **`SPS-AUTH-047`** — A consumer MUST tolerate members of the metadata document it does not

@@ -744,8 +744,9 @@ components:
           scopes:
             public-read: >-
               The pod's currently public contexts, unioned into the caller's readable set on top of
-              the grants resolved from storage (`SPS-GRANT-020`). A token issued for it carries no
-              refresh token (`SPS-AUTH-035`).
+              the grants resolved from storage (`SPS-GRANT-020`). Issued to an anonymous subject it
+              carries no refresh token (`SPS-AUTH-035`); with an identity established the lifetime
+              is the consent decision's (`SPS-AUTH-059`).
         # Service clients, which the same token endpoint has to accept (`SPS-AUTH-002`,
         # `SPS-AUTH-027`). No scopes: a service client's reach is its grants, not a scope list.
         clientCredentials:
