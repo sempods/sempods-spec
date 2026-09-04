@@ -106,7 +106,7 @@ components:
               The pod's currently public contexts, unioned into the caller's readable set on top of
               the grants resolved from storage (`SPS-GRANT-020`). Issued to an anonymous subject it
               carries no refresh token (`SPS-AUTH-035`); with an identity established the lifetime
-              is the consent decision's (`SPS-AUTH-059`).
+              is the consent decision's (`SPS-AUTH-058`).
         clientCredentials:
           tokenUrl: 'https://example.org/alice/_system/auth/token'
           scopes: {}

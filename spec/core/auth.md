@@ -289,15 +289,15 @@ be recovered.
 token. The client re-authorizes when it expires.
 
 There is no person to have decided anything and no grant to bind a rotation against, so the
-question [`SPS-AUTH-059`](#SPS-AUTH-059) asks has no one to ask. Where an identity is established,
+question [`SPS-AUTH-058`](#SPS-AUTH-058) asks has no one to ask. Where an identity is established,
 `public-read` is an ordinary additive scope and the lifetime follows that requirement like any
 other authorization's.
 
 <a id="SPS-AUTH-036"></a>
 **`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
 
-<a id="SPS-AUTH-059"></a>
-**`SPS-AUTH-059`** — An implementation MUST NOT seed a refresh-token family unless the person
+<a id="SPS-AUTH-058"></a>
+**`SPS-AUTH-058`** — An implementation MUST NOT seed a refresh-token family unless the person
 authorizing the request granted a durable connection at consent time. A token issued into a family
 that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
 decision and needs no second one.
@@ -310,8 +310,8 @@ exists to end: an authority whose duration is never shown is consented to in the
 only, and naming the scope in place of the thing tells somebody the protocol word for what they are
 deciding rather than the decision.
 
-<a id="SPS-AUTH-060"></a>
-**`SPS-AUTH-060`** — An implementation MUST NOT make `offline_access` in the authorization request a
+<a id="SPS-AUTH-059"></a>
+**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request a
 condition of issuing one. A client that never sent the scope receives a refresh token where consent
 granted a durable connection.
 
@@ -324,14 +324,14 @@ that ground would let a client's vocabulary overrule a person's answer.
 An implementation MAY let the request preselect the control the consent screen presents, and that
 is the whole of what the parameter may do.
 
-<a id="SPS-AUTH-064"></a>
-**`SPS-AUTH-064`** — A consent decision that withholds a durable connection MUST revoke the
+<a id="SPS-AUTH-060"></a>
+**`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
 refresh-token families the application already holds for that person.
 
 Without this the decision governs only what is issued next, and the person who has just said they do
 not want this application to stay connected stays connected — through a credential that renews its
 own lifetime on every rotation, so nothing expires it either. The reach is
-[`SPS-AUTH-062`](#SPS-AUTH-062)'s: the person, not the URI the consent screen happened to run under.
+[`SPS-AUTH-061`](#SPS-AUTH-061)'s: the person, not the URI the consent screen happened to run under.
 
 ### Abuse
 
@@ -421,8 +421,8 @@ A request carries one identity URI. Resolving equivalences on the read path woul
 join on every authenticated request and make the answer depend on state that changed since the
 grant was made.
 
-<a id="SPS-AUTH-062"></a>
-**`SPS-AUTH-062`** — An implementation that revokes a person's grants or their refresh-token
+<a id="SPS-AUTH-061"></a>
+**`SPS-AUTH-061`** — An implementation that revokes a person's grants or their refresh-token
 families MUST reach every equivalent identity URI it holds for them, not only the URI the request
 carries. Ending access is on the writing side of [`SPS-AUTH-052`](#SPS-AUTH-052).
 
@@ -480,11 +480,11 @@ A count MAY be advertised.
 The URIs would be a topology leak on an unauthenticated route — the same rule as
 [`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
 
-<a id="SPS-AUTH-063"></a>
-**`SPS-AUTH-063`** — Where an implementation supports `offline_access`, it SHOULD list the scope in
+<a id="SPS-AUTH-062"></a>
+**`SPS-AUTH-062`** — Where an implementation supports `offline_access`, it SHOULD list the scope in
 the `scopes_supported` of every metadata document it serves.
 
-`SHOULD`, because nothing breaks without it: [`SPS-AUTH-060`](#SPS-AUTH-060) keeps a client that
+`SHOULD`, because nothing breaks without it: [`SPS-AUTH-059`](#SPS-AUTH-059) keeps a client that
 cannot ask from being refused, so an unadvertised extension costs a preselected control and nothing
 else. What it does cost is a metadata document that answers untruthfully — `scopes_supported` naming
 everything but a scope the pod accepts says the extension is not there.

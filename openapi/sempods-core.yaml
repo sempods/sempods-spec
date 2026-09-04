@@ -577,7 +577,7 @@ paths:
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
         - { name: prompt, in: query, required: false, schema: { type: string } }
-      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044, SPS-AUTH-064]
+      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044, SPS-AUTH-060]
       responses:
         '302':
           description: Redirect carrying `code` and `state`, or `error` and `error_description`.
@@ -600,7 +600,7 @@ paths:
       operationId: token
       summary: Exchange a code, refresh a token, or obtain a service token.
       security: [{}, { basicAuth: [] }]
-      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-035, SPS-AUTH-036, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-060]
+      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-035, SPS-AUTH-036, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-058, SPS-AUTH-059]
       requestBody:
         required: true
         content:
@@ -717,10 +717,10 @@ components:
         *grant*, resolved server-side per request from durable policy (`SPS-GRANT-001`,
         `SPS-GRANT-002`); it is requested at consent time and never appears in this list.
 
-        `public-read` is the only feature scope this version specifies. `grants.md` names `openid`
-        and `offline_access` as scopes in shape, but nothing here requires a pod to accept them or
-        says what it would return — so they are not advertised as capabilities a client may rely
-        on. A pod may accept further feature scopes; none is promised.
+        `public-read` is the only feature scope this version specifies. `offline_access` is a sempods
+        extension a pod may support (`SPS-AUTH-062`); it asks about the lifetime of what is issued
+        rather than about authority, so it is no feature scope and never appears in this claim. A
+        pod may accept further feature scopes; none is promised.
 
         A client with a stable HTTPS origin identifies as `did:web:<origin>`. The pod parses that
         identifier and never dereferences it (`SPS-AUTH-003`), and the `redirect_uri` has to match
@@ -746,7 +746,7 @@ components:
               The pod's currently public contexts, unioned into the caller's readable set on top of
               the grants resolved from storage (`SPS-GRANT-020`). Issued to an anonymous subject it
               carries no refresh token (`SPS-AUTH-035`); with an identity established the lifetime
-              is the consent decision's (`SPS-AUTH-059`).
+              is the consent decision's (`SPS-AUTH-058`).
         # Service clients, which the same token endpoint has to accept (`SPS-AUTH-002`,
         # `SPS-AUTH-027`). No scopes: a service client's reach is its grants, not a scope list.
         clientCredentials:
@@ -1046,7 +1046,7 @@ components:
           description: >-
             Absent for an anonymous `public-read` token (`SPS-AUTH-035`) and for a service token
             (`SPS-AUTH-036`). Otherwise present only where consent granted a durable connection
-            (`SPS-AUTH-059`).
+            (`SPS-AUTH-058`).
         scope: { type: string }
 
     OAuthError:

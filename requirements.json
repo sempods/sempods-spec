@@ -409,38 +409,38 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-059",
+      "id": "SPS-AUTH-058",
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "An implementation MUST NOT seed a refresh-token family unless the person authorizing the request granted a durable connection at consent time.",
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-060",
+      "id": "SPS-AUTH-059",
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "An implementation MUST NOT make `offline_access` in the authorization request a condition of issuing one.",
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-062",
+      "id": "SPS-AUTH-060",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A consent decision that withholds a durable connection MUST revoke the refresh-token families the application already holds for that person.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-061",
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "An implementation that revokes a person's grants or their refresh-token families MUST reach every equivalent identity URI it holds for them, not only the URI the request carries.",
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-063",
+      "id": "SPS-AUTH-062",
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "Where an implementation supports `offline_access`, it SHOULD list the scope in the `scopes_supported` of every metadata document it serves.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-AUTH-064",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "A consent decision that withholds a durable connection MUST revoke the refresh-token families the application already holds for that person.",
       "withdrawn": false
     },
     {
@@ -1672,7 +1672,7 @@
       "id": "SPS-MCP-012",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST revoke the refresh tokens the affected `(pod, client)` holds for them — every equivalent identity URI, per [`SPS-AUTH-062`](../core/auth.md#SPS-AUTH-062), and not only the subject it carries.",
+      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST revoke the refresh tokens the affected `(pod, client)` holds for them — every equivalent identity URI, per [`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061), and not only the subject it carries.",
       "withdrawn": false
     },
     {
