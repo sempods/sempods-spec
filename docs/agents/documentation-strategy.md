@@ -60,9 +60,17 @@ becomes both long and wrong — the copy drifts from the original and now two do
 something neither of them owns. The reference implementation's LOD-CRUD documentation already
 follows this rule and is the model: *"Standards are named, not re-explained."*
 
-**3. Short and plain.** No history, no decision log, no "this used to be X" — that is what the commit
-message is for. The one exception is a rationale a future reader genuinely needs in order not to
-undo it, and in this repository that rationale usually belongs in `concepts/` rather than inline.
+**3. Short, direct, plain.** Take the shortest wording that is still correct.
+
+- **Say what the thing is**, not what it is not, and drop the rhetorical shape. `Make context
+  management a module, and let one area span both halves` — not `Stop forbidding an area from
+  spanning core and a module`. Holds for headings, prose and commit subjects alike. Normative text
+  is the exception: `MUST NOT` is the correct form of a prohibition.
+- **No history, no decision log**, no "this used to be X" — that is what the commit message is for.
+  The one exception is a rationale a future reader genuinely needs in order not to undo it, and in
+  this repository that rationale usually belongs in `concepts/` rather than inline.
+- **Name the standard** instead of re-explaining it — rule 2, which is this rule applied to a
+  document somebody else owns.
 
 **4. Behaviour that follows the standard needs no requirement.** Do not write `SPS-CRUD-0nn: the
 server MUST return 405 with an Allow header` when RFC 9110 already says so and the chapter has
@@ -70,11 +78,11 @@ already said it profiles RFC 9110. Write the requirement for the *deviation*, an
 where a reader would otherwise guess.
 
 **5. When a deviation becomes ordinary, its text shrinks or goes.** A special case that folds into
-the normal path takes its explanation with it. Deleting is a correct change, not a loss. The failure
-mode is not keeping the old text but *replacing* it: an explanation of why the thing is now ordinary
-is a longer way of writing nothing. The requirement itself is a different matter — it is
-**withdrawn**, never deleted, because its ID is cited elsewhere. Until the `0.1` tag there is one
-exception, stated in [`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
+the normal path takes its explanation with it, and deleting that explanation is a correct change.
+*Replacing* it is the failure mode: a paragraph on why the thing is now ordinary is a longer way of
+writing nothing. The requirement itself is **withdrawn**, never deleted, because its ID is cited
+elsewhere. Until the `0.1` tag there is one exception, stated in
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
 [`spec-authoring.md`](spec-authoring.md) §5.
 
 **6. A normative statement without an ID is not normative.** It is background, and a reader is
@@ -87,6 +95,19 @@ link target that lies.
 
 **8. This repository is public.** Nothing strategic, commercial or personal goes into it — roadmaps
 included. Technical milestones are public; the business around them is not.
+
+**9. Show the case.** Where a rule has a consequence a reader would otherwise have to derive, write
+the consequence out instead of qualifying the rule. One concrete case is shorter than the paragraph
+of hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose, in
+a `concepts/` document, or best in a worked example, which `check-examples.py` then holds to the
+truth — never in the requirement, which [`spec-authoring.md`](spec-authoring.md) already forbids.
+
+**10. Length is a budget, not an entitlement.** Add a paragraph, look for one to delete — usually
+the one the new paragraph made redundant — and treat a section that has doubled since it was written
+as one to cut rather than extend. The budget buys prose: an explanation, a rationale, an example
+that no longer earns its place. It never buys a requirement — a cut that takes an identifier with it
+breaks [`SPS-CORE-003`](../../spec/core/index.md#SPS-CORE-003) and is a change to the contract
+rather than an edit to the text.
 
 ## Roadmaps
 
