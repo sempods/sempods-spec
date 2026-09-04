@@ -324,13 +324,27 @@ that ground would let a client's vocabulary overrule a person's answer.
 An implementation MAY let the request preselect the control the consent screen presents, and that
 is the whole of what the parameter may do.
 
-<a id="SPS-AUTH-061"></a>
-**`SPS-AUTH-061`** — Where the last grant an application holds for a person is removed, the
-implementation MUST revoke the refresh-token families that application holds for them.
+<a id="SPS-AUTH-064"></a>
+**`SPS-AUTH-064`** — A consent decision that withholds a durable connection MUST revoke the
+refresh-token families the application already holds for that person.
 
-A family that outlives the grants it was issued beside authorizes nothing until the same context IRI
-exists again, at which point it authorizes whatever the new context holds. Ending it with the grants
-closes that window without needing to know why they went.
+Without this the decision governs only what is issued next, and the person who has just said they do
+not want this application to stay connected stays connected — through a credential that renews its
+own lifetime on every rotation, so nothing expires it either. The reach is
+[`SPS-AUTH-062`](#SPS-AUTH-062)'s: the person, not the URI the consent screen happened to run under.
+
+<a id="SPS-AUTH-061"></a>
+**`SPS-AUTH-061`** — Where an application is left holding nothing for a person — no context grant
+and no `public-read` — the implementation MUST revoke the refresh-token families it holds for them.
+
+A family that outlives everything it was issued beside authorizes nothing until the same context IRI
+exists again, at which point it authorizes whatever the new context holds. Ending it closes that
+window without needing to know why the grants went.
+
+Holding nothing is the condition, not losing a context grant.
+[`SPS-GRANT-022`](grants.md#SPS-GRANT-022) keeps `public-read` through a revocation of those, and an
+application that still holds it still holds something: its family stands, and the session that rests
+on it is not ended by a narrowing elsewhere.
 
 ### Abuse
 
@@ -421,10 +435,9 @@ join on every authenticated request and make the answer depend on state that cha
 grant was made.
 
 <a id="SPS-AUTH-062"></a>
-**`SPS-AUTH-062`** — Ending a person's access is on the writing side of
-[`SPS-AUTH-052`](#SPS-AUTH-052). An implementation that revokes their grants or their refresh-token
+**`SPS-AUTH-062`** — An implementation that revokes a person's grants or their refresh-token
 families MUST reach every equivalent identity URI it holds for them, not only the URI the request
-carries.
+carries. Ending access is on the writing side of [`SPS-AUTH-052`](#SPS-AUTH-052).
 
 Otherwise a credential issued under one of a person's URIs survives their withdrawal under another,
 and the survivor is the one nobody was looking at. The read-path prohibition is untouched: this is

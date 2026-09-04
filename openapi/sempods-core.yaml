@@ -1043,7 +1043,10 @@ components:
         expires_in: { type: integer }
         refresh_token:
           type: string
-          description: Absent for a `public-read` token and for a service token.
+          description: >-
+            Absent for an anonymous `public-read` token (`SPS-AUTH-035`) and for a service token
+            (`SPS-AUTH-036`). Otherwise present only where consent granted a durable connection
+            (`SPS-AUTH-059`).
         scope: { type: string }
 
     OAuthError:

@@ -93,11 +93,10 @@ that race is `200` and not an error.
 **`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
 remove the state that rested on it: the grants naming it, and the context's statements.
 
-Nothing else rested on it. A refresh token carries feature scopes
-([`SPS-AUTH-029`](../core/auth.md#SPS-AUTH-029)) and never a grant
-([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)), so no token is scoped to a context and none is
-reachable from one. What closes the window a re-created IRI would otherwise open is the grant
-removal above, and where those were an application's last,
+Nothing else rests on it. This specification gives a refresh token no binding to a context at all:
+authority over one is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)), and the grants
+are what the removal above covers. What closes the window a re-created IRI would otherwise open is
+that removal, and where it leaves an application holding nothing,
 [`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061) ends its families too.
 
 <a id="SPS-CTX-018"></a>

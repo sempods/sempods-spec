@@ -433,14 +433,14 @@
       "id": "SPS-AUTH-061",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "Where the last grant an application holds for a person is removed, the implementation MUST revoke the refresh-token families that application holds for them.",
+      "summary": "Where an application is left holding nothing for a person — no context grant and no `public-read` — the implementation MUST revoke the refresh-token families it holds for them.",
       "withdrawn": false
     },
     {
       "id": "SPS-AUTH-062",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "Ending a person's access is on the writing side of [`SPS-AUTH-052`](#SPS-AUTH-052).",
+      "summary": "An implementation that revokes a person's grants or their refresh-token families MUST reach every equivalent identity URI it holds for them, not only the URI the request carries.",
       "withdrawn": false
     },
     {
@@ -448,6 +448,13 @@
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "Where an implementation supports `offline_access`, it MUST list the scope in the `scopes_supported` of every metadata document it serves.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-064",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A consent decision that withholds a durable connection MUST revoke the refresh-token families the application already holds for that person.",
       "withdrawn": false
     },
     {

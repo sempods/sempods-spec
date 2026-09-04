@@ -73,7 +73,7 @@ paths:
       operationId: deleteContext
       summary: Remove a context and the state that rested on it.
       description: |
-        Removes grants naming the context, refresh tokens scoped to it, and its statements. Does
+        Removes the grants naming the context and its statements (`SPS-CTX-017`). Does
         **not** cascade into sub-contexts: deleting `R` leaves `R/sub`. Authorization is checked
         before existence, so a caller outside their sandbox gets `403` rather than a `404` that
         would confirm the context exists.
