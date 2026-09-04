@@ -64,8 +64,9 @@ follows this rule and is the model: *"Standards are named, not re-explained."*
 
 - **Say what the thing is**, not what it is not, and drop the rhetorical shape. `Make context
   management a module, and let one area span both halves` — not `Stop forbidding an area from
-  spanning core and a module`. Holds for headings, prose and commit subjects alike. Normative text
-  is the exception: `MUST NOT` is the correct form of a prohibition.
+  spanning core and a module`. Holds for headings, prose and commit subjects alike. What it targets
+  is negation used as rhetoric; a real prohibition stays as it is, because `MUST NOT` in a
+  requirement and the `never` in an invariant are already the shortest correct wording.
 - **No history, no decision log**, no "this used to be X" — that is what the commit message is for.
   The one exception is a rationale a future reader genuinely needs in order not to undo it, and in
   this repository that rationale usually belongs in `concepts/` rather than inline.
@@ -98,16 +99,17 @@ included. Technical milestones are public; the business around them is not.
 
 **9. Show the case.** Where a rule has a consequence a reader would otherwise have to derive, write
 the consequence out instead of qualifying the rule. One concrete case is shorter than the paragraph
-of hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose, in
-a `concepts/` document, or best in a worked example, which `check-examples.py` then holds to the
-truth — never in the requirement, which [`spec-authoring.md`](spec-authoring.md) already forbids.
+of hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose or
+in a `concepts/` document — and in access control, best in a worked example under
+[`../../examples/`](../../examples/README.md), the one place a case is machine-checked. Never in the
+requirement, which [`spec-authoring.md`](spec-authoring.md) already forbids.
 
 **10. Length is a budget, not an entitlement.** Add a paragraph, look for one to delete — usually
 the one the new paragraph made redundant — and treat a section that has doubled since it was written
 as one to cut rather than extend. The budget buys prose: an explanation, a rationale, an example
-that no longer earns its place. It never buys a requirement — a cut that takes an identifier with it
-breaks [`SPS-CORE-003`](../../spec/core/index.md#SPS-CORE-003) and is a change to the contract
-rather than an edit to the text.
+that no longer earns its place. It never buys a requirement. Rule 5 owns what becomes of one —
+withdrawn, or deleted while the pre-`0.1` window is open — and neither is ever done because a
+section got long.
 
 ## Roadmaps
 
