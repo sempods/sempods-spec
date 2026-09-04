@@ -98,11 +98,15 @@ link target that lies.
 included. Technical milestones are public; the business around them is not.
 
 **9. Show the case.** Where a rule has a consequence a reader would otherwise have to derive, write
-the consequence out instead of qualifying the rule. One concrete case is shorter than the paragraph
-of hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose or
-in a `concepts/` document — and in access control, best in a worked example under
-[`../../examples/`](../../examples/README.md), the one place a case is machine-checked. Never in the
-requirement, which [`spec-authoring.md`](spec-authoring.md) already forbids.
+the consequence out instead of hedging the prose around it — one concrete case is shorter than the
+hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose, in a
+`concepts/` document, or in access control best in a worked example under
+[`../../examples/`](../../examples/README.md), the one place a case is machine-checked. What binds
+stays in the requirement: the condition fixing where an obligation applies
+([`SPS-MEDIA-002`](../../spec/modules/media.md#SPS-MEDIA-002)) and the case it reaches
+([`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030)) are the obligation itself. What a
+requirement must not carry is its own argument — [`spec-authoring.md`](spec-authoring.md)
+§"Pitfalls".
 
 **10. Length is a budget, not an entitlement.** Add a paragraph, look for one to delete — usually
 the one the new paragraph made redundant — and treat a section that has doubled since it was written
