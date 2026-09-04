@@ -577,7 +577,7 @@ paths:
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
         - { name: prompt, in: query, required: false, schema: { type: string } }
-      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044, SPS-AUTH-060]
+      x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044, SPS-AUTH-060, SPS-AUTH-061]
       responses:
         '302':
           description: Redirect carrying `code` and `state`, or `error` and `error_description`.
