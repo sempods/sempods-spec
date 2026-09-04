@@ -16,6 +16,7 @@ import copy
 import json
 import posixpath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -34,11 +35,16 @@ STAGE = SITE / "_stage"
 # its own location from `__file__` and therefore runs from any directory. Started by absolute path
 # from somewhere else, a relative recovery line would build the virtualenv beside whatever the
 # caller happened to be standing in and look for a `requirements.txt` that is not there.
-VENV_BIN = SITE / ".venv" / "bin"
+# `shlex.quote` on every path, because a checkout is allowed to sit somewhere with a space in the
+# name and a recovery line that splits into two arguments is not a recovery line. It gives an
+# ordinary path back unchanged, so the usual case still reads like something a person would type.
+VENV = SITE / ".venv"
+VENV_BIN = VENV / "bin"
 INSTALL_RENDERER = (
-    f"    python3 -m venv {SITE / '.venv'}\n"
-    f"    {VENV_BIN / 'pip'} install --require-hashes -r {SITE / 'requirements.txt'}\n"
-    f'    export PATH="{VENV_BIN}:$PATH"\n'
+    f"    python3 -m venv {shlex.quote(str(VENV))}\n"
+    f"    {shlex.quote(str(VENV_BIN / 'pip'))} install --require-hashes"
+    f" -r {shlex.quote(str(SITE / 'requirements.txt'))}\n"
+    f"    export PATH={shlex.quote(str(VENV_BIN))}:$PATH\n"
 )
 
 # The public pod the try-it button talks to. THIS IS THE ONLY PLACE IT IS WRITTEN.
