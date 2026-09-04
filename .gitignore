@@ -9,3 +9,8 @@ _site/
 # is why this repository had no Python ignore rule until now.
 __pycache__/
 *.pyc
+
+# The locked renderer is installed into a virtualenv rather than into the system interpreter.
+# AGENTS.md §"Before you commit" puts it at `site/.venv`; the rule is by name, so one placed
+# elsewhere in the tree is ignored too.
+.venv/
