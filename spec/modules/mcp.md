@@ -104,9 +104,10 @@ An explicit re-authorization means *review the current consent*. Leaving paralle
 rotate around the consent screen would make the review cosmetic, and a family recorded under another
 of the person's URIs is such a session.
 
-A service token names no person ([`SPS-AUTH-017`](../core/auth.md#SPS-AUTH-017)) and carries no
-refresh token ([`SPS-AUTH-036`](../core/auth.md#SPS-AUTH-036)); an anonymous `public-read` subject
-is synthetic and per-request. Both get the challenge and have nothing to revoke.
+A service token names no person ([`SPS-AUTH-017`](../core/auth.md#SPS-AUTH-017)) and an anonymous
+`public-read` subject is synthetic and per-request, so neither holds a refresh token
+([`SPS-AUTH-058`](../core/auth.md#SPS-AUTH-058)). Both get the challenge and have nothing to
+revoke.
 
 <a id="SPS-MCP-013"></a>
 **`SPS-MCP-013`** — An implementation MUST distinguish the client's automatic replay after the OAuth

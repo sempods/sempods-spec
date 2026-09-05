@@ -302,22 +302,17 @@ whole family.
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
 be recovered.
 
-<a id="SPS-AUTH-035"></a>
-**`SPS-AUTH-035`** — A token issued to an anonymous `public-read` subject MUST NOT carry a refresh
-token. The client re-authorizes when it expires.
-
-No person decided anything and no grant exists to bind a rotation against. With an identity
-established, `public-read` is an ordinary additive scope and its lifetime is
-[`SPS-AUTH-058`](#SPS-AUTH-058)'s question like any other authorization's.
-
-<a id="SPS-AUTH-036"></a>
-**`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
-
 <a id="SPS-AUTH-058"></a>
 **`SPS-AUTH-058`** — An implementation MUST NOT seed a refresh-token family unless the person
 authorizing the request granted a durable connection at consent time. A token issued into a family
 that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
 decision and needs no second one.
+
+An anonymous `public-read` subject and a service client answer nothing at consent — the first is
+synthetic and per-request, the second expresses no person at all
+([`SPS-AUTH-017`](#SPS-AUTH-017)) — so neither receives one. With an identity established,
+`public-read` is an ordinary additive scope and its lifetime is this question like any other
+authorization's.
 
 <a id="SPS-AUTH-059"></a>
 **`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization

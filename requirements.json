@@ -248,20 +248,6 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-035",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "A token issued to an anonymous `public-read` subject MUST NOT carry a refresh token.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-AUTH-036",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "A service token MUST NOT carry a refresh token.",
-      "withdrawn": false
-    },
-    {
       "id": "SPS-AUTH-037",
       "part": "core",
       "chapter": "spec/core/auth.md",
