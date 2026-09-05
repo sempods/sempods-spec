@@ -42,7 +42,7 @@ get wrong.
   ```
 
   Every ID that appears there must also appear in the new text — as a withdrawal, or unchanged
-  somewhere else in the diff. One that does not is a break, with one dated exception:
+  somewhere else in the diff. One that does not is a break, with one exception:
   [`../../GOVERNANCE.md`](../../GOVERNANCE.md) permits deletion and renumbering while its window is
   open, and says what closes it. Inside that window the question is not whether the ID is gone but whether the change says
   it is gone and why. The requirements checker prints such a deletion as a `notice:` line rather

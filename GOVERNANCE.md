@@ -135,8 +135,8 @@ dependency appears or when `0.1` is tagged, whichever is sooner — which makes 
 from who wins an argument, resting on a different fact. That one is a promise this project makes
 about its own text and it holds now; this one is about whether anybody is
 citing the identifiers, and somebody outside can answer that first. Permanence buys exactly one thing: an
-identifier stays safe to cite from a conformance report this project never sees. Nothing has been
-published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
+identifier stays safe to cite from a conformance report this project never sees. Nobody outside is
+citing these identifiers yet, so no such report exists — and withdrawing pays the rule's full price,
 a chapter carrying text that was wrong from the day it was written, for a promise nobody was given.
 
 What the window is not is a licence to delete whatever is inconvenient. Deletion is for a statement
