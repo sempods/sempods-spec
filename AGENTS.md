@@ -29,7 +29,7 @@ implementation that disagrees with it is the bug.**
 
 That holds now, and not only from `0.1`. What the tag still changes is whether the text may move:
 until it, a requirement can be deleted, renumbered, or change meaning under its own identifier.
-[`GOVERNANCE.md`](GOVERNANCE.md) §"The switch from descriptive to prescriptive" is the authority,
+[`GOVERNANCE.md`](GOVERNANCE.md) §"What the tag changes, and what it no longer does" is the authority,
 including the one thing that does not bind — a requirement the chapter itself records as wrong.
 
 Getting this backwards is the single most likely way to damage this repository, which is why it is
@@ -130,7 +130,7 @@ Front door and governance:
 
 - [`README.md`](README.md) — what this repository is, the three-repository table, the licence split
 - [`GOVERNANCE.md`](GOVERNANCE.md) — the independent version line, module versions, the dated switch
-  from descriptive to prescriptive, how a change is made and who decides
+  what the tag changes and what it no longer does, how a change is made and who decides
 - [`NOTICE`](NOTICE) — the licence summary and the trademark position, including the two reserved
   conformance terms that mean nothing until the suite exists
 - [`docs/brand/`](docs/brand/) — canonical project logo assets, attribution and downstream copy
@@ -211,7 +211,8 @@ here rather than copied.
 
 - **Requirement IDs are permanent.** Never renumber, never reassign, never delete. Withdraw instead.
   One exception, live today: a requirement may be deleted and identifiers renumbered, for a
-  statement that should never have been written rather than one that is in the way.
+  statement that should never have been written or one a later requirement has swallowed whole,
+  rather than one that is merely in the way.
   [`GOVERNANCE.md`](GOVERNANCE.md) owns that rule and names both events that end it — do not restate
   the deadline here or anywhere else, because a deadline copied into five files is a deadline four
   of them will get wrong. The checker enforces the half it can observe.

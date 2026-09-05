@@ -13,10 +13,10 @@ sandboxed reads and writes, and an agent surface that uses the same rules as eve
 
 !!! warning "This specification is not yet binding"
 
-    Until the `0.1` release it is **descriptive**: it was extracted from the reference
-    implementation, so where the text and that code disagree today, the code is right. At `0.1`
-    that reverses and a deviation becomes the implementation's bug. [Governance](GOVERNANCE.md)
-    says what the switch is and when it happens.
+    This text decides: an implementation that disagrees with it is the bug. What it is not yet is
+    **fixed** — until the `0.1` release a requirement may still be deleted, renumbered, or change
+    meaning, so nothing here is safe to cite from a conformance report.
+    [Governance](GOVERNANCE.md) says what the tag changes and when it happens.
 
 ## Core and modules
 

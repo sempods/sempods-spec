@@ -36,9 +36,9 @@ note or a bug tracker that this project never sees. It is the same promise the v
 RDF terms, for the same reason, and it begins as soon as there is something to cite — which the tag
 guarantees and an outside dependant can bring about sooner.
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is for, what it is not
-for, and what closes it. This chapter is descriptive until the tag, and only until the tag: that is
-a different event resting on a different fact. Whether the text or the reference implementation is
-right is a promise this project makes about itself, and nobody else's arrival settles it.
+for, and what closes it. What the tag ends is the freedom to edit this text, and an adopter's
+arrival ends it too. Whether the text or the reference implementation is right is a different
+question, settled already: this text decides.
 
 ## 2. What conforms
 
@@ -249,7 +249,7 @@ for both costs a caller the ability to tell "no such context" from "not yours", 
 cannot tell them apart retries a permission problem forever. Checking authorization *before*
 existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
 `403` without confirming anything, and is the shape this should take. Closing it is on the
-specification's roadmap, before `0.1` becomes prescriptive.
+specification's roadmap, before `0.1`.
 
 ## 6. Standards profiled
 

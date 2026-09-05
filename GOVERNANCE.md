@@ -41,7 +41,7 @@ implementation that skips a module entirely is still conformant.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
 
-## The switch from descriptive to prescriptive
+## What the tag changes, and what it no longer does
 
 This is the one piece of process worth stating precisely, because it silently never happens
 otherwise.
@@ -55,17 +55,22 @@ done; carrying on as if the code still arbitrated buys nothing and costs a step 
 because each edit has to be argued against a codebase that was only ever one reading of the
 contract.
 
-**The text freezes at the tag, and not before.** Until `0.1` a requirement may be deleted, an
-identifier renumbered, and a requirement that changes meaning may keep its identifier. That freedom
-is what the next section is about, and it rests on there being nobody outside this project to
-promise to — a different fact from who wins an argument, which is why the two are no longer one
-event.
+**The text freezes at the tag, or at the first adopter, whichever comes first.** Until then a
+requirement may be deleted, an identifier renumbered, and a requirement that changes meaning may
+keep its identifier. That freedom is what the next section is about, and it rests on there being
+nobody outside this project to promise to — a different fact from who wins an argument, which is
+why the two are no longer one event, and the reason this half can end without a tag.
 
-**A known defect binds nobody.** Where a chapter records that a requirement is wrong — `SPS-CORE-018`
-is one, a context-enumeration oracle — an implementation that does the right thing instead is
-conformant, and the requirement is the bug until it is fixed. Deciding to lead was never a decision
-to be right, and a specification that made its own known defects binding would have earned the
-deference it is claiming.
+**A known defect binds nobody, until the text freezes.** Where a chapter records that a requirement
+is wrong — `SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the
+right thing instead is conformant, and the requirement is the bug until it is fixed. Deciding to
+lead was never a decision to be right, and a specification that made its own known defects binding
+would have earned the deference it is claiming.
+
+This one expires with the freedom to edit, and for the same reason: afterwards a requirement that
+turns out wrong is **withdrawn** and replaced by a successor, which is the procedure that keeps a
+conformance report meaningful. A standing note that some requirements do not count would nullify
+them without an identifier anybody can cite.
 
 ### When `0.1` gets tagged
 
@@ -136,8 +141,8 @@ so a second implementation or an external client can appear while it is still op
 one does, the fact this rests on stops being true: there *is* somebody citing these identifiers, and
 renumbering would retarget their tests silently. The relaxation ends when the first external
 dependency appears or when `0.1` is tagged, whichever is sooner — which makes it a different event
-from the switch to prescriptive above, resting on a different fact. That switch is a promise this
-project makes about its own text and only the tag makes it; this one is about whether anybody is
+from who wins an argument, resting on a different fact. That one is a promise this project makes
+about its own text and it holds now; this one is about whether anybody is
 citing the identifiers, and somebody outside can answer that first. Permanence buys exactly one thing: an
 identifier stays safe to cite from a conformance report this project never sees. Nothing has been
 published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
@@ -149,12 +154,10 @@ thing this specification describes cannot satisfy on its own — and for one a l
 swallowed whole, where a withdrawal notice would preserve nothing but the contradiction. Everything
 else is withdrawn, in the window as after it.
 
-The third case is the one that arrives while a chapter is being written rather than years later:
-a general rule lands, and two requirements that each said it for one case are left restating it.
-`SPS-AUTH-035` and `SPS-AUTH-036` forbade a refresh token for `public-read` and for a service token;
-`SPS-AUTH-058` forbids seeding a family without a consent that granted one, and neither of those
-callers consents to anything. Keeping them as withdrawn text would leave a reader reconciling three
-statements where one holds.
+The third case arrives while a chapter is being written rather than years later: a general rule
+lands, and the two requirements that each stated it for one case are left restating it. Keeping
+those as withdrawn text leaves a reader reconciling three statements where one holds, and the
+withdrawal preserves a promise nobody was given.
 
 A number freed by a deletion returns to the pool while the window is open — renumbering that could
 not reuse a freed number would not be renumbering. The three permissions are one fact seen three

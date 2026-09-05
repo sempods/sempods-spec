@@ -81,7 +81,7 @@ Hand this to any agent as a task:
 > relevant instructions are loaded."*
 
 1. Read the root `AGENTS.md` and note what it references — in particular the inverted
-   source-of-truth rule and where the descriptive/prescriptive window stands today.
+   source-of-truth rule and how much of this text may still move.
 2. Read `docs/agents/documentation-strategy.md`.
 3. If the change touches `spec/`, read `docs/agents/spec-authoring.md`.
 4. For each file you intend to change, load the `AGENTS.md` files on the path from the repository

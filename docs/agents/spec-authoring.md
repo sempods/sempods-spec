@@ -10,8 +10,9 @@ Required before writing or editing anything under `spec/`.
 
 Most sentences in a chapter are not, and the burden is on the requirement: a sentence earns an
 identifier by answering all four of these, and stays prose by failing any one. The specification is
-meant to be a small stable shell around what a pod must agree with other pods about — every
-requirement past that is a promise this project has to keep, and one somebody else has to satisfy.
+meant to be a small stable shell around what two implementations must agree about to interoperate —
+mostly a pod and the clients that reach it. Every requirement past that is a promise this project
+has to keep, and one somebody else has to satisfy.
 
 Four questions, in order:
 
@@ -166,7 +167,8 @@ doubt: if an implementation that passed before could now fail, it is a new ID.
 outright instead of withdrawn, and one whose meaning changes may keep its identifier instead of
 yielding to a successor — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says when it
 shuts, and it can shut before the tag. Check there rather than assuming it is still open. Deletion is for a statement
-that should never have been written, not for one that is merely in the way; a withdrawal notice for
+that should never have been written, or one a later requirement has swallowed whole; not for one
+that is merely in the way; a withdrawal notice for
 text nobody was ever bound by preserves a promise nobody was given. Deleting still costs a
 re-vendored `requirements.json` downstream and a citation sweep through `openapi/`, and the
 requirements checker reports the deletion as a notice so it is reviewed rather than absorbed.

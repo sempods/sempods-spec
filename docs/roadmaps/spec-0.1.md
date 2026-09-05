@@ -14,7 +14,7 @@ this repository stops following the implementation and starts binding it.
 
 **There is no concept file for this milestone.** The reasoning that a concept would carry is already
 permanent elsewhere and would only be duplicated here:
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and the descriptive→prescriptive switch,
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and what the tag changes,
 [`../../spec/README.md`](../../spec/README.md) for the core/module split and what a chapter is, and
 [`../agents/spec-authoring.md`](../agents/spec-authoring.md) for the requirement-ID scheme. A
 concept will be written for the first chapter whose *content* needs one.
@@ -63,7 +63,7 @@ equally urgent and the announce waits on all of them.
 - [x] 4 — `spec-authoring.md`: RFC 2119 usage, the `SPS-<AREA>-<NNN>` scheme, the anchor convention,
       the withdrawal rule, the area registry.
 - [x] 5 — `GOVERNANCE.md`: independent version line, module versions, the dated switch from
-      descriptive to prescriptive at the `0.1` tag, how a change is made.
+      what the `0.1` tag changes and what it no longer does, how a change is made.
 - [x] 6 — `spec/README.md`: the chapter map with a status per chapter, and the two chapters that are
       new writing rather than a move.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret

@@ -32,7 +32,7 @@ Every roadmap repeats this in its own header, so a reviewer who sees only the di
 
 - [`spec-0.1.md`](spec-0.1.md) — the first specification release: core specified with requirement
   IDs, an OpenAPI description, the second copy in the reference implementation retired, and the
-  switch from descriptive to prescriptive.
+  point at which the text stops being editable.
 
 ## Template
 

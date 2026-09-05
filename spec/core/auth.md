@@ -420,7 +420,7 @@ and nothing requires it of one that does not — so a client of such a pod is le
 append form by convention. This chapter is likewise silent on where RFC 8414 Authorization Server
 Metadata lives, though it profiles the standard and [`SPS-AUTH-048`](#SPS-AUTH-048) constrains what
 that document may claim. Both are recorded rather than blessed, and closing them is on the
-specification's roadmap, before `0.1` becomes prescriptive.
+specification's roadmap, before `0.1`.
 
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.
