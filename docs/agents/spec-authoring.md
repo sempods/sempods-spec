@@ -190,9 +190,8 @@ requirement to be rid of one of its clauses throws away the clause that was righ
 ## Pitfalls
 
 - **Do not write a requirement for the reference implementation's behaviour just because it is the
-  behaviour.** These chapters were extracted from it, which is where the temptation comes from. The
-  job was always to separate the contract from one implementation's choices: storage layout,
-  framework, error message wording, collection names are not the contract.
+  behaviour.** Storage layout, framework, error message wording, collection names: not the
+  contract.
 - **Do not let a requirement carry its own justification.** "The server MUST reject `SERVICE`,
   because federated queries are an SSRF surface" mixes the obligation with the argument, and a
   reader cannot tell whether the reason is also binding. The obligation goes in the chapter, the

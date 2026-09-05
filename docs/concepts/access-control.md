@@ -99,8 +99,7 @@ resolved.
 ## What rests on running code (IST)
 
 The target state is not uniformly speculative, and a reader should be able to tell which half they
-are in. A section describing something no implementation does is a proposal; one describing
-something that runs is a reframing of it, and far less likely to be wrong.
+are in.
 
 **Running today**, in the reference implementation or in a deployment built on this model:
 
