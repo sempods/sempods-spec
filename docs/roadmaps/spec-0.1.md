@@ -390,4 +390,4 @@ equally urgent and the announce waits on all of them.
   chapters.
 - `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
 - No document that moved here still exists in the reference implementation.
-- `0.1` is tagged, and `GOVERNANCE.md`'s switch has therefore happened.
+- `0.1` is tagged, and identifiers are therefore permanent.

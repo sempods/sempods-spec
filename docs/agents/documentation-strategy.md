@@ -81,7 +81,7 @@ where a reader would otherwise guess.
 the normal path takes its explanation with it, and deleting that explanation is a correct change.
 *Replacing* it is the failure mode: a paragraph on why the thing is now ordinary is a longer way of
 writing nothing. The requirement itself is **withdrawn**, never deleted, because its ID is cited
-elsewhere. Until the `0.1` tag there is one exception, stated in
+elsewhere. There is one exception while its window is open, stated in
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
 [`spec-authoring.md`](spec-authoring.md) §5.
 

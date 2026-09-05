@@ -17,8 +17,8 @@
       exactly
 - [ ] **No requirement ID was reused, renumbered or deleted.** A requirement that is no
       longer wanted is marked *withdrawn* and keeps its ID — it is cited in conformance
-      suites and in other people's test reports. Until `0.1` is tagged, `GOVERNANCE.md`
-      permits a deletion; tick this box anyway and say in the description which ID went
+      suites and in other people's test reports. `GOVERNANCE.md` permits a deletion while
+      its window is open; tick this box anyway and say in the description which ID went
       and why
 - [ ] The OpenAPI description moved with the chapter, if the HTTP surface moved
 - [ ] `spec/README.md`'s chapter table still reflects reality

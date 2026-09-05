@@ -50,7 +50,7 @@ otherwise.
 disagrees is the bug — the reference implementation included. It gets no standing it does not earn
 by being correct.
 
-**The text freezes at the tag, or at the first adopter, whichever comes first.** Until then a
+**Identifiers freeze at the tag, or at the first adopter, whichever comes first.** Until then a
 requirement may be deleted, an identifier renumbered, and a requirement that changes meaning may
 keep its identifier. That freedom rests on there being nobody outside this project to promise to,
 which is why this half can end without a tag: somebody outside can end it.
@@ -61,7 +61,7 @@ instead is conformant, and stays conformant until that requirement is repaired. 
 the repair and not with a date: an adopter arriving first would otherwise make a defect binding
 that nobody has fixed yet.
 
-Once the text freezes, no further note is added. A requirement that turns out wrong from then on is
+Once identifiers freeze, no further note is added. A requirement that turns out wrong from then on is
 **withdrawn** and replaced by a successor, because a standing note that some requirements do not
 count would nullify them without an identifier anybody can cite.
 
