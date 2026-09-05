@@ -315,14 +315,11 @@ deciding rather than the decision.
 condition of issuing one. A client that never sent the scope receives a refresh token where consent
 granted a durable connection.
 
-The two directions are what keep the grant the person's rather than the client's. Asking does not
-grant: a request parameter is what a client wants, and treating it as the decision hands the client
-a credential the person was never asked about. Not asking does not forbid: a client may be unable
-to send a scope its authorization server never advertised, and denying it a durable connection on
-that ground would let a client's vocabulary overrule a person's answer.
-
-An implementation MAY let the request preselect the control the consent screen presents, and that
-is the whole of what the parameter may do.
+The two together keep the grant the person's rather than the client's. A request parameter is what a
+client wants, so treating it as the decision hands the client a credential the person was never
+asked about; and a client may be unable to send a scope its authorization server never advertised,
+so refusing it a durable connection on that ground lets a client's vocabulary overrule a person's
+answer. What the parameter buys is a preselected control, where an implementation offers one.
 
 <a id="SPS-AUTH-060"></a>
 **`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
