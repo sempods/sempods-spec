@@ -253,6 +253,28 @@ here rather than copied.
    **Pass the base ref.** Without it the disappearance check does not run at all — which is the
    half CI runs and the half a local run is most likely to skip.
 
+   **Getting the tools.** None of them is vendored, so a fresh checkout installs them once:
+
+   ```bash
+   brew install lychee
+   python3 -m venv site/.venv
+   site/.venv/bin/pip install --require-hashes -r site/requirements.txt
+   export PATH="$PWD/site/.venv/bin:$PATH"
+   ```
+
+   The lock was resolved on Python 3.14 and CI installs it under 3.14. `--require-hashes` checks
+   the artefacts and not the interpreter, so another `python3` installs it without complaint and
+   then renders with a dependency tree nobody resolved — read `python3 -V` before creating the
+   virtualenv. The last line is what makes the commands above work as written: `site/build.py` looks
+   `mkdocs` up on `PATH`, and every script takes its interpreter from `python3`. `check-examples.py`
+   needs rdflib on top of the lock and prints the pinned line that installs it — those two versions
+   are owned there and nowhere else.
+
+   **A check you did not run is reported as not run.** An offline substitute written for the
+   occasion is a claim a reviewer cannot verify, and the anchors are where such a substitute goes
+   wrong: an anchor matching nothing resolves to the top of the page and looks like a working link.
+   Install the tool, or name the check that was skipped.
+
 2. Documentation is current *in this same change* — new chapters reachable from an `AGENTS.md`, the
    roadmap item ticked, requirement IDs consistent.
    [`docs/agents/documentation-sync.md`](docs/agents/documentation-sync.md) is the procedure.
@@ -260,8 +282,10 @@ here rather than copied.
    done with an AI assistant also carries `Co-Authored-By` for the model, and it is the human who
    signs off who is the author.
 4. Commit messages are **full imperative sentences in plain English**, not Conventional Commits —
-   "Say what a context is before saying who may read one", not `docs: …`. The body explains what was
-   wrong and why the fix has the shape it does.
+   "Say what a context is before saying who may read one", not `docs: …`. The subject names the
+   change directly, in the fewest words that stay correct — writing rule 3 in
+   [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md). The body
+   explains what was wrong and why the fix has the shape it does.
 
 ## What this repository deliberately does not have
 
