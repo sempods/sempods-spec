@@ -32,7 +32,8 @@ Every roadmap repeats this in its own header, so a reviewer who sees only the di
 
 - [`spec-0.1.md`](spec-0.1.md) — the first specification release: core specified with requirement
   IDs, an OpenAPI description, the second copy in the reference implementation retired, and the
-  point at which the text stops being editable.
+  point at which an identifier stops being reusable. The text goes on being written; what ends is
+  deleting, renumbering, and changing what an identifier stands for.
 
 ## Template
 

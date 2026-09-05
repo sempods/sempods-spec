@@ -11,7 +11,7 @@ HTTP resources, RDF and named graphs, JSON-LD, SPARQL, OAuth/OIDC and MCP. The s
 the pod contract between them: one base URL, one context per statement, server-resolved grants,
 sandboxed reads and writes, and an agent surface that uses the same rules as every other client.
 
-!!! warning "This specification is not yet binding"
+!!! warning "This specification can still change"
 
     This text decides: an implementation that disagrees with it is the bug. What it is not yet is
     **fixed** — a requirement may still be deleted, renumbered, or change meaning, so nothing here

@@ -32,8 +32,9 @@ roadmaps/<milestone>.md     Temporary. The breakdown and status of one milestone
 ### Where the types differ from the implementation repository
 
 **The specification is the source of truth**, where an implementation's documentation defers to
-its code. An implementation that disagrees with this text is the bug; what the `0.1` tag changes is
-whether the text may still move ([`../../GOVERNANCE.md`](../../GOVERNANCE.md)).
+its code. An implementation that disagrees with this text is the bug; how much of the text may still
+move is [`../../GOVERNANCE.md`](../../GOVERNANCE.md)'s, and it is not the tag alone that settles
+it.
 
 **A concept is worth more here.** In an implementation, reasoning can hide in a code comment beside
 the thing it explains. In a specification there is no such place: the normative text must not carry
