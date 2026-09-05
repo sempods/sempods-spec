@@ -1,6 +1,7 @@
 openapi: 3.1.0
 
-# The MCP module's HTTP surface: one JSON-RPC route.
+# The MCP module's HTTP surface: one JSON-RPC route, and the metadata address a client builds
+# from it.
 #
 # There is little for OpenAPI to say here, and that is the honest shape of it — the contract is in
 # the methods, the tool catalogue and the authentication modes, none of which a path-and-schema
@@ -52,7 +53,7 @@ paths:
         tool does not declare is refused before dispatch, never silently dropped. The caller is a
         language model, and ignoring an invented argument executes a different operation than the
         one it asked for — broader on a read, wrong on a write — and returns success.
-      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028]
+      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028]
       requestBody:
         required: true
         content:
@@ -80,6 +81,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+
+  # The append form on the MCP URL. No Authorization Server Metadata stands beside it: the MCP URL
+  # is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves to match
+  # the URL it was fetched from (`SPS-MCP-032`). A description can add a route; it has no way to
+  # forbid one.
+  /_system/mcp/.well-known/oauth-protected-resource:
+    get:
+      operationId: mcpProtectedResourceMetadata
+      summary: RFC 9728 Protected Resource Metadata, at the MCP URL.
+      description: |
+        Some clients read the MCP URL itself as the protected-resource identifier and build this
+        address from it. What they get is the **pod-level** document — the one
+        `{pod}/.well-known/oauth-protected-resource` serves, `resource` naming the pod. The MCP URL
+        is another spelling of the same protected resource, so a client that discovered the pod
+        here and one that discovered it there end at the same authorization server.
+
+        The host-rooted address RFC 9728 §3.1 builds from an MCP URL sits on the origin, above the
+        pod's base URL, and a pod cannot serve what is above it. A client that probes there first
+        finds nothing and falls back to the `401` above.
+      security: [{}]
+      x-sps-requirements: [SPS-MCP-031]
+      responses:
+        '200':
+          description: The pod-level metadata document.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
 
 components:
 
@@ -137,3 +165,17 @@ components:
                 Parse error, invalid request, method or tool not found, invalid params, internal
                 error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }
+
+    # The core description's schema, copied rather than cross-referenced — an OpenAPI description
+    # stands alone. The route above serves the pod-level document, so this is its schema.
+    ProtectedResourceMetadata:
+      type: object
+      required: [resource, authorization_servers, bearer_methods_supported]
+      properties:
+        resource: { type: string, format: uri }
+        authorization_servers: { type: array, items: { type: string, format: uri } }
+        bearer_methods_supported: { type: array, items: { type: string } }
+        name: { type: string }
+        public_contexts:
+          type: integer
+          description: A count. Never the URIs.
