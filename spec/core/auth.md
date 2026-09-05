@@ -275,7 +275,8 @@ registered set or nothing.
 
 <a id="SPS-AUTH-063"></a>
 **`SPS-AUTH-063`** — An implementation MUST refuse an authorization code whose consent decision has
-changed since the code was issued.
+changed since the code was issued. The decision is the person's, so an answer given under any URI
+equivalent to the one the code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) is such a change.
 
 A code is a request, not an authority. It stays redeemable for minutes, and the client holds its
 verifier, so the window belongs to whoever answered first. Two cases show what the refusal is for.
@@ -284,7 +285,8 @@ exchanged: without this the code still mints the family the earlier answer allow
 application that now holds nothing. Somebody grants a durable connection, then consents again on
 narrower terms while the first code is still unspent: [`SPS-AUTH-060`](#SPS-AUTH-060) revokes what
 the application *holds*, which at that moment is nothing, and the older code then buys exactly what
-the newer answer withheld.
+the newer answer withheld. The second consent may run under another of the person's URIs, which is
+why the comparison is over the person and not over the subject the code names.
 
 Refusing only a code whose application now holds nothing is too weak for the second case — after
 the reconnect it holds something again. What the code has to carry is which answer produced it.
