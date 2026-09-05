@@ -9,8 +9,9 @@ _Status: ☐ open · ◐ in progress · ☑ done_
 **Goal.** A stranger can implement a conformant pod from this repository alone, in a language of
 their choosing, and can tell whether they succeeded. Concretely: core is specified with requirement
 IDs, the HTTP surface has a hand-written OpenAPI description, the reference implementation's
-documentation no longer holds a second copy of any of it, and `0.1` is tagged — the point at which
-an identifier becomes safe to cite.
+documentation no longer holds a second copy of any of it, and `0.1` is tagged. What makes an
+identifier safe to cite is [`../../GOVERNANCE.md`](../../GOVERNANCE.md)'s, and the tag is not the
+only thing that settles it.
 
 **There is no concept file for this milestone.** The reasoning that a concept would carry is already
 permanent elsewhere and would only be duplicated here:

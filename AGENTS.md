@@ -28,8 +28,8 @@ implementation included. Assuming the code decides is the most likely way to dam
 repository, which is why this stands before the mission.
 
 Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s: the text may still be edited — a requirement
-deleted, an identifier renumbered, a meaning changed — until `0.1` or the first adopter, and until
-then a requirement a chapter records as wrong binds nobody.
+deleted, an identifier renumbered, a meaning changed — until `0.1` or the first adopter; and a
+requirement a chapter records as wrong binds nobody until it is repaired.
 
 ## Project mission
 
