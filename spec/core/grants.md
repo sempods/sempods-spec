@@ -17,7 +17,15 @@ strings, and both say something about permission.
 | | Travels in the access token | Example |
 |---|---|---|
 | **Grant** | no | `<context-iri>#read`, `#write`, `#manage` |
-| **Scope** (RFC 6749) | yes | `public-read`, `openid`, `offline_access` |
+| **Scope** (RFC 6749) | yes | `public-read` |
+
+`offline_access` belongs to neither row. It asks about the *lifetime* of what is issued rather than
+about authority, so it is no feature scope and [`SPS-AUTH-029`](auth.md#SPS-AUTH-029) keeps it out
+of the `scope` claim. It does appear in the token response of an implementation that supports it,
+where RFC 6749 §5.1 would have the value describe the access token's own scope — the latitude
+OpenID Connect takes for the scope this one borrows its name from. A client needs nothing from it:
+whether a durable connection was granted is the presence of `refresh_token` in the same response.
+[`SPS-AUTH-062`](auth.md#SPS-AUTH-062) has the extension itself.
 
 <a id="SPS-GRANT-001"></a>
 **`SPS-GRANT-001`** — A **grant** is durable server-side policy on one context. An implementation

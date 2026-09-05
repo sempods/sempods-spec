@@ -273,6 +273,24 @@ exchange with `invalid_scope`.
 A service token carries no per-token state that could express a subset; it grants the client's
 registered set or nothing.
 
+<a id="SPS-AUTH-063"></a>
+**`SPS-AUTH-063`** — An implementation MUST refuse an authorization code whose consent decision has
+changed since the code was issued. The decision is the person's, so an answer given under any URI
+equivalent to the one the code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) is such a change.
+
+A code is a request, not an authority. It stays redeemable for minutes, and the client holds its
+verifier, so the window belongs to whoever answered first. Two cases show what the refusal is for.
+Somebody grants a durable connection, then disconnects the application before the code is
+exchanged: without this the code still mints the family the earlier answer allowed, for an
+application that now holds nothing. Somebody grants a durable connection, then consents again on
+narrower terms while the first code is still unspent: [`SPS-AUTH-060`](#SPS-AUTH-060) revokes what
+the application *holds*, which at that moment is nothing, and the older code then buys exactly what
+the newer answer withheld. The second consent may run under another of the person's URIs, which is
+why the comparison is over the person and not over the subject the code names.
+
+Refusing only a code whose application now holds nothing is too weak for the second case — after
+the reconnect it holds something again. What the code has to carry is which answer produced it.
+
 ### Refresh tokens
 
 <a id="SPS-AUTH-033"></a>
@@ -284,12 +302,40 @@ whole family.
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
 be recovered.
 
-<a id="SPS-AUTH-035"></a>
-**`SPS-AUTH-035`** — A token issued for `public-read` MUST NOT carry a refresh token. The client
-re-authorizes when it expires.
+<a id="SPS-AUTH-058"></a>
+**`SPS-AUTH-058`** — An implementation MUST NOT seed a refresh-token family unless the person
+authorizing the request granted a durable connection at consent time. A token issued into a family
+that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
+decision and needs no second one.
 
-<a id="SPS-AUTH-036"></a>
-**`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
+An anonymous `public-read` subject and a service client answer nothing at consent — the first is
+synthetic and per-request, the second expresses no person at all
+([`SPS-AUTH-017`](#SPS-AUTH-017)) — so neither receives one. With an identity established,
+`public-read` is an ordinary additive scope and its lifetime is this question like any other
+authorization's.
+
+<a id="SPS-AUTH-059"></a>
+**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization
+request a condition of issuing one. A client that never sent the scope receives a refresh token
+where consent granted a durable connection.
+
+The two together keep the grant the person's rather than the client's. What is asked about is a
+lifetime — a credential that expires with the access token, or one that outlives it — and how
+the question reaches the person is the implementation's own; naming the scope in its place gives
+somebody the protocol word for what they are deciding rather than the decision. Treating the
+parameter as that decision hands a client a credential nobody was asked about, and refusing
+durability for its absence lets a client's vocabulary decide instead: an MCP client cannot send a
+scope its authorization server never advertised. What the parameter buys is a preselected control,
+where an implementation offers one.
+
+<a id="SPS-AUTH-060"></a>
+**`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
+refresh-token families the application already holds for that person.
+
+The decision reaches what already stands. Governing only the next issuance would leave the person
+who just declined connected through a credential that renews its own lifetime on every rotation, so
+nothing expires it either. The reach is [`SPS-AUTH-061`](#SPS-AUTH-061)'s: the person, not the URI
+the consent screen ran under.
 
 ### Abuse
 
@@ -379,6 +425,15 @@ A request carries one identity URI. Resolving equivalences on the read path woul
 join on every authenticated request and make the answer depend on state that changed since the
 grant was made.
 
+<a id="SPS-AUTH-061"></a>
+**`SPS-AUTH-061`** — An implementation that revokes a person's grants or their refresh-token
+families MUST reach every equivalent identity URI it holds for them, not only the URI the request
+carries. Ending access is on the writing side of [`SPS-AUTH-052`](#SPS-AUTH-052).
+
+Otherwise a credential issued under one of a person's URIs survives their withdrawal under another,
+and the survivor is the one nobody was looking at. The read-path prohibition is untouched: this is
+about what a revocation covers, not about resolving equivalences to answer a request.
+
 <a id="SPS-AUTH-053"></a>
 **`SPS-AUTH-053`** — An identity assertion MUST NOT be usable as a pod credential. An implementation
 MUST consume it once, at the login callback, and MUST NOT accept it as a bearer token afterwards.
@@ -428,6 +483,19 @@ A count MAY be advertised.
 
 The URIs would be a topology leak on an unauthenticated route — the same rule as
 [`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
+
+<a id="SPS-AUTH-062"></a>
+**`SPS-AUTH-062`** — Where an implementation supports `offline_access`, it SHOULD list the scope
+in the `scopes_supported` of every metadata document it serves.
+
+`SHOULD`, because nothing breaks without it: [`SPS-AUTH-059`](#SPS-AUTH-059) keeps a client that
+cannot ask from being refused, so an unadvertised extension costs a preselected control. What it
+costs instead is a `scopes_supported` that answers untruthfully.
+
+`offline_access` is a sempods extension that borrows an OpenID Connect name, and is requested bare:
+this chapter gives a pod's authorization surface no `openid` scope and no `id_token`, so pairing the
+two asks for something it does not define. The [`oidc`](../modules/oidc.md) module is an identity
+bridge and adds neither.
 
 <a id="SPS-AUTH-047"></a>
 **`SPS-AUTH-047`** — A consumer MUST tolerate members of the metadata document it does not
