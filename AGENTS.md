@@ -125,8 +125,8 @@ will not be read.
 Front door and governance:
 
 - [`README.md`](README.md) — what this repository is, the three-repository table, the licence split
-- [`GOVERNANCE.md`](GOVERNANCE.md) — the independent version line, module versions, the dated switch
-  what the tag changes and what it no longer does, how a change is made and who decides
+- [`GOVERNANCE.md`](GOVERNANCE.md) — the independent version line, module versions, what the tag
+  changes and what it no longer does, how a change is made and who decides
 - [`NOTICE`](NOTICE) — the licence summary and the trademark position, including the two reserved
   conformance terms that mean nothing until the suite exists
 - [`docs/brand/`](docs/brand/) — canonical project logo assets, attribution and downstream copy
@@ -195,9 +195,9 @@ Concepts and roadmaps:
   implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
-  release: core specified with requirement IDs, an OpenAPI description, the second copy in the
-  reference implementation retired, and the switch at the `0.1` tag. It also states which of its
-  phases gate the public announce and which may trail it
+  release: core specified with requirement IDs, an OpenAPI description, and the second copy in the
+  reference implementation retired. It also states which of its phases gate the public announce and
+  which may trail it
 
 Not in this repository, and deliberately: the licensing, DCO, AI-assistance and conduct rules that
 hold across the whole project live once in the organisation's `.github` repository and are inherited

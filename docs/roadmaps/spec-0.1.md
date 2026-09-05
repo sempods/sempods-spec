@@ -63,8 +63,8 @@ equally urgent and the announce waits on all of them.
       the two Claude skills.
 - [x] 4 — `spec-authoring.md`: RFC 2119 usage, the `SPS-<AREA>-<NNN>` scheme, the anchor convention,
       the withdrawal rule, the area registry.
-- [x] 5 — `GOVERNANCE.md`: independent version line, module versions, the dated switch from
-      what the `0.1` tag changes and what it no longer does, how a change is made.
+- [x] 5 — `GOVERNANCE.md`: independent version line, module versions, what the `0.1` tag changes
+      and what it no longer does, how a change is made.
 - [x] 6 — `spec/README.md`: the chapter map with a status per chapter, and the two chapters that are
       new writing rather than a move.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
