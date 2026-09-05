@@ -93,12 +93,11 @@ that race is `200` and not an error.
 **`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
 remove the state that rested on it: the grants naming it, and the context's statements.
 
-No refresh token rests on it. This specification gives one no binding to a context at all: authority
-over a context is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)), and the grants are
-what the removal above covers. A module an implementation advertises may rest more on a context than
-this chapter does — [`SPS-MEDIA-021`](media.md#SPS-MEDIA-021) has the deletion reach media
-assignments — so what stands above is this module's half of the cascade and not the whole of it. What closes the window a re-created IRI would otherwise open is
-that removal.
+No refresh token rests on it: this specification gives one no binding to a context, and authority
+over a context is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)). The grant removal
+above is what closes the window a re-created IRI would otherwise open. A module an implementation
+advertises may rest more on a context than this chapter does —
+[`SPS-MEDIA-021`](media.md#SPS-MEDIA-021) has the deletion reach media assignments.
 
 <a id="SPS-CTX-018"></a>
 **`SPS-CTX-018`** — Deletion MUST NOT cascade into sub-contexts. Deleting `R` leaves `R/sub` in

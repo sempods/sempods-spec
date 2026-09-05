@@ -288,10 +288,9 @@ be recovered.
 **`SPS-AUTH-035`** — A token issued to an anonymous `public-read` subject MUST NOT carry a refresh
 token. The client re-authorizes when it expires.
 
-There is no person to have decided anything and no grant to bind a rotation against, so the
-question [`SPS-AUTH-058`](#SPS-AUTH-058) asks has no one to ask. Where an identity is established,
-`public-read` is an ordinary additive scope and the lifetime follows that requirement like any
-other authorization's.
+No person decided anything and no grant exists to bind a rotation against. With an identity
+established, `public-read` is an ordinary additive scope and its lifetime is
+[`SPS-AUTH-058`](#SPS-AUTH-058)'s question like any other authorization's.
 
 <a id="SPS-AUTH-036"></a>
 **`SPS-AUTH-036`** — A service token MUST NOT carry a refresh token.
@@ -302,33 +301,28 @@ authorizing the request granted a durable connection at consent time. A token is
 that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
 decision and needs no second one.
 
-So an implementation that issues them has to ask, and what it asks about is a lifetime: a credential
-that expires with the access token, or one that outlives it. How that reaches the person is the
-implementation's own — this specification describes what travels between a pod and a client, and a
-consent screen does not. What is worth saying anyway, because it is the failure this requirement
-exists to end: an authority whose duration is never shown is consented to in the arithmetic sense
-only, and naming the scope in place of the thing tells somebody the protocol word for what they are
-deciding rather than the decision.
-
 <a id="SPS-AUTH-059"></a>
-**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request a
-condition of issuing one. A client that never sent the scope receives a refresh token where consent
-granted a durable connection.
+**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization
+request a condition of issuing one. A client that never sent the scope receives a refresh token
+where consent granted a durable connection.
 
-The two together keep the grant the person's rather than the client's. A request parameter is what a
-client wants, so treating it as the decision hands the client a credential the person was never
-asked about; and a client may be unable to send a scope its authorization server never advertised,
-so refusing it a durable connection on that ground lets a client's vocabulary overrule a person's
-answer. What the parameter buys is a preselected control, where an implementation offers one.
+The two together keep the grant the person's rather than the client's. What is asked about is a
+lifetime — a credential that expires with the access token, or one that outlives it — and how
+the question reaches the person is the implementation's own; naming the scope in its place gives
+somebody the protocol word for what they are deciding rather than the decision. Treating the
+parameter as that decision hands a client a credential nobody was asked about, and refusing
+durability for its absence lets a client's vocabulary decide instead: an MCP client cannot send a
+scope its authorization server never advertised. What the parameter buys is a preselected control,
+where an implementation offers one.
 
 <a id="SPS-AUTH-060"></a>
 **`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
 refresh-token families the application already holds for that person.
 
-Without this the decision governs only what is issued next, and the person who has just said they do
-not want this application to stay connected stays connected — through a credential that renews its
-own lifetime on every rotation, so nothing expires it either. The reach is
-[`SPS-AUTH-061`](#SPS-AUTH-061)'s: the person, not the URI the consent screen happened to run under.
+The decision reaches what already stands. Governing only the next issuance would leave the person
+who just declined connected through a credential that renews its own lifetime on every rotation, so
+nothing expires it either. The reach is [`SPS-AUTH-061`](#SPS-AUTH-061)'s: the person, not the URI
+the consent screen ran under.
 
 ### Abuse
 
@@ -478,13 +472,12 @@ The URIs would be a topology leak on an unauthenticated route — the same rule 
 [`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
 
 <a id="SPS-AUTH-062"></a>
-**`SPS-AUTH-062`** — Where an implementation supports `offline_access`, it SHOULD list the scope in
-the `scopes_supported` of every metadata document it serves.
+**`SPS-AUTH-062`** — Where an implementation supports `offline_access`, it SHOULD list the scope
+in the `scopes_supported` of every metadata document it serves.
 
 `SHOULD`, because nothing breaks without it: [`SPS-AUTH-059`](#SPS-AUTH-059) keeps a client that
-cannot ask from being refused, so an unadvertised extension costs a preselected control and nothing
-else. What it does cost is a metadata document that answers untruthfully — `scopes_supported` naming
-everything but a scope the pod accepts says the extension is not there.
+cannot ask from being refused, so an unadvertised extension costs a preselected control. What it
+costs instead is a `scopes_supported` that answers untruthfully.
 
 `offline_access` is a sempods extension that borrows an OpenID Connect name, and is requested bare:
 this chapter gives a pod's authorization surface no `openid` scope and no `id_token`, so pairing the
