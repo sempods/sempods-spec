@@ -28,8 +28,8 @@ one borrows its name from. Nothing here requires that, and a client needs nothin
 a durable connection was granted is the presence of `refresh_token` in the same response, which is
 the answer and not a description of one.
 
-It is also a sempods extension rather than the OpenID Connect scope of that name, and a pod does not
-advertise `openid` at all — [`SPS-AUTH-062`](auth.md#SPS-AUTH-062) is where that is stated.
+It is a sempods extension rather than the OpenID Connect scope of that name —
+[`SPS-AUTH-062`](auth.md#SPS-AUTH-062) is where that is stated.
 
 <a id="SPS-GRANT-001"></a>
 **`SPS-GRANT-001`** — A **grant** is durable server-side policy on one context. An implementation

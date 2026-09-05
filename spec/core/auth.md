@@ -486,9 +486,10 @@ cannot ask from being refused, so an unadvertised extension costs a preselected 
 else. What it does cost is a metadata document that answers untruthfully — `scopes_supported` naming
 everything but a scope the pod accepts says the extension is not there.
 
-`offline_access` is a sempods extension that borrows an OpenID Connect name. It is requested bare: a
-pod is not an OpenID Provider, issues no `id_token`, and does not advertise `openid`, so a client
-that pairs the two is asking for something no pod offers.
+`offline_access` is a sempods extension that borrows an OpenID Connect name, and is requested bare:
+this chapter gives a pod's authorization surface no `openid` scope and no `id_token`, so pairing the
+two asks for something it does not define. The [`oidc`](../modules/oidc.md) module is an identity
+bridge and adds neither.
 
 <a id="SPS-AUTH-047"></a>
 **`SPS-AUTH-047`** — A consumer MUST tolerate members of the metadata document it does not
