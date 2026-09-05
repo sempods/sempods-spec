@@ -14,9 +14,9 @@ sandboxed reads and writes, and an agent surface that uses the same rules as eve
 !!! warning "This specification is not yet binding"
 
     This text decides: an implementation that disagrees with it is the bug. What it is not yet is
-    **fixed** — until the `0.1` release a requirement may still be deleted, renumbered, or change
-    meaning, so nothing here is safe to cite from a conformance report.
-    [Governance](GOVERNANCE.md) says what the tag changes and when it happens.
+    **fixed** — a requirement may still be deleted, renumbered, or change meaning, so nothing here
+    is safe to cite from a conformance report. [Governance](GOVERNANCE.md) says what ends that, and
+    when.
 
 ## Core and modules
 

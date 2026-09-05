@@ -10,7 +10,7 @@ _Status: ☐ open · ◐ in progress · ☑ done_
 their choosing, and can tell whether they succeeded. Concretely: core is specified with requirement
 IDs, the HTTP surface has a hand-written OpenAPI description, the reference implementation's
 documentation no longer holds a second copy of any of it, and `0.1` is tagged — the point at which
-this repository stops following the implementation and starts binding it.
+this text stops moving and becomes safe to cite.
 
 **There is no concept file for this milestone.** The reasoning that a concept would carry is already
 permanent elsewhere and would only be duplicated here:

@@ -82,9 +82,8 @@ accept a pod-relative context path which it resolves to the canonical IRI.
 registered context the caller may not write MUST be `403`
 ([`SPS-CORE-018`](index.md#SPS-CORE-018)).
 
-This is the same known defect stated from the CRUD side, and it binds no more than its other half
-does: an implementation that authorizes before testing existence answers alike either way and is
-conformant today. Both go when the oracle is closed.
+This is [`SPS-CORE-018`](index.md#SPS-CORE-018)'s oracle stated from the CRUD side, and the fix
+closes both: authorize before testing existence, and the two answers stop differing.
 
 <a id="SPS-CRUD-011"></a>
 **`SPS-CRUD-011`** — The resource IRI and the target context are **independent dimensions**. An

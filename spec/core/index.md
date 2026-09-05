@@ -5,8 +5,8 @@ statement is identified, how a pod is addressed, and how an implementation tells
 provides.
 
 **Status: this text decides, and can still change.** An implementation that disagrees with it is
-the bug; until `0.1` is tagged a requirement may still be deleted, renumbered or change meaning. See
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+the bug; a requirement may still be deleted, renumbered or change meaning, until
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) says that ends.
 
 ## 1. Conformance language
 
