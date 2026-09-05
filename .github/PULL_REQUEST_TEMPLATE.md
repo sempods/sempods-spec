@@ -8,8 +8,7 @@
 ## Why
 
 <!-- A specification change needs a written rationale, because other implementations
-     depend on it. If an implementation already runs this, say so — running code carries
-     more weight here than a good argument. -->
+     depend on it. -->
 
 ## Before requesting review
 

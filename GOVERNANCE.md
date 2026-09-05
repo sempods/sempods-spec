@@ -109,10 +109,7 @@ contract.
    separately.
 2. **A pull request** carrying the text change, the requirement-ID additions or withdrawals, and the
    OpenAPI change if the HTTP surface moved. The three are one change, never three.
-3. **Running code beats a good argument.** A requirement that no implementation has ever satisfied is
-   a proposal, not a specification. A change is adopted more readily when something already runs it —
-   the same bar `NAMESPACE.md` sets for adopting a vocabulary term.
-4. **Merge.** Squash, linear history, signed off.
+3. **Merge.** Squash, linear history, signed off.
 
 ### Withdrawing a requirement
 
