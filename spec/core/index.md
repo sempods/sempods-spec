@@ -36,9 +36,9 @@ note or a bug tracker that this project never sees. It is the same promise the v
 RDF terms, for the same reason, and it begins as soon as there is something to cite — which the tag
 guarantees and an outside dependant can bring about sooner.
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is for, what it is not
-for, and what closes it. What the tag ends is the freedom to edit this text, and an adopter's
-arrival ends it too. Whether the text or the reference implementation is right is a different
-question, settled already: this text decides.
+for, and what closes it. What ends there is deleting an identifier, renumbering one, or changing
+what one stands for; the chapters go on being written. Whether the text or the reference
+implementation is right is a different question, settled already: this text decides.
 
 ## 2. What conforms
 

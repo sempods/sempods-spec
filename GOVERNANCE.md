@@ -90,8 +90,9 @@ version is this?" — more honest than a `0.1` that gets edited the week after i
 **The roadmap's open decisions are the gate, not a list kept here** — two copies of that list would
 disagree within a week. What is written down there as required before `0.1` is required before
 `0.1`, and one of those is a **known security defect**: `SPS-CORE-018` is a context-enumeration
-oracle. Tagging over it makes it binding, which is the one outcome this whole switch exists to
-prevent.
+oracle. The note above keeps it from binding until it is repaired, which is what makes tagging over
+it survivable rather than sensible — a tagged specification whose own text says one of its
+requirements is wrong is a poor thing to hand somebody.
 
 The heaviest of them, because it decides whether a version change is survivable at all:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
