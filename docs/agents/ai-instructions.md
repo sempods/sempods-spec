@@ -10,8 +10,8 @@ Start here, then read what this file points at. It is deliberately short.
 
 ## Instruction sources, in order of specificity
 
-1. **Root [`AGENTS.md`](../../AGENTS.md)** — the canonical rules: the inverted source-of-truth rule,
-   the mission, terminology, the non-negotiable invariants, the security stance, the commit
+1. **Root [`AGENTS.md`](../../AGENTS.md)** — the canonical rules: what decides here, the mission,
+   terminology, the non-negotiable invariants, the security stance, the commit
    checklist.
 2. **[`documentation-strategy.md`](documentation-strategy.md)** — the five document types and the
    rules for writing them.
@@ -31,8 +31,8 @@ Start here, then read what this file points at. It is deliberately short.
 - **The more specific file wins** where two on that path conflict.
 - Reading another repository's `AGENTS.md` for orientation is fine, and for this project it is often
   useful: the reference implementation's file carries the same invariants. It still does not govern
-  an edit here, and its rule 1 on source of truth is the one that is **inverted** in this
-  repository — see the root `AGENTS.md`.
+  an edit here, and where it makes its own code the source of truth, this repository makes this
+  text — see the root `AGENTS.md`.
 - Documentation nests the same way. Any `docs/` directory may hold the same types.
 
 ## Tool directory
@@ -57,7 +57,7 @@ This is the complete list; nothing else in this repository may duplicate rules.
 
 | File | Injected by | What stays inline |
 |---|---|---|
-| `.github/copilot-instructions.md` | Copilot Chat and the Copilot coding agent | The inverted source-of-truth rule, the invariants in short form, the requirement-ID scheme, the documentation duty |
+| `.github/copilot-instructions.md` | Copilot Chat and the Copilot coding agent | What decides here, the invariants in short form, the requirement-ID scheme, the documentation duty |
 
 The rules for that duplication: the source of truth is always `AGENTS.md`; update it first and sync
 the subset after; keep the subset minimal and let it link out for everything else.
@@ -80,8 +80,8 @@ Hand this to any agent as a task:
 > *"Perform the AI instruction self-check from `docs/agents/ai-instructions.md` and confirm all
 > relevant instructions are loaded."*
 
-1. Read the root `AGENTS.md` and note what it references — in particular the inverted
-   source-of-truth rule and how much of this text may still move.
+1. Read the root `AGENTS.md` and note what it references — in particular what decides here, and
+   how much of this text may still move.
 2. Read `docs/agents/documentation-strategy.md`.
 3. If the change touches `spec/`, read `docs/agents/spec-authoring.md`.
 4. For each file you intend to change, load the `AGENTS.md` files on the path from the repository

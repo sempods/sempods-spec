@@ -17,15 +17,11 @@ implementation is a different repository, `sempods/sempods-kotlin`.
 There is no code here and no build system. Markdown, and later OpenAPI descriptions and a
 conformance suite.
 
-## The rule that is inverted here
+## What decides here
 
-In the reference implementation the code is the source of truth and a document that disagrees is a
-bug. **Here the specification is the source of truth and an implementation that disagrees is the
-bug.**
-
-That holds now. What the `0.1` tag still changes is whether the text may move — until it, a
-requirement can be deleted, renumbered or change meaning. One thing does not bind: a requirement a
-chapter itself records as wrong. `GOVERNANCE.md` is the authority.
+**This specification decides. An implementation that disagrees with it is the bug**, the reference
+implementation included. Until `0.1` or the first adopter the text may still be edited, and until
+then a requirement a chapter records as wrong binds nobody — `GOVERNANCE.md` is the authority.
 
 ## Non-negotiable invariants
 

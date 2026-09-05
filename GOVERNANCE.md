@@ -46,31 +46,20 @@ implementation that skips a module entirely is still conformant.
 This is the one piece of process worth stating precisely, because it silently never happens
 otherwise.
 
-Two things used to happen at the tag, and only one of them still does.
-
-**The text decides, from now on.** A behaviour change is settled here first, and an implementation
-that disagrees is the bug — the reference implementation included. It gets no standing it does not
-earn by being correct. The chapters were extracted from that implementation and the extraction is
-done; carrying on as if the code still arbitrated buys nothing and costs a step on every change,
-because each edit has to be argued against a codebase that was only ever one reading of the
-contract.
+**The text decides.** A behaviour change is settled here first, and an implementation that
+disagrees is the bug — the reference implementation included. It gets no standing it does not earn
+by being correct.
 
 **The text freezes at the tag, or at the first adopter, whichever comes first.** Until then a
 requirement may be deleted, an identifier renumbered, and a requirement that changes meaning may
-keep its identifier. That freedom is what the next section is about, and it rests on there being
-nobody outside this project to promise to — a different fact from who wins an argument, which is
-why the two are no longer one event, and the reason this half can end without a tag.
+keep its identifier. That freedom rests on there being nobody outside this project to promise to,
+which is why this half can end without a tag: somebody outside can end it.
 
-**A known defect binds nobody, until the text freezes.** Where a chapter records that a requirement
-is wrong — `SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the
-right thing instead is conformant, and the requirement is the bug until it is fixed. Deciding to
-lead was never a decision to be right, and a specification that made its own known defects binding
-would have earned the deference it is claiming.
-
-This one expires with the freedom to edit, and for the same reason: afterwards a requirement that
-turns out wrong is **withdrawn** and replaced by a successor, which is the procedure that keeps a
-conformance report meaningful. A standing note that some requirements do not count would nullify
-them without an identifier anybody can cite.
+**A known defect binds nobody, until then.** Where a chapter records that a requirement is wrong —
+`SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the right thing
+instead is conformant. Afterwards such a requirement is **withdrawn** and replaced by a successor
+instead, because a standing note that some requirements do not count would nullify them without an
+identifier anybody can cite.
 
 ### When `0.1` gets tagged
 

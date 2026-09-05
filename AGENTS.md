@@ -21,19 +21,15 @@ No module carries its own `AGENTS.md` today. That is the normal case, not a gap 
 pointers back to this file — Codex and opencode read it directly. Everything canonical is here or
 under `docs/agents/`; a pointer that grows rules of its own is a pointer that drifts.
 
-## The one rule that is inverted here
+## What decides here
 
-In the reference implementation, the code is the source of truth and a document that disagrees with
-it is a bug. **In this repository there is no code, and the specification is the source of truth: an
-implementation that disagrees with it is the bug.**
+**This specification decides. An implementation that disagrees with it is the bug**, the reference
+implementation included. Assuming the code decides is the most likely way to damage this
+repository, which is why this stands before the mission.
 
-That holds now, and not only from `0.1`. What the tag still changes is whether the text may move:
-until it, a requirement can be deleted, renumbered, or change meaning under its own identifier.
-[`GOVERNANCE.md`](GOVERNANCE.md) §"What the tag changes, and what it no longer does" is the authority,
-including the one thing that does not bind — a requirement the chapter itself records as wrong.
-
-Getting this backwards is the single most likely way to damage this repository, which is why it is
-stated before the mission.
+Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s: the text may still be edited — a requirement
+deleted, an identifier renumbered, a meaning changed — until `0.1` or the first adopter, and until
+then a requirement a chapter records as wrong binds nobody.
 
 ## Project mission
 
