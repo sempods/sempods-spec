@@ -20,9 +20,9 @@ conformance suite.
 ## What decides here
 
 **This specification decides. An implementation that disagrees with it is the bug**, the reference
-implementation included. Until `0.1` or the first adopter the text may still be edited, and a
-requirement a chapter records as wrong binds nobody until it is repaired — `GOVERNANCE.md` is the
-authority.
+implementation included. Two limits, and `GOVERNANCE.md` says when each ends: an identifier may
+still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
+wrong binds nobody.
 
 ## Non-negotiable invariants
 

@@ -31,9 +31,9 @@ Every roadmap repeats this in its own header, so a reviewer who sees only the di
 ## Running
 
 - [`spec-0.1.md`](spec-0.1.md) — the first specification release: core specified with requirement
-  IDs, an OpenAPI description, the second copy in the reference implementation retired, and the
-  point at which an identifier stops being reusable. The text goes on being written; what ends is
-  deleting, renumbering, and changing what an identifier stands for.
+  IDs, an OpenAPI description, and the second copy in the reference implementation retired. The
+  release is also one of the two things [`../../GOVERNANCE.md`](../../GOVERNANCE.md) names as
+  ending the freedom to delete, renumber or redefine an identifier.
 
 ## Template
 

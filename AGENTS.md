@@ -27,9 +27,9 @@ under `docs/agents/`; a pointer that grows rules of its own is a pointer that dr
 implementation included. Assuming the code decides is the most likely way to damage this
 repository, which is why this stands before the mission.
 
-Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s: the text may still be edited — a requirement
-deleted, an identifier renumbered, a meaning changed — until `0.1` or the first adopter; and a
-requirement a chapter records as wrong binds nobody until it is repaired.
+Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s, which says when each ends: an identifier may
+still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
+wrong binds nobody.
 
 ## Project mission
 
