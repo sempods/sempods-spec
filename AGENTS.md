@@ -156,7 +156,7 @@ The rendered site — [`site/`](site/):
 
 - [`site/index.md`](site/index.md) — the landing page at `spec.sempods.org`. Published content, and
   the only page on that site not generated from the specification: it says what a pod is for a
-  reader who arrived without knowing, and warns that the text is not binding until `0.1`. Its links
+  reader who arrived without knowing, and warns that the text can still change. Its links
   are written against the staged layout and resolve nowhere in the repository, which is why lychee
   skips this directory and the Pages build checks them instead.
 - [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the

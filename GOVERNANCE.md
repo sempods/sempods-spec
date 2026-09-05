@@ -55,11 +55,15 @@ requirement may be deleted, an identifier renumbered, and a requirement that cha
 keep its identifier. That freedom rests on there being nobody outside this project to promise to,
 which is why this half can end without a tag: somebody outside can end it.
 
-**A known defect binds nobody, until then.** Where a chapter records that a requirement is wrong —
+**A known defect binds nobody.** Where a chapter records that a requirement is wrong —
 `SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the right thing
-instead is conformant. Afterwards such a requirement is **withdrawn** and replaced by a successor
-instead, because a standing note that some requirements do not count would nullify them without an
-identifier anybody can cite.
+instead is conformant, and stays conformant until that requirement is repaired. The note ends with
+the repair and not with a date: an adopter arriving first would otherwise make a defect binding
+that nobody has fixed yet.
+
+Once the text freezes, no further note is added. A requirement that turns out wrong from then on is
+**withdrawn** and replaced by a successor, because a standing note that some requirements do not
+count would nullify them without an identifier anybody can cite.
 
 ### When `0.1` gets tagged
 
