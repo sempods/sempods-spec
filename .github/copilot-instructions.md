@@ -23,9 +23,9 @@ In the reference implementation the code is the source of truth and a document t
 bug. **Here the specification is the source of truth and an implementation that disagrees is the
 bug.**
 
-One dated exception, live today: **until the `0.1` release the specification is descriptive** and is
-extracted from the reference implementation, so in that window the implementation is still right.
-`GOVERNANCE.md` is the authority and states when the window closes.
+That holds now. What the `0.1` tag still changes is whether the text may move — until it, a
+requirement can be deleted, renumbered or change meaning. One thing does not bind: a requirement a
+chapter itself records as wrong. `GOVERNANCE.md` is the authority.
 
 ## Non-negotiable invariants
 

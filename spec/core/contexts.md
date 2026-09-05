@@ -11,7 +11,7 @@ the boundary that keeps the control plane out of the data path. The naming rules
 there for the reason that decides every such split: they bind however a context came into existence,
 and a pod provisioned outside that module still has contexts.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RDF 1.1 (named graphs). Error codes are [`index.md`](index.md) §5.
 

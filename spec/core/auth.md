@@ -4,7 +4,7 @@ How an application or an agent gets a token a pod will accept, and what a pod ma
 What that token then *permits* is [`grants.md`](grants.md); this chapter stops at the point where a
 caller is identified.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
 RFC 8252 §7.3 (native app redirect URIs), RFC 9728 (Protected Resource Metadata), RFC 8414

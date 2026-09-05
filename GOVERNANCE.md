@@ -46,18 +46,26 @@ implementation that skips a module entirely is still conformant.
 This is the one piece of process worth stating precisely, because it silently never happens
 otherwise.
 
-**Before the `0.1` release — descriptive.** The specification is extracted from the reference
-implementation. Where the text and the code disagree, the code is right and the text is the bug.
-A chapter is written by reading what the implementation does, deciding which parts of it are the
-contract and which are one implementation's choice, and writing down only the first.
+Two things used to happen at the tag, and only one of them still does.
 
-**From the `0.1` release on — prescriptive.** A behaviour change is decided here first, and an
-implementation that disagrees with the specification is the bug — the reference implementation
-included. It gets no standing it does not earn by being correct.
+**The text decides, from now on.** A behaviour change is settled here first, and an implementation
+that disagrees is the bug — the reference implementation included. It gets no standing it does not
+earn by being correct. The chapters were extracted from that implementation and the extraction is
+done; carrying on as if the code still arbitrated buys nothing and costs a step on every change,
+because each edit has to be argued against a codebase that was only ever one reading of the
+contract.
 
-The switch happens **when `0.1` is tagged in this repository**, not when it feels ready. Until then
-every chapter carries the fact that it is descriptive; after it, nothing does, because it is the
-default.
+**The text freezes at the tag, and not before.** Until `0.1` a requirement may be deleted, an
+identifier renumbered, and a requirement that changes meaning may keep its identifier. That freedom
+is what the next section is about, and it rests on there being nobody outside this project to
+promise to — a different fact from who wins an argument, which is why the two are no longer one
+event.
+
+**A known defect binds nobody.** Where a chapter records that a requirement is wrong — `SPS-CORE-018`
+is one, a context-enumeration oracle — an implementation that does the right thing instead is
+conformant, and the requirement is the bug until it is fixed. Deciding to lead was never a decision
+to be right, and a specification that made its own known defects binding would have earned the
+deference it is claiming.
 
 ### When `0.1` gets tagged
 
@@ -137,8 +145,16 @@ a chapter carrying text that was wrong from the day it was written, for a promis
 
 What the window is not is a licence to delete whatever is inconvenient. Deletion is for a statement
 that should never have been written — one whose subject is not this specification's, or that the
-thing this specification describes cannot satisfy on its own. Everything else is withdrawn, in the
-window as after it.
+thing this specification describes cannot satisfy on its own — and for one a later requirement has
+swallowed whole, where a withdrawal notice would preserve nothing but the contradiction. Everything
+else is withdrawn, in the window as after it.
+
+The third case is the one that arrives while a chapter is being written rather than years later:
+a general rule lands, and two requirements that each said it for one case are left restating it.
+`SPS-AUTH-035` and `SPS-AUTH-036` forbade a refresh token for `public-read` and for a service token;
+`SPS-AUTH-058` forbids seeding a family without a consent that granted one, and neither of those
+callers consents to anything. Keeping them as withdrawn text would leave a reader reconciling three
+statements where one holds.
 
 A number freed by a deletion returns to the pool while the window is open — renumbering that could
 not reuse a freed number would not be renumbering. The three permissions are one fact seen three

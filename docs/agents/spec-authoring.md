@@ -8,7 +8,12 @@ Required before writing or editing anything under `spec/`.
 
 ## 1. Decide whether it is a requirement at all
 
-Most sentences in a chapter are not. Four questions, in order:
+Most sentences in a chapter are not, and the burden is on the requirement: a sentence earns an
+identifier by answering all four of these, and stays prose by failing any one. The specification is
+meant to be a small stable shell around what a pod must agree with other pods about — every
+requirement past that is a promise this project has to keep, and one somebody else has to satisfy.
+
+Four questions, in order:
 
 1. **Can a single pod satisfy this on its own?** The subject of this specification is one pod —
    [`spec/core/index.md`](../../spec/core/index.md) §2 states it, and
@@ -183,9 +188,9 @@ requirement to be rid of one of its clauses throws away the clause that was righ
 ## Pitfalls
 
 - **Do not write a requirement for the reference implementation's behaviour just because it is the
-  behaviour.** While the specification is descriptive the implementation is the source, but the job
-  is still to separate the contract from one implementation's choices. Storage layout, framework,
-  error message wording, collection names: not the contract.
+  behaviour.** These chapters were extracted from it, which is where the temptation comes from. The
+  job was always to separate the contract from one implementation's choices: storage layout,
+  framework, error message wording, collection names are not the contract.
 - **Do not let a requirement carry its own justification.** "The server MUST reject `SERVICE`,
   because federated queries are an SSRF surface" mixes the obligation with the argument, and a
   reader cannot tell whether the reason is also binding. The obligation goes in the chapter, the

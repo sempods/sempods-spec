@@ -4,8 +4,8 @@ The chapter every other chapter rests on. It says what it means to conform, how 
 statement is identified, how a pod is addressed, and how an implementation tells a client what it
 provides.
 
-**Status: descriptive.** Until this specification tags `0.1` it is being extracted from the
-reference implementation, and where the two disagree the implementation is right. See
+**Status: this text decides, and can still change.** An implementation that disagrees with it is
+the bug; until `0.1` is tagged a requirement may still be deleted, renumbered or change meaning. See
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 ## 1. Conformance language
@@ -234,8 +234,9 @@ empty result then means is the chapter's business: a resource read answers `404`
 **`SPS-CORE-018`** — On a **write**, the two failures are currently distinguished: a context that is
 not registered produces `404`, and a registered context the caller may not write produces `403`.
 
-**This is a known defect, recorded rather than blessed.** It is what the reference implementation
-does, and while this specification is descriptive that is what it says — but the asymmetry with
+**This is a known defect, recorded rather than blessed, and it binds nobody**
+([`../../GOVERNANCE.md`](../../GOVERNANCE.md)): an implementation that authorizes before testing
+existence is conformant today. It is what the reference implementation does, and the asymmetry with
 `SPS-CORE-017` is a context-enumeration oracle, not a design. A caller who can reach the write path
 learns which guessed context IRIs are registered by watching which answer comes back, and context
 names are freely chosen, so guessing is not hard.

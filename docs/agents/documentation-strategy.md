@@ -32,10 +32,9 @@ roadmaps/<milestone>.md     Temporary. The breakdown and status of one milestone
 ### Where the types differ from the implementation repository
 
 **The source of truth is inverted.** There, the code is right and a document that disagrees is a
-bug. Here the specification is right and an implementation that disagrees is the bug — with one
-dated exception: **until the `0.1` release the specification is descriptive**, extracted from the
-reference implementation, so in that window the implementation is still right.
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) is the authority and states when the window closes.
+bug. Here the specification is right and an implementation that disagrees is the bug. What the
+`0.1` tag still changes is whether the text may move, not who wins —
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) is the authority.
 
 **A concept is worth more here.** In an implementation, reasoning can hide in a code comment beside
 the thing it explains. In a specification there is no such place: the normative text must not carry

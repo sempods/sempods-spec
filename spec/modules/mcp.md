@@ -8,7 +8,7 @@ A pod's MCP endpoint is an agent-facing projection of surfaces the core chapters
 adds no authority and no data path of its own — which is the property most of the requirements below
 exist to preserve.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: the Model Context Protocol, JSON-RPC 2.0, RFC 9728, RFC 8252 §7.3. Error codes are
 [`../core/index.md`](../core/index.md) §5.

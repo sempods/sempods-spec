@@ -5,7 +5,7 @@ layer**, which addresses a resource at its canonical IRI and refuses to bend HTT
 layer**, which addresses a property slot or a single edge and is honest about the places where RDF
 set semantics make it deviate.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RFC 9110, RFC 7396 (JSON Merge Patch), RFC 7232 (conditional requests), RFC 4648 §5
 (base64url), JSON-LD 1.1, and the Linked Data principles. Error codes are [`index.md`](index.md) §5;

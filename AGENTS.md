@@ -27,11 +27,10 @@ In the reference implementation, the code is the source of truth and a document 
 it is a bug. **In this repository there is no code, and the specification is the source of truth: an
 implementation that disagrees with it is the bug.**
 
-With one dated exception, which is where the project stands today: **until the `0.1` release the
-specification is descriptive** and is extracted from the reference implementation, so during that
-window the implementation is still right and the text is still the bug.
+That holds now, and not only from `0.1`. What the tag still changes is whether the text may move:
+until it, a requirement can be deleted, renumbered, or change meaning under its own identifier.
 [`GOVERNANCE.md`](GOVERNANCE.md) §"The switch from descriptive to prescriptive" is the authority,
-and the window closes when `0.1` is tagged.
+including the one thing that does not bind — a requirement the chapter itself records as wrong.
 
 Getting this backwards is the single most likely way to damage this repository, which is why it is
 stated before the mission.
@@ -196,8 +195,8 @@ Concepts and roadmaps:
   access is decided, as behaviour: every pod decides on contexts, a pod whose audiences are smaller
   than a context declares a second decision, and both must allow. What is decided, never how
 - [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
-  reference implementation's own design, kept here while the specification is descriptive and moved
-  out at `0.1`. SOLL for that implementation, never a requirement
+  reference implementation's own design, kept here until `0.1` and moved out then. SOLL for that
+  implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, the second copy in the

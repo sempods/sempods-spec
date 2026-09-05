@@ -348,11 +348,12 @@ equally urgent and the announce waits on all of them.
   the IRIs it has already published — [issue #21](https://github.com/sempods/sempods-spec/issues/21).
   Beside it: whether a tagged `0.1` may move at all or every change after it is `0.2`, and what
   "pulling a version" is as a procedure across two repositories.
-- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
+- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1`.**
   On a write, an unregistered context answers `404` and a registered one the caller may not write
   answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.
-  It is what the reference implementation does and the specification is descriptive, so it is
-  recorded rather than silently corrected — but it contradicts the security stance in `AGENTS.md`,
+  It is what the reference implementation does, and it is recorded rather than silently corrected —
+  a requirement a chapter records as wrong binds nobody (`GOVERNANCE.md`), so an implementation that
+  authorizes first is conformant today. It contradicts the security stance in `AGENTS.md`,
   which calls a requirement leaking context topology a defect. The shape of the fix is already in
   the specification: authorize **before** testing existence, the way context deletion does
   ([`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020)). Changing it means a matching change in
