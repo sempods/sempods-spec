@@ -6,9 +6,8 @@ intends to express every deployment it must serve in one small profile of the So
 Group's [Access Control Policy (ACP)](https://solid.github.io/authorization-panel/acp-specification/),
 and what that costs.
 
-It lives here rather than in the implementation repository for as long as the specification is
-[descriptive](../../GOVERNANCE.md) and the two are being worked out together. When that stops being
-true it moves, and nothing in the specification has to move with it.
+It lives here rather than in the implementation repository while the two are being worked out
+together. At `0.1` it moves, and nothing in the specification has to move with it.
 
 **Nothing here binds anybody.** A pod that answers every request the way the contract says is
 conformant whether it evaluates policies, rewrites queries, or has the rules in its code.

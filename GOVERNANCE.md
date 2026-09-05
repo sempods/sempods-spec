@@ -41,23 +41,29 @@ implementation that skips a module entirely is still conformant.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
 
-## The switch from descriptive to prescriptive
+## What the tag changes, and what it no longer does
 
 This is the one piece of process worth stating precisely, because it silently never happens
 otherwise.
 
-**Before the `0.1` release — descriptive.** The specification is extracted from the reference
-implementation. Where the text and the code disagree, the code is right and the text is the bug.
-A chapter is written by reading what the implementation does, deciding which parts of it are the
-contract and which are one implementation's choice, and writing down only the first.
+**The text decides.** A behaviour change is settled here first, and an implementation that
+disagrees is the bug — the reference implementation included. It gets no standing it does not earn
+by being correct.
 
-**From the `0.1` release on — prescriptive.** A behaviour change is decided here first, and an
-implementation that disagrees with the specification is the bug — the reference implementation
-included. It gets no standing it does not earn by being correct.
+**Identifiers freeze at the tag, or at the first adopter, whichever comes first.** Until then a
+requirement may be deleted, an identifier renumbered, and a requirement that changes meaning may
+keep its identifier. That freedom rests on there being nobody outside this project to promise to,
+which is why this half can end without a tag: somebody outside can end it.
 
-The switch happens **when `0.1` is tagged in this repository**, not when it feels ready. Until then
-every chapter carries the fact that it is descriptive; after it, nothing does, because it is the
-default.
+**A known defect binds nobody.** Where a chapter records that a requirement is wrong —
+`SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the right thing
+instead is conformant, and stays conformant until that requirement is repaired. The note ends with
+the repair and not with a date: an adopter arriving first would otherwise make a defect binding
+that nobody has fixed yet.
+
+Once identifiers freeze, no further note is added. A requirement that turns out wrong from then on is
+**withdrawn** and replaced by a successor, because a standing note that some requirements do not
+count would nullify them without an identifier anybody can cite.
 
 ### When `0.1` gets tagged
 
@@ -84,8 +90,9 @@ version is this?" — more honest than a `0.1` that gets edited the week after i
 **The roadmap's open decisions are the gate, not a list kept here** — two copies of that list would
 disagree within a week. What is written down there as required before `0.1` is required before
 `0.1`, and one of those is a **known security defect**: `SPS-CORE-018` is a context-enumeration
-oracle. Tagging over it makes it binding, which is the one outcome this whole switch exists to
-prevent.
+oracle. The note above keeps it from binding until it is repaired, which is what makes tagging over
+it survivable rather than sensible — a tagged specification whose own text says one of its
+requirements is wrong is a poor thing to hand somebody.
 
 The heaviest of them, because it decides whether a version change is survivable at all:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
@@ -107,10 +114,7 @@ contract.
    separately.
 2. **A pull request** carrying the text change, the requirement-ID additions or withdrawals, and the
    OpenAPI change if the HTTP surface moved. The three are one change, never three.
-3. **Running code beats a good argument.** A requirement that no implementation has ever satisfied is
-   a proposal, not a specification. A change is adopted more readily when something already runs it —
-   the same bar `NAMESPACE.md` sets for adopting a vocabulary term.
-4. **Merge.** Squash, linear history, signed off.
+3. **Merge.** Squash, linear history, signed off.
 
 ### Withdrawing a requirement
 
@@ -128,17 +132,23 @@ so a second implementation or an external client can appear while it is still op
 one does, the fact this rests on stops being true: there *is* somebody citing these identifiers, and
 renumbering would retarget their tests silently. The relaxation ends when the first external
 dependency appears or when `0.1` is tagged, whichever is sooner — which makes it a different event
-from the switch to prescriptive above, resting on a different fact. That switch is a promise this
-project makes about its own text and only the tag makes it; this one is about whether anybody is
+from who wins an argument, resting on a different fact. That one is a promise this project makes
+about its own text and it holds now; this one is about whether anybody is
 citing the identifiers, and somebody outside can answer that first. Permanence buys exactly one thing: an
-identifier stays safe to cite from a conformance report this project never sees. Nothing has been
-published as binding yet, so no such report exists — and withdrawing pays the rule's full price,
+identifier stays safe to cite from a conformance report this project never sees. Nobody outside is
+citing these identifiers yet, so no such report exists — and withdrawing pays the rule's full price,
 a chapter carrying text that was wrong from the day it was written, for a promise nobody was given.
 
 What the window is not is a licence to delete whatever is inconvenient. Deletion is for a statement
 that should never have been written — one whose subject is not this specification's, or that the
-thing this specification describes cannot satisfy on its own. Everything else is withdrawn, in the
-window as after it.
+thing this specification describes cannot satisfy on its own — and for one a later requirement has
+swallowed whole, where a withdrawal notice would preserve nothing but the contradiction. Everything
+else is withdrawn, in the window as after it.
+
+The third case arrives while a chapter is being written rather than years later: a general rule
+lands, and the two requirements that each stated it for one case are left restating it. Keeping
+those as withdrawn text leaves a reader reconciling three statements where one holds, and the
+withdrawal preserves a promise nobody was given.
 
 A number freed by a deletion returns to the pool while the window is open — renumbering that could
 not reuse a freed number would not be renumbering. The three permissions are one fact seen three

@@ -17,15 +17,12 @@ implementation is a different repository, `sempods/sempods-kotlin`.
 There is no code here and no build system. Markdown, and later OpenAPI descriptions and a
 conformance suite.
 
-## The rule that is inverted here
+## What decides here
 
-In the reference implementation the code is the source of truth and a document that disagrees is a
-bug. **Here the specification is the source of truth and an implementation that disagrees is the
-bug.**
-
-One dated exception, live today: **until the `0.1` release the specification is descriptive** and is
-extracted from the reference implementation, so in that window the implementation is still right.
-`GOVERNANCE.md` is the authority and states when the window closes.
+**This specification decides. An implementation that disagrees with it is the bug**, the reference
+implementation included. Two limits, and `GOVERNANCE.md` says when each ends: an identifier may
+still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
+wrong binds nobody.
 
 ## Non-negotiable invariants
 
@@ -57,9 +54,10 @@ Every normative statement carries one, and it is permanent:
   `OIDC`, `MEDIA`, `MCP` (modules).
 - **Never reused, never renumbered, never deleted.** A requirement that is no longer wanted is
   marked *withdrawn*, keeps its ID and its original text, and names its successor. IDs are cited in
-  conformance suites and in other people's test reports. One dated exception, live today: until
-  `0.1` is tagged a requirement may be deleted and identifiers renumbered — `GOVERNANCE.md` states
-  when that ends, and it ends for good.
+  conformance suites and in other people's test reports. One exception, live today: while
+  `GOVERNANCE.md`'s window is open a requirement may be deleted and identifiers renumbered, and one
+  a later requirement has swallowed whole is deleted rather than withdrawn. It states what closes
+  the window, and it closes for good.
 - RFC 2119 as clarified by RFC 8174: only the uppercase keywords bind. Name the actor — "the server
   MUST…", not "it MUST be…".
 - A statement without an ID is not normative.

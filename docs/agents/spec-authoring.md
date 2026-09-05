@@ -8,7 +8,13 @@ Required before writing or editing anything under `spec/`.
 
 ## 1. Decide whether it is a requirement at all
 
-Most sentences in a chapter are not. Four questions, in order:
+Most sentences in a chapter are not, and the burden is on the requirement: a sentence earns an
+identifier by answering all four of these, and stays prose by failing any one. The specification is
+meant to be a small stable shell around what two implementations must agree about to interoperate —
+mostly a pod and the clients that reach it. Every requirement past that is a promise this project
+has to keep, and one somebody else has to satisfy.
+
+Four questions, in order:
 
 1. **Can a single pod satisfy this on its own?** The subject of this specification is one pod —
    [`spec/core/index.md`](../../spec/core/index.md) §2 states it, and
@@ -161,7 +167,8 @@ doubt: if an implementation that passed before could now fail, it is a new ID.
 outright instead of withdrawn, and one whose meaning changes may keep its identifier instead of
 yielding to a successor — `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" says when it
 shuts, and it can shut before the tag. Check there rather than assuming it is still open. Deletion is for a statement
-that should never have been written, not for one that is merely in the way; a withdrawal notice for
+that should never have been written, or one a later requirement has swallowed whole; not for one
+that is merely in the way; a withdrawal notice for
 text nobody was ever bound by preserves a promise nobody was given. Deleting still costs a
 re-vendored `requirements.json` downstream and a citation sweep through `openapi/`, and the
 requirements checker reports the deletion as a notice so it is reviewed rather than absorbed.
@@ -183,9 +190,8 @@ requirement to be rid of one of its clauses throws away the clause that was righ
 ## Pitfalls
 
 - **Do not write a requirement for the reference implementation's behaviour just because it is the
-  behaviour.** While the specification is descriptive the implementation is the source, but the job
-  is still to separate the contract from one implementation's choices. Storage layout, framework,
-  error message wording, collection names: not the contract.
+  behaviour.** Storage layout, framework, error message wording, collection names: not the
+  contract.
 - **Do not let a requirement carry its own justification.** "The server MUST reject `SERVICE`,
   because federated queries are an SSRF surface" mixes the obligation with the argument, and a
   reader cannot tell whether the reason is also binding. The obligation goes in the chapter, the

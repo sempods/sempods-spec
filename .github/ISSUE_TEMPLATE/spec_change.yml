@@ -6,9 +6,7 @@ body:
     attributes:
       value: >-
         A specification change moves slower than an implementation change and needs a
-        written rationale, because other implementations depend on it. Running code beats
-        a good argument: a proposal something already implements is adopted far more
-        readily than one nobody has tried.
+        written rationale, because other implementations depend on it.
 
   - type: dropdown
     id: kind
@@ -44,7 +42,7 @@ body:
     id: running
     attributes:
       label: Does anything already implement this?
-      description: Link it. "Not yet" is an acceptable answer and is worth stating rather than leaving blank.
+      description: Link it, or say "not yet".
     validations:
       required: false
 

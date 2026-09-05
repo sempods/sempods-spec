@@ -31,8 +31,9 @@ Every roadmap repeats this in its own header, so a reviewer who sees only the di
 ## Running
 
 - [`spec-0.1.md`](spec-0.1.md) — the first specification release: core specified with requirement
-  IDs, an OpenAPI description, the second copy in the reference implementation retired, and the
-  switch from descriptive to prescriptive.
+  IDs, an OpenAPI description, and the second copy in the reference implementation retired. The
+  release is also one of the two things [`../../GOVERNANCE.md`](../../GOVERNANCE.md) names as
+  ending the freedom to delete, renumber or redefine an identifier.
 
 ## Template
 

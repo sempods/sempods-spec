@@ -9,12 +9,13 @@ _Status: ☐ open · ◐ in progress · ☑ done_
 **Goal.** A stranger can implement a conformant pod from this repository alone, in a language of
 their choosing, and can tell whether they succeeded. Concretely: core is specified with requirement
 IDs, the HTTP surface has a hand-written OpenAPI description, the reference implementation's
-documentation no longer holds a second copy of any of it, and `0.1` is tagged — the point at which
-this repository stops following the implementation and starts binding it.
+documentation no longer holds a second copy of any of it, and `0.1` is tagged. What makes an
+identifier safe to cite is [`../../GOVERNANCE.md`](../../GOVERNANCE.md)'s, and the tag is not the
+only thing that settles it.
 
 **There is no concept file for this milestone.** The reasoning that a concept would carry is already
 permanent elsewhere and would only be duplicated here:
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and the descriptive→prescriptive switch,
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) for versioning and what the tag changes,
 [`../../spec/README.md`](../../spec/README.md) for the core/module split and what a chapter is, and
 [`../agents/spec-authoring.md`](../agents/spec-authoring.md) for the requirement-ID scheme. A
 concept will be written for the first chapter whose *content* needs one.
@@ -62,8 +63,8 @@ equally urgent and the announce waits on all of them.
       the two Claude skills.
 - [x] 4 — `spec-authoring.md`: RFC 2119 usage, the `SPS-<AREA>-<NNN>` scheme, the anchor convention,
       the withdrawal rule, the area registry.
-- [x] 5 — `GOVERNANCE.md`: independent version line, module versions, the dated switch from
-      descriptive to prescriptive at the `0.1` tag, how a change is made.
+- [x] 5 — `GOVERNANCE.md`: independent version line, module versions, what the `0.1` tag changes
+      and what it no longer does, how a change is made.
 - [x] 6 — `spec/README.md`: the chapter map with a status per chapter, and the two chapters that are
       new writing rather than a move.
 - [x] 7 — Repository hardening: squash-only, delete branch on merge, `protect-main` ruleset, secret
@@ -348,11 +349,12 @@ equally urgent and the announce waits on all of them.
   the IRIs it has already published — [issue #21](https://github.com/sempods/sempods-spec/issues/21).
   Beside it: whether a tagged `0.1` may move at all or every change after it is `0.2`, and what
   "pulling a version" is as a procedure across two repositories.
-- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1` is prescriptive.**
+- **`SPS-CORE-018` is a context-enumeration oracle, and has to close before `0.1`.**
   On a write, an unregistered context answers `404` and a registered one the caller may not write
   answers `403`, so a caller who can reach the write path learns which guessed context IRIs exist.
-  It is what the reference implementation does and the specification is descriptive, so it is
-  recorded rather than silently corrected — but it contradicts the security stance in `AGENTS.md`,
+  It is what the reference implementation does, and it is recorded rather than silently corrected —
+  a requirement a chapter records as wrong binds nobody (`GOVERNANCE.md`), so an implementation that
+  authorizes first is conformant today. It contradicts the security stance in `AGENTS.md`,
   which calls a requirement leaking context topology a defect. The shape of the fix is already in
   the specification: authorize **before** testing existence, the way context deletion does
   ([`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020)). Changing it means a matching change in
@@ -388,4 +390,4 @@ equally urgent and the announce waits on all of them.
   chapters.
 - `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
 - No document that moved here still exists in the reference implementation.
-- `0.1` is tagged, and `GOVERNANCE.md`'s switch has therefore happened.
+- `0.1` is tagged, and identifiers are therefore permanent.

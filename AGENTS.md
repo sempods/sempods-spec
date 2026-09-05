@@ -21,20 +21,15 @@ No module carries its own `AGENTS.md` today. That is the normal case, not a gap 
 pointers back to this file — Codex and opencode read it directly. Everything canonical is here or
 under `docs/agents/`; a pointer that grows rules of its own is a pointer that drifts.
 
-## The one rule that is inverted here
+## What decides here
 
-In the reference implementation, the code is the source of truth and a document that disagrees with
-it is a bug. **In this repository there is no code, and the specification is the source of truth: an
-implementation that disagrees with it is the bug.**
+**This specification decides. An implementation that disagrees with it is the bug**, the reference
+implementation included. Assuming the code decides is the most likely way to damage this
+repository, which is why this stands before the mission.
 
-With one dated exception, which is where the project stands today: **until the `0.1` release the
-specification is descriptive** and is extracted from the reference implementation, so during that
-window the implementation is still right and the text is still the bug.
-[`GOVERNANCE.md`](GOVERNANCE.md) §"The switch from descriptive to prescriptive" is the authority,
-and the window closes when `0.1` is tagged.
-
-Getting this backwards is the single most likely way to damage this repository, which is why it is
-stated before the mission.
+Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s, which says when each ends: an identifier may
+still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
+wrong binds nobody.
 
 ## Project mission
 
@@ -130,8 +125,8 @@ will not be read.
 Front door and governance:
 
 - [`README.md`](README.md) — what this repository is, the three-repository table, the licence split
-- [`GOVERNANCE.md`](GOVERNANCE.md) — the independent version line, module versions, the dated switch
-  from descriptive to prescriptive, how a change is made and who decides
+- [`GOVERNANCE.md`](GOVERNANCE.md) — the independent version line, module versions, what the tag
+  changes and what it no longer does, how a change is made and who decides
 - [`NOTICE`](NOTICE) — the licence summary and the trademark position, including the two reserved
   conformance terms that mean nothing until the suite exists
 - [`docs/brand/`](docs/brand/) — canonical project logo assets, attribution and downstream copy
@@ -161,7 +156,7 @@ The rendered site — [`site/`](site/):
 
 - [`site/index.md`](site/index.md) — the landing page at `spec.sempods.org`. Published content, and
   the only page on that site not generated from the specification: it says what a pod is for a
-  reader who arrived without knowing, and warns that the text is not binding until `0.1`. Its links
+  reader who arrived without knowing, and warns that the text can still change. Its links
   are written against the staged layout and resolve nowhere in the repository, which is why lychee
   skips this directory and the Pages build checks them instead.
 - [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
@@ -196,13 +191,13 @@ Concepts and roadmaps:
   access is decided, as behaviour: every pod decides on contexts, a pod whose audiences are smaller
   than a context declares a second decision, and both must allow. What is decided, never how
 - [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
-  reference implementation's own design, kept here while the specification is descriptive and moved
-  out at `0.1`. SOLL for that implementation, never a requirement
+  reference implementation's own design, kept here until `0.1` and moved out then. SOLL for that
+  implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
-  release: core specified with requirement IDs, an OpenAPI description, the second copy in the
-  reference implementation retired, and the switch at the `0.1` tag. It also states which of its
-  phases gate the public announce and which may trail it
+  release: core specified with requirement IDs, an OpenAPI description, and the second copy in the
+  reference implementation retired. It also states which of its phases gate the public announce and
+  which may trail it
 
 Not in this repository, and deliberately: the licensing, DCO, AI-assistance and conduct rules that
 hold across the whole project live once in the organisation's `.github` repository and are inherited
@@ -212,7 +207,8 @@ here rather than copied.
 
 - **Requirement IDs are permanent.** Never renumber, never reassign, never delete. Withdraw instead.
   One exception, live today: a requirement may be deleted and identifiers renumbered, for a
-  statement that should never have been written rather than one that is in the way.
+  statement that should never have been written or one a later requirement has swallowed whole,
+  rather than one that is merely in the way.
   [`GOVERNANCE.md`](GOVERNANCE.md) owns that rule and names both events that end it — do not restate
   the deadline here or anywhere else, because a deadline copied into five files is a deadline four
   of them will get wrong. The checker enforces the half it can observe.

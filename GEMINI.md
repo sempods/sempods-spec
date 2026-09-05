@@ -4,9 +4,8 @@ The canonical guidance for this repository is the root [`AGENTS.md`](AGENTS.md),
 shared hub [`docs/agents/ai-instructions.md`](docs/agents/ai-instructions.md). Read both before
 making a change; the hub's self-check lists what else applies.
 
-Note before anything else: **the source-of-truth rule is inverted here.** This is the specification,
-and an implementation that disagrees with it is the bug — with one dated exception that is live
-today, stated in [`AGENTS.md`](AGENTS.md).
+Note before anything else: **this specification decides**, and an implementation that disagrees
+with it is the bug. [`AGENTS.md`](AGENTS.md) §"What decides here" has the two limits.
 
 Before editing any `*.md`, read
 [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) — it decides what
