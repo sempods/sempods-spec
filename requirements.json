@@ -405,7 +405,7 @@
       "id": "SPS-AUTH-059",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "An implementation MUST NOT make `offline_access` in the authorization request a condition of issuing one.",
+      "summary": "An implementation MUST NOT make `offline_access` in the authorization request a condition of issuing a refresh token.",
       "withdrawn": false
     },
     {
@@ -434,6 +434,13 @@
       "part": "core",
       "chapter": "spec/core/auth.md",
       "summary": "An implementation MUST refuse an authorization code whose consent decision has changed since the code was issued, counting an answer given under any URI equivalent to the one the code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) as such a change.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-064",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A code exchange and a consent decision MUST each write before they check: the exchange seeds its family and then re-reads the decision, giving up the family where it no longer stands; the decision persists and then revokes.",
       "withdrawn": false
     },
     {

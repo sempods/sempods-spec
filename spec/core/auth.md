@@ -315,9 +315,9 @@ synthetic and per-request, the second expresses no person at all
 authorization's.
 
 <a id="SPS-AUTH-059"></a>
-**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization
-request a condition of issuing one. A client that never sent the scope receives a refresh token
-where consent granted a durable connection.
+**`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request
+a condition of issuing a refresh token. A client that never sent the scope receives one where
+consent granted a durable connection.
 
 The two together keep the grant the person's rather than the client's. An MCP client cannot send a
 scope its authorization server never advertised, and the person's answer is the same either way; a
@@ -327,6 +327,17 @@ preselected control, where an implementation offers one.
 What the person is asked about is a lifetime: a credential that expires with the access token, or
 one that outlives it. How the question reaches them is the implementation's own, and naming the
 scope in place of the thing gives somebody the protocol word for what they are deciding.
+
+<a id="SPS-AUTH-064"></a>
+**`SPS-AUTH-064`** — A code exchange and a consent decision MUST each write before they check: the
+exchange seeds its family and then re-reads the decision, giving up the family where it no longer
+stands; the decision persists and then revokes. Whichever lands second sees the first.
+
+Checking first leaves both sides able to miss each other. The exchange reads a decision that is
+still durable while the newer one is being written; the revocation sweeps a family that has not been
+seeded yet; and the application ends with the connection the person just declined, having satisfied
+both [`SPS-AUTH-060`](#SPS-AUTH-060) and [`SPS-AUTH-063`](#SPS-AUTH-063) along the way. This is
+[`SPS-GRANT-018`](grants.md#SPS-GRANT-018)'s race, one step further down.
 
 <a id="SPS-AUTH-060"></a>
 **`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
