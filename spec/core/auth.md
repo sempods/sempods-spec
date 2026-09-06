@@ -328,11 +328,10 @@ What the person is asked about is a lifetime: a credential that expires with the
 one that outlives it. How the question reaches them is the implementation's own, and naming the
 scope in place of the thing gives somebody the protocol word for what they are deciding.
 
-`offline_access` is a sempods extension that borrows an OpenID Connect name, and is requested bare:
-this chapter gives a pod's authorization surface no `openid` scope and no `id_token`, so pairing the
-two asks for something it does not define, and the [`oidc`](../modules/oidc.md) module is an
-identity bridge that adds neither. A pod that accepts the scope lists it in `scopes_supported` like
-any other — which is where a client that has read none of this finds it.
+`offline_access` is a sempods extension that borrows an OpenID Connect name and is requested bare.
+Pairing it with `openid` asks for something the pod authorization surface does not define: it has no
+`openid` scope or `id_token`, and the [`oidc`](../modules/oidc.md) module is an identity bridge that
+adds neither.
 
 <a id="SPS-AUTH-063"></a>
 **`SPS-AUTH-063`** — A code exchange that seeds a refresh-token family, and anything that revokes

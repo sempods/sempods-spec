@@ -1070,9 +1070,8 @@ components:
           type: array
           items: { type: string }
           description: >-
-            The whole of what a client may put in `scope`. Short, because per-context permissions
-            are grants rather than scopes. Carries `offline_access` where the pod supports the
-            extension — which is where a client discovers it exists.
+            OAuth scope values advertised by the pod. Per-context permissions are grants and do
+            not appear here.
         name: { type: string }
         public_contexts:
           type: integer
