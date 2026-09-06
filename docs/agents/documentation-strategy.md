@@ -70,10 +70,10 @@ follows this rule and is the model: *"Standards are named, not re-explained."*
   The one exception is a rationale a future reader genuinely needs in order not to undo it, and in
   this repository that rationale usually belongs in `concepts/` rather than inline.
 - **A change rewrites the paragraph, it does not append to it.** Where a statement stops being
-  true, replace the paragraph that carried it. Writing the correction after it — `X. And since Y,
-  also Z.` — leaves the stale half as the first thing a reader meets and the current rule as
-  something they assemble. This is the one a review catches late, because each added clause is
-  correct on its own.
+  true, replace the prose that carried it — a requirement has its own procedure, in rule 5. Writing
+  the correction after it — `X. And since Y, also Z.` — leaves the stale half as the first thing a
+  reader meets and the current rule as something they assemble. This is the one a review catches
+  late, because each added clause is correct on its own.
 - **Name the standard** instead of re-explaining it — rule 2, which is this rule applied to a
   document somebody else owns.
 
