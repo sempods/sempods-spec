@@ -319,23 +319,23 @@ authorization's.
 request a condition of issuing one. A client that never sent the scope receives a refresh token
 where consent granted a durable connection.
 
-The two together keep the grant the person's rather than the client's. What is asked about is a
-lifetime — a credential that expires with the access token, or one that outlives it — and how
-the question reaches the person is the implementation's own; naming the scope in its place gives
-somebody the protocol word for what they are deciding rather than the decision. Treating the
-parameter as that decision hands a client a credential nobody was asked about, and refusing
-durability for its absence lets a client's vocabulary decide instead: an MCP client cannot send a
-scope its authorization server never advertised. What the parameter buys is a preselected control,
-where an implementation offers one.
+The two together keep the grant the person's rather than the client's. An MCP client cannot send a
+scope its authorization server never advertised, and the person's answer is the same either way; a
+client that does send it has said what it wants, not what it gets. What the parameter buys is a
+preselected control, where an implementation offers one.
+
+What the person is asked about is a lifetime: a credential that expires with the access token, or
+one that outlives it. How the question reaches them is the implementation's own, and naming the
+scope in place of the thing gives somebody the protocol word for what they are deciding.
 
 <a id="SPS-AUTH-060"></a>
 **`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
 refresh-token families the application already holds for that person.
 
-The decision reaches what already stands. Governing only the next issuance would leave the person
-who just declined connected through a credential that renews its own lifetime on every rotation, so
-nothing expires it either. The reach is [`SPS-AUTH-061`](#SPS-AUTH-061)'s: the person, not the URI
-the consent screen ran under.
+Somebody unticks the control on an application they connected last month. Without this the family
+minted then keeps rotating: it renews its own lifetime on every use, so nothing expires it, and the
+next issuance is the only thing their answer reaches. The reach is
+[`SPS-AUTH-061`](#SPS-AUTH-061)'s — the person, not the URI the consent screen ran under.
 
 ### Abuse
 
