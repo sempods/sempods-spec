@@ -101,7 +101,7 @@ paths:
         pod's base URL, and a pod cannot serve what is above it. A client that probes there first
         finds nothing and falls back to the `401` above.
       security: [{}]
-      x-sps-requirements: [SPS-MCP-031]
+      x-sps-requirements: [SPS-MCP-031, SPS-AUTH-062]
       responses:
         '200':
           description: The pod-level metadata document.
@@ -176,6 +176,13 @@ components:
         resource: { type: string, format: uri }
         authorization_servers: { type: array, items: { type: string, format: uri } }
         bearer_methods_supported: { type: array, items: { type: string } }
+        scopes_supported:
+          type: array
+          items: { type: string }
+          description: >-
+            The whole of what a client may put in `scope`. Short, because per-context permissions
+            are grants rather than scopes. Carries `offline_access` where the pod supports the
+            extension (`SPS-AUTH-062`) — which is where a client discovers it exists.
         name: { type: string }
         public_contexts:
           type: integer
