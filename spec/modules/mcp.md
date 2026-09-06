@@ -96,11 +96,22 @@ recover access stops working across implementations, which is the one thing it c
 
 <a id="SPS-MCP-012"></a>
 **`SPS-MCP-012`** — Where `reauthorize` is true, the implementation MUST issue the challenge even
-for a bearer that would otherwise suffice, and MUST revoke the refresh tokens of the affected
-`(pod, client, subject)`.
+for a bearer that would otherwise suffice, and, where that bearer names a person, MUST end what the
+affected `(pod, client)` holds for them — the refresh tokens and any authorization code not yet
+exchanged — across every equivalent identity URI
+([`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061)) rather than the one the bearer carries.
 
-An explicit re-authorization means *review the current consent*. Leaving parallel sessions able to
-rotate around the consent screen would make the review cosmetic.
+An explicit re-authorization means *review the current consent*. A family recorded under another of
+the person's URIs rotates around that screen; so does a code from an earlier consent, which
+[`SPS-AUTH-062`](../core/auth.md#SPS-AUTH-062) does not catch on its own — recording a challenge
+changes no decision, so the older answer still stands behind that code. The sweep and an exchange
+already under way order themselves by [`SPS-AUTH-063`](../core/auth.md#SPS-AUTH-063): both write
+first, so a family seeded during the sweep does not outlive it.
+
+A service token names no person ([`SPS-AUTH-017`](../core/auth.md#SPS-AUTH-017)) and an anonymous
+`public-read` subject is synthetic and per-request, so neither holds a refresh token
+([`SPS-AUTH-058`](../core/auth.md#SPS-AUTH-058)). Both get the challenge and have nothing to
+revoke.
 
 <a id="SPS-MCP-013"></a>
 **`SPS-MCP-013`** — An implementation MUST distinguish the client's automatic replay after the OAuth
