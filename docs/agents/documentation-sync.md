@@ -102,14 +102,17 @@ lychee --offline --include-fragments --no-progress --exclude-path site .
 
 ## 8. Downstream
 
-Where the change overtakes an implementation, say so in an issue there. The reference implementation
-cites requirement identifiers in prose and in code comments, and vendors
-[`requirements.json`](../../requirements.json); a deletion, a renumbering or a changed meaning
-therefore reaches it, and `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" names that sweep
-as part of the change that caused it.
+Where the change overtakes an implementation, raise the defect there in an issue.
 
-Nothing here can land in this repository's commit, which is the whole reason to write it down before
-the pull request is opened rather than after it is merged.
+Where it deletes an identifier, renumbers one, or changes what one stands for, the sweep is part of
+this change rather than a note about it: the companion pull request re-vendoring
+[`requirements.json`](../../requirements.json) is open, and every citation of the affected
+identifier has been read. A reused number passes a downstream existence check while pointing at a
+different obligation, and `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" calls that the
+one failure nothing downstream can see.
+
+Neither fits in this repository's commit, which is why both are opened before this pull request is
+rather than remembered after it merges.
 
 ## 9. Report
 
