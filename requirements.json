@@ -1665,7 +1665,7 @@
       "id": "SPS-MCP-012",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST end what the affected `(pod, client)` holds for them: the refresh tokens, and any authorization code not yet exchanged.",
+      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST end what the affected `(pod, client)` holds for them — the refresh tokens and any authorization code not yet exchanged — across every equivalent identity URI ([`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061)) rather than the one the bearer carries.",
       "withdrawn": false
     },
     {
