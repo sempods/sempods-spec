@@ -132,8 +132,9 @@ components:
           scopes:
             public-read: >-
               The pod's currently public contexts, unioned into the caller's readable set on top of
-              the grants resolved from storage (`SPS-GRANT-020`). A token issued for it carries no
-              refresh token (`SPS-AUTH-035`).
+              the grants resolved from storage (`SPS-GRANT-020`). Issued to an anonymous subject it
+              carries no refresh token; with an identity established the lifetime is the consent
+              decision's (`SPS-AUTH-058`).
         clientCredentials:
           tokenUrl: 'https://example.org/alice/_system/auth/token'
           scopes: {}
@@ -175,6 +176,13 @@ components:
         resource: { type: string, format: uri }
         authorization_servers: { type: array, items: { type: string, format: uri } }
         bearer_methods_supported: { type: array, items: { type: string } }
+        scopes_supported:
+          type: array
+          items: { type: string }
+          description: >-
+            The whole of what a client may put in `scope`. Short, because per-context permissions
+            are grants rather than scopes. Carries `offline_access` where the pod supports the
+            extension — which is where a client discovers it exists.
         name: { type: string }
         public_contexts:
           type: integer
