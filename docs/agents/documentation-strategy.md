@@ -148,7 +148,11 @@ A change to the specification is not finished until, **in the same change**:
 - the OpenAPI description agrees with the chapter, where the change touched the HTTP surface;
 - the corresponding roadmap item is ticked;
 - `spec/README.md`'s chapter table still reflects reality;
-- every relative link resolves, and any new document is reachable from an `AGENTS.md`.
+- every relative link resolves, and any new document is reachable from an `AGENTS.md`;
+- where the change leaves an implementation behind, an issue is open in that repository. This text
+  decides, so an implementation that no longer matches it is the defect — and the reference
+  implementation cites these identifiers in prose and in code, and vendors the index. Neither the
+  issue nor the re-vendoring fits in this commit, which is why this is the item that gets forgotten.
 
 [`documentation-sync.md`](documentation-sync.md) is the procedure that walks this list.
 
