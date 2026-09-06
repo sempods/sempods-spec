@@ -22,7 +22,7 @@ so a requirement that becomes conditional keeps the name it already had. **What 
 requirement is mandatory is the chapter it stands in**, which is what `requirements.json` reports in
 its `part` field — never the identifier.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RFC 9110. Error codes are [`../core/index.md`](../core/index.md) §5; authorization is
 [`../core/grants.md`](../core/grants.md).

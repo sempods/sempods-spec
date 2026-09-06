@@ -5,7 +5,7 @@ IRI `https://schema.sempods.org/module/oidc` at the conformance endpoint
 ([`SPS-CORE-005`](../core/index.md#SPS-CORE-005)). An implementation that identifies people some
 other way is conformant without it.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: OpenID Connect Core 1.0, OIDC Discovery 1.0, RFC 7636 (PKCE). What a pod stores about a
 person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.

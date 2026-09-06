@@ -5,7 +5,7 @@ layer**, which addresses a resource at its canonical IRI and refuses to bend HTT
 layer**, which addresses a property slot or a single edge and is honest about the places where RDF
 set semantics make it deviate.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RFC 9110, RFC 7396 (JSON Merge Patch), RFC 7232 (conditional requests), RFC 4648 §5
 (base64url), JSON-LD 1.1, and the Linked Data principles. Error codes are [`index.md`](index.md) §5;
@@ -81,6 +81,9 @@ accept a pod-relative context path which it resolves to the canonical IRI.
 **`SPS-CRUD-010`** — A `?context=` value naming a context that is not registered MUST be `404`; a
 registered context the caller may not write MUST be `403`
 ([`SPS-CORE-018`](index.md#SPS-CORE-018)).
+
+This is [`SPS-CORE-018`](index.md#SPS-CORE-018)'s oracle stated from the CRUD side, and the fix
+closes both: authorize before testing existence, and the two answers stop differing.
 
 <a id="SPS-CRUD-011"></a>
 **`SPS-CRUD-011`** — The resource IRI and the target context are **independent dimensions**. An

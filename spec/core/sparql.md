@@ -8,7 +8,7 @@ three documents, one of which deferred to a "SPARQL surface" document that was n
 assembled from those fragments and from the implementation, which is why it carries more than any
 one of them did.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: SPARQL 1.1 Query and the SPARQL 1.1 Protocol. Error codes are [`index.md`](index.md) §5;
 what a caller may read is [`grants.md`](grants.md).

@@ -31,11 +31,10 @@ roadmaps/<milestone>.md     Temporary. The breakdown and status of one milestone
 
 ### Where the types differ from the implementation repository
 
-**The source of truth is inverted.** There, the code is right and a document that disagrees is a
-bug. Here the specification is right and an implementation that disagrees is the bug — with one
-dated exception: **until the `0.1` release the specification is descriptive**, extracted from the
-reference implementation, so in that window the implementation is still right.
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) is the authority and states when the window closes.
+**The specification is the source of truth**, where an implementation's documentation defers to
+its code. An implementation that disagrees with this text is the bug; how much of the text may still
+move is [`../../GOVERNANCE.md`](../../GOVERNANCE.md)'s, and it is not the tag alone that settles
+it.
 
 **A concept is worth more here.** In an implementation, reasoning can hide in a code comment beside
 the thing it explains. In a specification there is no such place: the normative text must not carry
@@ -82,7 +81,7 @@ where a reader would otherwise guess.
 the normal path takes its explanation with it, and deleting that explanation is a correct change.
 *Replacing* it is the failure mode: a paragraph on why the thing is now ordinary is a longer way of
 writing nothing. The requirement itself is **withdrawn**, never deleted, because its ID is cited
-elsewhere. Until the `0.1` tag there is one exception, stated in
+elsewhere. There is one exception while its window is open, stated in
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
 [`spec-authoring.md`](spec-authoring.md) §5.
 

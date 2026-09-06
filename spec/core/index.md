@@ -4,9 +4,9 @@ The chapter every other chapter rests on. It says what it means to conform, how 
 statement is identified, how a pod is addressed, and how an implementation tells a client what it
 provides.
 
-**Status: descriptive.** Until this specification tags `0.1` it is being extracted from the
-reference implementation, and where the two disagree the implementation is right. See
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** An implementation that disagrees with it is
+the bug; a requirement may still be deleted, renumbered or change meaning, until
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) says that ends.
 
 ## 1. Conformance language
 
@@ -36,9 +36,9 @@ note or a bug tracker that this project never sees. It is the same promise the v
 RDF terms, for the same reason, and it begins as soon as there is something to cite — which the tag
 guarantees and an outside dependant can bring about sooner.
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) states what the window before it is for, what it is not
-for, and what closes it. This chapter is descriptive until the tag, and only until the tag: that is
-a different event resting on a different fact. Whether the text or the reference implementation is
-right is a promise this project makes about itself, and nobody else's arrival settles it.
+for, and what closes it. What ends there is deleting an identifier, renumbering one, or changing
+what one stands for; the chapters go on being written. Whether the text or the reference
+implementation is right is a different question, settled already: this text decides.
 
 ## 2. What conforms
 
@@ -234,8 +234,9 @@ empty result then means is the chapter's business: a resource read answers `404`
 **`SPS-CORE-018`** — On a **write**, the two failures are currently distinguished: a context that is
 not registered produces `404`, and a registered context the caller may not write produces `403`.
 
-**This is a known defect, recorded rather than blessed.** It is what the reference implementation
-does, and while this specification is descriptive that is what it says — but the asymmetry with
+**This is a known defect, recorded rather than blessed, and it binds nobody**
+([`../../GOVERNANCE.md`](../../GOVERNANCE.md)): an implementation that authorizes before testing
+existence is conformant today. It is what the reference implementation does, and the asymmetry with
 `SPS-CORE-017` is a context-enumeration oracle, not a design. A caller who can reach the write path
 learns which guessed context IRIs are registered by watching which answer comes back, and context
 names are freely chosen, so guessing is not hard.
@@ -248,7 +249,7 @@ for both costs a caller the ability to tell "no such context" from "not yours", 
 cannot tell them apart retries a permission problem forever. Checking authorization *before*
 existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
 `403` without confirming anything, and is the shape this should take. Closing it is on the
-specification's roadmap, before `0.1` becomes prescriptive.
+specification's roadmap, before `0.1`.
 
 ## 6. Standards profiled
 

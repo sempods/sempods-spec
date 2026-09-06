@@ -6,7 +6,7 @@ IRI gets a foothold, after which it traverses links like any other Linked Data c
 **This chapter is new writing.** It existed in the reference implementation only as a concept
 document, which mixes what is built with what is planned. What follows is the built half.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Error codes are [`index.md`](index.md) §5; the read downscope is
 [`lod-crud.md`](lod-crud.md) §3; what a caller may read is [`grants.md`](grants.md).

@@ -31,15 +31,15 @@ all four modules are written — 318 requirements — together with hand-written
 of the HTTP surface. What is not done is the `0.1` release itself, the conformance suite, and
 removing the second copy of this material from the reference implementation.
 
-Until the `0.1` tag the reference implementation is the source of truth; from `0.1` on that reverses
-and this repository is. [`GOVERNANCE.md`](GOVERNANCE.md) states the switch, and why it is a dated
-event rather than a mood.
+This repository is the source of truth: an implementation that disagrees with it is the bug. The
+text goes on being written after `0.1`; what the tag ends is deleting an identifier, renumbering
+one, or changing what one stands for. [`GOVERNANCE.md`](GOVERNANCE.md) states both, and what else
+can end them.
 
 What that means concretely: **you can implement against this repository, and you cannot yet prove
-you did.** The requirements are stable enough to build against, and their identifiers become
-permanent at the `0.1` tag — until then one may still be deleted or renumbered, which
-[`GOVERNANCE.md`](GOVERNANCE.md) states and bounds;
-what does not exist is the suite that would check an implementation against them.
+you did.** The requirements are stable enough to build against, and an identifier may still be
+deleted or renumbered until [`GOVERNANCE.md`](GOVERNANCE.md) says that ends; what does not exist is
+the suite that would check an implementation against them.
 [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) is what remains, and in which order.
 
 ## What a specification is here
