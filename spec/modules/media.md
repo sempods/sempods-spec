@@ -5,7 +5,7 @@
 ([`SPS-CORE-005`](../core/index.md#SPS-CORE-005)). A pod holds RDF; only a deployment that means to
 hold binaries provides this.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RFC 9110, RFC 7232, RFC 4648 §5. Error codes are [`../core/index.md`](../core/index.md) §5;
 authorization is [`../core/grants.md`](../core/grants.md).

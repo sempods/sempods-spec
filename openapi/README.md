@@ -2,6 +2,13 @@
 
 Hand-written, and part of the contract. Not generated from any implementation.
 
+**Where a description and a chapter disagree, the chapter wins.** A requirement carries an
+identifier somebody can cite; a description realises requirements and says which in
+`x-sps-requirements`. So a conflict is drift in the description, and the seven known ones are
+listed in [`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) rather than left for a
+reader to find — none of them changes an obligation, and a client that follows the chapter is
+conformant while one of them stands.
+
 That was a decision rather than a convenience. A generated description specifies whatever one
 implementation happens to do, and an implementer in another language reads its choices as
 obligations — the shape of its error bodies, the order of its parameters, an endpoint it grew for

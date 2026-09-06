@@ -4,7 +4,7 @@ How an application or an agent gets a token a pod will accept, and what a pod ma
 What that token then *permits* is [`grants.md`](grants.md); this chapter stops at the point where a
 caller is identified.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
 RFC 8252 §7.3 (native app redirect URIs), RFC 9728 (Protected Resource Metadata), RFC 8414
@@ -420,7 +420,7 @@ and nothing requires it of one that does not — so a client of such a pod is le
 append form by convention. This chapter is likewise silent on where RFC 8414 Authorization Server
 Metadata lives, though it profiles the standard and [`SPS-AUTH-048`](#SPS-AUTH-048) constrains what
 that document may claim. Both are recorded rather than blessed, and closing them is on the
-specification's roadmap, before `0.1` becomes prescriptive.
+specification's roadmap, before `0.1`.
 
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.

@@ -32,7 +32,7 @@ requirement.
   [`../reference-implementation/`](../reference-implementation/README.md).
 
 Reasoning that belongs to another document is not repeated here:
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and the descriptive-to-prescriptive
+[`../../GOVERNANCE.md`](../../GOVERNANCE.md) owns versioning and what the tag changes,
 switch, [`../../spec/README.md`](../../spec/README.md) the core/module split, and
 [`../agents/spec-authoring.md`](../agents/spec-authoring.md) the requirement scheme. A concept
 is written for the first chapter whose content needs one, not in advance.

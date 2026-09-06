@@ -4,7 +4,7 @@ What a caller may do with a context, and how an implementation decides it. The m
 deliberately small: durable per-context policy, set-intersection delegation, and enforcement on the
 server.
 
-**Status: descriptive.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: RFC 6749 (for what a *scope* is, and is not). Error codes are [`index.md`](index.md) §5.
 Contexts are [`contexts.md`](contexts.md).

@@ -11,12 +11,12 @@ HTTP resources, RDF and named graphs, JSON-LD, SPARQL, OAuth/OIDC and MCP. The s
 the pod contract between them: one base URL, one context per statement, server-resolved grants,
 sandboxed reads and writes, and an agent surface that uses the same rules as every other client.
 
-!!! warning "This specification is not yet binding"
+!!! warning "This specification can still change"
 
-    Until the `0.1` release it is **descriptive**: it was extracted from the reference
-    implementation, so where the text and that code disagree today, the code is right. At `0.1`
-    that reverses and a deviation becomes the implementation's bug. [Governance](GOVERNANCE.md)
-    says what the switch is and when it happens.
+    This text decides: an implementation that disagrees with it is the bug. What it is not yet is
+    **fixed** — a requirement may still be deleted, renumbered, or change meaning, so nothing here
+    is safe to cite from a conformance report. [Governance](GOVERNANCE.md) says what ends that, and
+    when.
 
 ## Core and modules
 

@@ -6,9 +6,9 @@ alwaysApply: true
 The canonical guidance for this repository is the root `AGENTS.md`, reached through the shared hub
 `docs/agents/ai-instructions.md`. Read both before making a change.
 
-This is the specification repository, not the implementation. The source-of-truth rule is inverted
-here: the specification binds implementations, and an implementation that disagrees is the bug —
-with one dated exception that is live today and stated in `AGENTS.md`.
+This is the specification repository, not the implementation. This text decides: it binds
+implementations, and one that disagrees with it is the bug. `AGENTS.md` §"What decides here" has the
+two limits.
 
 No scoped `AGENTS.md` files exist yet; the root file governs every edit.
 
