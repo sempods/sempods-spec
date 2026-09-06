@@ -100,7 +100,21 @@ place; the roadmap is dissolved as a whole, later.
 lychee --offline --include-fragments --no-progress --exclude-path site .
 ```
 
-## 8. Report
+## 8. Downstream
+
+Where the change overtakes an implementation, raise the defect there in an issue.
+
+Where it deletes an identifier, renumbers one, or changes what one stands for, the sweep is part of
+this change rather than a note about it: the companion pull request re-vendoring
+[`requirements.json`](../../requirements.json) is open, and every citation of the affected
+identifier has been read. A reused number passes a downstream existence check while pointing at a
+different obligation, and `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" calls that the
+one failure nothing downstream can see.
+
+Neither fits in this repository's commit, which is why both are opened before this pull request is
+rather than remembered after it merges.
+
+## 9. Report
 
 Name what was updated, what was **deleted** and why, which requirement IDs were added or withdrawn,
 and what was deliberately left alone. "No change needed, because the behaviour follows the standard
