@@ -433,7 +433,7 @@
       "id": "SPS-AUTH-063",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "An implementation MUST refuse an authorization code whose consent decision has changed since the code was issued.",
+      "summary": "An implementation MUST refuse an authorization code whose consent decision has changed since the code was issued, counting an answer given under any URI equivalent to the one the code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) as such a change.",
       "withdrawn": false
     },
     {
@@ -1665,7 +1665,7 @@
       "id": "SPS-MCP-012",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST revoke the refresh tokens the affected `(pod, client)` holds for them — every equivalent identity URI, per [`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061), and not only the subject it carries.",
+      "summary": "Where `reauthorize` is true, the implementation MUST issue the challenge even for a bearer that would otherwise suffice, and, where that bearer names a person, MUST end what the affected `(pod, client)` holds for them: the refresh tokens, and any authorization code not yet exchanged.",
       "withdrawn": false
     },
     {

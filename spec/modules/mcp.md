@@ -96,13 +96,15 @@ recover access stops working across implementations, which is the one thing it c
 
 <a id="SPS-MCP-012"></a>
 **`SPS-MCP-012`** — Where `reauthorize` is true, the implementation MUST issue the challenge even
-for a bearer that would otherwise suffice, and, where that bearer names a person, MUST revoke the
-refresh tokens the affected `(pod, client)` holds for them — every equivalent identity URI, per
-[`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061), and not only the subject it carries.
+for a bearer that would otherwise suffice, and, where that bearer names a person, MUST end what the
+affected `(pod, client)` holds for them: the refresh tokens, and any authorization code not yet
+exchanged. Both reach every equivalent identity URI, per
+[`SPS-AUTH-061`](../core/auth.md#SPS-AUTH-061), and not only the subject the bearer carries.
 
-An explicit re-authorization means *review the current consent*. Leaving parallel sessions able to
-rotate around the consent screen would make the review cosmetic, and a family recorded under another
-of the person's URIs is such a session.
+An explicit re-authorization means *review the current consent*. A family recorded under another of
+the person's URIs rotates around that screen; so does a code from an earlier consent, which
+[`SPS-AUTH-063`](../core/auth.md#SPS-AUTH-063) does not catch on its own — recording a challenge
+changes no decision, so the older answer still stands behind that code.
 
 A service token names no person ([`SPS-AUTH-017`](../core/auth.md#SPS-AUTH-017)) and an anonymous
 `public-read` subject is synthetic and per-request, so neither holds a refresh token

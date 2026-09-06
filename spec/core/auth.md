@@ -275,8 +275,8 @@ registered set or nothing.
 
 <a id="SPS-AUTH-063"></a>
 **`SPS-AUTH-063`** — An implementation MUST refuse an authorization code whose consent decision has
-changed since the code was issued. The decision is the person's, so an answer given under any URI
-equivalent to the one the code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) is such a change.
+changed since the code was issued, counting an answer given under any URI equivalent to the one the
+code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) as such a change.
 
 A code is a request, not an authority. It stays redeemable for minutes, and the client holds its
 verifier, so the window belongs to whoever answered first. Two cases show what the refusal is for.
