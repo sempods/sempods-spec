@@ -68,8 +68,11 @@ choosing, and can prove it.
 
 ## Non-negotiable invariants
 
-These bind the specification itself, not only implementations of it. A proposed change that breaks
-one of them is refused rather than debated.
+These bind the current specification, not only implementations of it. An explicit maintainer
+request may open a reassessment as a **SOLL proposal** identifying the affected invariants and
+replacement guarantees. Merging that proposal does not change the current contract. Adoption
+requires a normative pull request under [GOVERNANCE.md](GOVERNANCE.md#how-a-change-is-made), updating
+the affected requirements, these invariants and the corresponding contract views together.
 
 1. Every statement always has exactly one Context (named graph).
 2. Read sandbox: a request can only read contexts it has read rights for.
