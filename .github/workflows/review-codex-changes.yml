@@ -53,11 +53,16 @@ jobs:
             docs/agents/spec-authoring.md as well if the diff touches spec/. Those carry the rules;
             this prompt does not repeat them.
 
-            There is no code here, so nothing in this diff is something a test would have caught.
-            Review it on two axes: whether the text is right — what it leaves open, where two
-            implementers reading it alone would build different things, what it contradicts
-            elsewhere in this repository — and whether it keeps the rules you have just read, the
-            promise about requirement identifiers and the definition of done among them.
+            Almost everything here is text. Review it on two axes: whether it is right — what it
+            leaves open, where two implementers reading it alone would build different things,
+            what it contradicts elsewhere in this repository — and whether it keeps the rules you
+            have just read, the promise about requirement identifiers and the definition of done
+            among them.
+
+            Where the diff touches Python instead — the checkers under .github/scripts/, or
+            site/build.py and site/hooks.py — read it as code and say what breaks. A checker that
+            silently stops catching what its name claims leaves every change after it unguarded,
+            and a green run is not evidence against that.
 
             Do not report what the checks answer: the ones in AGENTS.md §"Before you commit" run on
             this pull request.
