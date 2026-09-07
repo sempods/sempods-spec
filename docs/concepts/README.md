@@ -24,11 +24,12 @@ requirement.
 
 ## Here today
 
-- [`access-control.md`](access-control.md) — at what granularity access is decided, and why
-  [`contexts`](../../spec/core/contexts.md) and [`grants`](../../spec/core/grants.md) answer that
-  question differently from [`lod-crud`](../../spec/core/lod-crud.md). The target keeps the context as
-  the deciding unit and adds a declared second decision where audiences are smaller than one. It says
-  what is decided and never how — the reference implementation's own answer is in
+- [`data-access.md`](data-access.md) — proposed core for authorized RDF access, independent of
+  storage and permission models, with Contexts as an optional contract. Includes two implementation
+  examples, the requirement impact and boundaries for future data mirroring.
+- [`access-control.md`](access-control.md) — the proposal's authorization guarantees across CRUD,
+  SPARQL and find, including delegation, revocation, query enforcement and unresolved mutation
+  cases. Context-specific sharing is an optional design; its implementation profile lives in
   [`../reference-implementation/`](../reference-implementation/README.md).
 
 Reasoning that belongs to another document is not repeated here:

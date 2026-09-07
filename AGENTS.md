@@ -187,13 +187,19 @@ Concepts and roadmaps:
   reader needs before the first requirement makes sense
 - [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
   specification repository than in an implementation, and the template
-- [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the granularity at which
-  access is decided, as behaviour: every pod decides on contexts, a pod whose audiences are smaller
-  than a context declares a second decision, and both must allow. What is decided, never how
+- [`docs/concepts/data-access.md`](docs/concepts/data-access.md) — proposed core for authorized RDF
+  access with an optional Context contract; implementation examples, mirroring boundaries and the
+  requirement impact. A proposal, with the normative chapters still in force
+- [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the proposed authorization
+  guarantees across policy models: delegation, revocation, query equivalence, mutation boundaries
+  and optional Context permissions; the worked ACP cases remain one design's evidence
 - [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
   reference implementation's own design, kept here until `0.1` and moved out then. SOLL for that
   implementation, never a requirement
 - [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
+- **Running:** [`docs/roadmaps/core-data-access.md`](docs/roadmaps/core-data-access.md) — adopt the
+  proposed data-access core and optional Context contract, validate common operations and
+  coordinate downstream changes
 - **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
   release: core specified with requirement IDs, an OpenAPI description, and the second copy in the
   reference implementation retired. It also states which of its phases gate the public announce and
