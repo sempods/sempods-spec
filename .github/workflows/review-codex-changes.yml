@@ -26,6 +26,11 @@ jobs:
     if: startsWith(github.head_ref, 'codex/') && !github.event.pull_request.draft
     runs-on: ubuntu-latest
 
+    # A ceiling, not a budget. The first real run took five minutes; this is the runaway a review
+    # that starts arguing with itself would otherwise become, on an allowance the maintainer also
+    # writes with.
+    timeout-minutes: 20
+
     # On the job: a step's own `env` is not in scope for that step's `if`.
     env:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -44,8 +49,27 @@ jobs:
         uses: anthropics/claude-code-action@9c5ddab2e6d17b83ea679153b31f1d5f023cf636  # v1.0.217
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: --model claude-opus-5
+
+          # A `prompt` puts the action in automation mode, which posts nothing of its own accord —
+          # the review goes to the run log, where the run also hides it. This is the half that
+          # makes it arrive: `track_progress` opens a comment when the review starts and keeps it
+          # current, and hands Claude the pull request's title, body and comments as context.
+          track_progress: true
+
+          # `--allowedTools` is what lets the review be posted at all: the action starts the MCP
+          # server behind the inline-comment tool only when this names it, and `gh` is refused
+          # without an entry here. `--max-turns` is a ceiling for the same reason as the job
+          # timeout, set well above the twenty-five turns the first real run took — a review cut
+          # off before it comments is the failure this whole change repairs.
+          claude_args: |
+            --model claude-opus-5
+            --max-turns 50
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+
           prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             You are reviewing a change you did not write.
 
             Read AGENTS.md, then the documents its "Start here" points at —
@@ -67,5 +91,7 @@ jobs:
             Do not report what the checks answer: the ones in AGENTS.md §"Before you commit" run on
             this pull request.
 
-            Say what is wrong, where, and why it matters, most severe first. Do not summarise the
-            change. If nothing is wrong, say so in one line.
+            Post each finding as an inline comment on the line it is about, saying what is wrong
+            and why it matters — most severe first, and nowhere else: a finding that stays in your
+            answer is a finding nobody reads. If the change is sound, post one comment on the pull
+            request saying so in a line. Do not summarise the change either way.
