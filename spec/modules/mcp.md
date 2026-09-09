@@ -109,9 +109,8 @@ already under way order themselves by [`SPS-AUTH-063`](../core/auth.md#SPS-AUTH-
 first, so a family seeded during the sweep does not outlive it.
 
 A service token names no person ([`SPS-AUTH-017`](../core/auth.md#SPS-AUTH-017)) and an anonymous
-`public-read` subject is synthetic and per-request, so neither holds a refresh token
-([`SPS-AUTH-058`](../core/auth.md#SPS-AUTH-058)). Both get the challenge and have nothing to
-revoke.
+`public-read` subject is synthetic and per-request, so neither holds a refresh token. Both get the
+challenge and have nothing to revoke.
 
 <a id="SPS-MCP-013"></a>
 **`SPS-MCP-013`** — An implementation MUST distinguish the client's automatic replay after the OAuth

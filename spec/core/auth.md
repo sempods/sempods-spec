@@ -302,31 +302,19 @@ whole family.
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
 be recovered.
 
-<a id="SPS-AUTH-058"></a>
-**`SPS-AUTH-058`** — An implementation MUST NOT seed a refresh-token family unless the person
-authorizing the request granted a durable connection at consent time. A token issued into a family
-that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
-decision and needs no second one.
-
-An anonymous `public-read` subject and a service client answer nothing at consent — the first is
-synthetic and per-request, the second expresses no person at all
-([`SPS-AUTH-017`](#SPS-AUTH-017)) — so neither receives one. With an identity established,
-`public-read` is an ordinary additive scope and its lifetime is this question like any other
-authorization's.
+An anonymous `public-read` subject is synthetic and per-request, so no refresh token rests on it. A
+service client's token names no person at all ([`SPS-AUTH-017`](#SPS-AUTH-017)), and RFC 6749 §4.4.3
+keeps a refresh token out of that grant. With an identity established, `public-read` is an ordinary
+additive scope and carries no question of its own.
 
 <a id="SPS-AUTH-059"></a>
 **`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request
-a condition of issuing a refresh token. A client that never sent the scope receives one where
-consent granted a durable connection.
+a condition of issuing a refresh token.
 
-The two together keep the grant the person's rather than the client's. An MCP client cannot send a
-scope its authorization server never advertised, and the person's answer is the same either way; a
-client that does send it has said what it wants, not what it gets. What the parameter buys is a
-preselected control, where an implementation offers one.
-
-What the person is asked about is a lifetime: a credential that expires with the access token, or
-one that outlives it. How the question reaches them is the implementation's own, and naming the
-scope in place of the thing gives somebody the protocol word for what they are deciding.
+An MCP client cannot send a scope its authorization server never advertised, and refusing it a
+refresh token on that ground makes the credential the client's to ask for rather than the person's
+to grant. A client that does send the scope has said what it wants, not what it gets: what the
+parameter buys is a preselected control, where an implementation offers one.
 
 `offline_access` is a sempods extension that borrows an OpenID Connect name and is requested bare.
 Pairing it with `openid` asks for something the pod authorization surface does not define: it has no
@@ -349,13 +337,13 @@ would seed after the sweep and keep the connection the review was there to end. 
 [`SPS-GRANT-018`](grants.md#SPS-GRANT-018)'s race, one step further down.
 
 <a id="SPS-AUTH-060"></a>
-**`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
-refresh-token families the application already holds for that person.
+**`SPS-AUTH-060`** — Where an implementation asks the person whether an application stays
+connected beyond the access token, an answer that withholds it MUST revoke the refresh-token
+families that application already holds for them.
 
-Somebody unticks the control on an application they connected last month. Without this the family
-minted then keeps rotating: it renews its own lifetime on every use, so nothing expires it, and the
-next issuance is the only thing their answer reaches. The reach is
-[`SPS-AUTH-061`](#SPS-AUTH-061)'s — the person, not the URI the consent screen ran under.
+Somebody unticks the control on an application they connected last month. Without this their answer
+reaches the next issuance and nothing else, while the family minted then goes on rotating. The reach
+is [`SPS-AUTH-061`](#SPS-AUTH-061)'s — the person, not the URI the consent screen ran under.
 
 ### Abuse
 
