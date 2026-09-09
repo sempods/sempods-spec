@@ -24,7 +24,10 @@ separate follow-up work.
   Depends on 1.
 - [ ] 3 — Turn the impact table into a coordinated normative patch: retain, generalize, move or
   remove each affected requirement. Cover core, authorization, CRUD, SPARQL, `find` and the optional
-  Context contract, including its lifecycle dependency. Apply the identifier rules in
+  Context contract, including its lifecycle dependency. Complete a requirement-by-requirement
+  sweep of every core chapter and its cross-references, including Context-specific request fields,
+  read downscoping, empty results, output grouping and cache rules. The impact table is the starting
+  map, not an exhaustive migration checklist. Apply the identifier rules in
   [governance](../../GOVERNANCE.md). Depends on 2.
 - [ ] 4 — Align OpenAPI, module discovery and versions, the requirement checker and index, chapter
   maps, vision and agent instructions with that patch. Review MCP and media for implicit Context
