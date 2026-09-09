@@ -28,14 +28,14 @@ jobs:
       # Pinned to a commit, not to `v2`. A tag is mutable: whoever controls the repository can
       # move it, and this job runs with a checkout of the pull request — so a moved tag is
       # arbitrary code against this repository's contents. `actions/*` above are GitHub's own and
-      # ship immutable releases; every third-party action here is pinned instead — this one, and
-      # the reviewer in `review-codex-changes.yml`, which points back at this paragraph.
+      # ship immutable releases; every third-party action here is pinned instead, and this is the
+      # only one there is.
       #
       # To update: read the commit a release points at
       # (`gh api repos/lycheeverse/lychee-action/commits/vX.Y.Z --jq .sha`), put it here, and move
       # the comment with it. `commits/` and not `git/ref/tags/`, which hands back the tag object
-      # itself where the tag is annotated — the other pin's tags are. Reading the SHA from the tag
-      # is the whole point: a version number in the `uses:` line would be the mutable thing again.
+      # rather than the commit wherever a tag is annotated. Reading the SHA from the tag is the
+      # whole point: a version number in the `uses:` line would be the mutable thing again.
       - name: Every relative link and every anchor resolves
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
         with:
