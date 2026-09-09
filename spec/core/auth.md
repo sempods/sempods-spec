@@ -7,9 +7,9 @@ caller is identified.
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
-RFC 8252 §7.3 (native app redirect URIs), RFC 9728 (Protected Resource Metadata), RFC 8414
-(Authorization Server Metadata), OIDC Core 1.0 §3.1.2.1 (`prompt`). Error codes are
-[`index.md`](index.md) §5.
+RFC 8252 §7.3 (native app redirect URIs), RFC 10017 (BCP 212, browser-based applications),
+RFC 9728 (Protected Resource Metadata), RFC 8414 (Authorization Server Metadata), OIDC Core 1.0
+§3.1.2.1 (`prompt`). Error codes are [`index.md`](index.md) §5.
 
 ## 1. Flows
 
@@ -297,6 +297,10 @@ the reconnect it holds something again. What the code has to carry is which answ
 **`SPS-AUTH-033`** — Refresh tokens MUST be rotated. A refresh token belongs to a family seeded at
 code exchange, and on detected reuse of an already-rotated token the implementation MUST revoke the
 whole family.
+
+RFC 10017 §6.3.2.3 leaves the choice between rotation and a sender-constrained token; this
+specification takes rotation. Its other two obligations — a maximum lifetime or an idle expiry, and
+a rotation that does not push the family's deadline out — bind through the profile.
 
 <a id="SPS-AUTH-034"></a>
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
