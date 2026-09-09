@@ -21,9 +21,8 @@ strings, and both say something about permission.
 
 `offline_access` may appear in an authorization request's `scope` parameter, but asks about the
 *lifetime* of what is issued rather than about authority. It is therefore no feature scope, and
-[`SPS-AUTH-029`](auth.md#SPS-AUTH-029) keeps it out of the access token's `scope` claim. It may also
-appear in the token response, departing from RFC 6749 §5.1, where `scope` describes the access
-token — the same latitude OpenID Connect takes for the name this extension borrows.
+[`SPS-AUTH-029`](auth.md#SPS-AUTH-029) keeps it out of the access token's `scope` claim — as does
+RFC 6749 §5.1 for the token response's `scope` member, which describes that same token.
 [`SPS-AUTH-059`](auth.md#SPS-AUTH-059) makes requesting the scope no condition of receiving a
 refresh token.
 

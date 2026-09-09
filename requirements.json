@@ -265,7 +265,7 @@
       "id": "SPS-AUTH-039",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1: space-separated and multi-valued.",
+      "summary": "An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1.",
       "withdrawn": false
     },
     {

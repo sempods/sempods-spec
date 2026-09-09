@@ -368,9 +368,8 @@ the header. Accepting whichever is present gives a caller two key spaces to choo
 ## 7. `prompt`
 
 <a id="SPS-AUTH-039"></a>
-**`SPS-AUTH-039`** — An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1:
-space-separated and multi-valued. Absent, it MAY auto-grant where grants exist; `consent` MUST show
-the consent screen; `none` MUST show no interactive screen; `login` MUST force fresh authentication.
+**`SPS-AUTH-039`** — An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1. Where
+the parameter is absent, it MAY auto-grant on the strength of grants that already stand.
 
 <a id="SPS-AUTH-040"></a>
 **`SPS-AUTH-040`** — `prompt=none` MUST succeed only where all three hold: the pod itself remembers
