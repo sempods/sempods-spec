@@ -66,10 +66,18 @@ change can broaden reachable data without changing a stored grant. Settle how co
 such scopes before generalizing the current per-Context ceiling; a broad token scope is not an
 answer on its own.
 
-A public-access rule is explicit. Omission does not publish data, and a rejected credential never
-turns into an anonymous request. A client receives deterministic protocol errors without learning
-whether inaccessible data exists. An additional policy backend does not justify a different
-existence-disclosure rule.
+### Public access and `public-read`
+
+Public access follows explicit current policy and is available without a credential. Omission does
+not publish data, and a rejected credential never turns into an anonymous request. A client receives
+deterministic protocol errors without learning whether inaccessible data exists.
+
+Before adoption, decide whether the `public-read` OAuth scope survives. If retained, define how it
+adds public data to an authenticated caller's view, how an anonymous subject receives a token, and
+how policy changes and delegation revocation affect it. Replace the current "no public context"
+issuance test with a rule that a core-only pod can implement, including a pod with no currently
+public data. If removed, define the replacement behavior and migration for clients requesting it.
+Unauthenticated public reads and invalid-credential rejection remain guarantees in either case.
 
 ## Operation boundaries (SOLL)
 
@@ -80,10 +88,21 @@ against the caller-authorized dataset. The dataset is a semantic model of what c
 implementation need not materialize it. Views, native store restrictions and query rewriting are
 possible enforcement mechanisms if they preserve that result.
 
-Client-supplied dataset clauses and graph names cannot widen access. The ordinary SPARQL dataset
-can contain a default graph and zero or more named graphs; a named graph is not automatically a
-sempods Context. Store-local authorization data and other pods are outside the caller's data view
-unless an explicit contract makes them available.
+The dataset includes graph placement and observable graph names, not only a set of triples
+([SPARQL 1.1 §13](https://www.w3.org/TR/sparql11-query/#rdfDataset)). A triple in the default graph
+does not match `GRAPH ?g { ?s ?p ?o }`; the same triple in a named graph does. An implementation
+cannot expose arbitrary storage partitions and still claim equivalent results for the same logical
+data. A named graph is not automatically a sempods Context.
+
+The client-visible layout is an open contract decision before adoption: define the default graph,
+which named graphs are observable, where ordinary core writes appear, and how explicit Context
+selection interacts with both. Settle `GRAPH`, `FROM`, `FROM NAMED` and protocol dataset parameters
+against that layout. The RDF dataset model alone does not choose it, and this proposal does not
+exclude graph-sensitive queries to avoid the decision. Conformance fixtures need identical logical
+graph placement and names across implementations, while physical storage remains free.
+
+Client-supplied dataset clauses and graph names cannot widen access. Store-local authorization data
+and other pods are outside the caller's data view unless an explicit contract makes them available.
 
 Filtering final results is insufficient. Hidden statements must not alter an ASK answer, aggregate,
 negation, join, property path or subquery. For example, adding a document hidden from a caller leaves
@@ -199,13 +218,17 @@ known allowed and denied resources through each implementation's own setup. Chec
 rejected writes with no partial changes, revocation with an existing credential, and equivalent
 authorization on direct reads, SPARQL and find. Always denying access is not a passing implementation.
 
-For query enforcement, compare results with a reference evaluation over the authorized dataset.
-Include aggregates, negation, subqueries, paths and adversarial dataset clauses, and alter hidden
-data while holding authorized data fixed. Test find for hidden matches, ranking and expansion.
+For query enforcement, compare results with a reference evaluation over the same authorized dataset,
+including its logical graph placement and names. Include unqualified patterns, `GRAPH ?g`, fixed
+graph names, aggregates, negation, subqueries, paths and adversarial dataset clauses. Alter hidden
+data and physical partitions while holding that logical dataset fixed. Test find for hidden
+matches, ranking and expansion. Cover public reads without credentials, tokens with and without
+`public-read`, no currently public data, policy changes, revocation and invalid credentials.
 An enforcement mechanism earns conformance from these observable properties, not its name.
 
 The outstanding protocol decisions are generic mutation scope, the delegation ceiling for changing
-audiences, and the optional Context contracts. Rewrite correctness is an implementation obligation.
+audiences, the `public-read` migration, client-visible dataset layout and the optional Context
+contracts. Rewrite correctness is an implementation obligation.
 Installation of an implementation's policies is a deployment concern unless a client-facing
 management contract is being specified.
 

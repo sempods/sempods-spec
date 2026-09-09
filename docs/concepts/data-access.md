@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A sempod exposes linked data through a common, authorized interface: federated authentication,
+A pod exposes linked data through a common, authorized interface: federated authentication,
 LOD CRUD, SPARQL and `find`. An application can use that interface without adopting the pod's
 storage layout or permission model. A single RDF graph and a platform with several independent
 policy conditions can implement the same data operations.
@@ -123,12 +123,12 @@ That setup can be specific to each implementation; the data requests and expecte
 ### One RDF graph
 
 An adapter exposes a single RDF graph. A person authorizes a client through the core flow. No
-Context, `#write` grant string or context-discovery request is needed by the protocol. Let `P` be
-the pod base and let the following requests carry that client's valid credential.
+Context, `#write` grant string or context-discovery request is needed by the protocol. Let
+`P = https://example.org/alice` be the pod base; the requests carry that client's valid credential.
 
 | Request | Expected result |
 |---|---|
-| `PUT P/notes/one`, JSON-LD body `{"https://schema.org/name":[{"@value":"First"}]}` | `201`; resource created |
+| `PUT P/notes/one`, JSON-LD body `{"@id":"https://example.org/alice/notes/one","https://schema.org/name":[{"@value":"First"}]}` | `201`, `Location: https://example.org/alice/notes/one`; resource created |
 | `GET P/notes/one` | `200`, name `First`, strong ETag `E1` |
 | `PATCH P/notes/one`, `If-Match: E1`, merge-patch body `{"https://schema.org/name":[{"@value":"Changed"}]}` | Success; the specified property changes |
 | `GET P/notes/one` | `200`, name `Changed`, ETag `E2` |
@@ -152,8 +152,9 @@ document hidden, neither direct reads, `find` nor SPARQL expose it. With write a
 the same credential cannot mutate it. No grant catalogue is required to explain these decisions.
 
 The query implementation may enforce policy through SPARQL rewriting. Its results must be
-equivalent to evaluating the client's supported query against the authorized dataset, including
-aggregates, negation, subqueries and property paths. Testing compares those outcomes, not query
+equivalent to evaluating the client's supported query against the same client-visible authorized
+dataset, with the same graph placement and names. Cases include aggregates, negation, subqueries
+and property paths. Testing compares those outcomes, not query
 strings. An implementation that merely filters completed results fails the cases in
 [access control](access-control.md#operation-boundaries-soll).
 
@@ -187,11 +188,13 @@ core. The [adoption roadmap](../roadmaps/core-data-access.md) tracks the remaini
 | [`SPS-CTX-028`](../../spec/core/contexts.md#SPS-CTX-028), [`SPS-CTX-029`](../../spec/modules/context-management.md#SPS-CTX-029) | Remove the minimum registered count and last-visible-context deletion refusal. |
 | [`SPS-CTX-025`](../../spec/core/contexts.md#SPS-CTX-025), [`SPS-CTX-026`](../../spec/core/contexts.md#SPS-CTX-026), [`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030) | Preserve core protection of control-plane authority and explicit public access; generalize their subjects beyond Contexts. Data about a control-plane IRI remains data. |
 | [`Grants`](../../spec/core/grants.md) grammar, `manage` expansion and mode implications | Move Context-specific policy semantics to the module. Retain core delegation bounds, revocation, public-access rules and server enforcement, expressed independently of this grammar. |
+| [`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020)–[`SPS-GRANT-022`](../../spec/core/grants.md#SPS-GRANT-022), [`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031), [`SPS-GRANT-032`](../../spec/core/grants.md#SPS-GRANT-032), [`SPS-AUTH-042`](../../spec/core/auth.md#SPS-AUTH-042)–[`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044) | Preserve unauthenticated public reads and rejection of invalid credentials. Decide whether `public-read` survives, its authenticated/anonymous token behavior, current-policy evaluation and revocation semantics, and the replacement for the public-Context existence test. Align OAuth discovery and OpenAPI. |
 | [`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002), [`SPS-GRANT-018`](../../spec/core/grants.md#SPS-GRANT-018), [`SPS-AUTH-063`](../../spec/core/auth.md#SPS-AUTH-063) | Retain client/subject isolation and revocation-race outcomes; review prescribed storage lookups and write/check sequences as implementation mechanisms. |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025), [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007)–[`SPS-CRUD-014`](../../spec/core/lod-crud.md#SPS-CRUD-014) | Define ordinary authorized resource operations in core; put explicit Context selection, Context-local effects and multi-Context restrictions in the module. Keep invalid selectors from being ignored. |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020)–[`SPS-CRUD-022`](../../spec/core/lod-crud.md#SPS-CRUD-022), [`SPS-CRUD-031`](../../spec/core/lod-crud.md#SPS-CRUD-031), [`SPS-CRUD-035`](../../spec/core/lod-crud.md#SPS-CRUD-035), [`SPS-CRUD-039`](../../spec/core/lod-crud.md#SPS-CRUD-039) | Define reads and mutation scope without Contexts; settle partial visibility and hidden-resource collisions before adoption. |
 | [`SPS-CRUD-002`](../../spec/core/lod-crud.md#SPS-CRUD-002), [`SPS-CRUD-029`](../../spec/core/lod-crud.md#SPS-CRUD-029), [`SPS-CRUD-034`](../../spec/core/lod-crud.md#SPS-CRUD-034), [`SPS-CRUD-050`](../../spec/core/lod-crud.md#SPS-CRUD-050)–[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052), [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) | Keep representation and validator agreement across resource, slot and edge operations; separate Context-specific provenance and selection rules. |
 | [`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)–[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) | Specify an authorized view across query and retrieval; replace the rewrite prohibition with outcome equivalence. Keep supported SPARQL read-only and dataset clauses unable to widen access; review the blanket ban on other implementation write interfaces. |
+| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007), [`SPS-SPARQL-011`](../../spec/core/sparql.md#SPS-SPARQL-011)–[`SPS-SPARQL-014`](../../spec/core/sparql.md#SPS-SPARQL-014) | Define the client-visible default and named graphs, the graph placement observable after ordinary writes, and dataset selection without universal Context identities. Keep physical partitions from determining query semantics. Graph-sensitive cases are adoption blockers. |
 | [`Auth`](../../spec/core/auth.md), especially [`SPS-AUTH-013`](../../spec/core/auth.md#SPS-AUTH-013), [`SPS-AUTH-024`](../../spec/core/auth.md#SPS-AUTH-024) | Keep a concrete interoperable authentication/delegation profile; remove universal Context-grant and Context-selection assumptions for people and service clients. |
 | [`SPS-MCP-017`](../../spec/modules/mcp.md#SPS-MCP-017), [`SPS-MCP-020`](../../spec/modules/mcp.md#SPS-MCP-020), [`SPS-MEDIA-006`](../../spec/modules/media.md#SPS-MEDIA-006), [`SPS-MEDIA-009`](../../spec/modules/media.md#SPS-MEDIA-009) | Align optional tools and media with the new core; do not make either implicitly require the Context module. Specify Context-specific integration where both are advertised. |
 | [`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018), [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) | Preserve non-disclosure independently of policy representation; coordinate the current defect with [#45](https://github.com/sempods/sempods-spec/issues/45). |
@@ -208,7 +211,12 @@ external adoption can close it before the tag.
 - Define the generic write scope for partial resources and hidden-resource collisions, with
   consistent authorization and conditional-request behavior. See [access control](access-control.md).
 - Profile the federated authentication, client identity and delegation flows precisely enough for
-  one client to use both examples; "supports OAuth" alone is insufficient.
+  one client to use both examples; "supports OAuth" alone is insufficient. Resolve the
+  [`public-read` migration](access-control.md#public-access-and-public-read), including token
+  issuance when no data is currently public.
+- Define the [client-visible dataset layout](access-control.md#queries-and-retrieval), including
+  ordinary writes, `GRAPH`, dataset clauses and optional Context selection. Equivalent triples alone
+  do not define equivalent query results.
 - Specify the Context module boundary, lifecycle dependency, unknown-selector errors and how it
   preserves ordinary core requests. Bootstrap and Context-rights discovery are module questions.
 - Define conformance fixtures with known allowed and denied data for both implementation models.

@@ -18,7 +18,9 @@ separate follow-up work.
   concepts linked above.
 - [ ] 2 — Resolve the [remaining contract decisions](../concepts/data-access.md#decisions-before-normative-adoption-soll)
   with concrete request/response cases and a recommended rule for each. Update the concepts with
-  the resulting semantics. Include the mutation, identity and authorization gaps mapped below.
+  the resulting semantics. Include the mutation, identity and authorization gaps mapped below,
+  the `public-read` scope and token migration, and the client-visible default/named graph layout
+  after ordinary writes and explicit selection.
   Depends on 1.
 - [ ] 3 — Turn the impact table into a coordinated normative patch: retain, generalize, move or
   remove each affected requirement. Cover core, authorization, CRUD, SPARQL, `find` and the optional
@@ -29,7 +31,9 @@ separate follow-up work.
   dependencies and sweep citations. Ship together with 3.
 - [ ] 5 — Validate common client operations for a single RDF graph, a Context-based pod and a pod
   with area/document policies. Define executable cases for allowed and denied operations, mutation
-  scope, conditional writes, query equivalence and revocation, including the issue cases below;
+  scope, conditional writes, query equivalence and revocation, including the issue cases below.
+  Cover public access with and without credentials, an empty public view, and graph-sensitive
+  queries against a fixed logical dataset with different physical storage layouts;
   distinguish contract fixtures from tests actually run against an implementation. Depends on 2;
   review results before adopting 3–4.
 - [ ] 6 — Reconcile the related issues with the final patch and prepare the implementation handoff:
@@ -83,8 +87,9 @@ design in #28 is distinct from the protocol's resource-IRI stability in spec #21
 ## Acceptance
 
 The normative text and its generated and hand-written views agree. A client can perform the same
-core operations without a Context selector across the three fixture models; authorization failures
-and successful effects have defined outcomes. Context-specific behavior is discoverable through
+core operations without a Context selector across the three fixture models; authorization failures,
+public-access/token behavior, query-visible graph layout and successful effects have defined
+outcomes. Context-specific behavior is discoverable through
 the optional contract. Test evidence states which implementations were exercised, and required
 downstream follow-up is linked before adoption.
 
