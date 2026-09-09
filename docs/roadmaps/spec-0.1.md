@@ -292,6 +292,10 @@ equally urgent and the announce waits on all of them.
 
 ## Open decisions
 
+- **Core for authorized data access.** The [dedicated roadmap](core-data-access.md) owns the
+  contract decisions, normative adoption, validation and implementation handoff for the
+  [proposal](../concepts/data-access.md). Its status is tracked there.
+
 - **Seven OpenAPI fidelity items are deferred, deliberately.** Review found the descriptions lagging
   the chapters in seven places that change no obligation: media `security` still admitting anonymous
   mutations, the content response fixed to `octet-stream`, `If-None-Match` missing from reads, `204`

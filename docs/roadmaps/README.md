@@ -30,6 +30,8 @@ Every roadmap repeats this in its own header, so a reviewer who sees only the di
 
 ## Running
 
+- [`core-data-access.md`](core-data-access.md) — adopt the core for authorized RDF access and the
+  optional Context contract, validate common operations and coordinate the implementation handoff.
 - [`spec-0.1.md`](spec-0.1.md) — the first specification release: core specified with requirement
   IDs, an OpenAPI description, and the second copy in the reference implementation retired. The
   release is also one of the two things [`../../GOVERNANCE.md`](../../GOVERNANCE.md) names as
