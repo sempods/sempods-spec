@@ -7,9 +7,9 @@ caller is identified.
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
 Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
-RFC 8252 §7.3 (native app redirect URIs), RFC 9728 (Protected Resource Metadata), RFC 8414
-(Authorization Server Metadata), OIDC Core 1.0 §3.1.2.1 (`prompt`). Error codes are
-[`index.md`](index.md) §5.
+RFC 8252 §7.3 (native app redirect URIs), RFC 10017 (BCP 212, browser-based applications),
+RFC 9728 (Protected Resource Metadata), RFC 8414 (Authorization Server Metadata), OIDC Core 1.0
+§3.1.2.1 (`prompt`). Error codes are [`index.md`](index.md) §5.
 
 ## 1. Flows
 
@@ -280,13 +280,13 @@ code carries ([`SPS-AUTH-052`](#SPS-AUTH-052)) as such a change.
 
 A code is a request, not an authority. It stays redeemable for minutes, and the client holds its
 verifier, so the window belongs to whoever answered first. Two cases show what the refusal is for.
-Somebody grants a durable connection, then disconnects the application before the code is
-exchanged: without this the code still mints the family the earlier answer allowed, for an
-application that now holds nothing. Somebody grants a durable connection, then consents again on
-narrower terms while the first code is still unspent: [`SPS-AUTH-060`](#SPS-AUTH-060) revokes what
-the application *holds*, which at that moment is nothing, and the older code then buys exactly what
-the newer answer withheld. The second consent may run under another of the person's URIs, which is
-why the comparison is over the person and not over the subject the code names.
+Somebody authorizes an application, then disconnects it before the code is exchanged: without this
+the code still mints the family the earlier answer allowed, for an application that now holds
+nothing. Somebody authorizes an application, then consents again on narrower terms while the first
+code is still unspent: a withdrawal reaches what the application *holds*, which at that moment is
+nothing, and the older code then buys exactly what the newer answer withheld. The
+second consent may run under another of the person's URIs, which is why the comparison is over the
+person and not over the subject the code names.
 
 Refusing only a code whose application now holds nothing is too weak for the second case — after
 the reconnect it holds something again. What the code has to carry is which answer produced it.
@@ -298,35 +298,21 @@ the reconnect it holds something again. What the code has to carry is which answ
 code exchange, and on detected reuse of an already-rotated token the implementation MUST revoke the
 whole family.
 
+RFC 10017 §6.3.2.3 leaves the choice between rotation and a sender-constrained token; this
+specification takes rotation.
+
 <a id="SPS-AUTH-034"></a>
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
 be recovered.
 
-<a id="SPS-AUTH-058"></a>
-**`SPS-AUTH-058`** — An implementation MUST NOT seed a refresh-token family unless the person
-authorizing the request granted a durable connection at consent time. A token issued into a family
-that already stands, by the rotation [`SPS-AUTH-033`](#SPS-AUTH-033) requires, carries that family's
-decision and needs no second one.
-
-An anonymous `public-read` subject and a service client answer nothing at consent — the first is
-synthetic and per-request, the second expresses no person at all
-([`SPS-AUTH-017`](#SPS-AUTH-017)) — so neither receives one. With an identity established,
-`public-read` is an ordinary additive scope and its lifetime is this question like any other
-authorization's.
-
 <a id="SPS-AUTH-059"></a>
 **`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request
-a condition of issuing a refresh token. A client that never sent the scope receives one where
-consent granted a durable connection.
+a condition of issuing a refresh token.
 
-The two together keep the grant the person's rather than the client's. An MCP client cannot send a
-scope its authorization server never advertised, and the person's answer is the same either way; a
-client that does send it has said what it wants, not what it gets. What the parameter buys is a
-preselected control, where an implementation offers one.
-
-What the person is asked about is a lifetime: a credential that expires with the access token, or
-one that outlives it. How the question reaches them is the implementation's own, and naming the
-scope in place of the thing gives somebody the protocol word for what they are deciding.
+An MCP client cannot send a scope its authorization server never advertised, and refusing it a
+refresh token on that ground makes the credential the client's to ask for rather than the person's
+to grant. A client that does send the scope has said what it wants, not what it gets: what the
+parameter buys is a preselected control, where an implementation offers one.
 
 `offline_access` is a sempods extension that borrows an OpenID Connect name and is requested bare.
 Pairing it with `openid` asks for something the pod authorization surface does not define: it has no
@@ -339,23 +325,14 @@ one, MUST each write before they check, so that whichever lands second sees the 
 seeds and then re-reads, giving up the family where the consent behind the code no longer stands or
 a revocation has landed since; the revoking side persists and then sweeps.
 
-Checking first leaves both sides able to miss each other. The exchange reads a decision that is
-still durable while the newer one is being written; the revocation sweeps a family that has not been
-seeded yet; and the application ends with the connection the person just declined, having satisfied
-both [`SPS-AUTH-060`](#SPS-AUTH-060) and [`SPS-AUTH-062`](#SPS-AUTH-062) along the way. A forced
-reauthorization ([`SPS-MCP-012`](../modules/mcp.md#SPS-MCP-012)) loses the same race one turn later:
+Checking first leaves both sides able to miss each other. The exchange reads a decision the newer
+one is already replacing; the revocation sweeps a family that has not been seeded yet; and the
+application ends with the connection the person just declined, having satisfied
+[`SPS-AUTH-062`](#SPS-AUTH-062) along the way. A forced reauthorization
+([`SPS-MCP-012`](../modules/mcp.md#SPS-MCP-012)) loses the same race one turn later:
 recording its challenge changes no consent decision, so an exchange that re-read only the decision
 would seed after the sweep and keep the connection the review was there to end. This is
 [`SPS-GRANT-018`](grants.md#SPS-GRANT-018)'s race, one step further down.
-
-<a id="SPS-AUTH-060"></a>
-**`SPS-AUTH-060`** — A consent decision that withholds a durable connection MUST revoke the
-refresh-token families the application already holds for that person.
-
-Somebody unticks the control on an application they connected last month. Without this the family
-minted then keeps rotating: it renews its own lifetime on every use, so nothing expires it, and the
-next issuance is the only thing their answer reaches. The reach is
-[`SPS-AUTH-061`](#SPS-AUTH-061)'s — the person, not the URI the consent screen ran under.
 
 ### Abuse
 
@@ -376,9 +353,12 @@ the header. Accepting whichever is present gives a caller two key spaces to choo
 ## 7. `prompt`
 
 <a id="SPS-AUTH-039"></a>
-**`SPS-AUTH-039`** — An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1:
-space-separated and multi-valued. Absent, it MAY auto-grant where grants exist; `consent` MUST show
-the consent screen; `none` MUST show no interactive screen; `login` MUST force fresh authentication.
+**`SPS-AUTH-039`** — An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1. Where
+the parameter is absent it MAY auto-grant on the strength of grants that already stand; where it
+carries `consent` it MUST NOT.
+
+Auto-granting is what §3.1.2.1 leaves open, and the one way a pod could answer `prompt=consent`
+without showing anything.
 
 <a id="SPS-AUTH-040"></a>
 **`SPS-AUTH-040`** — `prompt=none` MUST succeed only where all three hold: the pod itself remembers
