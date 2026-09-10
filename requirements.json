@@ -402,13 +402,6 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-AUTH-060",
-      "part": "core",
-      "chapter": "spec/core/auth.md",
-      "summary": "Where an implementation asks the person whether an application stays connected beyond the access token, an answer that withholds it MUST revoke the refresh-token families that application already holds for them.",
-      "withdrawn": false
-    },
-    {
       "id": "SPS-AUTH-061",
       "part": "core",
       "chapter": "spec/core/auth.md",

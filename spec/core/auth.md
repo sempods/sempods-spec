@@ -283,8 +283,8 @@ verifier, so the window belongs to whoever answered first. Two cases show what t
 Somebody authorizes an application, then disconnects it before the code is exchanged: without this
 the code still mints the family the earlier answer allowed, for an application that now holds
 nothing. Somebody authorizes an application, then consents again on narrower terms while the first
-code is still unspent: [`SPS-AUTH-060`](#SPS-AUTH-060) revokes what the application *holds*, which
-at that moment is nothing, and the older code then buys exactly what the newer answer withheld. The
+code is still unspent: a withdrawal reaches what the application *holds*, which at that moment is
+nothing, and the older code then buys exactly what the newer answer withheld. The
 second consent may run under another of the person's URIs, which is why the comparison is over the
 person and not over the subject the code names.
 
@@ -299,17 +299,11 @@ code exchange, and on detected reuse of an already-rotated token the implementat
 whole family.
 
 RFC 10017 §6.3.2.3 leaves the choice between rotation and a sender-constrained token; this
-specification takes rotation. Its other two obligations — a maximum lifetime or an idle expiry, and
-a rotation that does not push the family's deadline out — bind through the profile.
+specification takes rotation.
 
 <a id="SPS-AUTH-034"></a>
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
 be recovered.
-
-An anonymous `public-read` subject is synthetic and per-request, so no refresh token rests on it. A
-service client's token names no person at all ([`SPS-AUTH-017`](#SPS-AUTH-017)), and RFC 6749 §4.4.3
-keeps a refresh token out of that grant. With an identity established, `public-read` is an ordinary
-additive scope and carries no question of its own.
 
 <a id="SPS-AUTH-059"></a>
 **`SPS-AUTH-059`** — An implementation MUST NOT make `offline_access` in the authorization request
@@ -333,21 +327,12 @@ a revocation has landed since; the revoking side persists and then sweeps.
 
 Checking first leaves both sides able to miss each other. The exchange reads a decision the newer
 one is already replacing; the revocation sweeps a family that has not been seeded yet; and the
-application ends with the connection the person just declined, having satisfied both
-[`SPS-AUTH-060`](#SPS-AUTH-060) and [`SPS-AUTH-062`](#SPS-AUTH-062) along the way. A forced
-reauthorization ([`SPS-MCP-012`](../modules/mcp.md#SPS-MCP-012)) loses the same race one turn later:
+application ends with the connection the person just declined, having satisfied
+[`SPS-AUTH-062`](#SPS-AUTH-062) along the way. A forced reauthorization
+([`SPS-MCP-012`](../modules/mcp.md#SPS-MCP-012)) loses the same race one turn later:
 recording its challenge changes no consent decision, so an exchange that re-read only the decision
 would seed after the sweep and keep the connection the review was there to end. This is
 [`SPS-GRANT-018`](grants.md#SPS-GRANT-018)'s race, one step further down.
-
-<a id="SPS-AUTH-060"></a>
-**`SPS-AUTH-060`** — Where an implementation asks the person whether an application stays
-connected beyond the access token, an answer that withholds it MUST revoke the refresh-token
-families that application already holds for them.
-
-Somebody unticks the control on an application they connected last month. Without this their answer
-reaches the next issuance and nothing else, while the family minted then goes on rotating. The reach
-is [`SPS-AUTH-061`](#SPS-AUTH-061)'s — the person, not the URI the consent screen ran under.
 
 ### Abuse
 
@@ -369,7 +354,11 @@ the header. Accepting whichever is present gives a caller two key spaces to choo
 
 <a id="SPS-AUTH-039"></a>
 **`SPS-AUTH-039`** — An implementation MUST interpret `prompt` per OIDC Core 1.0 §3.1.2.1. Where
-the parameter is absent, it MAY auto-grant on the strength of grants that already stand.
+the parameter is absent it MAY auto-grant on the strength of grants that already stand; where it
+carries `consent` it MUST NOT.
+
+Auto-granting is what §3.1.2.1 leaves open, and the one way a pod could answer `prompt=consent`
+without showing anything.
 
 <a id="SPS-AUTH-040"></a>
 **`SPS-AUTH-040`** — `prompt=none` MUST succeed only where all three hold: the pod itself remembers
