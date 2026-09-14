@@ -18,12 +18,9 @@ on:
   pull_request:
   push:
     branches: [main]
-    # The release tag too. `SPEC_VERSION` still saying `0.1-dev` when `0.1` is pushed publishes a
-    # pre-release index at a ref that downstream vendors from and that nobody should move — and a
-    # later run on `main` can diagnose that without being able to repair it. Running here is the
-    # first moment the mistake is visible, and the last one at which deleting the tag and cutting
-    # it again costs nothing.
-    tags: ['[0-9]+.[0-9]+']
+    # Publication checks also cover editorial corrections and independently versioned modules.
+    # A failed published tag is recorded and superseded, never moved to another commit.
+    tags: ['[0-9]+.[0-9]+', '[0-9]+.[0-9]+.[0-9]+', 'module-*']
 
 permissions:
   contents: read

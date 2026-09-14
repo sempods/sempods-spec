@@ -46,7 +46,7 @@ SPEC = Path("spec")
 INDEX = Path("requirements.json")
 
 # Until `0.1` is tagged the index says so, so nothing downstream can pin a version that does not
-# exist yet. GOVERNANCE.md §"The switch from descriptive to prescriptive" is what changes it.
+# exist yet. GOVERNANCE.md and docs/agents/publish-specification.md govern publication.
 SPEC_VERSION = "0.1-dev"
 
 # The tag that ends the window in which a requirement may be deleted or an identifier renumbered,

@@ -154,15 +154,17 @@ The specification:
 The rendered site — [`site/`](site/):
 
 - [`site/index.md`](site/index.md) — the landing page at `spec.sempods.org`. Published content, and
-  the only page on that site not generated from the specification: it says what a pod is for a
-  reader who arrived without knowing, and warns that the text can still change. Its links
+  the hand-written entry page alongside the generated revision page: it says what a pod is for a
+  reader who arrived without knowing, and links revisions, releases, proposals and check evidence. Its links
   are written against the staged layout and resolve nowhere in the repository, which is why lychee
   skips this directory and the Pages build checks them instead.
 - [`site/build.py`](site/build.py) — stages the specification and renders it. Names the demo pod the
   try-it page talks to, in the one place it is named, and refuses to build a page whose OpenAPI
   descriptions would point somewhere else. Its `STAGED` constant is the list of what the site
   publishes — `spec/`, `vocabulary/`, `GOVERNANCE.md` and `docs/vision.md`, and nothing else from
-  `docs/` or `examples/`
+  `docs/` or `examples/`. The builder also generates a revision page and build metadata
+- [`docs/guides/specification-revisions.md`](docs/guides/specification-revisions.md) — development, publication and consistent artifact consumption
+- [`docs/agents/publish-specification.md`](docs/agents/publish-specification.md) — preparing and verifying an authorized publication
 - [`site/test_build.py`](site/test_build.py) — regression checks for links across source and staged layouts
 - [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
   purpose; the Scalar bundle is pinned with an integrity hash.

@@ -15,7 +15,7 @@ anything.
 | Maintained informative explanations | `docs/guides/`, stating the specification version/revision or repository inputs they describe |
 | Tasks, decisions, dependencies and progress | GitHub issues and their native relationships |
 | Decision, adoption and publication rules | [GOVERNANCE.md](../../GOVERNANCE.md) |
-| Published changes | Release notes tied to the published version under governance |
+| Published changes | GitHub Release notes, pinned to tag and commit under governance; no parallel maintained changelog |
 
 Alongside the vision, informative documents are **proposals** or **maintained guides**. “Concept”
 may name a topic; it is not a separate lifecycle. Instructions under `docs/agents/` govern work

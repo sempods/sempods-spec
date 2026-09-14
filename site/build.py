@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import html
 import posixpath
 import re
 import shlex
@@ -91,11 +92,7 @@ ALLOWED_ADDRESSES = {
 SOURCES_MARKER = "/* SOURCES */"
 AUTH_MARKER = "/* AUTH */"
 
-# Where the repository is read when a staged document points at something the site does not
-# publish. Only the staged copies get these; the files themselves stay ref-relative, so a
-# reader on a tag follows links within that tag rather than being sent to whatever `main`
-# holds — which for `requirements.json` would mean reading one revision's requirements
-# alongside another revision's chapters.
+# Source links in rendered copies use the exact build commit; repository files stay relative.
 REPOSITORY = "https://github.com/sempods/sempods-spec"
 
 # The repository paths `stage()` copies. A link that lands inside one of these resolves on the
@@ -116,7 +113,71 @@ CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
 MODULES = ["context-management", "oidc", "media", "mcp"]
 
 
-def with_repository_links(text: str, source_at: str, staged_at: str, destinations: dict) -> str:
+def source_revision() -> tuple[str, bool]:
+    """Identify the checkout; a dirty preview must not claim its base commit reproduces its edits."""
+    try:
+        revision = subprocess.check_output(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT, text=True).strip()
+        changed = subprocess.check_output(
+            ["git", "-c", "core.fsmonitor=false", "status", "--porcelain", "--untracked-files=normal"],
+            cwd=ROOT, text=True)
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit("error: build the site from a Git checkout so its source revision is known") from exc
+    if not re.fullmatch(r"[0-9a-f]{40,64}", revision):
+        raise SystemExit("error: Git did not return a full source commit")
+    return revision, bool(changed.strip())
+
+
+def revision_page(revision: str, dirty: bool, versions: dict) -> str:
+    rows = "\n".join(f"| {name} | `{version}` |" for name, version in versions.items())
+    qualifier = ("Local preview with uncommitted changes. The linked base commit does not include those edits."
+                 if dirty else "This development snapshot was built from the exact commit linked below.")
+    return f"""# Revision and artifacts
+
+{qualifier}
+
+Source commit: [`{revision}`]({REPOSITORY}/tree/{revision}).
+A development website deployment is not a release. Published versions and their canonical notes
+are listed in [GitHub Releases]({REPOSITORY}/releases).
+
+| Component | Version label in this snapshot |
+|---|---|
+{rows}
+
+## Matching source artifacts
+
+All links select the same commit. Labels ending in `-dev` identify unreleased development.
+
+- [Normative chapters]({REPOSITORY}/tree/{revision}/spec)
+- [Original OpenAPI descriptions]({REPOSITORY}/tree/{revision}/openapi)
+- [Vocabulary]({REPOSITORY}/tree/{revision}/vocabulary)
+- [Generated requirement index]({REPOSITORY}/blob/{revision}/requirements.json)
+- [Complete source archive]({REPOSITORY}/archive/{revision}.zip)
+- [Build metadata](revision.json)
+
+The interactive API page substitutes the demo-pod address in its copies. Consume the original
+OpenAPI sources above when reproducing the contract, not those interactive copies.
+
+## Informative material and evidence
+
+- [Vision](vision.md)
+- [Proposals]({REPOSITORY}/tree/{revision}/docs/proposals)
+- [Selecting a revision]({REPOSITORY}/blob/{revision}/docs/guides/specification-revisions.md)
+- [Repository checks and their limits]({REPOSITORY}/blob/{revision}/docs/guides/repository-checks.md)
+
+The normative chapters already bind under [governance](GOVERNANCE.md); proposals remain informative.
+"""
+
+
+def snapshot_notice(staged_at: str, version: str, dirty: bool) -> str:
+    target = posixpath.relpath("revision.md", posixpath.dirname(staged_at) or ".")
+    title = "Local preview — uncommitted changes" if dirty else "Development snapshot — not a release"
+    return (f'!!! info "{title}"\n\n'
+            f'    Core `{version}` · [Source revision and matching artifacts]({target}).\n\n')
+
+
+def with_repository_links(text: str, source_at: str, staged_at: str, destinations: dict,
+                          revision: str) -> str:
     """Resolve source links before translating published targets into the staged layout.
 
     Repository documents use repository-relative links even when relocated, such as the vision
@@ -135,7 +196,7 @@ def with_repository_links(text: str, source_at: str, staged_at: str, destination
             relative = posixpath.relpath(destinations[resolved], posixpath.dirname(staged_at) or ".")
             return f"]({relative}{suffix})"
         kind = "tree" if (ROOT / resolved).is_dir() else "blob"
-        return f"]({REPOSITORY}/{kind}/main/{resolved}{suffix})"
+        return f"]({REPOSITORY}/{kind}/{revision}/{resolved}{suffix})"
 
     return RELATIVE_LINK.sub(rewrite, text)
 
@@ -171,6 +232,11 @@ def staged_content() -> dict:
     Assembled before anything is written, so `stage()` can compare, and so a file that stopped
     having a source is recognised by its absence here rather than by deleting the tree.
     """
+    revision, dirty = source_revision()
+    versions = json.loads((ROOT / "requirements.json").read_text())["versions"]
+    if not versions or "core" not in versions or any(
+            not re.fullmatch(r"[a-z0-9.-]+", value) for pair in versions.items() for value in pair):
+        raise SystemExit("error: requirement index carries invalid component version labels")
     copied = {}
     for entry in STAGED:
         if entry.endswith("/"):
@@ -182,7 +248,17 @@ def staged_content() -> dict:
             copied[Path(entry).name] = ROOT / entry
     copied["index.md"] = SITE / "index.md"
 
-    generated = {"api/index.html": try_it_page().encode()}
+    notice = ("Local preview with uncommitted changes" if dirty else "Development snapshot — not a release")
+    api_notice = (f'<aside style="padding:1rem;font:16px sans-serif">{html.escape(notice)} · '
+                  f'<a href="../revision/">Source revision and original artifacts</a>. '
+                  'Interactive copies target the demo pod.</aside>\n')
+    api = try_it_page().replace('<div id="app">', api_notice + '<div id="app">', 1)
+    generated = {
+        "api/index.html": api.encode(),
+        "revision.md": revision_page(revision, dirty, versions).encode(),
+        "revision.json": (json.dumps({"commit": revision, "dirty": dirty, "versions": versions}, indent=2)
+                          + "\n").encode(),
+    }
     for source in sorted((ROOT / "openapi").glob("*.yaml")):
         generated[f"api/{source.name}"] = with_demo_pod(source.read_text()).encode()
 
@@ -198,9 +274,12 @@ def staged_content() -> dict:
     wanted = dict(generated)
     for relative, source in copied.items():
         if source.suffix == ".md":
-            wanted[relative] = with_repository_links(
+            rewritten = with_repository_links(
                 source.read_text(), source_paths[relative], relative,
-                published_paths if source == SITE / "index.md" else destinations).encode()
+                published_paths if source == SITE / "index.md" else destinations, revision)
+            title, separator, rest = rewritten.partition("\n")
+            wanted[relative] = (title + separator + "\n" + snapshot_notice(relative, versions["core"], dirty)
+                                + rest.lstrip("\n")).encode()
         else:
             wanted[relative] = source.read_bytes()
 
@@ -243,7 +322,7 @@ def stage() -> None:
     # resolves paths, and a resolution that goes wrong produces a well-formed link to nothing —
     # which `--strict` cannot see, because it does not follow absolute URLs. Ten of them shipped
     # that way once: the entire navigation of the landing page.
-    written = re.compile(re.escape(REPOSITORY) + r"/(?:blob|tree)/main/([^)#]+)")
+    written = re.compile(re.escape(REPOSITORY) + r"/(?:blob|tree)/[0-9a-f]{40,64}/([^)#]+)")
     for relative, content in wanted.items():
         if relative.endswith(".md"):
             for target in written.findall(content.decode()):
@@ -729,8 +808,12 @@ def check() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serve", action="store_true", help="rebuild and watch on :8000")
+    parser.add_argument("--require-clean", action="store_true", help="refuse uncommitted publication inputs")
     parser.add_argument("--check", action="store_true", help="verify inputs, render nothing")
     args = parser.parse_args()
+
+    if args.require_clean and source_revision()[1]:
+        raise SystemExit("error: a publishable site build requires a clean checkout")
 
     failed = check()
     if failed or args.check:
