@@ -178,7 +178,7 @@ requirement to be rid of one of its clauses throws away the clause that was righ
   them.
 - If the HTTP surface moved, the OpenAPI description moved with it in the same commit.
 - The applicable work record has acceptance, checks and documentation evidence under
-  [Issue planning](documentation-strategy.md#issue-planning), including its transition rule.
+  [Issue planning](documentation-strategy.md#issue-planning).
 - The applicable [repository checks](../guides/repository-checks.md) pass.
 
 ## Pitfalls

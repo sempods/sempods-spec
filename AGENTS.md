@@ -112,7 +112,7 @@ already anticipates ("conformance markers").
 The short version:
 
 - **Document ownership and lifecycle** distinguish normative text, the vision, proposals and
-  maintained guides. Issues own planning, subject to the strategy's bounded roadmap transition.
+  maintained guides. Issues own planning; milestones track agreed release conditions.
 - **Name the standard, do not re-explain it.** A chapter says which RFC it profiles and describes
   the deviation. Restating RFC 9110 is how a specification becomes unmaintainable.
 - **No history and no decision log.** Keep only the reasoning a future reader needs in order not to
@@ -176,13 +176,11 @@ Agent instructions — [`docs/agents/`](docs/agents/):
   identified, numbered and withdrawn
 - [`documentation-sync.md`](docs/agents/documentation-sync.md) — the procedure run before a commit
 - [`issue-work.md`](docs/agents/issue-work.md) — scope, bounded delivery and completion evidence
-- [`roadmap-lifecycle.md`](docs/agents/roadmap-lifecycle.md) — retained only under the
-  [roadmap transition](docs/agents/documentation-strategy.md#roadmap-transition)
 - [`docs/guides/repository-checks.md`](docs/guides/repository-checks.md) — check commands, setup and
   evidence boundaries
 - [`docs/proposals/README.md`](docs/proposals/README.md) — writing and disposition of proposals
 
-Vision and retained design/planning sources:
+Vision and retained design sources:
 
 - [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
   belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
@@ -198,16 +196,8 @@ Vision and retained design/planning sources:
   and optional Context permissions; the worked ACP cases remain one design's evidence
 - [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
   reference implementation's proposed design, retained under the
-  [transition rule](docs/agents/documentation-strategy.md#roadmap-transition) pending classification
+  [retained-design rule](docs/agents/documentation-strategy.md#retained-design-material) pending classification
   and its separate handoff
-- [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the two source roadmaps under the temporary transition
-- **Running:** [`docs/roadmaps/core-data-access.md`](docs/roadmaps/core-data-access.md) — adopt the
-  proposed data-access core and optional Context contract, validate common operations and
-  coordinate downstream changes
-- **Running:** [`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) — the first specification
-  release: core specified with requirement IDs, an OpenAPI description, and the second copy in the
-  reference implementation retired. It also states which of its phases gate the public announce and
-  which may trail it
 
 Not in this repository, and deliberately: the licensing, DCO, AI-assistance and conduct rules that
 hold across the whole project live once in the organisation's `.github` repository and are inherited

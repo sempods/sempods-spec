@@ -87,8 +87,8 @@ and required evidence. A proposal merge does not change the normative contract.
 
 ## 6. Work record
 
-Apply [Issue planning](documentation-strategy.md#issue-planning), including its private-security,
-bot-update and temporary-roadmap rules. Compare this PR with its acceptance and blockers; record
+Apply [Issue planning](documentation-strategy.md#issue-planning), including its private-security
+and bot-update rules. Compare this PR with its acceptance and blockers; record
 completed work, check results, documentation updates or a specific no-change reason, and remaining
 scope. Partial PRs leave the issue open. Closure requires the deliverable and relevant merged PRs,
 checks and documentation evidence; verify a parent's own acceptance and any explicit scope reductions.

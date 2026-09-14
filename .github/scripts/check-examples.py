@@ -89,8 +89,8 @@ except ImportError:  # pragma: no cover - the message is the whole point
     sys.exit(
         "check-examples.py needs rdflib to parse the scenarios.\n\n"
         "    python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2\n\n"
-        "It is the specification's first RDF dependency; docs/roadmaps names that as a decision\n"
-        "rather than an oversight."
+        "See examples/README.md for installation and .github/workflows/examples.yml\n"
+        "for the dependency pins and their rationale."
     )
 
 ROOT = Path(__file__).resolve().parents[2]

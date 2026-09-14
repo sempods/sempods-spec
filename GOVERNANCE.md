@@ -87,12 +87,17 @@ version is this?" — more honest than a `0.1` that gets edited the week after i
 
 ### What has to be settled first
 
-**The roadmap's open decisions are the gate, not a list kept here** — two copies of that list would
-disagree within a week. What is written down there as required before `0.1` is required before
-`0.1`, and one of those is a **known security defect**: `SPS-CORE-018` is a context-enumeration
-oracle. The note above keeps it from binding until it is repaired, which is what makes tagging over
-it survivable rather than sensible — a tagged specification whose own text says one of its
-requirements is wrong is a poor thing to hand somebody.
+The [0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) is the sole maintained list
+of release conditions. Every condition there needs its accepted deliverable and evidence before
+the tag; completing a preparation issue does not adopt the contract it prepares. Deferring or
+removing a condition requires an explicit reviewed governance decision and matching milestone
+changes. Keeping one list prevents conflicting release gates.
+
+One condition is a **known security defect**: `SPS-CORE-018` is a context-enumeration oracle,
+tracked in [#45](https://github.com/sempods/sempods-spec/issues/45). The note above keeps it from
+binding until it is repaired; publication still requires the repair. The external-adopter trigger
+in §"When `0.1` gets tagged" also remains necessary. After-`0.1` work and announcement planning
+do not become release conditions merely by being tracked in the same repository.
 
 The heaviest of them, because it decides whether a version change is survivable at all:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing

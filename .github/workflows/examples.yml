@@ -15,8 +15,8 @@ name: Examples
 # same grant. A runner sharing sempods' reading of the vocabulary could not test that; this one can,
 # and a green run is the evidence.
 #
-# Add this job to the ruleset's required checks, or it is advisory — the same failure item 7 of the
-# `0.1` roadmap warns about, and the one the strict site render already fell into once.
+# The ruleset requires this job by name. A rename needs a matching ruleset update; the workflow
+# alone neither makes a check required nor changes the name the ruleset waits for.
 
 on:
   pull_request:

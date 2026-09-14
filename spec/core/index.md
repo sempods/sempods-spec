@@ -249,8 +249,9 @@ What an implementation is asked to weigh, given that this requirement will chang
 for both costs a caller the ability to tell "no such context" from "not yours", and a client that
 cannot tell them apart retries a permission problem forever. Checking authorization *before*
 existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
-`403` without confirming anything, and is the shape this should take. Closing it is on the
-specification's roadmap, before `0.1`.
+`403` without confirming anything, and is the shape this should take.
+[Issue #45](https://github.com/sempods/sempods-spec/issues/45) owns the repair, which remains a
+condition for `0.1`.
 
 ## 6. Standards profiled
 
