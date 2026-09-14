@@ -862,9 +862,15 @@ components:
     EditLinks:
       description: >-
         Optional edit-URL advertisement under SPS-CRUD-058. When present, the Link header
-        follows RFC 8288 section 3. No edit-link header is required.
+        follows RFC 8288 section 3. Each edit link uses the registered edit relation and
+        targets the same resource in this pod through its LOD address, where available,
+        or its system-layer resource-node address. The target includes exactly one context
+        query parameter carrying the canonical context IRI (SPS-CRUD-007/009).
+        Context disclosure, write authorization and conditional request rules still apply.
+        No edit-link header is required.
       required: false
       schema: { type: string }
+      example: '<https://example.org/alice/contacts/bob?context=https%3A%2F%2Fexample.org%2Falice%2Fcontacts>; rel="edit"'
 
   responses:
 

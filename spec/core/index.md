@@ -278,7 +278,7 @@ contract that composes them.
 | RFC 9110 (HTTP Semantics) | shared HTTP profile above — core and advertised modules |
 | RFC 7396 (JSON Merge Patch) | `lod-crud`, resource PATCH |
 | RFC 7232 (Conditional Requests) | `lod-crud`, ETag and `If-Match` |
-| RFC 8288 §3 (Web Linking) | `lod-crud`, optional edit-link headers ([SPS-CRUD-058](lod-crud.md#SPS-CRUD-058)) |
+| RFC 8288 §3 (Web Linking), RFC 5023 §16.4 (`edit` relation) | `lod-crud`, optional edit-link headers ([SPS-CRUD-058](lod-crud.md#SPS-CRUD-058)) |
 | RFC 4648 §5 (base64url, no padding) | `lod-crud`, embedded IRIs in paths |
 | RFC 6749 / OAuth 2.1 | `auth` |
 | RFC 7636 (PKCE) | `auth` |
