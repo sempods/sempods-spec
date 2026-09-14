@@ -23,6 +23,11 @@ the requirement is what binds.
 identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normative and an
 implementation is not obliged by it.
 
+This identifier rule concerns sempods-authored obligations. The obligations inherited from the
+[standards profiles](#6-standards-profiled) keep their standard's identifiers within the declared
+profile scope. [The authoring rules](../../docs/agents/spec-authoring.md#standards-incorporation)
+distinguish that incorporation from informative references.
+
 <a id="SPS-CORE-003"></a>
 **`SPS-CORE-003`** — Requirement identifiers are permanent: an identifier MUST NOT be reassigned to
 a different statement, MUST NOT be renumbered, and a requirement that is retired MUST be marked

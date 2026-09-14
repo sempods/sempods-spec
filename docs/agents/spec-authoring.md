@@ -8,36 +8,24 @@ Required before writing or editing anything under `spec/`.
 
 ## 1. Decide whether it is a requirement at all
 
-Most sentences in a chapter are not, and the burden is on the requirement: a sentence earns an
-identifier by answering all four of these, and stays prose by failing any one. The specification is
-meant to be a small stable shell around what two implementations must agree about to interoperate —
-mostly a pod and the clients that reach it. Every requirement past that is a promise this project
-has to keep, and one somebody else has to satisfy.
+Evaluate the proposal against [the vision](../vision.md), the canonical source of
+requirement-selection criteria. Record the rationale and intended core/module scope in the owning
+issue; a substantial design may link a proposal. Check that the actor belongs to the chapter's
+scope, that the obligation is testable, and that it states one thing an implementer can satisfy or
+violate. Split independent obligations so a conformance report can identify which failed.
 
-Four questions, in order:
+### Standards incorporation
 
-1. **Can a single pod satisfy this on its own?** The subject of this specification is one pod —
-   [`spec/core/index.md`](../../spec/core/index.md) §2 states it, and
-   [`SPS-CORE-007`](../../spec/core/index.md#SPS-CORE-007) gives that pod one base URL without
-   saying how the URL decomposes. A statement that needs a second pod to exist, or that puts a
-   route somewhere other than under the pod's own base URL, does not belong here however true it
-   is. It belongs to whatever hosts the pods, and hosting is an implementation's extension rather
-   than this specification's subject.
-2. **Could an implementation get this wrong?** If the behaviour follows a standard the chapter has
-   already declared it profiles, and follows it exactly, it needs no requirement — rule 4 of the
-   strategy. Write the deviation, not the norm.
-3. **Is it testable?** A requirement that no conformance test could ever fail is a wish. "The
-   server SHOULD be fast" is not a requirement; "the server MUST answer `413` above the advertised
-   body limit" is.
-4. **Is it one statement?** Two obligations joined by "and" are two requirements. Bundling them
-   means a conformance report can only say "failed" without saying which half.
+A chapter identifies each binding standard by title and version or dated revision (an RFC number
+is sufficient), links it, and states the profile's scope: applicable actors, operations and, where
+only part is incorporated, sections. Identify sempods constraints or deviations with SPS IDs.
+Inherited obligations need no duplicate SPS IDs. Mark references used only for explanation as
+informative; mentioning or linking a standard alone does not incorporate all of it.
 
-A no to the first is not a smaller requirement; it is a requirement for a different document. Two
-were written past that line while nothing stated it, both of them obliging a pod to answer on a
-route above its own base, and both had to be deleted rather than repaired.
-
-If the answer to the second is no, the sentence belongs in the chapter as plain prose or in the
-concept as reasoning. Prose is not second-class here; it is what makes the requirements readable.
+When clarifying an existing declaration, verify its current scope against the chapter and its
+requirements. Do not infer a broader profile from a bibliography or remove inherited obligations
+because they have no SPS ID. Ambiguity goes into the owning issue for explicit resolution;
+a change in scope is a normative change reviewed under [governance](../../GOVERNANCE.md).
 
 ## 2. Write it
 
@@ -184,8 +172,9 @@ requirement to be rid of one of its clauses throws away the clause that was righ
 - The chapter declares which standards it profiles, and the requirement is not restating one of
   them.
 - If the HTTP surface moved, the OpenAPI description moved with it in the same commit.
-- The roadmap item is ticked.
-- `lychee --offline --include-fragments --no-progress --exclude-path site .` passes.
+- The applicable work record has acceptance, checks and documentation evidence under
+  [Issue planning](documentation-strategy.md#issue-planning), including its transition rule.
+- The applicable [repository checks](../guides/repository-checks.md) pass.
 
 ## Pitfalls
 
@@ -195,7 +184,7 @@ requirement to be rid of one of its clauses throws away the clause that was righ
 - **Do not let a requirement carry its own justification.** "The server MUST reject `SERVICE`,
   because federated queries are an SSRF surface" mixes the obligation with the argument, and a
   reader cannot tell whether the reason is also binding. The obligation goes in the chapter, the
-  argument in `concepts/`.
+  argument in a guide or proposal.
 - **Do not number by section.** `SPS-CRUD-3.2.1` breaks the first time a section moves, which is the
   failure the flat scheme exists to avoid.
 - **Do not renumber to close a gap.** Gaps are free; renumbering is a silent break in every document

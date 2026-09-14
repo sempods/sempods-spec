@@ -8,7 +8,8 @@ body:
         For a defect in the *specification text*. If the reference implementation behaves
         wrongly but the specification is right, that issue belongs in sempods-kotlin.
         If the two disagree and you cannot tell which is wrong, this is the right form —
-        say so below.
+        say so below. Security reports go privately via the
+        [security policy](https://github.com/sempods/.github/blob/main/SECURITY.md).
 
   - type: input
     id: requirement
@@ -40,7 +41,23 @@ body:
     attributes:
       label: What it costs an implementer
       description: >-
-        What did you build, or fail to build, because of this? A defect that costs nothing
-        is a wording preference, and those are welcome as a pull request rather than an issue.
+        What did you build, or fail to build, because of this? Describe the ambiguity or cost.
+        Wording-only maintenance can use the Task or iteration form.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+      description: How can a reviewer verify the result? Link dependencies or decisions and identify applicable checks.
+    validations:
+      required: true
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation completion
+      description: Name affected chapters, contract views or informative documents, or explain why none are affected. Each PR runs documentation-sync and records checks before review.
     validations:
       required: true

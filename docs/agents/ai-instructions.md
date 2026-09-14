@@ -2,7 +2,8 @@
 
 The entry point for every AI agent working in this repository. It defines **how** instructions are
 discovered and applied — not what the rules are. The rules live in the root
-[`AGENTS.md`](../../AGENTS.md); how documents are written lives in
+[`AGENTS.md`](../../AGENTS.md); decision and publication rules live in
+[`GOVERNANCE.md`](../../GOVERNANCE.md); how documents are written lives in
 [`documentation-strategy.md`](documentation-strategy.md); how a normative statement is written lives
 in [`spec-authoring.md`](spec-authoring.md).
 
@@ -13,7 +14,7 @@ Start here, then read what this file points at. It is deliberately short.
 1. **Root [`AGENTS.md`](../../AGENTS.md)** — the canonical rules: what decides here, the mission,
    terminology, the non-negotiable invariants, the security stance, the commit
    checklist.
-2. **[`documentation-strategy.md`](documentation-strategy.md)** — the five document types and the
+2. **[`documentation-strategy.md`](documentation-strategy.md)** — document ownership, issue planning and the
    rules for writing them.
 3. **[`spec-authoring.md`](spec-authoring.md)** — required before writing or editing anything under
    `spec/`. The strategy says which document a thing belongs in; this says how a normative sentence
@@ -29,10 +30,8 @@ Start here, then read what this file points at. It is deliberately short.
 - What governs a change is the `AGENTS.md` files on the path from the repository root **down to the
   directory of the file being changed** — those, and no others.
 - **The more specific file wins** where two on that path conflict.
-- Reading another repository's `AGENTS.md` for orientation is fine, and for this project it is often
-  useful: the reference implementation's file carries the same invariants. It still does not govern
-  an edit here, and where it makes its own code the source of truth, this repository makes this
-  text — see the root `AGENTS.md`.
+- Another repository's `AGENTS.md` may provide context, but governs no edit here. This repository's
+  normative text defines the contract, including for the reference implementation.
 - Documentation nests the same way. Any `docs/` directory may hold the same types.
 
 ## Tool directory
@@ -70,8 +69,8 @@ the subset after; keep the subset minimal and let it link out for everything els
   is a chapter that restates another chapter.
 - Add a rule at the **narrowest** scope where it holds.
 - A document is reachable from at least one `AGENTS.md` pointer, or it will not be read.
-- **This repository has no code to check the rules against.** Everything here is judgement plus one
-  link checker, which raises the cost of a sloppy edit rather than lowering it.
+- [Repository checks](../guides/repository-checks.md) establish bounded evidence. Semantic review
+  remains necessary; passing checks cannot decide what the specification should require.
 
 ## Self-check
 
@@ -82,7 +81,8 @@ Hand this to any agent as a task:
 
 1. Read the root `AGENTS.md` and note what it references — in particular what decides here, and
    how much of this text may still move.
-2. Read `docs/agents/documentation-strategy.md`.
+2. Read `GOVERNANCE.md` and `docs/agents/documentation-strategy.md`; for issue work, follow
+   [issue-work.md](issue-work.md).
 3. If the change touches `spec/`, read `docs/agents/spec-authoring.md`.
 4. For each file you intend to change, load the `AGENTS.md` files on the path from the repository
    root down to its directory — not the ones in subtrees you are not touching.

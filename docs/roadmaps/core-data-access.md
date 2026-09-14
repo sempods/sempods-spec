@@ -1,8 +1,8 @@
 # Core for authorized data access (SOLL)
 
-> Progress is tracked in place. Completed items stay in this file, marked done, until the whole
-> milestone is consolidated. Do not prune them individually — the roadmap documents progress, not
-> only remaining work.
+> This source retains temporary authority under the
+> [roadmap transition](../agents/documentation-strategy.md#roadmap-transition) until #62 verifies
+> its replacement mapping. That rule governs progress updates and retirement.
 
 Concepts: [data access](../concepts/data-access.md) owns the core/module boundary and requirement
 impact; [access control](../concepts/access-control.md) owns authorization semantics.

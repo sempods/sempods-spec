@@ -7,9 +7,9 @@ The contract says what a pod decides, never how ([`docs/vision.md`](../docs/visi
 behaviour is in [`docs/concepts/access-control.md`](../docs/concepts/access-control.md). These files
 are where the reference implementation's answer to *how* — one small profile of ACP, in
 [`docs/reference-implementation/acp-profile.md`](../docs/reference-implementation/acp-profile.md) —
-is put to an engine that has never heard of sempods, to see whether it holds. A green run says the
-model is expressible in ACP. It says nothing about what a conformant pod must do, and it is not
-meant to.
+is put to an engine that has never heard of sempods, to see whether it holds.
+[Repository checks](../docs/guides/repository-checks.md#what-a-passing-run-establishes) defines what
+that execution establishes and its limits.
 
 **Read the first three in order.** They are the model, and each adds exactly one thing to the one
 before:
@@ -105,17 +105,10 @@ that happens to hold that target's statements — is in
 
 ## Why the runner is a plain ACP engine
 
-`check-examples.py` transcribes the pseudocode of ACP §6.1 through §6.5 and knows nothing about
-sempods. That is the whole point. The reference implementation's design claims its access control
-resources are *pure* ACP — that an independent engine, given one of them and a context graph,
-produces the same access grant graph. A runner that shared sempods' reading of the vocabulary could
-not test that claim; this one can, and every green run is evidence for it.
-
-It is worth being clear about what that evidence is *for*. It does not make ACP part of the contract,
-and a pod that produces the same answers by rewriting queries is exactly as conformant. What it
-buys is confidence in a design decision: that one small vocabulary can carry every deployment the
-reference implementation has to serve, including the ones where it cannot — which the scenarios show
-as plainly as the ones where it can.
+`check-examples.py` transcribes the pseudocode of ACP §6.1 through §6.5. Its independence from
+sempods is what tests the design's claim of expressibility in ACP; the
+[repository-checks guide](../docs/guides/repository-checks.md) owns the evidence boundary and
+execution guidance.
 
 Two consequences are worth expecting rather than being surprised by.
 

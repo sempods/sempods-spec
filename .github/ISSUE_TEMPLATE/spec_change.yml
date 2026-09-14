@@ -6,7 +6,10 @@ body:
     attributes:
       value: >-
         A specification change moves slower than an implementation change and needs a
-        written rationale, because other implementations depend on it.
+        written rationale, because other implementations depend on it. Read
+        [governance](https://github.com/sempods/sempods-spec/blob/main/GOVERNANCE.md#how-a-change-is-made).
+        A proposal does not change the normative contract. Security reports go privately via the
+        [security policy](https://github.com/sempods/.github/blob/main/SECURITY.md).
 
   - type: dropdown
     id: kind
@@ -53,5 +56,21 @@ body:
       description: >-
         Which existing implementations stop being conformant, and what they would have to
         change. The project is 0.x and breaking is allowed — it is never meant to be silent.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+      description: How can a reviewer verify the result? Link dependencies or decisions and identify applicable checks.
+    validations:
+      required: true
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation completion
+      description: Name affected chapters, contract views or informative documents, or explain why none are affected. Each PR runs documentation-sync and records checks before review.
     validations:
       required: true
