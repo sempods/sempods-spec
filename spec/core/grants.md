@@ -6,8 +6,7 @@ server.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: [RFC 6749 §3.3](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.3) for OAuth scope
-semantics used by clients and authorization servers. Error codes are [`index.md`](index.md) §5.
+Profiles: RFC 6749 (for what a *scope* is, and is not). Error codes are [`index.md`](index.md) §5.
 Contexts are [`contexts.md`](contexts.md).
 
 ## 1. Grant and scope are different things

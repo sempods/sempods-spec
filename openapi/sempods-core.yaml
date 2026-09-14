@@ -193,7 +193,7 @@ paths:
           description: Created.
           headers:
             Location: { schema: { type: string, format: uri } }
-        '204': { description: 'Replaced, no body.' }
+        '204': { description: Replaced, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/UnknownContext' }
@@ -218,7 +218,7 @@ paths:
             schema: { type: object }
       responses:
         '200': { description: Patched. }
-        '204': { description: 'Patched, no body.' }
+        '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
@@ -321,7 +321,7 @@ paths:
             schema: { type: object }
       responses:
         '200': { description: Patched. }
-        '204': { description: 'Patched, no body.' }
+        '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
     delete:
       tags: [resources]
@@ -475,10 +475,6 @@ paths:
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Run a read-only SPARQL query inside the caller's sandbox.
       description: |
-        The SPARQL Protocol profile uses the direct POST binding (§2.1.3), with the unencoded
-        query in an `application/sparql-query` body. GET and form-encoded POST are outside the
-        core profile.
-
         Read-only. Every Update form is rejected, and so is `SERVICE` anywhere in the query,
         including inside a subquery. A malformed query and an Update are refused identically — an
         implementation cannot reliably tell them apart, and reporting the difference tells a prober
@@ -604,7 +600,7 @@ paths:
       operationId: token
       summary: Exchange a code, refresh a token, or obtain a service token.
       security: [{}, { basicAuth: [] }]
-      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-061, SPS-AUTH-062, SPS-AUTH-063, SPS-AUTH-064]
+      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-061, SPS-AUTH-062, SPS-AUTH-063]
       requestBody:
         required: true
         content:
@@ -644,18 +640,14 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ClientRegistrationRequest' }
+            schema: { type: object }
       responses:
         '201':
-          description: The client identifier and all registered metadata, including server-selected values.
+          description: The registration.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ClientRegistrationResponse' }
-        '400':
-          description: An RFC 7591 §3.2.2 registration error, such as `invalid_redirect_uri` or `invalid_client_metadata`.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/OAuthError' }
+              schema: { type: object }
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /_system/auth/jwks.json:
     get:
@@ -681,10 +673,6 @@ paths:
       operationId: protectedResourceMetadata
       summary: RFC 9728 Protected Resource Metadata.
       description: |
-        SPS-AUTH-045 replaces RFC 9728's host-rooted location with this pod-relative append
-        location, including for resource-to-metadata URL validation. Serving the host-rooted
-        location as well is optional.
-
         Never enumerates the pod's public context IRIs — a count may be advertised, the URIs would
         be a topology leak on an unauthenticated route.
 
@@ -1045,102 +1033,6 @@ components:
             On a refresh, may only narrow the feature scopes. On `client_credentials` it is
             rejected with `invalid_scope`.
 
-    ClientMetadata:
-      type: object
-      description: |
-        RFC 7591 §2 client metadata. Extension and language-tagged metadata members are allowed.
-        Registered values are subject to the sempods authorization-code client profile.
-      properties:
-        redirect_uris:
-          type: array
-          minItems: 1
-          items: { type: string, format: uri }
-          description: Redirect addresses subject to `SPS-AUTH-018`, `SPS-AUTH-056` and `SPS-AUTH-057`.
-        token_endpoint_auth_method: { type: string }
-        grant_types:
-          type: array
-          items: { type: string }
-          default: [authorization_code]
-        response_types:
-          type: array
-          items: { type: string }
-          default: [code]
-        client_name: { type: string }
-        client_uri: { type: string, format: uri }
-        logo_uri: { type: string, format: uri }
-        scope: { type: string }
-        contacts:
-          type: array
-          items: { type: string }
-        tos_uri: { type: string, format: uri }
-        policy_uri: { type: string, format: uri }
-        jwks_uri: { type: string, format: uri }
-        jwks:
-          type: object
-          required: [keys]
-          properties:
-            keys:
-              type: array
-              items: { type: object }
-        software_id: { type: string }
-        software_version: { type: string }
-      not:
-        required: [jwks_uri, jwks]
-
-    ClientRegistrationRequest:
-      allOf:
-        - $ref: '#/components/schemas/ClientMetadata'
-        - type: object
-          required: [redirect_uris]
-          properties:
-            token_endpoint_auth_method:
-              type: string
-              default: client_secret_basic
-              examples: [none]
-              description: |
-                Request `none` for a `dyn:` client (`SPS-AUTH-009`). Omission has RFC 7591's
-                `client_secret_basic` default; the server may reject that value or replace it
-                with `none` under §3.2.1, returning the actual registered method.
-            software_statement:
-              type: string
-              description: A software statement JWT, if supported, under RFC 7591 §2.3.
-      examples:
-        - redirect_uris: ['https://client.example/callback']
-          token_endpoint_auth_method: none
-          client_name: Example client
-
-    ClientRegistrationResponse:
-      allOf:
-        - $ref: '#/components/schemas/ClientMetadata'
-        - type: object
-          required: [client_id, redirect_uris, token_endpoint_auth_method]
-          properties:
-            client_id:
-              type: string
-              pattern: '^dyn:'
-            token_endpoint_auth_method: { type: string, const: none }
-            grant_types:
-              type: array
-              minItems: 1
-              items: { type: string, enum: [authorization_code, refresh_token] }
-              description: The user-facing flow and optional refresh exchange; `SPS-AUTH-011` excludes `client_credentials`.
-            response_types:
-              type: array
-              minItems: 1
-              items: { type: string, const: code }
-            client_id_issued_at:
-              type: integer
-              description: Issuance time in seconds since the Unix epoch, if supplied.
-      description: |
-        RFC 7591 §3.2.1 successful registration. Returns all registered client metadata,
-        including any values substituted or provisioned by the server. These are public
-        clients using `none` (`SPS-AUTH-009`); no client secret is needed.
-      examples:
-        - client_id: 'dyn:example'
-          redirect_uris: ['https://client.example/callback']
-          token_endpoint_auth_method: none
-          client_name: Example client
-
     TokenResponse:
       type: object
       required: [access_token, token_type]
@@ -1151,9 +1043,8 @@ components:
         refresh_token:
           type: string
           description: >-
-            Issuance on authorization-code exchanges is optional; refresh-token exchanges rotate
-            the token. MUST NOT be issued on `client_credentials` (`SPS-AUTH-064`).
-            Its lifetime is the implementation's.
+            Whether one is issued, and for how long it lives, is the implementation's.
+            RFC 6749 §4.4.3 keeps it out of a `client_credentials` response.
         scope: { type: string }
 
     OAuthError:

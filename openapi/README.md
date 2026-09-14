@@ -14,7 +14,7 @@ implementation happens to do, and an implementer in another language reads its c
 obligations — the shape of its error bodies, the order of its parameters, an endpoint it grew for
 its own convenience. Hand-written keeps the description saying what an implementation *must* do.
 
-Hand-written descriptions need checks against drift:
+The cost of hand-writing is that nothing tells you when it drifts. Two things are done about that:
 
 - **Every operation names the requirements it realises**, in `x-sps-requirements`. A citation
   pointing at an identifier no chapter defines fails CI
@@ -23,10 +23,6 @@ Hand-written descriptions need checks against drift:
   description and every description must have a chapter, so deleting one — or adding a module
   without one — fails. A list of expected filenames would be a thing to forget the day a module is
   added, and the check would then enforce yesterday's shape.
-- **OpenAPI validation and contract examples run in CI.** The
-  [checker](../.github/scripts/check-openapi.py) validates the descriptions and selected registration
-  and MCP payloads against their schemas. These cases cover known boundaries; semantic review
-  still compares the HTTP view with the chapters and their incorporated standards.
 - **Agreement with a running implementation is the conformance suite's job**, not a lint here. That
   suite does not exist yet; until it does, these files are checked against the chapters and not
   against any server.

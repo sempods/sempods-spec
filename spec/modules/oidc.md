@@ -7,13 +7,8 @@ other way is conformant without it.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0-errata2.html)
-and [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0-errata2.html),
-both incorporating errata set 2, for the identity service and pod relying party’s authorization-code
-flow, ID Token issuance/validation and provider metadata discovery, with the redirect-registration
-exception in [`SPS-OIDC-010`](#SPS-OIDC-010);
-[RFC 7636](https://www.rfc-editor.org/rfc/rfc7636.html) for that flow’s PKCE exchange.
-What a pod stores about a person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.
+Profiles: OpenID Connect Core 1.0, OIDC Discovery 1.0, RFC 7636 (PKCE). What a pod stores about a
+person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.
 
 ## 1. What the module adds
 
@@ -78,10 +73,7 @@ return address, accepted from anyone, let any site collect a visitor's identity 
 <a id="SPS-OIDC-010"></a>
 **`SPS-OIDC-010`** — A pod MUST identify itself to the issuer as `did:web:` its own host, and MUST
 NOT be required to register. The issuer MUST permit a redirect address only on the origin that
-identifier names. For this pod relying party, that origin check replaces OpenID Connect Core
-§3.1.2.1's requirement to exactly match a pre-registered redirect URI, including its enforcement
-under §3.1.2.2. The remaining authorization-request validation and the token exchange's binding to
-the original `redirect_uri` (§3.1.3.2) still apply.
+identifier names.
 
 That origin restriction is what stands in for a client secret. It is the same rule as
 [`SPS-AUTH-004`](../core/auth.md#SPS-AUTH-004), applied by the issuer rather than by the pod.

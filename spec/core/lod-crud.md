@@ -7,16 +7,9 @@ set semantics make it deviate.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) for clients and pod servers on
-this chapter’s HTTP surface, [RFC 7396](https://www.rfc-editor.org/rfc/rfc7396.html) for JSON Merge
-Patch, [RFC 7232](https://www.rfc-editor.org/rfc/rfc7232.html) for conditional requests,
-[RFC 8288](https://www.rfc-editor.org/rfc/rfc8288.html) for edit-URL advertisement,
-[RFC 4648 §5](https://www.rfc-editor.org/rfc/rfc4648.html#section-5) for embedded IRIs, and
-[JSON-LD 1.1, Recommendation 2020-07-16](https://www.w3.org/TR/2020/REC-json-ld11-20200716/)
-for RDF representations. The [Linked Data principles](https://www.w3.org/DesignIssues/LinkedData.html)
-are informative background; this chapter’s SPS requirements define the LOD behavior.
-Error codes are [`index.md`](index.md) §5; contexts are [`contexts.md`](contexts.md); who may do what
-is [`grants.md`](grants.md).
+Profiles: RFC 9110, RFC 7396 (JSON Merge Patch), RFC 7232 (conditional requests), RFC 4648 §5
+(base64url), JSON-LD 1.1, and the Linked Data principles. Error codes are [`index.md`](index.md) §5;
+contexts are [`contexts.md`](contexts.md); who may do what is [`grants.md`](grants.md).
 
 ## 1. Two layers, one resource
 

@@ -16,9 +16,9 @@ violate. Split independent obligations so a conformance report can identify whic
 
 ### Standards incorporation
 
-A chapter identifies each binding standard by title and version or dated revision (an RFC number
-is sufficient), links it, and states the profile's scope: applicable actors, operations and, where
-only part is incorporated, sections. Identify sempods constraints or deviations with SPS IDs.
+When adding or revising a binding standards profile, identify its title and version or dated
+revision (an RFC number is sufficient), link it, and state its scope: applicable actors, operations
+and, where only part is incorporated, sections. Identify sempods constraints or deviations with SPS IDs.
 Inherited obligations need no duplicate SPS IDs. Mark references used only for explanation as
 informative; mentioning or linking a standard alone does not incorporate all of it.
 

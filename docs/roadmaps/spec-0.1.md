@@ -321,10 +321,10 @@ equally urgent and the announce waits on all of them.
     carried both its addresses, so deleting it took the pod-relative one with the host-rooted one.
     (That number has since been reissued and names an unrelated redirect-URI rule; this entry is
     about the requirement that was deleted, not the one that holds the number now.)
-    `spec/core/auth.md` profiles RFC 8414's metadata representation and comparison rules, and
-    [`SPS-AUTH-048`](../../spec/core/auth.md#SPS-AUTH-048) constrains the document's contents.
-    The address and location-derived issuer validation remain outside that profile: RFC 8414's
-    address is host-rooted and cannot be required of a path-scoped pod. Unlike the hint above this is not a
+    `spec/core/auth.md` still declares it profiles RFC 8414 and
+    [`SPS-AUTH-048`](../../spec/core/auth.md#SPS-AUTH-048) still constrains the document's contents,
+    but the address is unstated — and RFC 8414's own is host-rooted, so the standard the chapter
+    profiles names a place a path-scoped pod cannot serve. Unlike the hint above this is not a
     reinstatement: the append form was never the standard's, and requiring it is a decision about
     blessing a convention rather than about writing down what everyone already does.
 

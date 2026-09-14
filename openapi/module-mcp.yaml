@@ -1,8 +1,12 @@
 openapi: 3.1.0
 
-# The MCP module's Streamable HTTP transport and metadata alias. JSON-RPC methods, tool
-# semantics and authorization are owned by the chapter and its pinned standards; this view
-# describes their HTTP envelopes, headers, response forms and challenges.
+# The MCP module's HTTP surface: one JSON-RPC route, and the metadata address a client builds
+# from it.
+#
+# There is little for OpenAPI to say here, and that is the honest shape of it — the contract is in
+# the methods, the tool catalogue and the authentication modes, none of which a path-and-schema
+# description can express. What this file pins is the envelope, the challenge, and the pointer at
+# the requirements that carry the rest.
 
 info:
   title: sempods — MCP module
@@ -37,19 +41,10 @@ security:
 paths:
 
   /_system/mcp:
-    parameters:
-      - $ref: '#/components/parameters/ProtocolVersion'
-      - $ref: '#/components/parameters/SessionId'
-      - $ref: '#/components/parameters/Origin'
     post:
       operationId: mcp
       summary: JSON-RPC 2.0 — initialize, list tools, call a tool.
       description: |
-        Uses [MCP 2025-11-25 Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
-        Every POST MUST send `Accept: application/json, text/event-stream`; clients MUST handle
-        either response media type. OpenAPI ignores an `Accept` header parameter, so this
-        requirement is stated here alongside the response content definitions.
-
         Anonymous is a supported mode: with no bearer a caller may initialize, list tools, and use
         the read tools against the pod's public contexts. Write tools require a bearer. An invalid
         bearer is rejected rather than downgraded to anonymous.
@@ -63,81 +58,29 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              oneOf:
-                - $ref: '#/components/schemas/JsonRpcRequest'
-                - $ref: '#/components/schemas/JsonRpcNotification'
-                - allOf:
-                    - $ref: '#/components/schemas/JsonRpcResponse'
-                    - required: [id]
+            schema: { $ref: '#/components/schemas/JsonRpcRequest' }
       responses:
         '200':
           description: |
-            A single JSON response or an SSE stream carrying MCP messages. Servers may choose
-            either form. A tool failure is reported in its result.
-          headers:
-            MCP-Session-Id:
-              description: |
-                Optional on the response containing InitializeResult. If issued, the client MUST
-                send this value on every subsequent HTTP request. Session support is optional.
-              schema: { $ref: '#/components/schemas/SessionId' }
+            A JSON-RPC response. A tool that failed reports it inside the result rather than as a
+            transport error.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
-            text/event-stream:
-              schema: { $ref: '#/components/schemas/EventStream' }
         '202':
-          description: An accepted JSON-RPC notification or client response; no response body.
-        '400': { $ref: '#/components/responses/BadTransportRequest' }
-        '403': { $ref: '#/components/responses/InvalidOrigin' }
-        '404': { $ref: '#/components/responses/SessionNotFound' }
-        '401': { $ref: '#/components/responses/McpChallenge' }
-    get:
-      operationId: mcpEvents
-      summary: Open or resume an optional MCP event stream.
-      description: |
-        Clients MUST advertise `text/event-stream` in Accept. The server returns an SSE stream
-        or 405 when it does not offer one. A reconnect can carry Last-Event-ID to resume a stream
-        originally opened by POST or GET; replay follows the pinned transport's resumability rules.
-      x-sps-requirements: [SPS-MCP-007, SPS-MCP-009]
-      parameters:
-        - name: Last-Event-ID
-          in: header
-          required: false
-          description: The last received SSE event ID when resuming a disconnected stream.
-          schema: { type: string }
-      responses:
-        '200':
-          description: An SSE stream; messages and replay follow the MCP transport contract.
+          description: A notification, which carries no id and gets no response body.
+        '401':
+          description: |
+            The bearer was rejected, or the operation needs one. The challenge names the pod's realm
+            and its Protected Resource Metadata URL — the pod is the protected resource for an MCP
+            caller exactly as for an HTTP caller.
+          headers:
+            WWW-Authenticate:
+              schema: { type: string }
+              example: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
           content:
-            text/event-stream:
-              schema: { $ref: '#/components/schemas/EventStream' }
-        '400': { $ref: '#/components/responses/BadTransportRequest' }
-        '401': { $ref: '#/components/responses/McpChallenge' }
-        '403': { $ref: '#/components/responses/InvalidOrigin' }
-        '404': { $ref: '#/components/responses/SessionNotFound' }
-        '405': { $ref: '#/components/responses/MethodNotSupported' }
-    delete:
-      operationId: endMcpSession
-      summary: Request termination of an MCP transport session.
-      description: |
-        Applies when the server issued an MCP-Session-Id. Clients SHOULD request termination when
-        finished with the session; servers MAY decline client-requested termination with 405.
-      x-sps-requirements: [SPS-MCP-007, SPS-MCP-009]
-      parameters:
-        - name: MCP-Session-Id
-          in: header
-          required: true
-          description: The transport session to terminate.
-          schema: { $ref: '#/components/schemas/SessionId' }
-      responses:
-        '2XX':
-          description: The session was terminated; the transport does not prescribe a success body.
-        '400': { $ref: '#/components/responses/BadTransportRequest' }
-        '401': { $ref: '#/components/responses/McpChallenge' }
-        '403': { $ref: '#/components/responses/InvalidOrigin' }
-        '404': { $ref: '#/components/responses/SessionNotFound' }
-        '405': { $ref: '#/components/responses/MethodNotSupported' }
+            application/json:
+              schema: { $ref: '#/components/schemas/JsonRpcResponse' }
 
   # The append form on the MCP URL. No Authorization Server Metadata stands beside it: the MCP URL
   # is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves to match
@@ -148,13 +91,15 @@ paths:
       operationId: mcpProtectedResourceMetadata
       summary: RFC 9728 Protected Resource Metadata, at the MCP URL.
       description: |
-        SPS-MCP-031 replaces RFC 9728's host-rooted construction with this append location.
-        The response is the pod-level document, with `resource` naming the pod. Consumers use
-        the pod URL as the expected resource for validation, including after an MCP challenge.
-        This is an explicit resource-identity deviation from generic RFC 9728 discovery.
+        Some clients read the MCP URL itself as the protected-resource identifier and build this
+        address from it. What they get is the **pod-level** document — the one
+        `{pod}/.well-known/oauth-protected-resource` serves, `resource` naming the pod. The MCP URL
+        is another spelling of the same protected resource, so a client that discovered the pod
+        here and one that discovered it there end at the same authorization server.
 
-        Serving the host-rooted location as well is optional. When the deployment omits it,
-        the MCP endpoint's `401` challenge supplies the pod-level metadata URL.
+        The host-rooted address RFC 9728 §3.1 builds from an MCP URL sits on the origin, above the
+        pod's base URL, and a pod cannot serve what is above it. A client that probes there first
+        finds nothing and falls back to the `401` above.
       security: [{}]
       x-sps-requirements: [SPS-MCP-031]
       responses:
@@ -165,65 +110,6 @@ paths:
               schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
 
 components:
-
-  parameters:
-    ProtocolVersion:
-      name: MCP-Protocol-Version
-      in: header
-      required: false
-      description: |
-        Required on every request after initialization; SHOULD contain the negotiated version.
-        It may be omitted on initialization. Invalid or unsupported values receive 400; missing
-        values use the pinned transport's compatibility fallback. The conditional requirement
-        cannot be expressed by OpenAPI's operation-wide required flag.
-      schema: { type: string }
-      example: '2025-11-25'
-    SessionId:
-      name: MCP-Session-Id
-      in: header
-      required: false
-      description: Required after initialization if the server issued a session ID.
-      schema: { $ref: '#/components/schemas/SessionId' }
-    Origin:
-      name: Origin
-      in: header
-      required: false
-      description: Validated on every connection when present; an invalid origin receives 403.
-      schema: { type: string }
-
-  responses:
-    McpChallenge:
-      description: |
-        The bearer was rejected, or the operation needs one. The challenge names the pod's realm
-        and its Protected Resource Metadata URL — the pod is the protected resource for an MCP
-        caller exactly as for an HTTP caller.
-      headers:
-        WWW-Authenticate:
-          schema: { type: string }
-          example: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
-    BadTransportRequest:
-      description: |
-        Invalid or unsupported protocol version, unaccepted input, or a missing session ID where
-        the server requires one. An error body is optional.
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
-    InvalidOrigin:
-      description: The supplied Origin is invalid. A JSON-RPC error without an id may be returned.
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
-    SessionNotFound:
-      description: The session has ended; the client MUST initialize again without the old session ID.
-    MethodNotSupported:
-      description: The server does not offer this optional transport operation.
-      headers:
-        Allow:
-          required: true
-          schema: { type: string }
 
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -253,52 +139,25 @@ components:
           scopes: {}
 
   schemas:
-    SessionId:
-      type: string
-      pattern: '^[!-~]+$'
-    EventStream:
-      type: string
-      description: |
-        SSE framing containing MCP JSON-RPC messages, with optional event IDs and retry fields.
-        Parsing, reconnection and replay follow MCP 2025-11-25 Streamable HTTP.
     JsonRpcRequest:
       type: object
-      required: [jsonrpc, method, id]
+      required: [jsonrpc, method]
       properties:
         jsonrpc: { type: string, const: '2.0' }
-        id:
-          type: [string, integer]
-          description: Identifies the request and its response; MCP request IDs cannot be null.
+        id: { description: Absent on a notification. }
         method:
           type: string
-          enum: [initialize, tools/list, tools/call, resources/list, prompts/list]
-        params: { type: object }
-    JsonRpcNotification:
-      type: object
-      required: [jsonrpc, method]
-      not:
-        required: [id]
-      properties:
-        jsonrpc: { type: string, const: '2.0' }
-        method: { type: string, const: notifications/initialized }
+          enum: [initialize, notifications/initialized, tools/list, tools/call, resources/list, prompts/list]
         params: { type: object }
     JsonRpcResponse:
       type: object
       required: [jsonrpc]
-      dependentRequired:
-        result: [id]
-      oneOf:
-        - required: [result]
-        - required: [error]
       properties:
         jsonrpc: { type: string, const: '2.0' }
-        id:
-          type: [string, integer]
-          description: Matches the request ID; may be absent on an error when the request ID could not be read.
+        id: {}
         result: { type: object }
         error:
           type: object
-          required: [code, message]
           properties:
             code:
               type: integer
@@ -306,12 +165,6 @@ components:
                 Parse error, invalid request, method or tool not found, invalid params, internal
                 error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }
-            data: {}
-
-    JsonRpcErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/JsonRpcResponse'
-        - required: [error]
 
     # The core description's schema, copied rather than cross-referenced — an OpenAPI description
     # stands alone. The route above serves the pod-level document, so this is its schema.
