@@ -202,19 +202,19 @@ components:
           example: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
     BadTransportRequest:
       description: |
         Invalid or unsupported protocol version, unaccepted input, or a missing session ID where
         the server requires one. An error body is optional.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
     InvalidOrigin:
       description: The supplied Origin is invalid. A JSON-RPC error without an id may be returned.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+          schema: { $ref: '#/components/schemas/JsonRpcErrorResponse' }
     SessionNotFound:
       description: The session has ended; the client MUST initialize again without the old session ID.
     MethodNotSupported:
@@ -265,7 +265,9 @@ components:
       required: [jsonrpc, method]
       properties:
         jsonrpc: { type: string, const: '2.0' }
-        id: { description: Absent on a notification. }
+        id:
+          type: [string, integer]
+          description: Absent on a notification; MCP request IDs cannot be null.
         method:
           type: string
           enum: [initialize, notifications/initialized, tools/list, tools/call, resources/list, prompts/list]
@@ -273,15 +275,20 @@ components:
     JsonRpcResponse:
       type: object
       required: [jsonrpc]
+      dependentRequired:
+        result: [id]
       oneOf:
         - required: [result]
         - required: [error]
       properties:
         jsonrpc: { type: string, const: '2.0' }
-        id: {}
+        id:
+          type: [string, integer]
+          description: Matches the request ID; may be absent on an error when the request ID could not be read.
         result: { type: object }
         error:
           type: object
+          required: [code, message]
           properties:
             code:
               type: integer
@@ -289,6 +296,12 @@ components:
                 Parse error, invalid request, method or tool not found, invalid params, internal
                 error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }
+            data: {}
+
+    JsonRpcErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/JsonRpcResponse'
+        - required: [error]
 
     # The core description's schema, copied rather than cross-referenced — an OpenAPI description
     # stands alone. The route above serves the pod-level document, so this is its schema.
