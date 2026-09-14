@@ -6,11 +6,21 @@ caller is identified.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
-RFC 8252 §7.3 (native app redirect URIs), RFC 10017 (BCP 212, browser-based applications),
-RFC 9728 (Protected Resource Metadata, with the pod-relative location deviation in
-[`SPS-AUTH-045`](#SPS-AUTH-045)), RFC 8414 (Authorization Server Metadata), OIDC Core 1.0
-§3.1.2.1 (`prompt`). Error codes are [`index.md`](index.md) §5.
+Profiles, for the actors and operations below, subject to this chapter's SPS requirements:
+
+| Standard and revision | Scope |
+|---|---|
+| [OAuth 2.1, draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13), [RFC 6749](https://www.rfc-editor.org/rfc/rfc6749.html) | Pod authorization servers, clients and resource servers: authorization-code and client-credentials grants, refresh exchanges and token use. OAuth 2.1 governs where it updates RFC 6749. |
+| [RFC 7636](https://www.rfc-editor.org/rfc/rfc7636.html) | PKCE on authorization-code exchanges. |
+| [RFC 7591](https://www.rfc-editor.org/rfc/rfc7591.html) | Dynamic clients and the pod's registration endpoint. |
+| [RFC 8252 §7.3](https://www.rfc-editor.org/rfc/rfc8252.html#section-7.3) | Native clients' loopback redirect URIs. |
+| [RFC 10017](https://www.rfc-editor.org/rfc/rfc10017.html) | Browser-based clients and the authorization servers serving them. |
+| [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html) | Pod Protected Resource Metadata, with the location and URL-validation deviation in [`SPS-AUTH-045`](#SPS-AUTH-045). |
+| [RFC 8414 §§2, 3.2 and 4](https://www.rfc-editor.org/rfc/rfc8414.html) | Advertised Authorization Server Metadata: member definitions, response format and string comparisons. Location discovery and location-derived issuer validation are outside this profile, including §2's reference to the location construction in §3. |
+| [OpenID Connect Core 1.0, errata set 2, §3.1.2.1](https://openid.net/specs/openid-connect-core-1_0-errata2.html#AuthRequest) | The `prompt` parameter on authorization requests. |
+
+The authorization-server metadata address and its issuer/discovery relationship remain the open
+decision in [§10](#10-discovery). Error codes are [`index.md`](index.md) §5.
 
 ## 1. Flows
 
@@ -297,10 +307,14 @@ the reconnect it holds something again. What the code has to carry is which answ
 <a id="SPS-AUTH-033"></a>
 **`SPS-AUTH-033`** — Refresh tokens MUST be rotated. A refresh token belongs to a family seeded at
 code exchange, and on detected reuse of an already-rotated token the implementation MUST revoke the
-whole family. An implementation MUST NOT issue a refresh token in a `client_credentials` response.
+whole family.
 
 RFC 10017 §6.3.2.3 leaves the choice between rotation and a sender-constrained token; this
 specification takes rotation.
+
+<a id="SPS-AUTH-064"></a>
+**`SPS-AUTH-064`** — An implementation MUST NOT issue a refresh token in a `client_credentials`
+response.
 
 <a id="SPS-AUTH-034"></a>
 **`SPS-AUTH-034`** — A refresh token MUST NOT be stored in a form from which the presented value can
@@ -475,10 +489,11 @@ and reaches the metadata only by asking the pod: an unauthenticated request, a `
 **Core does not yet require that hint**, which makes the fallback weaker than it reads.
 [`SPS-MCP-009`](../modules/mcp.md#SPS-MCP-009) requires it of a pod that provides the MCP module,
 and nothing requires it of one that does not — so a client of such a pod is left constructing the
-append form by convention. This chapter is likewise silent on where RFC 8414 Authorization Server
-Metadata lives, though it profiles the standard and [`SPS-AUTH-048`](#SPS-AUTH-048) constrains what
-that document may claim. Both are recorded rather than blessed, and closing them is on the
-specification's roadmap, before `0.1`.
+append form by convention. This chapter incorporates only RFC 8414's metadata representation and
+comparison rules; the address and location-derived issuer validation remain undecided.
+[`SPS-AUTH-048`](#SPS-AUTH-048) constrains the advertised grant types. These discovery gaps remain
+release gates in the specification's roadmap, with [#66](https://github.com/sempods/sempods-spec/issues/66)
+and [#67](https://github.com/sempods/sempods-spec/issues/67) owning their resolution.
 
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.

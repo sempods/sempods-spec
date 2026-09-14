@@ -91,15 +91,13 @@ paths:
       operationId: mcpProtectedResourceMetadata
       summary: RFC 9728 Protected Resource Metadata, at the MCP URL.
       description: |
-        Some clients read the MCP URL itself as the protected-resource identifier and build this
-        address from it. What they get is the **pod-level** document — the one
-        `{pod}/.well-known/oauth-protected-resource` serves, `resource` naming the pod. The MCP URL
-        is another spelling of the same protected resource, so a client that discovered the pod
-        here and one that discovered it there end at the same authorization server.
+        SPS-MCP-031 replaces RFC 9728's host-rooted construction with this append location.
+        The response is the pod-level document, with `resource` naming the pod. Consumers use
+        the pod URL as the expected resource for validation, including after an MCP challenge.
+        This is an explicit resource-identity deviation from generic RFC 9728 discovery.
 
-        The host-rooted address RFC 9728 §3.1 builds from an MCP URL sits on the origin, above the
-        pod's base URL, and a pod cannot serve what is above it. A client that probes there first
-        finds nothing and falls back to the `401` above.
+        Serving the host-rooted location as well is optional. When the deployment omits it,
+        the MCP endpoint's `401` challenge supplies the pod-level metadata URL.
       security: [{}]
       x-sps-requirements: [SPS-MCP-031]
       responses:

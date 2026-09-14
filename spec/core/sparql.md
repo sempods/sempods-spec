@@ -10,8 +10,11 @@ one of them did.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: SPARQL 1.1 Query and the SPARQL 1.1 Protocol. Error codes are [`index.md`](index.md) §5;
-what a caller may read is [`grants.md`](grants.md).
+Profiles: [SPARQL 1.1 Query](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/)
+and [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/),
+both Recommendations of 2013-03-21, for clients and pod servers performing the read-only query
+operations defined here. The protocol's Update operation is outside this profile.
+Error codes are [`index.md`](index.md) §5; what a caller may read is [`grants.md`](grants.md).
 
 ## 1. Read-only, and why that is structural
 

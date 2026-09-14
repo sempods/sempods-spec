@@ -7,8 +7,12 @@ other way is conformant without it.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: OpenID Connect Core 1.0, OIDC Discovery 1.0, RFC 7636 (PKCE). What a pod stores about a
-person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.
+Profiles: [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0-errata2.html)
+and [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0-errata2.html),
+both incorporating errata set 2, for the identity service and pod relying party’s authorization-code
+flow, ID Token issuance/validation and provider metadata discovery;
+[RFC 7636](https://www.rfc-editor.org/rfc/rfc7636.html) for that flow’s PKCE exchange.
+What a pod stores about a person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.
 
 ## 1. What the module adds
 

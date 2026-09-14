@@ -600,7 +600,7 @@ paths:
       operationId: token
       summary: Exchange a code, refresh a token, or obtain a service token.
       security: [{}, { basicAuth: [] }]
-      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-061, SPS-AUTH-062, SPS-AUTH-063]
+      x-sps-requirements: [SPS-AUTH-002, SPS-AUTH-027, SPS-AUTH-028, SPS-AUTH-029, SPS-AUTH-031, SPS-AUTH-032, SPS-AUTH-033, SPS-AUTH-037, SPS-AUTH-038, SPS-AUTH-059, SPS-AUTH-061, SPS-AUTH-062, SPS-AUTH-063, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -1048,7 +1048,7 @@ components:
           type: string
           description: >-
             Issuance on authorization-code exchanges is optional; refresh-token exchanges rotate
-            the token. MUST NOT be issued on `client_credentials` (`SPS-AUTH-033`).
+            the token. MUST NOT be issued on `client_credentials` (`SPS-AUTH-064`).
             Its lifetime is the implementation's.
         scope: { type: string }
 

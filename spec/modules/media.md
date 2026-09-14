@@ -7,7 +7,10 @@ hold binaries provides this.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: RFC 9110, RFC 7232, RFC 4648 §5. Error codes are [`../core/index.md`](../core/index.md) §5;
+Profiles: [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) and
+[RFC 7232](https://www.rfc-editor.org/rfc/rfc7232.html) for clients and pod servers on the media HTTP
+surface and its conditional requests; [RFC 4648 §5](https://www.rfc-editor.org/rfc/rfc4648.html#section-5)
+for encoded IRIs in those routes. Error codes are [`../core/index.md`](../core/index.md) §5;
 authorization is [`../core/grants.md`](../core/grants.md).
 
 ## 1. The model
