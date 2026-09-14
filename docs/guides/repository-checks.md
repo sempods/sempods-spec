@@ -2,6 +2,7 @@
 
 This informative guide describes the checks in this repository's revision: the
 [requirement checker](../../.github/scripts/check-requirements.py),
+[OpenAPI checker](../../.github/scripts/check-openapi.py),
 [example runner](../../.github/scripts/check-examples.py) and [site builder](../../site/build.py).
 Read it at the same Git revision as those sources.
 
@@ -9,6 +10,7 @@ Read it at the same Git revision as those sources.
 
 | Check | Evidence and limits |
 |---|---|
+| OpenAPI documents and contract examples | Validates all descriptions as OpenAPI 3.1 and exercises positive/negative registration and MCP message examples against their schemas. Covers the selected wire shapes, including dynamic-client grant restrictions and JSON-RPC error members; it cannot prove complete agreement with every incorporated standard or exercise server behavior. |
 | Offline links and fragments | Local links and requirement anchors resolve. It excludes `site/`, whose hand-written links address the staged layout; the full site render checks those. It does not verify remote destinations. |
 | Requirement identifiers | Chapter/area placement, identifier changes against the base, OpenAPI requirement citations and the generated index are consistent. It enforces the observable part of [governance's identifier window](../../GOVERNANCE.md#deleting-and-renumbering-before-01); read notices as well as failures. It cannot detect an external adopter or prove semantic equivalence. |
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
@@ -35,6 +37,8 @@ export PATH="$PWD/site/.venv/bin:$PATH"
 
 The example runner also needs the parser dependencies pinned in
 [Examples §Dependency](../../examples/README.md#dependency). Install them into the same environment.
+Install the OpenAPI checker's dependencies with
+`python3 -m pip install -r .github/scripts/openapi-requirements.txt`.
 The site builder looks up `mkdocs` on `PATH`; the scripts use `python3`.
 
 ## Before requesting review
@@ -42,6 +46,7 @@ The site builder looks up `mkdocs` on `PATH`; the scripts use `python3`.
 ```bash
 lychee --offline --include-fragments --no-progress --exclude-path site .
 .github/scripts/check-requirements.py origin/main
+python3 .github/scripts/check-openapi.py
 .github/scripts/check-examples.py --self-test
 .github/scripts/check-examples.py
 python3 site/build.py

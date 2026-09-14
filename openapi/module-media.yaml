@@ -78,7 +78,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Media' }
-        '400': { description: Malformed request, or a source the address policy refuses. }
+        '400': { description: 'Malformed request, or a source the address policy refuses.' }
         '403': { description: No write grant on the named context. }
         '404': { description: The named context is not registered. }
         '409': { description: The context was deleted while the upload was in flight. }
@@ -126,8 +126,8 @@ paths:
           schema: { type: string, format: uri }
       x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008]
       responses:
-        '204': { description: Assigned, or already assigned. }
-        '403': { description: Missing write on the target, or read on an existing assignment. }
+        '204': { description: 'Assigned, or already assigned.' }
+        '403': { description: 'Missing write on the target, or read on an existing assignment.' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
     delete:
       operationId: unassignMedia

@@ -257,8 +257,10 @@ specification's roadmap, before `0.1`.
 
 ## 6. Standards profiled
 
-Named, not re-explained. A chapter states the deviations from these; where it is silent, the
-standard applies unchanged.
+This chapter profiles [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) for clients and
+servers on every pod HTTP surface. The table is a non-exhaustive overview of selected profiles;
+each chapter owns the complete declaration of its revisions, scope and SPS deviations. Within
+that scope, the standard applies unchanged except for those deviations.
 
 This is the intended implementation shape, not a footnote: a sempods implementation should be able
 to use existing HTTP, RDF, SPARQL and OAuth/OIDC libraries, and focus its own code on the pod
@@ -271,11 +273,11 @@ contract that composes them.
 | RFC 7232 (Conditional Requests) | `lod-crud`, ETag and `If-Match` |
 | RFC 8288 (Web Linking) | `lod-crud`, edit-URL advertisement |
 | RFC 4648 §5 (base64url, no padding) | `lod-crud`, embedded IRIs in paths |
-| RFC 6749 / OAuth 2.1 | `auth` |
+| RFC 6749 / OAuth 2.1 | [`auth`](auth.md), pinned grant and token profile |
 | RFC 7636 (PKCE) | `auth` |
 | RFC 7591 (Dynamic Client Registration) | `auth` |
-| RFC 9728 (Protected Resource Metadata) | `auth` |
-| RFC 8414 (Authorization Server Metadata) | `auth` |
+| RFC 9728 (Protected Resource Metadata) | [`auth`](auth.md), [`mcp`](../modules/mcp.md), with their discovery deviations |
+| RFC 8414 (Authorization Server Metadata) | [`auth`](auth.md), metadata representation and comparisons |
 | SPARQL 1.1 Query | `sparql` |
 | JSON-LD 1.1 | `lod-crud` |
-| Linked Data Principles (Berners-Lee) | `lod-crud`, resource GET |
+| Model Context Protocol / JSON-RPC 2.0 | [`mcp`](../modules/mcp.md), pinned message and transport profile |

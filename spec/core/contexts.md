@@ -13,7 +13,8 @@ and a pod provisioned outside that module still has contexts.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: RDF 1.1 (named graphs). Error codes are [`index.md`](index.md) §5.
+Profiles: [RDF 1.1 Concepts and Abstract Syntax, Recommendation 2014-02-25](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/)
+for the pod’s graph and named-graph data model (§§3–4). Error codes are [`index.md`](index.md) §5.
 
 ## 1. The boundary
 

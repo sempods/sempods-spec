@@ -24,8 +24,9 @@ its `part` field — never the identifier.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: RFC 9110. Error codes are [`../core/index.md`](../core/index.md) §5; authorization is
-[`../core/grants.md`](../core/grants.md).
+Profiles: [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) for clients and pod servers
+on this module's context-management HTTP surface. Error codes are
+[`../core/index.md`](../core/index.md) §5; authorization is [`../core/grants.md`](../core/grants.md).
 
 ## 1. The route and the name
 
@@ -139,4 +140,3 @@ anybody to see.
 **`SPS-CTX-020`** — On `DELETE`, an implementation MUST check authorization **before** existence, so
 that a caller outside their sandbox receives `403` and not a `404` that would confirm the context
 exists.
-

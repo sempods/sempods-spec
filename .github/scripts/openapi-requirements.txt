@@ -1,0 +1,4 @@
+PyYAML==6.0.3
+jsonschema==4.26.0
+openapi-spec-validator==0.9.0
+rfc3986-validator==0.1.1

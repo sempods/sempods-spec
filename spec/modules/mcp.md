@@ -10,8 +10,18 @@ exist to preserve.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: the Model Context Protocol, JSON-RPC 2.0, RFC 9728, RFC 8252 §7.3. Error codes are
-[`../core/index.md`](../core/index.md) §5.
+Profiles: [Model Context Protocol revision 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25)
+for clients and servers exchanging the JSON-RPC messages, lifecycle/capability negotiation,
+Streamable HTTP transport and server operations specified in this chapter; and
+[JSON-RPC 2.0](https://www.jsonrpc.org/specification) for those messages. The upstream Authorization
+chapter is outside this incorporation: authorization and registration follow
+[`../core/auth.md`](../core/auth.md) and §§2–4 below.
+
+[RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html) applies to Protected Resource Metadata,
+with the location and resource-identity deviations in
+[`SPS-AUTH-045`](../core/auth.md#SPS-AUTH-045) and [`SPS-MCP-031`](#SPS-MCP-031).
+[RFC 8252 §7.3](https://www.rfc-editor.org/rfc/rfc8252.html#section-7.3) applies to native clients'
+loopback redirects. Error codes are [`../core/index.md`](../core/index.md) §5.
 
 ## 1. The endpoint
 
@@ -126,19 +136,20 @@ challenge loop.
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
 
 <a id="SPS-MCP-031"></a>
-**`SPS-MCP-031`** — Some clients treat the MCP URL itself as the protected-resource identifier. An
-implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
-and it MUST return the **pod-level** document.
+**`SPS-MCP-031`** — An implementation MUST serve the pod-level Protected Resource Metadata at
+`GET {pod}/_system/mcp/.well-known/oauth-protected-resource`. For this alias, the append location
+MUST replace the host-rooted construction in RFC 9728 §§3 and 3.1. Consumers MUST use the pod URL
+as the expected `resource` for §3.3 validation, including when the metadata URL arrives through an
+MCP `WWW-Authenticate` challenge. A deployment MAY additionally serve the host-rooted location.
 
 The MCP URL is an alternative spelling of the same protected resource, not a resource of its own:
 the pod stays the unit of access control ([`SPS-AUTH-045`](../core/auth.md#SPS-AUTH-045)).
 
-The host-rooted address RFC 9728 §3.1 constructs from an MCP URL is not required here, for the
-reason [`../core/auth.md`](../core/auth.md) §10 gives for the pod-level one: it inserts the
-well-known segment in front of the path, which puts it on the origin rather than under the pod's
-base URL. A pod cannot serve what is above it. A client that probes there before its first request
-finds nothing and falls back to the `401`, which [`SPS-MCP-009`](#SPS-MCP-009) makes a complete
-answer for this module.
+For `https://example.org/alice/_system/mcp`, the alias appends
+`/.well-known/oauth-protected-resource` and the document's `resource` is
+`https://example.org/alice`. This resource identity differs from generic RFC 9728 discovery using
+the MCP URL. The host-rooted route needs control of the origin's routing; when a deployment omits
+it, [`SPS-MCP-009`](#SPS-MCP-009) supplies the pod-level metadata URL in the `401` challenge.
 
 <a id="SPS-MCP-032"></a>
 **`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
@@ -259,5 +270,5 @@ people — is a different thing from a pod's own endpoint and is not specified b
 differences are worth knowing so nothing here is read into it: such a service has no anonymous mode,
 and toward each pod it is an ordinary OAuth client rather than part of the pod.
 
-Also outside: which upstream MCP protocol revisions an implementation negotiates, per-client quirks,
+Also outside: which additional MCP protocol revisions an implementation negotiates, per-client quirks,
 and audit-log shape.
