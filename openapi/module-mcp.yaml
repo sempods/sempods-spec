@@ -66,6 +66,7 @@ paths:
             schema:
               oneOf:
                 - $ref: '#/components/schemas/JsonRpcRequest'
+                - $ref: '#/components/schemas/JsonRpcNotification'
                 - allOf:
                     - $ref: '#/components/schemas/JsonRpcResponse'
                     - required: [id]
@@ -262,15 +263,24 @@ components:
         Parsing, reconnection and replay follow MCP 2025-11-25 Streamable HTTP.
     JsonRpcRequest:
       type: object
-      required: [jsonrpc, method]
+      required: [jsonrpc, method, id]
       properties:
         jsonrpc: { type: string, const: '2.0' }
         id:
           type: [string, integer]
-          description: Absent on a notification; MCP request IDs cannot be null.
+          description: Identifies the request and its response; MCP request IDs cannot be null.
         method:
           type: string
-          enum: [initialize, notifications/initialized, tools/list, tools/call, resources/list, prompts/list]
+          enum: [initialize, tools/list, tools/call, resources/list, prompts/list]
+        params: { type: object }
+    JsonRpcNotification:
+      type: object
+      required: [jsonrpc, method]
+      not:
+        required: [id]
+      properties:
+        jsonrpc: { type: string, const: '2.0' }
+        method: { type: string, const: notifications/initialized }
         params: { type: object }
     JsonRpcResponse:
       type: object

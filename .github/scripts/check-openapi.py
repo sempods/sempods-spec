@@ -99,6 +99,27 @@ class OpenApiContractTests(unittest.TestCase):
                         {"code": -32603, "message": None})],
                      *[{**result, "id": value} for value in (None, True, {}, [], 1.5)]])
 
+    def test_mcp_request_and_notification_ids(self):
+        requests = [
+            {"jsonrpc": "2.0", "method": "initialize", "params": {
+                "protocolVersion": "2025-11-25", "capabilities": {},
+                "clientInfo": {"name": "Example client", "version": "1.0"}}},
+            {"jsonrpc": "2.0", "method": "tools/call",
+             "params": {"name": "authorize", "arguments": {}}},
+            *[{"jsonrpc": "2.0", "method": method}
+              for method in ("tools/list", "resources/list", "prompts/list")],
+        ]
+        notification = {"jsonrpc": "2.0", "method": "notifications/initialized"}
+        self.check_payloads("module-mcp",
+            "#/paths/~1_system~1mcp/post/requestBody/content/application~1json/schema",
+            valid=[notification, *[{**request, "id": value}
+                                   for request in requests for value in (1, "r1")]],
+            invalid=[*requests,
+                     *[{**request, "id": value} for request in requests
+                       for value in (None, True, {}, [], 1.5)],
+                     *[{**notification, "id": value}
+                       for value in (1, "r1", None, True, {}, [])]])
+
     def test_mcp_server_responses(self):
         error = {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid request"}}
         result = {"jsonrpc": "2.0", "id": 1, "result": {}}
