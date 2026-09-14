@@ -19,7 +19,7 @@ implementation can test.
 |---|---|
 | **sempods-spec** (here) | the contract: what an implementation MUST do |
 | [**sempods-kotlin**](https://github.com/sempods/sempods-kotlin) | the reference implementation for the JVM — pod server, identity service, hosted MCP, client libraries |
-| **www.sempods.org** | the project website — not published yet, so this table carries no link to it |
+| [**www.sempods.org**](https://www.sempods.org) | the project website |
 
 This is the only text duplicated across the three repositories. Everything else lives in exactly
 one of them and is linked from the others.
@@ -27,9 +27,9 @@ one of them and is linked from the others.
 ## Status
 
 **Pre-`0.1`, and the specification was extracted rather than invented.** All six core chapters and
-all four modules are written — 318 requirements — together with hand-written OpenAPI descriptions
-of the HTTP surface. What is not done is the `0.1` release itself, the conformance suite, and
-removing the second copy of this material from the reference implementation.
+all four modules are written, together with hand-written OpenAPI descriptions of the HTTP surface.
+The reference implementation cites this contract. The `0.1` release and conformance suite remain
+unfinished.
 
 This repository is the source of truth: an implementation that disagrees with it is the bug. The
 text goes on being written after `0.1`; what the tag ends is deleting an identifier, renumbering
@@ -40,7 +40,8 @@ What that means concretely: **you can implement against this repository, and you
 you did.** The requirements are stable enough to build against, and an identifier may still be
 deleted or renumbered until [`GOVERNANCE.md`](GOVERNANCE.md) says that ends; what does not exist is
 the suite that would check an implementation against them.
-[`docs/roadmaps/spec-0.1.md`](docs/roadmaps/spec-0.1.md) is what remains, and in which order.
+The [0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) tracks release conditions;
+[issues](https://github.com/sempods/sempods-spec/issues) track other work and its dependencies.
 
 ## What a specification is here
 
@@ -48,9 +49,10 @@ Three artefacts, one anchor:
 
 - **Normative text** under `spec/` — Markdown, RFC 2119 keywords, one stable requirement ID per
   normative statement. This *is* the specification.
-- **An OpenAPI 3.1 description** per chapter, hand-written and part of the contract. It carries the
-  shapes, parameters and status codes; it cannot carry grant resolution, the context sandbox or the
-  SPARQL sandbox, which is why it is not the specification on its own.
+- **OpenAPI 3.1 descriptions** for core and each module with an HTTP surface, hand-written and part
+  of the contract. They carry the shapes, parameters and status codes; they cannot carry grant
+  resolution or the context and SPARQL sandboxes, which is why OpenAPI is not the specification
+  on its own.
 - **A conformance suite**, later, which is what turns a requirement ID from a claim into a check.
 
 The requirement IDs are the load-bearing part: a conformance test, a note in the reference

@@ -148,23 +148,10 @@ Embargoed work uses the private advisory/fix record for scope, decisions, accept
 verification. Keep sensitive details and evidence private; no duplicate public issue is required.
 Applicable checks and documentation duties remain. Coordinate public documentation with disclosure.
 
-### Roadmap transition
-
-Issues own new and migrated work. Only [spec-0.1.md](../roadmaps/spec-0.1.md) and
-[core-data-access.md](../roadmaps/core-data-access.md) remain authoritative for their explicitly
-unmigrated work and decisions until [#62](https://github.com/sempods/sempods-spec/issues/62)
-verifies the replacement mapping and retires each source atomically. For work still owned there,
-update its item in the same change and preserve completed entries. Their source status wins until
-the switch; mapped issues carry the destination scope and evidence without a duplicate checklist.
-The current [release gate](../../GOVERNANCE.md#what-has-to-be-settled-first) remains in force;
-#62 switches its roadmap and milestone wording together. Do not start new roadmaps.
-
-The [roadmap procedure](roadmap-lifecycle.md) is retained only for these sources within that
-boundary; #62 retires it and its wrapper. It cannot make a proposal normative or require a
-SOLL-to-IST rewrite. Every PR uses [documentation-sync](documentation-sync.md).
+### Retained design material
 
 [#61](https://github.com/sempods/sempods-spec/issues/61) classifies and moves the retained
-`docs/concepts/` material into proposals and useful guides after tracking has moved. Keep those
+`docs/concepts/` material into proposals and useful guides. Keep those
 source paths usable until then. `docs/reference-implementation/` remains non-normative design
 support pending that classification and the separate
 [#64](https://github.com/sempods/sempods-spec/issues/64) handoff. Removing transferred content needs
@@ -180,7 +167,7 @@ Every PR completes the following for its own diff before review:
 - the chapters, incorporated standards profile, OpenAPI, vocabulary and generated index agree;
   review semantic effects explicitly, including inherited obligations, not only unchanged IDs;
 - the applicable work record is linked and contains completion and check evidence, with unfinished
-  acceptance kept open under [Issue planning](#issue-planning), including its transition rule;
+  acceptance kept open under [Issue planning](#issue-planning);
 - affected documentation is updated or reduced, or a specific no-change reason is recorded;
 - proposal disposition and guide revision references agree with the delivered scope;
 - `spec/README.md`'s chapter table still reflects reality;

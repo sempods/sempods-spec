@@ -11,7 +11,6 @@ defines those types; new substantial designs use [docs/proposals/](../proposals/
   revocation, query enforcement and unresolved mutation cases. Its worked ACP design support
   remains under [reference-implementation/](../reference-implementation/README.md).
 
-[#68](https://github.com/sempods/sempods-spec/issues/68) owns normative adoption.
-The [source roadmap](../roadmaps/core-data-access.md) retains its bounded authority under the
-[transition rule](../agents/documentation-strategy.md#roadmap-transition). Moving or merging these
-documents does not change the current normative chapters.
+[#68](https://github.com/sempods/sempods-spec/issues/68) and its sub-issues own normative adoption,
+validation and downstream coordination. Moving or merging these documents does not change the
+current normative chapters.

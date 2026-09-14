@@ -78,8 +78,8 @@ Full rules: [`docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 - **Reasoning belongs in a guide or proposal.** Keep obligations distinct from justification.
 - Every PR updates affected documentation and records checks and completion evidence in the
   applicable work record, or a specific documentation no-change reason. Follow
-  [Issue planning](../docs/agents/documentation-strategy.md#issue-planning), including its bot,
-  private-security and temporary-roadmap boundaries. Partial PRs leave unfinished issues open.
+  [Issue planning](../docs/agents/documentation-strategy.md#issue-planning), including its bot and
+  private-security boundaries. Partial PRs leave unfinished issues open.
 
 Full rules: [`docs/agents/documentation-strategy.md`](../docs/agents/documentation-strategy.md).
 

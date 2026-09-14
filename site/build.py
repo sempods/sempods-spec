@@ -122,8 +122,8 @@ MODULES = ["context-management", "oidc", "media", "mcp"]
 def with_repository_links(text: str, staged_at: str, published: set) -> str:
     """Point a staged document's off-site links at the repository.
 
-    A chapter may link to the roadmap, the authoring rules or `requirements.json`, and none of
-    those is published. Rewritten here rather than written absolutely in the file, because the
+    A chapter may link to a repository-checks guide, the authoring rules or `requirements.json`;
+    none of those is published. Rewritten here rather than written absolutely in the file, because the
     file is also read on GitHub at a tag or a branch, where a hard-coded `main` silently mixes
     one revision's text with another's.
 

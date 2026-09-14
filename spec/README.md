@@ -4,8 +4,8 @@ The normative text lives in this directory: six core chapters and four modules.
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 
-[`../docs/roadmaps/spec-0.1.md`](../docs/roadmaps/spec-0.1.md) is what remains before the `0.1`
-release.
+The [0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) tracks what remains before
+the `0.1` release.
 
 ## How to read a chapter
 
@@ -118,7 +118,7 @@ reason a requirement identifier is permanent.
 
 ## Conformance
 
-`conformance/` will hold the suite that turns a requirement ID from a claim into a check, and it is
-what the reserved terms **"sempods conformant"** and **"sempods certified"** are gated on. Neither
-exists, so nobody can pass it and the terms say nothing today. Write "implements the sempods
-specification" and document your deviations.
+[Issue #79](https://github.com/sempods/sempods-spec/issues/79) owns the future conformance suite
+and pod checker, including their repository and runtime decision. This is after-`0.1` work. The
+reserved terms **"sempods conformant"** and **"sempods certified"** remain gated on the suite,
+which does not exist yet. Write "implements the sempods specification" and document your deviations.

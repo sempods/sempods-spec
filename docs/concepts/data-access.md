@@ -179,8 +179,8 @@ evidence of deletion. No sync route, timestamp property or module is standardize
 The entries below identify the coordinated normative change, not changes applied by this document.
 Move only the Context-specific parts: general authentication and authorization guarantees remain
 core. The table identifies affected contracts; it is not a completed dependency inventory.
-The [adoption roadmap](../roadmaps/core-data-access.md) requires a full chapter and cross-reference
-sweep before the normative patch is complete.
+The [normative preparation issue](https://github.com/sempods/sempods-spec/issues/70) requires a full
+chapter and cross-reference sweep before the normative patch is complete.
 
 | Current contract | Proposed disposition |
 |---|---|
