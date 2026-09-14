@@ -16,16 +16,21 @@ violate. Split independent obligations so a conformance report can identify whic
 
 ### Standards incorporation
 
-When adding or revising a binding standards profile, identify its title and version or dated
-revision (an RFC number is sufficient), link it, and state its scope: applicable actors, operations
-and, where only part is incorporated, sections. Identify sempods constraints or deviations with SPS IDs.
-Inherited obligations need no duplicate SPS IDs. Mark references used only for explanation as
-informative; mentioning or linking a standard alone does not incorporate all of it.
+Apply [`SPS-CORE-021`](../../spec/core/index.md#SPS-CORE-021): the chapter's SPS requirements select
+the required actors, operations and capabilities; standards supply their behavior. Evaluate that
+selection against [the vision](../vision.md), including obligations inherited through a reference.
+A library's full feature set is not a reason to require it of every implementation.
 
-When clarifying an existing declaration, verify its current scope against the chapter and its
-requirements. Do not infer a broader profile from a bibliography or remove inherited obligations
-because they have no SPS ID. Ambiguity goes into the owning issue for explicit resolution;
-a change in scope is a normative change reviewed under [governance](../../GOVERNANCE.md).
+When adding or revising a binding profile, identify and link the standard and its version or dated
+revision (an RFC number is sufficient). State the applicable scope and sections, and identify
+sempods constraints or deviations with SPS IDs. Inherited obligations need no duplicate SPS IDs.
+Mark references used only for explanation as informative.
+
+When clarifying an existing declaration, check it against the chapter's SPS requirements and
+preserve inherited behavior within their scope. Adding a capability or changing a deviation needs
+an explicit normative change under [governance](../../GOVERNANCE.md). Record unresolved revision or
+scope choices in the owning issue; an authoring cleanup does not settle them by importing the
+latest or the whole standard.
 
 ## 2. Write it
 

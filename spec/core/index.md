@@ -21,11 +21,8 @@ the requirement is what binds.
 <a id="SPS-CORE-002"></a>
 **`SPS-CORE-002`** — Every normative statement authored by sempods MUST carry a requirement
 identifier of the form `SPS-<AREA>-<NNN>`; without one it is not normative. Obligations inherited
-from an explicitly incorporated standard MUST apply within the chapter's declared profile scope
-and retain that standard's identifiers. Informative references create no obligations.
-
-[The authoring rules](../../docs/agents/spec-authoring.md#standards-incorporation) define how a
-chapter identifies the standard, revision and profile scope it incorporates.
+from an explicitly incorporated standard retain that standard's identifiers. Informative
+references create no obligations.
 
 <a id="SPS-CORE-003"></a>
 **`SPS-CORE-003`** — Requirement identifiers are permanent: an identifier MUST NOT be reassigned to
@@ -257,8 +254,16 @@ specification's roadmap, before `0.1`.
 
 ## 6. Standards profiled
 
-Named, not re-explained. A chapter states the deviations from these; where it is silent, the
-standard applies unchanged.
+<a id="SPS-CORE-021"></a>
+**`SPS-CORE-021`** — A standards profile MUST be interpreted within the actors, operations and
+capabilities selected by the chapter's SPS requirements. Within that scope, the standard's
+obligations MUST apply except where an SPS requirement specifies a deviation. A reference alone
+MUST NOT require additional actors, endpoints, operations or capabilities.
+
+Standards supply the behavior within that boundary; sempods conformance does not assert complete
+conformance to every named standard. [The authoring rules](../../docs/agents/spec-authoring.md#standards-incorporation)
+define how a chapter identifies its standard, revision and profile scope. The table is an overview
+of chapter references, not an independent incorporation of entire standards.
 
 This is the intended implementation shape, not a footnote: a sempods implementation should be able
 to use existing HTTP, RDF, SPARQL and OAuth/OIDC libraries, and focus its own code on the pod
