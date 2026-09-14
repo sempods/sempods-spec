@@ -10,6 +10,10 @@ set semantics make it deviate.
 Profiles: RFC 9110, RFC 7396 (JSON Merge Patch), RFC 7232 (conditional requests), RFC 4648 §5
 (base64url), JSON-LD 1.1, and the Linked Data principles. Error codes are [`index.md`](index.md) §5;
 contexts are [`contexts.md`](contexts.md); who may do what is [`grants.md`](grants.md).
+[RFC 8288 §3 (Web Linking)](https://www.rfc-editor.org/rfc/rfc8288.html#section-3) applies to the
+optional edit-link response headers selected by [`SPS-CRUD-058`](#SPS-CRUD-058).
+The `edit` relation is the one registered in
+[RFC 5023 §16.4](https://www.rfc-editor.org/rfc/rfc5023.html#section-16.4).
 
 ## 1. Two layers, one resource
 
@@ -36,6 +40,26 @@ foreign `https:` — without special-casing.
 **`SPS-CRUD-004`** — A resource path equal to a segment reserved by
 [`SPS-CORE-008`](index.md#SPS-CORE-008) — `_system` or `.well-known` — or beginning with one of
 them followed by `/`, MUST NOT be addressable through the LOD layer.
+
+<a id="SPS-CRUD-058"></a>
+**`SPS-CRUD-058`** — An implementation MAY advertise edit URLs in `Link` headers on successful
+resource `GET` and `HEAD` responses. When provided, those headers MUST conform to RFC 8288 §3.
+Each advertised edit link MUST use the `edit` relation and target the same resource in the same
+pod through its LOD address, where available, or its system-layer resource-node address
+([`SPS-CRUD-001`](#SPS-CRUD-001)–[`SPS-CRUD-004`](#SPS-CRUD-004)). The target URL MUST include
+exactly one `context` query parameter carrying the canonical context IRI, using the write-context
+selection defined by [`SPS-CRUD-007`](#SPS-CRUD-007) and [`SPS-CRUD-009`](#SPS-CRUD-009).
+
+For example, a response for `https://example.org/alice/contacts/bob` can advertise:
+
+```http
+Link: <https://example.org/alice/contacts/bob?context=https%3A%2F%2Fexample.org%2Falice%2Fcontacts>; rel="edit"
+```
+
+This selects the existing resource write operation in one context, even when the read merged
+several contexts. Context disclosure remains subject to [`SPS-CORE-017`](index.md#SPS-CORE-017);
+advertising a link grants no permission to follow it. The write's authorization and conditional
+request rules still apply.
 
 ## 2. Embedding an IRI in a path
 

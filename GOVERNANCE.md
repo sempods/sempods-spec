@@ -109,10 +109,13 @@ contract.
 ## Contract sources
 
 The normative development text already binds under the limits above. `spec/` owns the protocol
-requirements and the standards profiles it incorporates. An explicitly incorporated standard
-contributes obligations within the chapter's identified scope; an informative reference does not.
-[Spec authoring](docs/agents/spec-authoring.md#standards-incorporation) defines the declaration.
-sempods-authored obligations carry SPS IDs; inherited obligations keep their standard's identifiers.
+requirements and the standards profiles it incorporates.
+[`SPS-CORE-021`](spec/core/index.md#SPS-CORE-021) bounds incorporation by the chapter's SPS
+requirements; the reference supplies behavior within that scope. Selecting additional capabilities
+or changing a deviation is a normative change under the adoption process below.
+[`SPS-CORE-002`](spec/core/index.md#SPS-CORE-002) owns the identifier convention; informative
+references create no obligations. [Spec authoring](docs/agents/spec-authoring.md#standards-incorporation)
+defines how a profile is declared and reviewed.
 
 `openapi/` is the normative HTTP view of those chapters; where it disagrees, the chapter wins and
 the description needs correction. `vocabulary/` owns the RDF terms and their stability guarantees.
