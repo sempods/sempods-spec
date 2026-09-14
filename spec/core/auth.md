@@ -296,7 +296,7 @@ the reconnect it holds something again. What the code has to carry is which answ
 <a id="SPS-AUTH-033"></a>
 **`SPS-AUTH-033`** — Refresh tokens MUST be rotated. A refresh token belongs to a family seeded at
 code exchange, and on detected reuse of an already-rotated token the implementation MUST revoke the
-whole family.
+whole family. An implementation MUST NOT issue a refresh token in a `client_credentials` response.
 
 RFC 10017 §6.3.2.3 leaves the choice between rotation and a sender-constrained token; this
 specification takes rotation.

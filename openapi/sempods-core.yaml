@@ -1043,8 +1043,9 @@ components:
         refresh_token:
           type: string
           description: >-
-            Whether one is issued, and for how long it lives, is the implementation's.
-            RFC 6749 §4.4.3 keeps it out of a `client_credentials` response.
+            Issuance on authorization-code exchanges is optional; refresh-token exchanges rotate
+            the token. MUST NOT be issued on `client_credentials` (`SPS-AUTH-033`).
+            Its lifetime is the implementation's.
         scope: { type: string }
 
     OAuthError:

@@ -19,14 +19,13 @@ Prose that carries no such keyword is explanation. Where prose and a requirement
 the requirement is what binds.
 
 <a id="SPS-CORE-002"></a>
-**`SPS-CORE-002`** — Every normative statement in this specification carries a requirement
-identifier of the form `SPS-<AREA>-<NNN>`. A statement without one is not normative and an
-implementation is not obliged by it.
+**`SPS-CORE-002`** — Every normative statement authored by sempods MUST carry a requirement
+identifier of the form `SPS-<AREA>-<NNN>`; without one it is not normative. Obligations inherited
+from an explicitly incorporated standard MUST apply within the chapter's declared profile scope
+and retain that standard's identifiers. Informative references create no obligations.
 
-This identifier rule concerns sempods-authored obligations. The obligations inherited from the
-[standards profiles](#6-standards-profiled) keep their standard's identifiers within the declared
-profile scope. [The authoring rules](../../docs/agents/spec-authoring.md#standards-incorporation)
-distinguish that incorporation from informative references.
+[The authoring rules](../../docs/agents/spec-authoring.md#standards-incorporation) define how a
+chapter identifies the standard, revision and profile scope it incorporates.
 
 <a id="SPS-CORE-003"></a>
 **`SPS-CORE-003`** — Requirement identifiers are permanent: an identifier MUST NOT be reassigned to
