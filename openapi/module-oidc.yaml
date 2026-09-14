@@ -21,6 +21,11 @@ info:
     `state` and a `nonce`, and fetches the assertion over a back channel with a verifier that never
     travelled through the browser. None of those are pod routes.
 
+    Under `SPS-OIDC-010`, the pod identifies itself as `did:web:` its own host without registration.
+    The issuer checks the redirect's origin against that identifier in place of OpenID Connect
+    Core §3.1.2.1's exact match against pre-registered redirect URIs. Other request validation and
+    the token exchange's binding to the original redirect URI still apply.
+
     What the pod serves is the resumption point. The request the person was making is parked on the
     server under the `state`; the redirect carries a single-use code and never the assertion itself.
   license:

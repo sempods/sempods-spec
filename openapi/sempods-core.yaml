@@ -193,7 +193,7 @@ paths:
           description: Created.
           headers:
             Location: { schema: { type: string, format: uri } }
-        '204': { description: Replaced, no body. }
+        '204': { description: 'Replaced, no body.' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/UnknownContext' }
@@ -218,7 +218,7 @@ paths:
             schema: { type: object }
       responses:
         '200': { description: Patched. }
-        '204': { description: Patched, no body. }
+        '204': { description: 'Patched, no body.' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
@@ -321,7 +321,7 @@ paths:
             schema: { type: object }
       responses:
         '200': { description: Patched. }
-        '204': { description: Patched, no body. }
+        '204': { description: 'Patched, no body.' }
         '400': { $ref: '#/components/responses/BadRequest' }
     delete:
       tags: [resources]
@@ -644,14 +644,18 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object }
+            schema: { $ref: '#/components/schemas/ClientRegistrationRequest' }
       responses:
         '201':
-          description: The registration.
+          description: The client identifier and all registered metadata, including server-selected values.
           content:
             application/json:
-              schema: { type: object }
-        '400': { $ref: '#/components/responses/BadRequest' }
+              schema: { $ref: '#/components/schemas/ClientRegistrationResponse' }
+        '400':
+          description: An RFC 7591 §3.2.2 registration error, such as `invalid_redirect_uri` or `invalid_client_metadata`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
 
   /_system/auth/jwks.json:
     get:
@@ -1040,6 +1044,93 @@ components:
           description: |
             On a refresh, may only narrow the feature scopes. On `client_credentials` it is
             rejected with `invalid_scope`.
+
+    ClientMetadata:
+      type: object
+      description: |
+        RFC 7591 §2 client metadata. Extension and language-tagged metadata members are allowed.
+        Registered values are subject to the sempods authorization-code client profile.
+      properties:
+        redirect_uris:
+          type: array
+          minItems: 1
+          items: { type: string, format: uri }
+          description: Redirect addresses subject to `SPS-AUTH-018`, `SPS-AUTH-056` and `SPS-AUTH-057`.
+        token_endpoint_auth_method: { type: string }
+        grant_types:
+          type: array
+          items: { type: string }
+          default: [authorization_code]
+        response_types:
+          type: array
+          items: { type: string }
+          default: [code]
+        client_name: { type: string }
+        client_uri: { type: string, format: uri }
+        logo_uri: { type: string, format: uri }
+        scope: { type: string }
+        contacts:
+          type: array
+          items: { type: string }
+        tos_uri: { type: string, format: uri }
+        policy_uri: { type: string, format: uri }
+        jwks_uri: { type: string, format: uri }
+        jwks:
+          type: object
+          required: [keys]
+          properties:
+            keys:
+              type: array
+              items: { type: object }
+        software_id: { type: string }
+        software_version: { type: string }
+      not:
+        required: [jwks_uri, jwks]
+
+    ClientRegistrationRequest:
+      allOf:
+        - $ref: '#/components/schemas/ClientMetadata'
+        - type: object
+          required: [redirect_uris]
+          properties:
+            token_endpoint_auth_method:
+              type: string
+              default: client_secret_basic
+              examples: [none]
+              description: |
+                Request `none` for a `dyn:` client (`SPS-AUTH-009`). Omission has RFC 7591's
+                `client_secret_basic` default; the server may reject that value or replace it
+                with `none` under §3.2.1, returning the actual registered method.
+            software_statement:
+              type: string
+              description: A software statement JWT, if supported, under RFC 7591 §2.3.
+      examples:
+        - redirect_uris: ['https://client.example/callback']
+          token_endpoint_auth_method: none
+          client_name: Example client
+
+    ClientRegistrationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ClientMetadata'
+        - type: object
+          required: [client_id, redirect_uris, token_endpoint_auth_method]
+          properties:
+            client_id:
+              type: string
+              pattern: '^dyn:'
+            token_endpoint_auth_method: { type: string, const: none }
+            client_id_issued_at:
+              type: integer
+              description: Issuance time in seconds since the Unix epoch, if supplied.
+      description: |
+        RFC 7591 §3.2.1 successful registration. Returns all registered client metadata,
+        including any values substituted or provisioned by the server. These are public
+        clients using `none` (`SPS-AUTH-009`); no client secret is needed.
+      examples:
+        - client_id: 'dyn:example'
+          redirect_uris: ['https://client.example/callback']
+          token_endpoint_auth_method: none
+          client_name: Example client
 
     TokenResponse:
       type: object
