@@ -4,54 +4,43 @@ How writing is organised in this repository, and — more importantly — when s
 be written at all. Read this before writing or editing any `*.md`, which here means before writing
 anything.
 
-## The five types
+## Document ownership
 
-The reference implementation has four. This repository has those four plus the one it exists for.
+| Information | Canonical home |
+|---|---|
+| Normative contract | `spec/`, with `openapi/` and `vocabulary/`; [governance](../../GOVERNANCE.md#contract-sources) defines their roles |
+| Requirement lookup | Generated `requirements.json` |
+| Direction and requirement selection | [docs/vision.md](../vision.md) |
+| Substantial proposed changes | [docs/proposals/](../proposals/README.md), explicitly non-normative |
+| Maintained informative explanations | `docs/guides/`, stating the specification version/revision or repository inputs they describe |
+| Tasks, decisions, dependencies and progress | GitHub issues and their native relationships |
+| Decision, adoption and publication rules | [GOVERNANCE.md](../../GOVERNANCE.md) |
+| Published changes | Release notes tied to the published version under governance |
 
-```
-spec/**                     NORMATIVE TEXT. Prescriptive: it says what an implementation MUST do.
-                            Neither IST nor SOLL — it does not describe a system, it constrains
-                            every system claiming the name. Every normative statement carries a
-                            requirement ID. See spec-authoring.md.
+Alongside the vision, informative documents are **proposals** or **maintained guides**. “Concept”
+may name a topic; it is not a separate lifecycle. Instructions under `docs/agents/` govern work
+and link to its subject documentation. Write at the narrowest scope that owns the subject, and
+make every document reachable through an `AGENTS.md` pointer.
 
-vision.md                   The vision. Why this exists and where it is going. Independent of what
-                            is specified. Changes rarely.
+A proposal states its owning issue, non-normative status and disposition: proposed, adopted,
+partly adopted, rejected or superseded. Link discussion and adoption PRs; for partial adoption,
+identify the adopted scope and the issue owning the remainder. A merged proposal records design;
+[governance](../../GOVERNANCE.md#how-a-change-is-made) determines normative adoption and publication.
+After disposition, retain links and reduce redundant detail once useful explanation and required
+evidence have a maintained owner. A guide earns its place by explaining something useful beyond
+the contract and its referenced standards; do not create a replacement merely to preserve a file.
 
-concepts/<topic>.md         The high-level concept for one topic — the reasoning behind a chapter,
-                            the trade-offs considered, what was rejected and why. It is what keeps
-                            the normative text short: the chapter says what MUST happen, the
-                            concept says why that shape and not another.
-
-roadmaps/<milestone>.md     Temporary. The breakdown and status of one milestone. Links to its
-                            concept instead of repeating it. Dissolved when the milestone ships.
-
-<topic>.md, <area>/         IST documentation — about this repository itself, not about pods. The
-                            governance process, the tooling. Rare here, and that is correct.
-```
-
-### Where the types differ from the implementation repository
-
-**The specification is the source of truth**, where an implementation's documentation defers to
-its code. An implementation that disagrees with this text is the bug; how much of the text may still
-move is [`../../GOVERNANCE.md`](../../GOVERNANCE.md)'s, and it is not the tag alone that settles
-it.
-
-**A concept is worth more here.** In an implementation, reasoning can hide in a code comment beside
-the thing it explains. In a specification there is no such place: the normative text must not carry
-the argument for itself, or an implementer cannot tell the requirement from the justification. So
-the argument goes in `concepts/` and the chapter links to it.
-
-### They nest
-
-The same types may appear under any `docs/` directory. Today there is one. A document is written at
-the **narrowest** level where it holds, and every document is reachable through at least one
-`AGENTS.md` pointer.
+Implementation architecture, delivery, releases and implementation-specific conformance reports
+belong with the implementation. “Implemented” and “verified against an implementation” are not
+specification lifecycle states. Informative examples and pseudocode can illustrate a possible
+realization without prescribing it or asserting it exists. The
+[repository-checks guide](../guides/repository-checks.md) owns the boundaries of repository evidence.
 
 ## The writing rules
 
-**1. Normative text is prescriptive; everything else is IST or SOLL, and never both in one
-section.** Mark the section, or put the marker in the title. An aspiration written in the indicative
-reads as a description, and a reader has no way to tell it apart.
+**1. Normative text is prescriptive.** Proposals state proposed behavior; maintained guides explain
+the revision they reference. Keep proposed and current claims distinct, including in retained
+material awaiting classification. An implementation's behavior does not establish the contract.
 
 **2. Name the standard; do not re-explain it.** A chapter states which RFC it profiles and describes
 the deviation from it. Restating RFC 9110 in the specification's own words is how a specification
@@ -68,7 +57,7 @@ follows this rule and is the model: *"Standards are named, not re-explained."*
   requirement and the `never` in an invariant are already the shortest correct wording.
 - **No history, no decision log**, no "this used to be X" — that is what the commit message is for.
   The one exception is a rationale a future reader genuinely needs in order not to undo it, and in
-  this repository that rationale usually belongs in `concepts/` rather than inline.
+  this repository that rationale usually belongs in a guide or proposal rather than inline.
 - **A change rewrites the paragraph, it does not append to it.** Where a statement stops being
   true, replace the prose that carried it — a requirement has its own procedure, in rule 5. Writing
   the correction after it — `X. And since Y, also Z.` — leaves the stale half as the first thing a
@@ -90,9 +79,10 @@ elsewhere. There is one exception while its window is open, stated in
 [`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
 [`spec-authoring.md`](spec-authoring.md) §5.
 
-**6. A normative statement without an ID is not normative.** It is background, and a reader is
-entitled to treat it that way. If it matters, give it an ID; if it does not, say it in the concept
-instead.
+**6. Every sempods-authored obligation has a requirement ID.** Obligations inherited from an
+explicitly incorporated standard retain that standard's identifiers; informative references create
+no obligations. [Spec authoring](spec-authoring.md#standards-incorporation) defines how a chapter
+identifies its profile. Explanatory prose remains informative.
 
 **7. No stub chapters.** A chapter exists when it is written. Until then it is a row with a status
 in `spec/README.md`. An empty file that says "TBD" is a promise the repository cannot keep and a
@@ -104,7 +94,7 @@ included. Technical milestones are public; the business around them is not.
 **9. Show the case.** Where a rule has a consequence a reader would otherwise have to derive, write
 the consequence out instead of hedging the prose around it — one concrete case is shorter than the
 hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose, in a
-`concepts/` document, or in access control best in a worked example under
+guide or proposal, or in access control best in a worked example under
 [`../../examples/`](../../examples/README.md), the one place a case is machine-checked. What binds
 stays in the requirement: the condition fixing where an obligation applies
 ([`SPS-MEDIA-002`](../../spec/modules/media.md#SPS-MEDIA-002)) and the case it reaches
@@ -119,39 +109,80 @@ that no longer earns its place. It never buys a requirement. Rule 5 owns what be
 withdrawn, or deleted while the pre-`0.1` window is open — and neither is ever done because a
 section got long.
 
-## Roadmaps
+## Issue planning
 
-A roadmap is a working document with a defined end. It exists to get one milestone specified in a
-focused way, and it is dissolved afterwards.
+Use an issue plus a PR for actionable specification, design, maintenance and publication work.
+Small changes may use a standalone issue; only substantial design that benefits from reviewable
+prose needs a proposal document. Link it to its issue without a second task list.
 
-**It stays thin.** The concept carries the target state and the reasoning permanently, so the roadmap
-does not repeat them — it links. What belongs in a roadmap is the breakdown, the status, and the
-open decisions.
+Parent issues own the problem, target, scope, decisions and overall acceptance. Native sub-issues
+own bounded iterations and progress; native dependencies express prerequisites. Do not duplicate
+sub-issue state in body checklists. Incorporate actionable discussion results into the owning
+issue's description. Read the parent, relevant decisions and blockers before starting, and record
+observable acceptance, applicable checks and documentation completion.
 
-**Progress is tracked in place.** Completed items stay in the file, marked done, until the whole
-milestone is consolidated. They are not pruned one at a time — a reader has to be able to see what
-has already been settled. Each roadmap repeats this rule in its own header so a reviewer who only
-sees the diff reads it too.
+Filers supply scope and related issue links. Maintainers or triagers set native relationships,
+reuse existing category/area labels and assign milestones only for agreed release scope.
+Specification and implementation versions are independent; Git tags identify published revisions
+under [governance](../../GOVERNANCE.md). An optional organization Project may show priority and
+iterations over those same issues; it is not another status owner or a prerequisite for work.
 
-The item is ticked **in the same commit as the text that finishes it**. A separate bookkeeping pass
-is a pass that gets skipped.
+Every PR completes the definition of done for its own diff before review, including partial work.
+Use `Refs #N` for partial work; use `Closes #N` only when merging the PR satisfies all acceptance
+and required follow-up actions. Close an issue only after its deliverable, required merged PRs,
+checks and documentation evidence are verified. A proposal deliverable asserts neither normative
+adoption nor publication. A parent also needs its own acceptance and required children complete;
+a child closed as not planned requires an explicit scope decision, not a claim of delivery.
 
-**Lifecycle:** concept (SOLL) → derive a roadmap → write, ticking as you go → milestone done →
-[`roadmap-lifecycle.md`](roadmap-lifecycle.md): rewrite the concept's SOLL section as IST, sweep
-links, delete the roadmap.
+### Automated dependency updates
 
-**Tracking issues hold no state.** A milestone may have a GitHub issue announcing it, carrying a
-title and a link to the roadmap file — never a copy of the checklist.
+A routine bot dependency-update PR may be its own work record when it identifies the update,
+compatibility impact and validation. Checks, review and documentation duties still apply. Broader
+manual dependency or architecture work uses an issue; do not create duplicate public issues for
+routine bot updates.
+
+### Security fixes
+
+Follow the inherited [security policy](https://github.com/sempods/.github/blob/main/SECURITY.md).
+Embargoed work uses the private advisory/fix record for scope, decisions, acceptance, fix PRs and
+verification. Keep sensitive details and evidence private; no duplicate public issue is required.
+Applicable checks and documentation duties remain. Coordinate public documentation with disclosure.
+
+### Roadmap transition
+
+Issues own new and migrated work. Only [spec-0.1.md](../roadmaps/spec-0.1.md) and
+[core-data-access.md](../roadmaps/core-data-access.md) remain authoritative for their explicitly
+unmigrated work and decisions until [#62](https://github.com/sempods/sempods-spec/issues/62)
+verifies the replacement mapping and retires each source atomically. For work still owned there,
+update its item in the same change and preserve completed entries. Their source status wins until
+the switch; mapped issues carry the destination scope and evidence without a duplicate checklist.
+The current [release gate](../../GOVERNANCE.md#what-has-to-be-settled-first) remains in force;
+#62 switches its roadmap and milestone wording together. Do not start new roadmaps.
+
+The [roadmap procedure](roadmap-lifecycle.md) is retained only for these sources within that
+boundary; #62 retires it and its wrapper. It cannot make a proposal normative or require a
+SOLL-to-IST rewrite. Every PR uses [documentation-sync](documentation-sync.md).
+
+[#61](https://github.com/sempods/sempods-spec/issues/61) classifies and moves the retained
+`docs/concepts/` material into proposals and useful guides after tracking has moved. Keep those
+source paths usable until then. `docs/reference-implementation/` remains non-normative design
+support pending that classification and the separate
+[#64](https://github.com/sempods/sempods-spec/issues/64) handoff. Removing transferred content needs
+verified receiving changes; keeping it temporarily creates no new document lifecycle.
 
 ## Definition of done
 
-A change to the specification is not finished until, **in the same change**:
+Every PR completes the following for its own diff before review:
 
-- every new normative statement carries a requirement ID, and no ID was reused or renumbered —
+- every new sempods-authored obligation carries a requirement ID, and no ID was reused or renumbered —
   unless the pre-`0.1` window is open and the change says so out loud;
 - a withdrawn requirement is marked withdrawn rather than removed, and names its successor;
-- the OpenAPI description agrees with the chapter, where the change touched the HTTP surface;
-- the corresponding roadmap item is ticked;
+- the chapters, incorporated standards profile, OpenAPI, vocabulary and generated index agree;
+  review semantic effects explicitly, including inherited obligations, not only unchanged IDs;
+- the applicable work record is linked and contains completion and check evidence, with unfinished
+  acceptance kept open under [Issue planning](#issue-planning), including its transition rule;
+- affected documentation is updated or reduced, or a specific no-change reason is recorded;
+- proposal disposition and guide revision references agree with the delivered scope;
 - `spec/README.md`'s chapter table still reflects reality;
 - every relative link resolves, and any new document is reachable from an `AGENTS.md`;
 - where the change leaves an implementation behind, an issue is open in that repository — this text
@@ -161,5 +192,5 @@ A change to the specification is not finished until, **in the same change**:
 
 [`documentation-sync.md`](documentation-sync.md) is the procedure that walks this list.
 
-`lychee --offline --include-fragments --no-progress --exclude-path site .` checks the mechanical half. The rest is a judgement, which is why
-it is written down here rather than automated.
+Run the applicable [repository checks](../guides/repository-checks.md), including links/anchors
+and full site rendering, and report skipped checks. Their success does not replace semantic review.

@@ -11,15 +11,14 @@ No module carries its own `AGENTS.md` today. That is the normal case, not a gap 
 
 - [`docs/agents/ai-instructions.md`](docs/agents/ai-instructions.md) — how instructions are
   discovered and which file wins where two disagree. Every agent frontend routes through it.
-- [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) — the five
-  document types and the rules for when *not* to write something. Read it before touching any
-  `*.md`, which in this repository means before touching anything at all.
+- [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) — document ownership and the
+  rules for when *not* to write something. Read it before touching any `*.md`, which in this repository means before touching anything at all.
 - [`docs/agents/spec-authoring.md`](docs/agents/spec-authoring.md) — how a normative statement is
   written: RFC 2119 keywords, the requirement-ID scheme, how a requirement is withdrawn.
 
 `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and `.cursor/rules/` are compatibility
-pointers back to this file — Codex and opencode read it directly. Everything canonical is here or
-under `docs/agents/`; a pointer that grows rules of its own is a pointer that drifts.
+pointers back to this file — Codex and opencode read it directly. Decision and publication rules
+are in `GOVERNANCE.md`; work rules are here or under `docs/agents/`; a pointer that grows rules of its own is a pointer that drifts.
 
 ## What decides here
 
@@ -69,7 +68,7 @@ choosing, and can prove it.
 ## Non-negotiable invariants
 
 These bind the current specification, not only implementations of it. An explicit maintainer
-request may open a reassessment as a **SOLL proposal** identifying the affected invariants and
+request may open a reassessment as a **non-normative proposal** identifying the affected invariants and
 replacement guarantees. Merging that proposal does not change the current contract. Adoption
 requires a normative pull request under [GOVERNANCE.md](GOVERNANCE.md#how-a-change-is-made), updating
 the affected requirements, these invariants and the corresponding contract views together.
@@ -112,8 +111,8 @@ already anticipates ("conformance markers").
 [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) is the authority.
 The short version:
 
-- **Five types**, not four: the normative text under `spec/` joins `vision.md`, `concepts/`,
-  `roadmaps/` and IST documents. It is prescriptive — neither IST nor SOLL.
+- **Document ownership and lifecycle** distinguish normative text, the vision, proposals and
+  maintained guides. Issues own planning, subject to the strategy's bounded roadmap transition.
 - **Name the standard, do not re-explain it.** A chapter says which RFC it profiles and describes
   the deviation. Restating RFC 9110 is how a specification becomes unmaintainable.
 - **No history and no decision log.** Keep only the reasoning a future reader needs in order not to
@@ -149,11 +148,8 @@ The specification:
   the chapter tables. Six core chapters and four modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
-- [`examples/README.md`](examples/README.md) — worked access-control scenarios, and the evidence that
-  the reference implementation's design can express the behaviour the concept describes. Fixtures
-  rather than prose: each is run through ACP's own resolution algorithm by
-  `.github/scripts/check-examples.py`, so one that stops being true fails rather than misleads. A
-  green run says nothing about what a conformant pod must do
+- [`examples/README.md`](examples/README.md) — worked access-control fixtures and their format;
+  [repository checks](docs/guides/repository-checks.md) explains what their execution establishes
 
 The rendered site — [`site/`](site/):
 
@@ -174,22 +170,26 @@ Agent instructions — [`docs/agents/`](docs/agents/):
 
 - [`ai-instructions.md`](docs/agents/ai-instructions.md) — the hub: how instructions are discovered,
   the tool directory, the self-check
-- [`documentation-strategy.md`](docs/agents/documentation-strategy.md) — the five document types and
+- [`documentation-strategy.md`](docs/agents/documentation-strategy.md) — document ownership, issue planning and
   the writing rules
 - [`spec-authoring.md`](docs/agents/spec-authoring.md) — how a normative statement is formed,
   identified, numbered and withdrawn
 - [`documentation-sync.md`](docs/agents/documentation-sync.md) — the procedure run before a commit
-- [`roadmap-lifecycle.md`](docs/agents/roadmap-lifecycle.md) — the procedure that retires a roadmap
+- [`issue-work.md`](docs/agents/issue-work.md) — scope, bounded delivery and completion evidence
+- [`roadmap-lifecycle.md`](docs/agents/roadmap-lifecycle.md) — retained only under the
+  [roadmap transition](docs/agents/documentation-strategy.md#roadmap-transition)
+- [`docs/guides/repository-checks.md`](docs/guides/repository-checks.md) — check commands, setup and
+  evidence boundaries
+- [`docs/proposals/README.md`](docs/proposals/README.md) — writing and disposition of proposals
 
-Concepts and roadmaps:
+Vision and retained design/planning sources:
 
 - [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
   belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
   proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
   in an implementation. The one document under `docs/` the site publishes, because it is what a
   reader needs before the first requirement makes sense
-- [`docs/concepts/README.md`](docs/concepts/README.md) — why a concept carries more weight in a
-  specification repository than in an implementation, and the template
+- [`docs/concepts/README.md`](docs/concepts/README.md) — retained proposal navigation pending classification
 - [`docs/concepts/data-access.md`](docs/concepts/data-access.md) — proposed core for authorized RDF
   access with an optional Context contract; implementation examples, mirroring boundaries and the
   requirement impact. A proposal, with the normative chapters still in force
@@ -197,9 +197,10 @@ Concepts and roadmaps:
   guarantees across policy models: delegation, revocation, query equivalence, mutation boundaries
   and optional Context permissions; the worked ACP cases remain one design's evidence
 - [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
-  reference implementation's own design, kept here until `0.1` and moved out then. SOLL for that
-  implementation, never a requirement
-- [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the rules, and the template
+  reference implementation's proposed design, retained under the
+  [transition rule](docs/agents/documentation-strategy.md#roadmap-transition) pending classification
+  and its separate handoff
+- [`docs/roadmaps/README.md`](docs/roadmaps/README.md) — the two source roadmaps under the temporary transition
 - **Running:** [`docs/roadmaps/core-data-access.md`](docs/roadmaps/core-data-access.md) — adopt the
   proposed data-access core and optional Context contract, validate common operations and
   coordinate downstream changes
@@ -221,8 +222,9 @@ here rather than copied.
   [`GOVERNANCE.md`](GOVERNANCE.md) owns that rule and names both events that end it — do not restate
   the deadline here or anywhere else, because a deadline copied into five files is a deadline four
   of them will get wrong. The checker enforces the half it can observe.
-- **A normative statement without a requirement ID is not normative** — it is background, and a
-  reader is entitled to treat it that way.
+- **Every sempods-authored obligation has a requirement ID.** Explicitly incorporated standards
+  retain their own identifiers; informative references create no obligations. Follow
+  [spec authoring](docs/agents/spec-authoring.md#standards-incorporation).
 - **No empty placeholder files.** A chapter appears when it is written; until then it is a row with
   a status in [`spec/README.md`](spec/README.md). A directory of stubs is documentation debt with a
   progress bar drawn on it.
@@ -230,59 +232,11 @@ here rather than copied.
 
 ## Before you commit
 
-1. All four checks pass. CI runs them; locally:
-
-   ```bash
-   lychee --offline --include-fragments --no-progress --exclude-path site .
-   .github/scripts/check-requirements.py origin/main
-   .github/scripts/check-examples.py --self-test
-   .github/scripts/check-examples.py
-   python3 site/build.py
-   ```
-
-   `--self-test` first, and CI runs it the same way round. The scenarios say the fixtures are right;
-   the self-test says the runner would still notice if they were not, which is the half that a change
-   to the runner can break while everything stays green.
-
-   The last one is the full render, not `--check`. `site/index.md` is the one published page
-   written by hand, its links are written against the staged layout, and lychee is told to skip
-   that directory for exactly that reason — so the strict build is the only thing here that
-   reads them. `--check` returns before staging and would not.
-
-   Adding or withdrawing a requirement also regenerates the index, which is committed:
-
-   ```bash
-   .github/scripts/check-requirements.py --write-index
-   ```
-
-   **Pass the base ref.** Without it the disappearance check does not run at all — which is the
-   half CI runs and the half a local run is most likely to skip.
-
-   **Getting the tools.** None of them is vendored, so a fresh checkout installs them once:
-
-   ```bash
-   brew install lychee
-   python3 -m venv site/.venv
-   site/.venv/bin/pip install --require-hashes -r site/requirements.txt
-   export PATH="$PWD/site/.venv/bin:$PATH"
-   ```
-
-   The lock was resolved on Python 3.14 and CI installs it under 3.14. `--require-hashes` checks
-   the artefacts and not the interpreter, so another `python3` installs it without complaint and
-   then renders with a dependency tree nobody resolved — read `python3 -V` before creating the
-   virtualenv. The last line is what makes the commands above work as written: `site/build.py` looks
-   `mkdocs` up on `PATH`, and every script takes its interpreter from `python3`. `check-examples.py`
-   needs rdflib on top of the lock and prints the pinned line that installs it — those two versions
-   are owned there and nowhere else.
-
-   **A check you did not run is reported as not run.** An offline substitute written for the
-   occasion is a claim a reviewer cannot verify, and the anchors are where such a substitute goes
-   wrong: an anchor matching nothing resolves to the top of the page and looks like a working link.
-   Install the tool, or name the check that was skipped.
-
-2. Documentation is current *in this same change* — new chapters reachable from an `AGENTS.md`, the
-   roadmap item ticked, requirement IDs consistent.
-   [`docs/agents/documentation-sync.md`](docs/agents/documentation-sync.md) is the procedure.
+1. Run the [repository checks](docs/guides/repository-checks.md#before-requesting-review), including
+   the base-ref comparison and full site render. That guide owns setup, commands and evidence limits.
+2. Run [documentation-sync](docs/agents/documentation-sync.md) for this PR's diff. Record checks,
+   affected documentation or a specific no-change reason, and remaining acceptance in the applicable
+   work record under [Issue planning](docs/agents/documentation-strategy.md#issue-planning).
 3. `git commit -s`. The DCO workflow fails the pull request without a `Signed-off-by` line. Work
    done with an AI assistant also carries `Co-Authored-By` for the model, and it is the human who
    signs off who is the author.
@@ -300,35 +254,6 @@ and not before — a build file that exists to run nothing is a dependency to ma
 
 `site/` is the exception and stays one: it renders the published site and has a locked dependency
 tree of its own. Nothing under `spec/` depends on it, and the specification is complete without it.
-
-Four checks, all in CI and all runnable by hand:
-
-```bash
-lychee --offline --include-fragments --no-progress --exclude-path site .   # links, and requirement anchors
-.github/scripts/check-requirements.py origin/main      # the identifier promises
-.github/scripts/check-examples.py                      # the worked scenarios, against ACP itself
-python3 site/build.py                                  # the site's inputs, then a strict render
-```
-
-The **requirement checker** exists because `SPS-CORE-003` — an identifier is never reassigned,
-renumbered or deleted — is a promise no link checker can see, and deleting a requirement looks like
-tidying. While the pre-`0.1` window is open it reports a deletion as a notice instead of failing on
-it, which is the same reason in the other direction: what the guard is really for is making the
-deletion visible.
-
-The **site check** exists because the try-it page sends a reader's requests, authenticated ones
-included, wherever the OpenAPI descriptions say; it refuses to build a page aimed anywhere but the
-demo pod.
-
-Two variants of that last one, neither of which replaces it:
-
-```bash
-python3 site/build.py --check                          # the inputs only, no render
-python3 site/build.py --serve                          # render and watch, on :8000
-```
-
-`--check` is the fast half and skips the strict render, so it does not read the staged links.
-Run the plain form before committing.
 
 **No stub chapters.** See the working rules above.
 

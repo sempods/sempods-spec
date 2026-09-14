@@ -1,6 +1,6 @@
 # The specification
 
-The normative text lives in this directory: six core chapters and four modules, 318 requirements.
+The normative text lives in this directory: six core chapters and four modules.
 A chapter appears here when it is written rather than as a stub that promises it will be, so the
 tables below are the state of the specification rather than a plan for it.
 
@@ -11,8 +11,8 @@ release.
 
 - **RFC 2119 / RFC 8174.** Only the uppercase keywords are normative: `MUST`, `MUST NOT`, `SHOULD`,
   `SHOULD NOT`, `MAY`, and their listed synonyms. A lowercase "must" is ordinary English.
-- **Every normative statement carries a requirement ID** and its own anchor, so it can be cited from
-  a conformance test, an implementation note or an OpenAPI operation:
+- **Every sempods-authored obligation carries a requirement ID** and its own anchor, so it can be
+  cited from a conformance test, an implementation note or an OpenAPI operation:
 
   ```
   SPS-CRUD-011      →   spec/core/lod-crud.md#SPS-CRUD-011
@@ -26,8 +26,9 @@ release.
 - **Standards are named, not re-explained.** A chapter states which RFCs it profiles and specifies
   the deviations. If a behaviour follows the profiled standard exactly, the chapter is silent about
   it on purpose.
-- **Prose is not normative.** The paragraphs around the requirements exist to make them readable.
-  Where prose and a requirement seem to disagree, the requirement is what binds.
+- **Explanatory prose is informative.** Explicitly incorporated standards bind within the chapter's
+  identified profile and keep their own identifiers; informative references create no obligations.
+  [Governance](../GOVERNANCE.md#contract-sources) defines how the contract sources relate.
 
 The authoring rules are in [`../docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 

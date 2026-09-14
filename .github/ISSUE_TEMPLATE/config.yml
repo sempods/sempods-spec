@@ -1,7 +1,3 @@
-# Steer everything that is not a concrete defect or a concrete proposal away from the issue
-# tracker. `blank_issues_enabled: false` removes the "open a blank issue" escape hatch, so the
-# two forms and the contact links below are the only front doors.
-#
 # Discussions live in the implementation repository rather than here: one community in two
 # places is two half-empty forums, and the implementation is where people arrive first.
 blank_issues_enabled: false
@@ -9,8 +5,8 @@ contact_links:
   - name: Question, idea, or design discussion
     url: https://github.com/sempods/sempods-kotlin/discussions
     about: >-
-      Anything that is not a specific defect or a specific proposal — questions, ideas,
-      "should this…", roadmap. Discussions are held in the implementation repository.
+      General questions and exploratory ideas. Actionable specification, maintenance and
+      publication work uses the issue forms above. Discussions share one project forum.
   - name: A bug in the reference implementation
     url: https://github.com/sempods/sempods-kotlin/issues
     about: >-

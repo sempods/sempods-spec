@@ -14,8 +14,8 @@ The **specification** of sempods: an open standard for self-hosted "semantic pod
 isolated tenant holding RDF, reachable over HTTP, usable by many apps. The Kotlin/JVM reference
 implementation is a different repository, `sempods/sempods-kotlin`.
 
-There is no code here and no build system. Markdown, and later OpenAPI descriptions and a
-conformance suite.
+The normative chapters have OpenAPI and vocabulary views. Repository checks and the site renderer
+have bounded roles described in [repository checks](../docs/guides/repository-checks.md).
 
 ## What decides here
 
@@ -27,7 +27,7 @@ wrong binds nobody.
 ## Non-negotiable invariants
 
 These bind the current specification, not only implementations of it. An explicit maintainer
-request may open a SOLL proposal identifying the affected invariants and replacement guarantees.
+request may open a non-normative proposal identifying the affected invariants and replacement guarantees.
 Merging the proposal does not change the contract; adoption requires a normative pull request under
 [`GOVERNANCE.md`](../GOVERNANCE.md#how-a-change-is-made), updating requirements, invariants and
 contract views together.
@@ -47,7 +47,7 @@ travels in a token. A **scope** is an OAuth scope and does.
 
 ## Requirement IDs
 
-Every normative statement carries one, and it is permanent:
+Every sempods-authored obligation carries one, and it is permanent:
 
 ```markdown
 <a id="SPS-CRUD-011"></a>
@@ -64,7 +64,8 @@ Every normative statement carries one, and it is permanent:
   the window, and it closes for good.
 - RFC 2119 as clarified by RFC 8174: only the uppercase keywords bind. Name the actor — "the server
   MUST…", not "it MUST be…".
-- A statement without an ID is not normative.
+- Inherited obligations from explicitly incorporated standards keep their standard's identifiers;
+  informative references create no obligations. sempods-authored obligations require SPS IDs.
 
 Full rules: [`docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
 
@@ -74,18 +75,18 @@ Full rules: [`docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
   the deviation. Restating RFC 9110 is how a specification becomes long and wrong.
 - **No stub chapters.** A chapter exists when it is written; until then it is a row with a status in
   `spec/README.md`.
-- **Reasoning goes in `docs/concepts/`, not into a requirement.** A requirement that carries its own
-  justification cannot be told apart from the justification.
-- Every behaviour change updates the chapter, the OpenAPI description, the chapter table and the
-  roadmap item **in the same change**.
+- **Reasoning belongs in a guide or proposal.** Keep obligations distinct from justification.
+- Every PR updates affected documentation and records checks and completion evidence in the
+  applicable work record, or a specific documentation no-change reason. Follow
+  [Issue planning](../docs/agents/documentation-strategy.md#issue-planning), including its bot,
+  private-security and temporary-roadmap boundaries. Partial PRs leave unfinished issues open.
 
 Full rules: [`docs/agents/documentation-strategy.md`](../docs/agents/documentation-strategy.md).
 
 ## Checks
 
-```bash
-lychee --offline --include-fragments --no-progress --exclude-path site .
-```
+Follow [repository checks](../docs/guides/repository-checks.md#before-requesting-review), including
+the requirement base-ref comparison and full site render; report skipped checks.
 
 ## Commits
 

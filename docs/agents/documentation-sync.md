@@ -2,7 +2,7 @@
 
 Bring the repository back into internal agreement after a change. This is the working half of the
 definition of done in [`documentation-strategy.md`](documentation-strategy.md) — run it before
-proposing a commit, not as a separate pass later.
+requesting review on every PR, including partial work.
 
 Wrapped for Claude Code as the `sync-docs` skill; any other agent can be pointed at this file
 directly.
@@ -27,8 +27,8 @@ arrives as an untracked file, and a chapter is the thing this procedure most nee
 The half that has no equivalent in the reference implementation, and the half that is expensive to
 get wrong.
 
-- **Every new normative statement has an ID**, and the ID is higher than every ID ever issued in its
-  area — withdrawn ones included. Check against the text, not against memory:
+- **Every new sempods-authored obligation has an ID**, and the ID is higher than every ID ever
+  issued in its area — withdrawn ones included. Check against the text, not against memory:
 
   ```bash
   grep -rho 'SPS-[A-Z]*-[0-9]\{3\}' spec/ | sort -u
@@ -74,19 +74,24 @@ OpenAPI description moves in the **same commit**. The two are one change.
 The description is hand-written and normative; it is not generated from any implementation. So
 nothing will tell you it has gone stale except this step.
 
-## 5. Concepts
+## 5. Contract sources and informative documents
 
-Did the change alter a trade-off, or settle something a concept listed as open? Then the concept
-changes too. A concept whose SOLL section has come true is rewritten as IST, not deleted — see
-[`roadmap-lifecycle.md`](roadmap-lifecycle.md).
+Check the affected chapter's standards incorporation, OpenAPI, vocabulary and generated index
+against [governance](../../GOVERNANCE.md#contract-sources). Review semantic effects, not just IDs:
+an edit to the standards profile can change inherited obligations without changing an identifier.
 
-The reverse also counts: if a requirement now carries its own justification, move the justification
-out. That is pitfall two in [`spec-authoring.md`](spec-authoring.md).
+Update affected proposals and maintained guides for this PR's delivered scope. Record proposal
+disposition and adoption links; for partial adoption, keep remaining scope visible in its issue.
+Reference the revision a guide explains. Reduce redundant text while preserving useful explanation
+and required evidence. A proposal merge does not change the normative contract.
 
-## 6. Roadmap
+## 6. Work record
 
-If a roadmap covers this work, tick the item **now**, in this change. Leave the completed items in
-place; the roadmap is dissolved as a whole, later.
+Apply [Issue planning](documentation-strategy.md#issue-planning), including its private-security,
+bot-update and temporary-roadmap rules. Compare this PR with its acceptance and blockers; record
+completed work, check results, documentation updates or a specific no-change reason, and remaining
+scope. Partial PRs leave the issue open. Closure requires the deliverable and relevant merged PRs,
+checks and documentation evidence; verify a parent's own acceptance and any explicit scope reductions.
 
 ## 7. Outbound and inbound links
 
@@ -96,9 +101,9 @@ place; the roadmap is dissolved as a whole, later.
   document there is deleted, and what pointed at it points at a requirement ID here. Two copies
   means one of them is wrong.
 
-```bash
-lychee --offline --include-fragments --no-progress --exclude-path site .
-```
+Run the [repository checks](../guides/repository-checks.md#before-requesting-review), including
+links/anchors and the full site render. Read diagnostics and unlinked prose when a document moves;
+link validation cannot find those references.
 
 ## 8. Downstream
 
@@ -117,5 +122,6 @@ rather than remembered after it merges.
 ## 9. Report
 
 Name what was updated, what was **deleted** and why, which requirement IDs were added or withdrawn,
-and what was deliberately left alone. "No change needed, because the behaviour follows the standard
-the chapter already profiles" is a complete and correct report.
+and any remaining acceptance. Record the commands, results and skipped checks in the applicable
+work record. A specific no-change reason, such as “The existing guide still describes the same
+standards profile”, is a valid documentation outcome.

@@ -106,15 +106,39 @@ never change` above covers module IRIs and vocabulary terms, not a pod's resourc
 carries the gap; until it closes, the constraint is the project's intent rather than its
 contract.
 
+## Contract sources
+
+The normative development text already binds under the limits above. `spec/` owns the protocol
+requirements and the standards profiles it incorporates. An explicitly incorporated standard
+contributes obligations within the chapter's identified scope; an informative reference does not.
+[Spec authoring](docs/agents/spec-authoring.md#standards-incorporation) defines the declaration.
+sempods-authored obligations carry SPS IDs; inherited obligations keep their standard's identifiers.
+
+`openapi/` is the normative HTTP view of those chapters; where it disagrees, the chapter wins and
+the description needs correction. `vocabulary/` owns the RDF terms and their stability guarantees.
+Resolve a conflict between a chapter and the vocabulary explicitly in an issue and a coordinated
+normative PR; silently choosing one changes the other contract view. `requirements.json` is a
+generated lookup index, not an independent source of obligations. Proposal and guide prose cannot
+change any of these sources.
+
 ## How a change is made
 
-1. **An issue first**, describing the change and the rationale. Specification changes need a written
-   rationale because other implementations depend on them — this is the rule the reference
-   implementation's `CONTRIBUTING.md` already states, and it is the reason this repository exists
-   separately.
-2. **A pull request** carrying the text change, the requirement-ID additions or withdrawals, and the
-   OpenAPI change if the HTTP surface moved. The three are one change, never three.
-3. **Merge.** Squash, linear history, signed off.
+1. **Establish the work record.** An issue states the problem, rationale, scope and verifiable
+   acceptance. Use the [issue-planning rules](docs/agents/documentation-strategy.md#issue-planning),
+   including their bounded bot-update and private-security exceptions, and the
+   [issue-work procedure](docs/agents/issue-work.md).
+2. **Propose where useful.** Substantial design may have a document under `docs/proposals/` linked
+   to its issue. A proposal-document merge records a non-normative design; it adopts no protocol
+   change. Evaluate proposed requirements against [the vision](docs/vision.md).
+3. **Adopt normatively.** A reviewed PR changes the affected chapters, requirement IDs, standards
+   profile and corresponding OpenAPI, vocabulary and index together. Record compatibility impact,
+   applicable checks and per-PR documentation evidence. An implementation path is required; an
+   implementation's delivery or conformance report does not determine adoption.
+4. **Merge.** Squash, linear history, signed off. Record the proposal's disposition and adoption
+   links, and update useful maintained guides. Close the work record only against its acceptance.
+5. **Publish separately.** A version tag identifies the published revision, with release notes
+   describing its changes. Publication follows the versioning and release conditions above;
+   it is not what first makes the development text prescriptive.
 
 ### Withdrawing a requirement
 
