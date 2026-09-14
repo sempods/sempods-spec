@@ -1,35 +1,31 @@
-# Access control (Concept)
+# Access control
+
+Status: **Proposed; non-normative.**
+Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
+The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
+not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
+choices, [#70](https://github.com/sempods/sempods-spec/issues/70) their normative preparation, and
+[#72](https://github.com/sempods/sempods-spec/issues/72) validation against that candidate.
 
 ## Purpose
 
-A pod decides access to data for a verified caller and client. Core specifies the effects that
-decision has on reads, writes, queries and delegation. The policy language, evaluation strategy and
-management interface belong to the implementation.
+This is the authorization part of the [authorized data access proposal](data-access.md). It proposes
+observable guarantees for reads, writes, queries and delegation while leaving policy mechanisms to
+implementations, following [the vision](../vision.md#what-belongs-in-the-contract). Data access owns
+the core/module split and requirement impact; this document develops the operation boundaries.
 
-This is the authorization part of the [authorized data access proposal](data-access.md).
-Sections marked **SOLL** are proposed behavior, not adopted requirements. That document owns the
-core/module split and requirement impact. This one owns the boundaries a different policy model
-still has to preserve.
+## The current model
 
-## The current model (IST)
+The [specified boundary](data-access.md#the-specified-boundary) remains Context-based. The
+[grants chapter](../../spec/core/grants.md) also defines the owner's implicit authority and bounds
+an application's delegation by the person's effective permissions.
 
-The normative chapters require Contexts as the permission boundary
-([contexts](../../spec/core/contexts.md)), durable per-Context grants and their mode implications
-([grants](../../spec/core/grants.md)), and explicit write selection
-([`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025)). The owner has implicit authority, and
-an application's delegation is bounded by the person's effective permissions. The query sandbox is
-currently restricted to readable Contexts and forbids enforcement by rewriting
-([`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007),
-[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009)).
+The [worked ACP scenarios](../../examples/README.md) illustrate one possible design. Their
+[fixture guide](../guides/acp-fixtures.md) separates supplied assumptions from specified behavior.
+The [ACP implementation proposal](authorization-implementation/README.md) retains design choices
+awaiting disposition under #64; it describes no verified implementation.
 
-The [worked ACP scenarios](../../examples/README.md) exercise one design combining area and resource
-decisions. Their runner verifies ACP resolution over supplied fixtures; it does not verify an HTTP
-server, a query rewrite, revocation races or lifecycle transitions. The
-[reference implementation's profile](../reference-implementation/acp-profile.md) and
-[authorization state](../reference-implementation/authorization-state.md) describe that design.
-They are implementation proposals, not additional core requirements.
-
-## Policy-independent enforcement (SOLL)
+## Policy-independent enforcement
 
 A request's authority follows from the verified caller and client, the requested operation, the
 applicable delegation and the pod's current policy. Core does not prescribe Contexts, role
@@ -79,7 +75,7 @@ issuance test with a rule that a core-only pod can implement, including a pod wi
 public data. If removed, define the replacement behavior and migration for clients requesting it.
 Unauthenticated public reads and invalid-credential rejection remain guarantees in either case.
 
-## Operation boundaries (SOLL)
+## Operation boundaries
 
 ### Queries and retrieval
 
@@ -151,7 +147,7 @@ Context-management contract must decide how deletion interacts with finer polici
 revealing hidden resources through its success or failure. It cannot leave that decision to the
 phrase "both must allow" or silently inherit ordinary document-write permissions.
 
-## Optional Context permissions (SOLL)
+## Optional Context permissions
 
 The Context module can standardize named areas, explicit selection, mode implications and
 context-level grants. Those are promises to clients using that module. They do not require a
@@ -162,11 +158,12 @@ It is not a guarantee that every resource operation succeeds. The module must de
 so clients do not mistake a coarse grant for the fully evaluated request decision. Any more precise
 permission hint needs an explicit target and operation; the later request is still authorized.
 
-## Who may share, and why there is no chain (SOLL)
+## Who may share, and why there is no chain
 
 This is a proposed sharing design for Context-based implementations, retained for the worked
 resharing example. Core specifies no interpersonal sharing API and does not require this design.
-Its peer and owner assumptions belong to the optional Context contract.
+Its peer rules are candidates for an optional Context contract; the owner's implicit authority is
+already specified by `SPS-GRANT-011`.
 
 Passing access to another person requires `manage` on the context. Reading it is not enough, and the
 difference is the whole design: a reader who may pass on what they can already see turns every grant
@@ -187,7 +184,7 @@ on revocation is recompute the remaining authority — the instruction
 [`SPS-GRANT-016`](../../spec/core/grants.md#SPS-GRANT-016) already gives for delegations, and not one
 step deeper.
 
-The alternative was reading being enough, and its cost is measured rather than asserted.
+The reader-resharing alternative needs provenance to distinguish the supplied end states.
 [`examples/70-resharing.md`](../../examples/70-resharing.md) shows two states that compile to the
 same access control resource — a defect and a correct outcome, told apart by nothing in the graph —
 because what separates them is who issued which grant, and a policy has no room for that. Provenance
@@ -203,15 +200,15 @@ route writes a grant for a person, and the model above is the shape such a route
 than one that exists — which is what makes leaving it out a decision instead of an omission.
 
 
-## What the examples establish (IST)
+## What the examples establish
 
-The ACP fixtures show that the chosen policy design can express the listed access decisions.
+The ACP fixtures check the listed access decisions under their supplied assumptions.
 The resharing case compares supplied end states; it does not execute the revocation process.
 The runner's self-tests verify its guards, not the security of an implementation's query engine.
 A green run is therefore evidence about those fixtures, not conformance of either proposed core or
 a future Context module.
 
-## Validation before adoption (SOLL)
+## Validation before adoption
 
 Use two implementations with different policy mechanisms and the same public requests. Configure
 known allowed and denied resources through each implementation's own setup. Check successful CRUD,
@@ -234,7 +231,7 @@ management contract is being specified.
 
 ## Scope
 
-This concept does not standardize an ACP management API or require every policy to be exportable.
-It makes no Solid conformance claim. [Data mirroring](data-access.md#mirroring-data-soll) is separate
+This proposal does not standardize an ACP management API or require every policy to be exportable.
+It makes no Solid conformance claim. [Data mirroring](data-access.md#mirroring-data) is separate
 from delegation: copies are governed by the destination's policy, and source revocation does not
 recall them automatically.

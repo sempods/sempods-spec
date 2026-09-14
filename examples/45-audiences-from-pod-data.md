@@ -1,5 +1,10 @@
 # An audience the pod already knows
 
+Proposed audience-source design and illustrative ACP alternatives. The authority declaration and
+revalidation conditions are unresolved design, not implemented safeguards. The runner checks static
+policy and unknown-extension behavior; it executes neither lookup nor regeneration. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Anna keeps her address book in a contacts app she likes, and it syncs into her pod. She has tagged
 some people *Family*. She would like the family context to be readable by exactly those people —
 and to stay that way when she tags somebody new in the app she actually uses, without opening a
@@ -25,13 +30,13 @@ Reading an audience out of this makes the contacts **authorization state**. Writ
 grants access, which is the thing a trust boundary exists to prevent — so the pod has to declare that
 this context is an authority, and the declaring is the safeguard rather than a formality.
 
-Be clear about what that costs. The concept states as a guarantee that authorization facts are read
+Be clear about what that costs. The proposal aims to ensure that authorization facts are read
 only from stores no data write can reach, and this is the declared exception to it: the graph below
 *is* reachable by a write. What stays topological is the declaration, which lives in control-plane
 state; what the exception buys is membership only, never policy. Whether to keep it is an open
 decision rather than a settled part of the model.
 
-The rule that decides whether it is safe:
+The proposed safety condition, which the fixture does not verify:
 
 > A context may serve as a principal-set authority exactly when **every agent and client pair whose
 > writes are still in it held at least `manage` on everything it now grants, by an authority that did
@@ -106,10 +111,10 @@ No extension, no authority consulted at request time, nothing a foreign ACP engi
 resolve. Tagging somebody in the contacts app regenerates this one policy, and the regeneration is
 what has to be prompt — between the tag and the rewrite, the answer is stale.
 
-**The objection that rules this out at enterprise scale does not apply here.** Five hundred documents
-sharing a group make every membership change a migration across five hundred access control
-resources. One context with thirty relatives is one document with thirty lines. The same mechanism is
-wrong in one place and obviously right in the other, and the only thing that differs is the number.
+Expansion costs depend on the number of distinct policy artifacts that contain the member list.
+Shared policies can reduce that number; five hundred referring documents need not require five
+hundred rewrites. For this one-context example the expansion is one policy with thirty relatives.
+The fixture does not benchmark either strategy or test propagation after a change.
 
 ## The way that stays live: resolve when the request arrives
 
@@ -145,8 +150,9 @@ tag changed while a job was down. A pod can instead leave the question open unti
 Ben **is** tagged *Family*, and a pod implementing this relation grants him `acl:Read`. The
 expectation is empty because a plain ACP engine does not know `ex:contactKeyword`, so the matcher
 carries none of ACP's four attributes and is never satisfied. The relation is named in Anna's own
-namespace rather than sempods', for the same reason the group example gives: which IRI sempods
-publishes is still an open decision, and the namespace does not take names back.
+namespace rather than sempods', for the same reason the group example gives: whether sempods
+publishes such a relation, and its IRI, remain open decisions, and the namespace does not take names
+back.
 
 Which is the same boundary the enterprise scenario runs into, reached from the opposite direction: no
 organisation, no directory, no group service — just an address book — and the moment the answer is
@@ -163,11 +169,11 @@ the response would be an oracle over data that person cannot see.
 | | expand when written | resolve when asked |
 |---|---|---|
 | **Portable ACP** | yes | no |
-| **Staleness** | between the tag and the regeneration | none |
-| **Cost of a change** | rewrite the policies naming the set | none |
+| **Staleness** | until regeneration completes | depends on source freshness and request consistency |
+| **Cost of a change** | regenerate affected policy artifacts | update authority; no policy rewrite |
 | **Scales with** | how many policies name the set | how often the pod is read |
 
-For one context and thirty relatives, the first. For an organisation whose groups appear in hundreds
-of policies, the second. The interesting part is that the person asking sees the same feature either
-way — *"everyone tagged Family"* — and the mechanism underneath is chosen by a number they never
-think about.
+The first is a plausible choice for the small static example. Larger or frequently changing sets
+may favor live resolution, subject to the unresolved authority and freshness conditions above.
+Both can present the same audience choice to the person; these fixtures do not choose a required
+mechanism for implementations.

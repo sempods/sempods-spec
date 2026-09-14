@@ -1,4 +1,11 @@
-# Authorized data access (Concept)
+# Authorized data access
+
+Status: **Proposed; non-normative.**
+Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
+The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
+not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
+choices, [#70](https://github.com/sempods/sempods-spec/issues/70) their normative preparation, and
+[#72](https://github.com/sempods/sempods-spec/issues/72) validation against that candidate.
 
 ## Purpose
 
@@ -7,11 +14,11 @@ LOD CRUD, SPARQL and `find`. An application can use that interface without adopt
 storage layout or permission model. A single RDF graph and a platform with several independent
 policy conditions can implement the same data operations.
 
-This is a **contract proposal (SOLL), not an adopted specification change**. It proposes a smaller
-core and an optional Context module. The current normative chapters remain in force. Examples and
-the requirement impact below allocate no identifiers and make no conformance claim.
+The proposal reduces core and makes the Context contract optional. The examples and requirement
+impact below allocate no identifiers and make no conformance claim. Requirement selection follows
+[the vision](../vision.md#what-belongs-in-the-contract).
 
-## The specified boundary (IST)
+## The specified boundary
 
 Core currently requires contexts as the authorization boundary
 ([`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001),
@@ -26,11 +33,11 @@ rewriting ([`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009)). Conseq
 required parameter alone cannot make an implementation with a different authorization model
 conformant.
 
-## The proposed core (SOLL)
+## The proposed core
 
 Core specifies the observable data contract and the guarantees of its authorization. Policy
 evaluation and administration belong to the implementation. The
-[access-control concept](access-control.md) owns those guarantees and the difficult operation
+[access-control proposal](access-control.md) owns those guarantees and the difficult operation
 boundaries; this document owns the core/module split.
 
 | Core provides | An implementation chooses |
@@ -80,10 +87,10 @@ Revocation never redirects a retry to a different destination or broadens its au
 An authorized read may reveal only part of a resource. The write contract must say what replacement
 and deletion mean in that case before the normative change is adopted. A read-modify-write must not
 silently erase protected statements or mutate only part of what the response claims was changed.
-The [operation cases](access-control.md#operation-boundaries-soll) include this and creation at an
+The [operation cases](access-control.md#operation-boundaries) include this and creation at an
 IRI already used by hidden data. A smaller core still owes answers to those questions.
 
-## Optional Context contracts (SOLL)
+## Optional Context contracts
 
 A Context module provides a shared model where applications need it: named authorization areas,
 explicit selection, context-granular grants and their discovery. A pod can have internal areas
@@ -114,7 +121,7 @@ ignored. For pods offering selection, settle the relationship between implicit r
 explicit graph selection and merged reads, including validators and repeated resource IRIs. The
 module cannot reintroduce mandatory selection for every core client.
 
-## Two implementation examples (SOLL)
+## Two implementation examples
 
 These are acceptance cases for a future HTTP conformance suite, not fixtures executed by the current
 ACP example runner. They assume policies deliberately configured to allow the stated operations.
@@ -156,9 +163,9 @@ equivalent to evaluating the client's supported query against the same client-vi
 dataset, with the same graph placement and names. Cases include aggregates, negation, subqueries
 and property paths. Testing compares those outcomes, not query
 strings. An implementation that merely filters completed results fails the cases in
-[access control](access-control.md#operation-boundaries-soll).
+[access control](access-control.md#operation-boundaries).
 
-## Mirroring data (SOLL)
+## Mirroring data
 
 A future sync module can mirror readable knowledge into a second pod with its own permission
 system. Resource IRIs continue to identify the same things; copy location and source provenance are
@@ -174,7 +181,7 @@ Revocation at the source cannot recall copies already made. Whether an ongoing m
 that becomes inaccessible is a sync policy to specify; absence from one incremental response is not
 evidence of deletion. No sync route, timestamp property or module is standardized by this proposal.
 
-## Requirement changes to prepare (SOLL)
+## Requirement changes to prepare
 
 The entries below identify the coordinated normative change, not changes applied by this document.
 Move only the Context-specific parts: general authentication and authorization guarantees remain
@@ -205,6 +212,12 @@ chapter and cross-reference sweep before the normative patch is complete.
 | [`SPS-MCP-017`](../../spec/modules/mcp.md#SPS-MCP-017), [`SPS-MCP-020`](../../spec/modules/mcp.md#SPS-MCP-020), [`SPS-MEDIA-006`](../../spec/modules/media.md#SPS-MEDIA-006), [`SPS-MEDIA-009`](../../spec/modules/media.md#SPS-MEDIA-009) | Align optional tools and media with the new core; do not make either implicitly require the Context module. Specify Context-specific integration where both are advertised. |
 | [`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018), [`SPS-CRUD-010`](../../spec/core/lod-crud.md#SPS-CRUD-010) | Preserve non-disclosure independently of policy representation; coordinate the current defect with [#45](https://github.com/sempods/sempods-spec/issues/45). |
 
+The refresh-token baseline includes [#65](https://github.com/sempods/sempods-spec/pull/65):
+`SPS-AUTH-058` and `SPS-AUTH-060` are absent. This proposal does not restore their token-issuance
+guarantees. The `public-read` existence test above is the separate, still-specified
+[`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044). Generalizing revocation outcomes also does
+not remove the currently binding sequencing in `SPS-AUTH-063`; that needs normative review.
+
 Adoption deliberately changes the Context assumptions in `AGENTS.md` invariants 1–4 and the vision's
 core mapping. The replacement invariants protect the caller-authorized data view, write effects and
 pod isolation. This is not merely moving a chapter: OpenAPI, module versions, the requirement index,
@@ -212,7 +225,7 @@ site discovery examples, MCP schemas and downstream citations need the same revi
 [governance window](../../GOVERNANCE.md) determines whether identifiers may move or change meaning;
 external adoption can close it before the tag.
 
-## Decisions before normative adoption (SOLL)
+## Decisions before normative adoption
 
 - Define the generic write scope for partial resources and hidden-resource collisions, with
   consistent authorization and conditional-request behavior. See [access control](access-control.md).
@@ -234,4 +247,4 @@ Spec [#36](https://github.com/sempods/sempods-spec/issues/36) and
 [#80](https://github.com/sempods/sempods-kotlin/issues/80), motivate this broader split. Their
 flag/default-context proposals would be replaced by it. Stable identities across versions remain
 [#21](https://github.com/sempods/sempods-spec/issues/21)'s concern. Solid interoperability and a
-complete sync protocol remain separate follow-up work; this concept makes neither claim.
+complete sync protocol remain separate follow-up work; this proposal makes neither claim.

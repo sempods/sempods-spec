@@ -53,7 +53,9 @@ jobs:
       # servers resolve anywhere but the demo pod, a try-it page whose source list was not
       # generated — and then, with `--strict`, any link that resolves nowhere.
       - name: Check the inputs, then render
-        run: python3 site/build.py
+        run: |
+          python3 -m unittest discover -s site -p 'test_*.py'
+          python3 site/build.py
 
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'

@@ -1,5 +1,10 @@
 # A client with no person behind it
 
+Current service-client identity and registration requirements are cited below. Their ACP encoding
+and combination with a proposed resource restriction are fixture assumptions, not a required policy
+architecture or an implemented service. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 A log shipper writes into a pod every few minutes. Nobody authorised it in a browser; an operator
 registered it out of band, and its grants were fixed at that moment
 ([`SPS-AUTH-012`](../spec/core/auth.md#SPS-AUTH-012),
@@ -11,8 +16,8 @@ ceiling to intersect because nobody delegated anything.
 
 ## What it was registered with
 
-Not a policy. No access control resource carries this, and none could: it is registration state, and
-it takes the place of both the ceiling and the context decision.
+Not a policy. The fixture supplies registration state directly rather than encoding it as an ACR.
+In this model it takes the place of both the ceiling and the context decision.
 
 ```turtle registered
 [

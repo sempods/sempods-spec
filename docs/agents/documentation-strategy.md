@@ -40,13 +40,11 @@ realization without prescribing it or asserting it exists. The
 
 **1. Normative text is prescriptive.** Proposals state proposed behavior; maintained guides explain
 the revision they reference. Keep proposed and current claims distinct, including in retained
-material awaiting classification. An implementation's behavior does not establish the contract.
+implementation proposal support. An implementation's behavior does not establish the contract.
 
-**2. Name the standard; do not re-explain it.** A chapter states which RFC it profiles and describes
-the deviation from it. Restating RFC 9110 in the specification's own words is how a specification
-becomes both long and wrong — the copy drifts from the original and now two documents disagree about
-something neither of them owns. The reference implementation's LOD-CRUD documentation already
-follows this rule and is the model: *"Standards are named, not re-explained."*
+**2. Apply the canonical selection test.** [The vision](../vision.md#what-belongs-in-the-contract)
+owns the framework direction. Use [spec authoring](spec-authoring.md#standards-incorporation) to
+select and declare standards profiles; implementation documentation is not a source of obligations.
 
 **3. Short, direct, plain.** Take the shortest wording that is still correct.
 
@@ -63,13 +61,10 @@ follows this rule and is the model: *"Standards are named, not re-explained."*
   the correction after it — `X. And since Y, also Z.` — leaves the stale half as the first thing a
   reader meets and the current rule as something they assemble. This is the one a review catches
   late, because each added clause is correct on its own.
-- **Name the standard** instead of re-explaining it — rule 2, which is this rule applied to a
-  document somebody else owns.
 
-**4. Behaviour that follows the standard needs no requirement.** Do not write `SPS-CRUD-0nn: the
-server MUST return 405 with an Allow header` when RFC 9110 already says so and the chapter has
-already said it profiles RFC 9110. Write the requirement for the *deviation*, and for the place
-where a reader would otherwise guess.
+**4. Check inherited obligations before assigning IDs.** Follow
+[spec authoring](spec-authoring.md#standards-incorporation) for profile scope and
+[the chapter reading rules](../../spec/README.md) for what an incorporated standard already supplies.
 
 **5. When a deviation becomes ordinary, its text shrinks or goes.** A special case that folds into
 the normal path takes its explanation with it, and deleting that explanation is a correct change.
@@ -150,12 +145,16 @@ Applicable checks and documentation duties remain. Coordinate public documentati
 
 ### Retained design material
 
-[#61](https://github.com/sempods/sempods-spec/issues/61) classifies and moves the retained
-`docs/concepts/` material into proposals and useful guides. Keep those
-source paths usable until then. `docs/reference-implementation/` remains non-normative design
-support pending that classification and the separate
-[#64](https://github.com/sempods/sempods-spec/issues/64) handoff. Removing transferred content needs
-verified receiving changes; keeping it temporarily creates no new document lifecycle.
+[Authorization implementation proposal support](../proposals/authorization-implementation/README.md)
+is a temporary exception to these document types, retained solely for
+[#64](https://github.com/sempods/sempods-spec/issues/64)'s disposition. It is proposed design, not
+current implementation documentation. The issue owns the intended recipient, source mapping and
+immutable revisions. sempods-kotlin is a candidate, not an automatic destination.
+
+The exception ends with verified receiving changes and source cleanup, or an explicit
+maintainer-approved no-transfer disposition and cleanup. A release tag or an open handoff issue
+alone is insufficient grounds for removing still-needed material. Useful implementation-neutral
+fixture explanations retain their own guide or example home independently of that transfer.
 
 ## Definition of done
 

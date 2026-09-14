@@ -1,19 +1,9 @@
 name: Examples
 
-# The scenarios under `examples/` are the one place this repository keeps a second, friendlier
-# description of what the contract does — and it refuses second descriptions everywhere else, for
-# the reason `AGENTS.md` gives: two copies means one of them is wrong, and the readable one is the
-# one people believe.
-#
-# They are exempt because they are not descriptions. Each is a fixture: an authorization graph, an
-# attempted access, and the access modes that attempt must be granted. This job runs them through
-# ACP's own resolution algorithm, so a scenario that stops being true fails here rather than
-# misleading a reader indefinitely.
-#
-# The runner deliberately knows nothing about sempods. The concept claims sempods access control
-# resources are *pure* ACP — that an independent engine, given one and a context graph, produces the
-# same grant. A runner sharing sempods' reading of the vocabulary could not test that; this one can,
-# and a green run is the evidence.
+# Check the supplied ACP fixtures, including the proposed composition and deliberate counterexamples.
+# A passing run establishes those expectations, not adoption, HTTP behavior or pod conformance.
+# Model assumptions and source boundaries: docs/guides/acp-fixtures.md. Future-contract validation
+# belongs to issue #72; this job does not replace it.
 #
 # The ruleset requires this job by name. A rename needs a matching ruleset update; the workflow
 # alone neither makes a check required nor changes the name the ruleset waits for.

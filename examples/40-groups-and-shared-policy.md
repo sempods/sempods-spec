@@ -1,5 +1,10 @@
 # A space, a group, and one policy used twice
 
+Illustrative ACP policies with proposed resource composition and trust boundaries. Membership
+resolution, policy editing and query enforcement are not executed. The unknown-extension case
+intentionally checks what the plain ACP engine cannot grant. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 An engineering space with a news channel, its articles, a memo for one person, and a draft nobody has
 finished granting. Its members are not a list somebody maintains in the policy — they are a group,
 and who is in that group changes for reasons that have nothing to do with access control.
@@ -10,8 +15,8 @@ grant that names nobody, and what a plain ACP engine does with the part that is 
 
 ## Where the group lives
 
-Not in a context. Membership is an authorization fact, and authorization facts are read from a store
-no data write can reach — otherwise a caller writes a membership triple into a context they may write
+This design places membership outside ordinary data contexts. Membership is an authorization fact,
+and the proposed trust boundary keeps its source beyond ordinary data writes — otherwise a caller writes a membership triple into a context they may write
 and reads it back as authority.
 
 It lives in a graph of its own, beside the access control resources rather than among the data. Note
@@ -90,9 +95,8 @@ Subject and context are independent, so the fixture states the arrangement a pod
 ```
 
 Two matchers under `acp:anyOf`, so either satisfies: Carol by name, everybody else by membership.
-Adding somebody to the group changes no policy, and removing them takes effect on their next request —
-which is the same deadline [`SPS-GRANT-003`](../spec/core/grants.md#SPS-GRANT-003) sets for a revoked
-grant, inherited because membership now decides access.
+The proposed resolver would change membership without changing policy and apply removal on the next
+request. This takes its intended deadline from [`SPS-GRANT-003`](../spec/core/grants.md#SPS-GRANT-003) sets for a revoked grant. The fixture does not execute a membership change or verify freshness.
 
 Two matchers rather than one, because within a single matcher the attribute types conjoin: writing
 `[ acp:agent carol ; ex:principalSet engineers ]` would mean *Carol, and only while she is in the
@@ -132,18 +136,17 @@ the extension matcher unsatisfied and the whole conjunction fails with it.
 # nothing — see below
 ```
 
-Erin **is** in the group, and a sempods pod grants her `acl:Read` here. The expectation says nothing
+Erin **is** in the group, and the proposed extension-aware resolver would grant her `acl:Read` here. The expectation says nothing
 because this file is run by a plain ACP engine, and that engine does not know
 `ex:principalSet`: a matcher carrying none of ACP's four attributes is never satisfied, so it leaves
 her out.
 
-The IRI is the deployment's own. sempods will define one, and the concept still lists which as an
-open decision — writing a name into `schema.sempods.org/` here would reserve it before that decision
+The IRI is illustrative. Whether sempods should publish an extension and which IRI it would use
+remain open decisions — writing a name into `schema.sempods.org/` here would reserve it before that decision
 is made, in a namespace whose terms cannot later be renamed.
 
 That is the portability boundary, and it is worth seeing rather than being told. Everything else in
-these examples is ACP any engine resolves identically. The group is the one place sempods adds a
-matcher of its own, and the price is exactly this — a foreign engine answers *less*, never more.
+these examples is ACP any engine resolves identically. The group is where this example explores an extension matcher, and the price is exactly this — a foreign engine answers *less*, never more.
 
 That direction holds because of the rule above and not on its own, which is why the rule is worth
 having: a matcher carries ACP's attributes or an extension, never both.
@@ -211,7 +214,8 @@ sweep across every article.
 That reach is the feature and also its price. `manage` on a target permits managing its policy, so
 whoever manages *one* of these articles can rewrite a policy deciding access on the other — authority
 picked up by reference rather than granted. Both articles have the same manager here and nothing goes
-wrong; the concept records how to stop relying on that — and rules out the obvious fix, because
+wrong; the [proposal](../docs/proposals/authorization-implementation/acp-profile.md#shared-policy-editing)
+records how to stop relying on that — and rules out the obvious fix, because
 refusing the edit on account of a target the caller cannot see is a topology leak.
 
 This is what a sub-document needs, and it is worth saying what it does *not* need: no containment
@@ -277,8 +281,7 @@ Which is a claim, so it is a case:
 Add Greg to the space policy and this case fails, which is the point of writing it down: the sentence
 above stops being true the moment somebody widens the space, and now something notices.
 
-That is the sharpest reason for making the composition part of the contract rather than a property of
-how a query happens to be built. A deployment can arrive at the same answer by pruning the data a
+An implementation offering this composition would need to preserve it across query strategies. A deployment can arrive at the same answer by pruning the data a
 query sees, and get it right — but then the policy alone tells a reader something that is not true,
 and nothing written down says otherwise.
 
@@ -320,52 +323,9 @@ It is the kind of rule a permission model tends to discover the hard way, and wo
 one that has not adopted ACP: the same document with `authz:grants Read` and no requirements has to
 be made to fail closed on purpose.
 
-## Three ways to enforce the same two decisions
+## Implementing these decisions
 
-Nothing above says how a deployment arrives at these answers, and it should not: the contract is the
-resulting statement view, not the route to it. Three routes are worth naming, because they trade
-against each other and the choice is not obvious.
-
-**Both decisions in the query.** The space policy and the document policy are joined in, the accessor
-lookup resolves against the identity graph per candidate, and the dataset is the tenant's content
-graphs. The graph answers everything by itself — no cache of accessible spaces, no list assembled
-before the query runs. It also means the guard is the **only** thing between a caller and the whole
-tenant: a defect in it exposes everything rather than the areas the caller could already reach.
-
-**The dataset carries the space decision.** The graphs a query sees are exactly the readable ones, so
-the space check is not a join at all — it is the absence of the other graphs. Cheaper per query, and
-a second wall: even a guard that got the document check wrong could only leak within areas the caller
-may already enter. The cost is that the readable set has to be known before the query, which is the
-cache and its invalidation.
-
-**A pre-fetch decides the dataset.** The readable areas are computed up front by asking the
-authorization graphs directly, then the dataset is built from the answer. This has the second wall
-without a cache to keep fresh, at the price of a round trip — and the pre-fetch is the backwards
-question below, so it has to be exactly right, or the wall is in the wrong place.
-
-Which is fastest is a measurement rather than an argument. What is not a measurement is the second
-wall: the first route gives it up, and that is worth deciding on purpose rather than discovering
-afterwards.
-
-## Asking it backwards
-
-Everything above answers *may this person reach this thing*. The other direction — *what may Erin
-reach* — is the same expression read the other way: leave the target unbound, bind the agent, and the
-policies that mention her or a set she belongs to come out.
-
-What the profile buys is that the answer only ever needs **adding to**, never taking away from. With
-`acp:deny` there would be modes to subtract, with `acp:noneOf` exclusions to check, with member access
-control ancestors to walk — and each of those makes a candidate that came out have to be reconsidered
-before it can be trusted. Nothing here does that.
-
-**That is not the same as exact,** and this file is the wrong place to claim it: the space policy
-above names a *set*, not Erin. Reading backwards from her still needs the membership question asked
-against the identity graph, and after that `acp:allOf`, whose conjunction the query has to respect;
-the owner and creator matchers are server-derived; client and issuer come with the request; and the
-context and resource answers still have to be intersected. The OAuth ceiling is the easy one — it is
-constant for a request and masks the result.
-
-So the direction is workable and the shape is monotone, which is what makes an index in that
-direction a strategy an implementation may choose. It is not a property the algebra hands you, and
-the concept says so where it says the positive algebra does not by itself make policies enumerable
-backwards.
+The [implementation proposal](../docs/proposals/authorization-implementation/authorization-state.md#computing-a-sandbox)
+compares query guards, restricted datasets and pre-fetching readable areas. It also records why
+positive policy algebra alone does not make reverse enumeration exact. These are design options;
+this scenario executes neither queries nor a reverse index.

@@ -113,8 +113,8 @@ The short version:
 
 - **Document ownership and lifecycle** distinguish normative text, the vision, proposals and
   maintained guides. Issues own planning; milestones track agreed release conditions.
-- **Name the standard, do not re-explain it.** A chapter says which RFC it profiles and describes
-  the deviation. Restating RFC 9110 is how a specification becomes unmaintainable.
+- Read [the vision](docs/vision.md#what-belongs-in-the-contract) for requirement selection; follow
+  [spec authoring](docs/agents/spec-authoring.md) to apply it.
 - **No history and no decision log.** Keep only the reasoning a future reader needs in order not to
   undo the decision; the rest is what commit messages are for.
 - **Every document is reachable through at least one `AGENTS.md` pointer.**
@@ -163,6 +163,7 @@ The rendered site — [`site/`](site/):
   descriptions would point somewhere else. Its `STAGED` constant is the list of what the site
   publishes — `spec/`, `vocabulary/`, `GOVERNANCE.md` and `docs/vision.md`, and nothing else from
   `docs/` or `examples/`
+- [`site/test_build.py`](site/test_build.py) — regression checks for links across source and staged layouts
 - [`site/api/index.html`](site/api/index.html) — the try-it page. Outside the documentation theme on
   purpose; the Scalar bundle is pinned with an integrity hash.
 
@@ -180,24 +181,18 @@ Agent instructions — [`docs/agents/`](docs/agents/):
   evidence boundaries
 - [`docs/proposals/README.md`](docs/proposals/README.md) — writing and disposition of proposals
 
-Vision and retained design sources:
+Vision, proposals and fixture explanation:
 
-- [`docs/vision.md`](docs/vision.md) — what a pod is shaped like, and the test that decides what
-  belongs in the contract: **an RDF graph with query support, authorized per caller**. Read it before
-  proposing a requirement; it is what says whether the requirement belongs in core, in a module, or
-  in an implementation. The one document under `docs/` the site publishes, because it is what a
-  reader needs before the first requirement makes sense
-- [`docs/concepts/README.md`](docs/concepts/README.md) — retained proposal navigation pending classification
-- [`docs/concepts/data-access.md`](docs/concepts/data-access.md) — proposed core for authorized RDF
-  access with an optional Context contract; implementation examples, mirroring boundaries and the
-  requirement impact. A proposal, with the normative chapters still in force
-- [`docs/concepts/access-control.md`](docs/concepts/access-control.md) — the proposed authorization
-  guarantees across policy models: delegation, revocation, query equivalence, mutation boundaries
-  and optional Context permissions; the worked ACP cases remain one design's evidence
-- [`docs/reference-implementation/README.md`](docs/reference-implementation/README.md) — the
-  reference implementation's proposed design, retained under the
-  [retained-design rule](docs/agents/documentation-strategy.md#retained-design-material) pending classification
-  and its separate handoff
+- [Vision](docs/vision.md) — canonical direction and requirement-selection test; read before
+  proposing a requirement. The site publishes it as informative guidance.
+- [Authorized data access](docs/proposals/data-access.md) — proposed smaller core and optional
+  Context contract, operation cases, mirroring boundaries and requirement impact; adoption belongs to #68
+- [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
+  delegation, revocation, query equivalence, mutation boundaries and sharing design
+- [ACP fixture guide](docs/guides/acp-fixtures.md) — supplied model assumptions and what the examples
+  establish; independent of an implementation's storage or management API
+- [Authorization implementation proposal support](docs/proposals/authorization-implementation/README.md)
+  — candidate ACP and native-state designs retained under the temporary #64 disposition exception
 
 Not in this repository, and deliberately: the licensing, DCO, AI-assistance and conduct rules that
 hold across the whole project live once in the organisation's `.github` repository and are inherited

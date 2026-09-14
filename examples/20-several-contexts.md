@@ -1,12 +1,16 @@
 # A pod with areas
 
+Illustrative ACP encoding of current Context grants, public reads and discovery. The cited
+requirements specify those behaviors; ACP policy storage is only this example's representation. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Anna's pod has grown. Her recipes are worth publishing, her bank statements are not, and she is
 planning a trip with Ben who should see the plan and edit it.
 
 So she makes three contexts. Nothing about the model changes — **each context is decided exactly the
 way the single one was**, and what she gains is something to choose between.
 
-This is the shape most pods have, and the one the chapters describe today.
+The current chapters describe this Context-based boundary.
 
 ## Recipes, published
 
@@ -23,8 +27,8 @@ This is the shape most pods have, and the one the chapters describe today.
   acp:anyOf [ a acp:Matcher ; acp:agent acp:PublicAgent ] .
 ```
 
-`acp:PublicAgent` matches every request, including one carrying no agent at all. That is what makes a
-context public — an ordinary policy, not a separate branch of the decision.
+`acp:PublicAgent` matches every request, including one carrying no agent at all. The fixture represents public read authority with that matcher; sempods does not prescribe
+that representation.
 
 ## Anybody at all reads a recipe
 

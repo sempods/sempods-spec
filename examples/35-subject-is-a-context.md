@@ -1,11 +1,15 @@
 # When a subject is a context
 
+Proposed resource restriction over the specified independence of subject and Context. The two-key
+ACR representation is a fixture assumption, not a prescribed storage scheme. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 A pod holds `<{pod}/_system/contexts/spaces/eng> rdfs:label "Engineering"`. That is an ordinary
 statement: [`SPS-CTX-026`](../spec/core/contexts.md#SPS-CTX-026) says a statement about a `_system`
 IRI is data like any other, and [`SPS-CRUD-011`](../spec/core/lod-crud.md#SPS-CRUD-011) makes the
 subject and the context that holds it independent on purpose.
 
-With the resource module declared, that one IRI now carries **two decisions**: who may read *in* the
+With the proposed resource restriction, that one IRI now carries **two decisions**: who may read *in* the
 space, and who may read statements *about* it. They are unrelated questions and this file is where
 that stops being a technicality.
 

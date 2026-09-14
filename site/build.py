@@ -105,12 +105,9 @@ REPOSITORY = "https://github.com/sempods/sempods-spec"
 # beside it — this list was decorative until it was not, and a constant nobody reads is worse than
 # no constant, because the next person edits it and expects an effect.
 #
-# What is deliberately *not* here: `docs/concepts/`, `docs/reference-implementation/`, `examples/`
-# and `docs/agents/`. They are how the specification is worked out and argued about, and publishing
-# them would put a second description of the contract beside the normative one — which is the thing
-# this repository refuses everywhere else. `vision.md` is the exception because it is not a second
-# description: it says what the contract is *shaped like*, which no chapter says and every reader
-# needs before the first requirement makes sense.
+# Proposals, guides, examples and agent instructions stay in the repository. Links to them leave
+# the rendered site for the configured repository destination. Vision is published as informative
+# direction; staging does not turn a proposal or an example into normative text.
 STAGED = ("spec/", "vocabulary/", "GOVERNANCE.md", "docs/vision.md")
 
 RELATIVE_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)]+)\)")
@@ -119,31 +116,25 @@ CORE = ["index", "contexts", "grants", "auth", "lod-crud", "sparql", "find"]
 MODULES = ["context-management", "oidc", "media", "mcp"]
 
 
-def with_repository_links(text: str, staged_at: str, published: set) -> str:
-    """Point a staged document's off-site links at the repository.
+def with_repository_links(text: str, source_at: str, staged_at: str, destinations: dict) -> str:
+    """Resolve source links before translating published targets into the staged layout.
 
-    A chapter may link to a repository-checks guide, the authoring rules or `requirements.json`;
-    none of those is published. Rewritten here rather than written absolutely in the file, because the
-    file is also read on GitHub at a tag or a branch, where a hard-coded `main` silently mixes
-    one revision's text with another's.
-
-    Resolved against `staged_at` — where the file ends up — rather than against where it came
-    from. Those differ for exactly one file and it is the important one: `site/index.md` is
-    staged at the site root, so its `spec/core/auth.md` means the chapter, while resolving it
-    beside the source would mean `site/spec/core/auth.md`, which is nothing. An earlier version
-    did that and turned all ten of the landing page's links into repository URLs for paths that
-    do not exist — invisibly, because a strict build does not follow absolute links.
+    Repository documents use repository-relative links even when relocated, such as the vision
+    moving from docs/ to the site root. The hand-written landing page instead uses staged paths;
+    its caller supplies index.md as its source base. Off-site links retain the site's repository
+    destination policy, while links within published content follow the source-to-stage mapping.
     """
     def rewrite(match: "re.Match[str]") -> str:
         target = match.group(1)
         path, _, fragment = target.partition("#")
         if not path:
             return match.group(0)
-        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(staged_at), path))
-        if resolved in published:
-            return match.group(0)
-        kind = "tree" if (ROOT / resolved).is_dir() else "blob"
+        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(source_at), path))
         suffix = f"#{fragment}" if fragment else ""
+        if resolved in destinations:
+            relative = posixpath.relpath(destinations[resolved], posixpath.dirname(staged_at) or ".")
+            return f"]({relative}{suffix})"
+        kind = "tree" if (ROOT / resolved).is_dir() else "blob"
         return f"]({REPOSITORY}/{kind}/main/{resolved}{suffix})"
 
     return RELATIVE_LINK.sub(rewrite, text)
@@ -195,16 +186,21 @@ def staged_content() -> dict:
     for source in sorted((ROOT / "openapi").glob("*.yaml")):
         generated[f"api/{source.name}"] = with_demo_pod(source.read_text()).encode()
 
-    # The full set first: a link stays relative when it lands on something the site publishes,
-    # and that cannot be decided one file at a time. The generated pages count — the landing
-    # page links to the try-it page, which exists only here.
-    published = set(copied) | set(generated)
+    # The landing page is authored for the staged layout; repository sources retain their own base.
+    source_paths = {
+        relative: relative if source == SITE / "index.md" else source.relative_to(ROOT).as_posix()
+        for relative, source in copied.items()
+    }
+    destinations = {source: relative for relative, source in source_paths.items()}
+    destinations.update({relative: relative for relative in generated})
+    published_paths = {relative: relative for relative in set(copied) | set(generated)}
 
     wanted = dict(generated)
     for relative, source in copied.items():
         if source.suffix == ".md":
             wanted[relative] = with_repository_links(
-                source.read_text(), relative, published).encode()
+                source.read_text(), source_paths[relative], relative,
+                published_paths if source == SITE / "index.md" else destinations).encode()
         else:
             wanted[relative] = source.read_bytes()
 
