@@ -145,7 +145,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-014, SPS-CRUD-015, SPS-CRUD-017, SPS-CRUD-020, SPS-CRUD-021, SPS-CRUD-022, SPS-CRUD-026, SPS-CRUD-027, SPS-CRUD-029]
+      x-sps-requirements: [SPS-CRUD-014, SPS-CRUD-015, SPS-CRUD-017, SPS-CRUD-020, SPS-CRUD-021, SPS-CRUD-022, SPS-CRUD-026, SPS-CRUD-027, SPS-CRUD-029, SPS-CRUD-058]
       responses:
         '200': { $ref: '#/components/responses/ResourceRepresentation' }
         '304': { description: Not modified. }
@@ -156,9 +156,12 @@ paths:
       operationId: headResource
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of a dereference, with no body.
-      x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029]
+      x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029, SPS-CRUD-058]
       responses:
-        '200': { description: Headers only. }
+        '200':
+          description: Headers only.
+          headers:
+            Link: { $ref: '#/components/headers/EditLinks' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
     options:
       tags: [resources]
@@ -253,7 +256,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-001, SPS-CRUD-002, SPS-CRUD-003, SPS-CRUD-005, SPS-CRUD-006]
+      x-sps-requirements: [SPS-CRUD-001, SPS-CRUD-002, SPS-CRUD-003, SPS-CRUD-005, SPS-CRUD-006, SPS-CRUD-058]
       responses:
         '200': { $ref: '#/components/responses/ResourceRepresentation' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
@@ -263,9 +266,12 @@ paths:
       operationId: headResourceByIri
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of that dereference, with no body.
-      x-sps-requirements: [SPS-CRUD-040]
+      x-sps-requirements: [SPS-CRUD-040, SPS-CRUD-058]
       responses:
-        '200': { description: Headers only. }
+        '200':
+          description: Headers only.
+          headers:
+            Link: { $ref: '#/components/headers/EditLinks' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
     options:
       tags: [resources]
@@ -851,6 +857,15 @@ components:
         write context — **not** "the subject does not exist", which would break both an external
         subject and a subject that already has other predicates.
 
+  headers:
+
+    EditLinks:
+      description: >-
+        Optional edit-URL advertisement under SPS-CRUD-058. When present, the Link header
+        follows RFC 8288 section 3. No edit-link header is required.
+      required: false
+      schema: { type: string }
+
   responses:
 
     ResourceRepresentation:
@@ -861,6 +876,7 @@ components:
       headers:
         ETag: { schema: { type: string } }
         Vary: { schema: { type: string } }
+        Link: { $ref: '#/components/headers/EditLinks' }
       content:
         application/ld+json:
           schema:

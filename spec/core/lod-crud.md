@@ -10,6 +10,8 @@ set semantics make it deviate.
 Profiles: RFC 9110, RFC 7396 (JSON Merge Patch), RFC 7232 (conditional requests), RFC 4648 §5
 (base64url), JSON-LD 1.1, and the Linked Data principles. Error codes are [`index.md`](index.md) §5;
 contexts are [`contexts.md`](contexts.md); who may do what is [`grants.md`](grants.md).
+[RFC 8288 §3 (Web Linking)](https://www.rfc-editor.org/rfc/rfc8288.html#section-3) applies to the
+optional edit-link response headers selected by [`SPS-CRUD-058`](#SPS-CRUD-058).
 
 ## 1. Two layers, one resource
 
@@ -36,6 +38,10 @@ foreign `https:` — without special-casing.
 **`SPS-CRUD-004`** — A resource path equal to a segment reserved by
 [`SPS-CORE-008`](index.md#SPS-CORE-008) — `_system` or `.well-known` — or beginning with one of
 them followed by `/`, MUST NOT be addressable through the LOD layer.
+
+<a id="SPS-CRUD-058"></a>
+**`SPS-CRUD-058`** — An implementation MAY advertise edit URLs in `Link` headers on successful
+resource `GET` and `HEAD` responses. When provided, those headers MUST conform to RFC 8288 §3.
 
 ## 2. Embedding an IRI in a path
 

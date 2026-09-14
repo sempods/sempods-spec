@@ -23,7 +23,7 @@ release.
   because an ID ends up in other people's test suites the way a term ends up in other people's data.
   No such suite exists yet, which is what opens the window
   [`../GOVERNANCE.md`](../GOVERNANCE.md) describes; the first one to appear closes it.
-- **Standards are named, not re-explained.** The chapter's SPS requirements select the required
+- **Standards are named, not re-explained.** The chapter's SPS requirements select the
   capabilities and deviations; incorporated standards supply behavior within that scope under
   [`SPS-CORE-021`](core/index.md#SPS-CORE-021). References do not require additional protocol surfaces.
 - **Explanatory prose is informative.** Inherited obligations keep their standard's identifiers;

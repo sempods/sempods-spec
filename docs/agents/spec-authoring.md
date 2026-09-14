@@ -17,7 +17,7 @@ violate. Split independent obligations so a conformance report can identify whic
 ### Standards incorporation
 
 Apply [`SPS-CORE-021`](../../spec/core/index.md#SPS-CORE-021): the chapter's SPS requirements select
-the required actors, operations and capabilities; standards supply their behavior. Evaluate that
+the actors, operations and capabilities, including conditional ones; standards supply their behavior. Evaluate that
 selection against [the vision](../vision.md), including obligations inherited through a reference.
 A library's full feature set is not a reason to require it of every implementation.
 

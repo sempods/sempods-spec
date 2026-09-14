@@ -254,6 +254,10 @@ specification's roadmap, before `0.1`.
 
 ## 6. Standards profiled
 
+Shared HTTP profile: [RFC 9110 (HTTP Semantics)](https://www.rfc-editor.org/rfc/rfc9110.html) governs
+request and response semantics for the HTTP operations selected by core and advertised-module
+SPS requirements, within the boundary below.
+
 <a id="SPS-CORE-021"></a>
 **`SPS-CORE-021`** — A standards profile MUST be interpreted within the actors, operations and
 capabilities selected by the chapter's SPS requirements. Within that scope, the standard's
@@ -271,10 +275,10 @@ contract that composes them.
 
 | Standard | Where |
 |---|---|
-| RFC 9110 (HTTP Semantics) | throughout — verbs, status codes, conditional requests |
+| RFC 9110 (HTTP Semantics) | shared HTTP profile above — core and advertised modules |
 | RFC 7396 (JSON Merge Patch) | `lod-crud`, resource PATCH |
 | RFC 7232 (Conditional Requests) | `lod-crud`, ETag and `If-Match` |
-| RFC 8288 (Web Linking) | `lod-crud`, edit-URL advertisement |
+| RFC 8288 §3 (Web Linking) | `lod-crud`, optional edit-link headers ([SPS-CRUD-058](lod-crud.md#SPS-CRUD-058)) |
 | RFC 4648 §5 (base64url, no padding) | `lod-crud`, embedded IRIs in paths |
 | RFC 6749 / OAuth 2.1 | `auth` |
 | RFC 7636 (PKCE) | `auth` |
