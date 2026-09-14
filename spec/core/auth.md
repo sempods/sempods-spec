@@ -8,7 +8,8 @@ caller is identified.
 
 Profiles: OAuth 2.1 and RFC 6749, RFC 7636 (PKCE), RFC 7591 (Dynamic Client Registration),
 RFC 8252 §7.3 (native app redirect URIs), RFC 10017 (BCP 212, browser-based applications),
-RFC 9728 (Protected Resource Metadata), RFC 8414 (Authorization Server Metadata), OIDC Core 1.0
+RFC 9728 (Protected Resource Metadata, with the pod-relative location deviation in
+[`SPS-AUTH-045`](#SPS-AUTH-045)), RFC 8414 (Authorization Server Metadata), OIDC Core 1.0
 §3.1.2.1 (`prompt`). Error codes are [`index.md`](index.md) §5.
 
 ## 1. Flows
@@ -456,13 +457,15 @@ same host. That follows from what each pod accepts, which is where it can be tes
 <a id="SPS-AUTH-045"></a>
 **`SPS-AUTH-045`** — An implementation MUST serve RFC 9728 Protected Resource Metadata at
 `GET {pod}/.well-known/oauth-protected-resource`, without authentication, carrying at least
-`resource`, `authorization_servers` and `bearer_methods_supported`.
+`resource`, `authorization_servers` and `bearer_methods_supported`. For this endpoint, the append
+construction MUST replace the host-rooted construction in [RFC 9728 §§3 and
+3.1](https://www.rfc-editor.org/rfc/rfc9728.html#section-3), including in the resource-to-metadata
+URL mapping used by §3.3 validation. A deployment MAY additionally serve the host-rooted location.
 
-That is the append form, and it is the only one this specification requires. The host-rooted address
-RFC 9728 §3.1 constructs — the well-known segment inserted between the authority and the resource's
-path — is a route on the origin rather than under the pod base, and a pod whose base URL is
-path-scoped cannot serve it without owning everything beside it. A deployment can, and one that
-hosts many pods is the right place for it.
+For a pod at `https://example.org/alice`, the required metadata address is
+`https://example.org/alice/.well-known/oauth-protected-resource`; its `resource` remains
+`https://example.org/alice`. The host-rooted address is outside the pod base, so serving it needs
+control of routing on the origin. The deployment hosting the pod can provide that route.
 
 The narrowing that follows is deliberate rather than an oversight. A generic client doing RFC 9728
 discovery ahead of its first request finds nothing at the host-rooted address of a path-scoped pod,

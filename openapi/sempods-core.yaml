@@ -673,6 +673,10 @@ paths:
       operationId: protectedResourceMetadata
       summary: RFC 9728 Protected Resource Metadata.
       description: |
+        SPS-AUTH-045 replaces RFC 9728's host-rooted location with this pod-relative append
+        location, including for resource-to-metadata URL validation. Serving the host-rooted
+        location as well is optional.
+
         Never enumerates the pod's public context IRIs — a count may be advertised, the URIs would
         be a topology leak on an unauthenticated route.
 
