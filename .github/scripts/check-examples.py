@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Run the worked examples under `examples/` through ACP's own resolution algorithm.
 
-The examples exist so that the access-control concept can be read as scenarios rather than as
-argument. That is worth something only while they are true, and prose that restates a contract in
-friendlier words is exactly the second copy this repository refuses everywhere else — so the
-examples are not prose about the contract, they are **fixtures**, and this script is what makes a
-wrong one fail the build instead of misleading a reader.
+The informative scenarios combine current-contract references, proposed behavior and deliberate
+counterexamples. A passing run checks the supplied policy/request/expected-grant fixtures; it
+establishes neither normative adoption nor HTTP behavior or implementation conformance. The guide
+at docs/guides/acp-fixtures.md states the model assumptions and source boundaries.
 
 ## What an example is
 
@@ -26,13 +25,11 @@ collides with `<#owner>` in another.
 
 ## Why the algorithm is transcribed rather than imported
 
-`resolve()` below is the pseudocode of ACP §6.1 through §6.5, transcribed and not adapted. That is
-the point: sempods claims its access control resources are *pure* ACP — that an independent engine,
-given one of them and a context graph, produces the same access grant graph. A checker that shared
-sempods' own reading of the vocabulary could not test that claim. This one knows nothing about
-sempods.
+`resolve()` transcribes ACP §6.1 through §6.5. The fixture composition and OAuth-style mode ceiling
+are applied outside that evaluator; they are model assumptions, not operators supplied by ACP or
+a verified sempods implementation. The runner's guards enforce the selected fixture profile.
 
-So a matcher carrying only an attribute ACP does not define — a sempods principal set, say — is
+So a matcher carrying only an attribute ACP does not define — an illustrative principal set, say — is
 **not satisfied** here, because ACP's rule is that a matcher with none of its four attributes is
 never satisfied. That is the correct answer for a foreign engine, and where an example depends on
 such an attribute the difference is reported rather than hidden: it is the portability boundary,
@@ -54,8 +51,7 @@ well: `acp:OwnerAgents` would otherwise pass as an ordinary agent IRI that happe
 
 Two rules about the files keep this a checker rather than a Markdown parser: a fixture fence starts
 at column zero with exactly three backticks and outside any container, an examples file holds no HTML
-comment, and a citation is an inline link. Deciding those from CommonMark instead cost more code than
-the ACP engine below and rejected three correct files while it lasted.
+comment, and a citation is an inline link. These restrictions keep rendered and executed fixture blocks aligned.
 
 The same reasoning covers the shapes around them: a block whose kind it cannot read, two access
 control resources claiming one target **and one decision kind**, an access control resource nothing
@@ -589,7 +585,7 @@ def satisfied_policy(graph: Graph, policy, ctx: Context) -> bool:
 def effective_policies(graph: Graph, acr, ancestors: list = ()) -> set:
     """ACP §6.2. Ancestors stay in the signature though no scenario supplies one yet: an ancestor's
     member access controls are how ACP would carry a policy from one target to another, and that is
-    the one deviation the concept leaves open."""
+    a coverage choice the implementation proposal leaves open."""
     policies = set()
     for control in graph.objects(acr, P["accessControl"]):
         policies.update(graph.objects(control, P["apply"]))
@@ -917,7 +913,7 @@ def inspect_grant(graph: Graph, where: str, body: str = "#") -> list[str]:
 
 def inspect_modes(terms, where: str, on: str, notes: list | None = None) -> list[str]:
     """A mode in the acl: namespace that WAC does not define is a typo; one WAC defines and the
-    profile does not is a mode sempods has no permission for."""
+    fixture profile does not is outside these scenarios' selected mode mapping."""
     errors = []
     notes = notes if notes is not None else []
     for term in terms:
@@ -1161,7 +1157,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 kinds = {k for k, _, _ in by_target.get(target, ())}
                 # Two decisions on one IRI are the context one and the resource one. An unqualified
                 # block beside a qualified one would make a third, and modes_for() would intersect
-                # all of them — a fixture modelling something the concept does not describe.
+                # all of them — a fixture outside the documented composition model.
                 if kinds and ("unqualified" in kinds) != (kind == "unqualified"):
                     failures.append(
                         f"{where}: {short(target)} is claimed by both a qualified and an "
@@ -1451,7 +1447,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                         if any(k == "resource" for k, _, _ in by_target.get(half.target, ()))
                     ]
                 authenticated = set.intersection(*answers) if answers else set()
-                # The formula the concept states: the ceiling bounds authenticated authority, and
+                # The fixture formula: the ceiling bounds authenticated authority, and
                 # the public branch is added to whatever that produced. Public authority comes from
                 # nobody's grant, so nothing anybody was granted takes it away — a request that
                 # presents a token keeps what an anonymous one would have had.

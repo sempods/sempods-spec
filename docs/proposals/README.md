@@ -30,6 +30,14 @@ On disposition, identify what was adopted, partly adopted, rejected or supersede
 review/adoption links and any issue owning remaining scope. Keep explanation only where it remains
 useful; a maintained guide describes the adopted revision and links to its contract.
 
-The existing [data-access and access-control proposals](../concepts/README.md) remain at their
-source paths until [#61](https://github.com/sempods/sempods-spec/issues/61) classifies and moves them.
-Their current location does not make them normative.
+## Proposed designs
+
+- [Authorized data access](data-access.md) and [access control](access-control.md) — one proposal
+  for a smaller core, optional Context contracts and policy-independent guarantees. Normative
+  adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
+- [Authorization implementation support](authorization-implementation/README.md) — a possible ACP
+  profile and native-state design retained solely for [#64](https://github.com/sempods/sempods-spec/issues/64)'s
+  disposition under the temporary implementation-support exception.
+
+The [ACP fixture guide](../guides/acp-fixtures.md) explains the illustrative model and its tests;
+its existence changes neither proposal's status.

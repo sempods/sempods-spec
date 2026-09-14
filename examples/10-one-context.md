@@ -1,11 +1,16 @@
 # A pod with one place to put things
 
+Illustrative ACP encoding of current Context grants. Context selection and implicit owner authority
+are specified in the cited requirements; automatic provisioning and interpersonal sharing are story
+assumptions. The runner checks supplied policy only. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Anna keeps recipes in her pod. She has never thought about contexts and does not need to: her pod has
 one, it was there when the pod was made, and everything she writes goes into it.
 
 Then she shares the lot with her brother Ben.
 
-This is the whole model at its smallest. **The thing access is decided on is the context**, sharing
+This is the example model at its smallest. **The thing access is decided on is the context**, sharing
 is a policy on it, and there is nothing else in play.
 
 ## The one context, and who may reach it
@@ -62,7 +67,7 @@ that down. The pod supplies it.
 # nothing
 ```
 
-No rule was written to keep Mallory out. Neither policy is satisfied, an unsatisfied policy
+No rule was written to keep Mallory out. No policy is satisfied, an unsatisfied policy
 contributes nothing, and nothing is what she gets. **A pod is private before anybody configures it**,
 and staying private takes no work.
 

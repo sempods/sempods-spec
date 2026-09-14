@@ -1,12 +1,16 @@
 # A space whose documents are not all for the same readers
 
+Proposed area/resource composition, not current core behavior. No `resource` module is specified.
+The runner checks the supplied ACP evaluations and their intersection, not a pod implementation. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 An engineering team shares a space. Everyone on the team may read and write in it — except for one
 document about the salary round, which is for the people running it.
 
 Anna's pod could not express that with areas alone. She would have to make a second space just for
 the one document, and moving a document between audiences would mean moving data instead of editing a
-rule. So this deployment declares the **resource module**, and a second decision applies inside the
-space.
+rule. The example therefore adds a proposed resource restriction inside the
+space. An internal policy choice alone requires no module declaration.
 
 **Both must allow.** The space decides which statements are reachable at all; the resource decision
 narrows further, per subject, within them.
@@ -23,7 +27,7 @@ context are independent by
 ## The space
 
 Exactly the kind of access control resource the previous scenario used. Nothing about the base
-decision changes when the module is added.
+decision changes when the second restriction is added.
 
 ```turtle acr-context
 [
@@ -149,7 +153,7 @@ Each block above is one decision. The pod asks both and grants what both allow:
 | **Erik** on `salary-round` | — | `read` | **nothing** |
 
 The last column is checked rather than read. A `decision` block puts one request to both access
-control resources, and the grant below it is what the pod returns:
+control resources, and the grant below it is the expected model result:
 
 ```turtle decision
 [
@@ -216,9 +220,8 @@ restrict a broad space grant, but could also widen it, would be a control that i
 
 Every `acr` above is ordinary ACP that any engine resolves the same way, and each half of each
 `decision` is resolved by exactly that engine. Joining two of them is not ACP — the specification has
-no operator for it — so the runner intersects the two answers *outside* the engine, which is where
-sempods does it too.
+no operator for it — so the runner intersects the two answers *outside* the engine, as the example model proposes.
 
 That line matters for what a green run proves. It says every evaluation here is portable ACP **and**
-that the pod composes them by intersection. It does not say ACP requires the second, because ACP has
+that the runner composes them by intersection. It does not say ACP requires the second, because ACP has
 nothing to say about it.

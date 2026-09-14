@@ -1,5 +1,10 @@
 # The application is not the person
 
+Proposed ACP composition illustrating delegation bounds. The generic mode ceiling and public
+branch do not implement the current per-Context delegation and OAuth scope contracts. Their gaps
+are preserved for future validation, not resolved by this example. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Alice shares a document with Bob. Bob reads it through a notes application he authorised. Later he
 tries the same document through a tool he has never authorised, and it is gone.
 
@@ -9,8 +14,8 @@ decided by different people. Alice decides who may read her document. Bob decide
 own access an application receives ([`SPS-GRANT-013`](../spec/core/grants.md#SPS-GRANT-013)), and
 neither can answer for the other.
 
-Two evaluations, and the pod grants what both allow. That composition is sempods' rule rather than
-ACP's — ACP has no operator for it — so the runner applies it outside the ACP engine rather than
+Two evaluations, and the pod grants what both allow. That composition belongs to this model rather than
+ACP — ACP has no operator for it — so the runner applies it outside the ACP engine rather than
 inside, and this file checks both the halves and the whole.
 
 Alice's notes live in one context, which the fixture states because no policy does:
@@ -23,8 +28,7 @@ Alice's notes live in one context, which the fixture states because no policy do
 
 ## What Alice wrote
 
-Two things, because this pod declares the resource module. The context her notes live in, which every
-pod decides:
+Two things in the proposed composition. First, the context her notes live in:
 
 ```turtle acr-context
 [
@@ -147,7 +151,7 @@ is a ceiling on **modes**, which is what these two cases exercise.
 
 Three evaluations, three answers. The pod grants what **all** allow — and that is the sentence this
 scenario is about, so it is checked rather than asserted. A `decision` block puts one request to both
-access control resources at once, and the grant below it is what the pod actually returns:
+access control resources at once, and the grant below it is the expected model result:
 
 ```turtle decision
 [
@@ -214,7 +218,7 @@ document policy is.
 
 Both halves are resolved by the plain ACP engine; the intersection is applied to their answers
 afterwards. That separation is the point. ACP has no operator joining two evaluations, so the runner
-does not pretend it has one — it composes outside the engine, exactly where sempods does, and a
+does not pretend it has one — it composes outside the engine, exactly where this model places it, and a
 `decision` case fails if that composition is ever changed to something wider.
 
 ## What the ceiling cannot take away
@@ -282,8 +286,8 @@ authorised can see.
 
 Bob's ceiling grants this tool nothing, and the tool reads anyway. That is not a leak in the ceiling —
 it is what a ceiling is for. It bounds **Bob's** authority, and this document needs none of it: an
-anonymous request reads the list perfectly well, so a request that happens to carry Bob's token cannot
-be given *less* than one that carries nothing.
+anonymous request reads the list perfectly well, so this fixture adds the public branch independently. It does not model OAuth scopes or validate
+tokens; the current `public-read` rules remain those in the authorization chapter.
 
 Which is why the two combine by union rather than by intersection: the ceiling narrows what Bob was
 delegated, and the public branch is added to whatever that leaves. Take the public policy away and
@@ -409,5 +413,5 @@ which is a different act — so the rule is kept and its reason is walked around
 The alternative is a ceiling scoped finely enough to exclude the new document — an enumerated set a
 person extends rather than a scope that tracks, which is what a photo picker does when it hands an
 application selected items instead of a library. Consent per resource is impractical as a dialog and
-not impossible as a selection, so this is a design choice rather than a dead end. The concept records
+not impossible as a selection, so this is a design choice rather than a dead end. The [proposal](../docs/proposals/access-control.md#delegation-and-revocation) records
 both shapes; this scenario is what neither of them looks like.

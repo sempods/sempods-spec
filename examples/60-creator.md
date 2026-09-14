@@ -1,10 +1,14 @@
 # The creator this pod cannot name
 
+Illustrative ACP request facts. sempods specifies no generic creator attribute for RDF subjects.
+This example compares absent and supplied facts; it specifies neither a creator API nor ACP discovery. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Bob writes a draft into Alice's pod. He would like to keep editing it, and the obvious way to say so
 is the one ACP provides: *whoever created this may change it.*
 
-It does not work here, and the reason is worth more than the feature. **A pod cannot say who created
-a resource, because in a triple store creating one is not an act.**
+It does not work here, and the reason is worth more than the feature. **The current specification
+provides no generic creator fact for an RDF subject.**
 
 Demonstrates [`SPS-CRUD-003`](../spec/core/lod-crud.md#SPS-CRUD-003),
 [`SPS-CRUD-011`](../spec/core/lod-crud.md#SPS-CRUD-011) and
@@ -12,8 +16,8 @@ Demonstrates [`SPS-CRUD-003`](../spec/core/lod-crud.md#SPS-CRUD-003),
 
 ## Why the fact does not exist
 
-There is no operation that creates a resource. There is only *write this statement*, and a resource
-is what a subject is called once some statement mentions it. So the question has no single answer:
+Creating stored data does not identify the creator of the thing its subject names. Defining such
+an authorization fact needs answers the current contract does not supply:
 
 - Who created it — whoever wrote the first statement? In which context? A subject may hold statements
   in several, written by different people at different times
@@ -24,8 +28,8 @@ is what a subject is called once some statement mentions it. So the question has
   ([`SPS-CRUD-003`](../spec/core/lod-crud.md#SPS-CRUD-003)). Writing
   `<did:web:bob.example> foaf:name "Bob"` would make the writer the *creator* of Bob's identifier.
 
-A pod routinely holds statements about things nobody in it created. Creation is not an act here; it
-is a side effect of a subject not having appeared before.
+A pod routinely holds statements about things nobody in it created. A new local occurrence of a
+subject does not establish authorship of the thing it identifies.
 
 Ownership does not have this problem, and the difference is the whole of it:
 
@@ -65,7 +69,7 @@ comparing two relational matchers, and a fixture can only evaluate what is in fr
 ## Bob asks for his own draft
 
 The pod describes the request. It states an owner, because it knows one. It states no creator,
-because there is nothing it could truthfully put there.
+because this case assumes no application-defined creator fact.
 
 ```turtle context
 [
@@ -120,11 +124,9 @@ performs — can state a creator, and then the policy Bob wanted works unchanged
 [] acp:grant acl:Read, acl:Write, acl:Control .
 ```
 
-Nothing about the access control resource changed between this case and the first. Which attributes a
-pod can state is a property of that pod, and ACP expects a client to ask rather than assume: a
-conforming server lists the attributes it supports on an `OPTIONS` request to an access control
-resource. `acp:CreatorAgent` is therefore not forbidden here and not broken — it is unsatisfied,
-exactly as `acp:vc` is in a pod that has no credentials to present.
+Nothing about the access control resource changed. The result changes because the supplied request
+facts changed. ACP server discovery is outside this fixture and is not adopted by sempods;
+`acp:CreatorAgent` is simply unsatisfied where this case supplies no creator.
 
 ## What Bob does instead
 
@@ -172,6 +174,6 @@ Two things are given up, and both are small:
   access from any other grant; and,
 - if Bob starts using a different WebID, the policy does not follow him and he loses his own draft.
 
-And the layering it produces is arguably the right one anyway. A pod cannot know what a document is.
-An application with documents can, and it is the one holding the fact at the only moment it exists —
-so it is the one that should write it down.
+An application can define document semantics beyond the generic RDF contract and record a creator
+when it creates a document. That is an application-defined fact, not an authorization attribute
+implicitly established by storing statements about a subject.

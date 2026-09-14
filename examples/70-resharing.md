@@ -1,9 +1,13 @@
 # The share Alice did not make
 
+Proposed sharing design and an illustrative counterexample. No interpersonal sharing API is
+specified. The fixture compares supplied end states; it executes no revocation process. See the
+[fixture assumptions](../docs/guides/acp-fixtures.md).
+
 Alice shares a plan with Bob. Bob shares it on with Carla. Then Alice withdraws Bob's access.
 
-What happens to Carla turned on a rule that was not obvious, and this file is the measurement that
-decided it. **There is no interpersonal sharing operation in the specification at all.** Grants for a
+What happens to Carla depends on the sharing design. This file compares supplied states to
+illustrate that choice. **There is no interpersonal sharing operation in the specification at all.** Grants for a
 person are durable stored policy
 ([`SPS-GRANT-012`](../spec/core/grants.md#SPS-GRANT-012)) and no requirement says who may write one;
 what the chapters do define is delegation to an *application*, where holding a grant is enough to
@@ -14,11 +18,10 @@ contexts ([`SPS-CTX-019`](../spec/modules/context-management.md#SPS-CTX-019)).
 So the question was never whether to relax an existing rule. It was which rule to write, and there
 were two candidates: **reading is enough**, where every reader may pass on what they can already see
 and revocation sweeps the shares made under an access that is now gone — or **`manage` is required**,
-which is the answer the concept now carries
-([`../docs/concepts/access-control.md`](../docs/concepts/access-control.md) §"Who may share, and why
-there is no chain").
+which is the alternative preferred by the
+[sharing proposal](../docs/proposals/access-control.md#who-may-share-and-why-there-is-no-chain).
 
-**This scenario works the branch that was refused.** The graphs are ordinary ACP either way; what
+**This scenario illustrates the reader-resharing alternative the proposal rejects.** The graphs are ordinary ACP either way; what
 changes between them is which policies exist, which is exactly what the design decides.
 
 ## How three moments fit in a file
@@ -218,13 +221,13 @@ operation. The pair makes that expressible; what it does not do is decide it, an
 falls the application's way.
 
 
-## What was decided
+## The proposed alternative
 
-`manage`, not reading. A share is issued directly by somebody who holds it, every holder is a peer of
+The proposal requires `manage` for interpersonal sharing. In that design, a share is issued directly
+by somebody who holds it, every holder is a peer of
 every other, and any of them may remove what another granted — so none of the above is reachable:
 there is no chain to walk, no provenance to keep beside the access control resource, and no blast
 radius travelling further than the person who acted.
 
-The three states stay in this file as they are. What they measure is the price of the branch nobody
-took, and a refused alternative is worth more with its cost attached than as a sentence saying it was
-refused.
+The three states stay in this file as they are. They explain why reader resharing needs provenance beyond the ACR. Their passing results do not
+adopt the peer-manage alternative or verify either design's revocation process.

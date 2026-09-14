@@ -1,62 +1,51 @@
 # Vision
 
-A **pod** is one person's or one organisation's own store of linked data. What sempods adds is the
-contract such a store implements, so that an application, an agent or another pod can work with it
-without knowing who built it. The specification says what that contract *is*. This document says what
-it is **shaped like** — and the shape is what decides whether a proposed requirement belongs in it.
+A **pod** is one person's or one organisation's own store of linked data. sempods defines the
+contract that lets applications, agents and other pods use it without knowing who built it.
+This informative vision owns the direction and the test for selecting requirements. The
+[normative chapters](../spec/README.md) own the current contract.
 
 ## The guiding image
 
 > **A sempod is an RDF graph with query support, authorized per caller.**
 
-Four words carry it. *RDF graph*: the data model is not ours and is not negotiable. *Query support*:
-a caller asks questions, rather than being handed a directory to walk. *Per caller*: the same
-question from two identities is two different questions, and the pod — not the client — decides the
-difference.
+RDF supplies the data model. Query support lets a caller ask questions about that data. The pod
+authorizes each request using the caller's identity and authority, and protects data the caller
+cannot access. Applications are guests in a store the person or organisation controls.
 
-That is a higher floor than the web's, and the difference is worth naming rather than regretting. A
-web server can serve files with no notion of who is asking, because the early web was public by
-default. Logins arrived without a standard and the silos followed. A pod is private by default and
-federated identity is part of the contract from the start, which is exactly the thing the web never
-fixed.
-
-## The comparison that fits
-
-Not a web server. **SQL.**
-
-A small, standard query contract; implementations from an embedded single file to a distributed
-cluster; and clients that work against all of them without caring which. SQLite and a large database
-server share almost no code and interoperate completely, because what they share is the contract and
-not the construction.
-
-That is the range sempods is for. The small end is an embedded store, one context, one owner, the
-sharing surface present and unused — buildable in an afternoon over an off-the-shelf triple store.
-The large end replaces the store entirely and keeps the contract. Neither is more of a sempod than
-the other, and a client cannot tell them apart, which is the point.
+The same contract should be practical for a small embedded store and a larger hosted service.
+Storage layout, policy representation and deployment architecture can differ without changing
+what a client can rely on.
 
 ## What belongs in the contract
 
-The guiding image is only useful if it decides things, so it is written as a test:
+sempods is a framework composing existing standards. Name and reference those standards; add only
+the interoperability choices and security guarantees needed to make them work together as a pod.
+Apply this test to a proposed obligation, including one inherited through a standards reference:
 
-> A requirement belongs in **core** when the contract does not hold without it. Everything a client
-> could build for itself belongs in a **module**, and is announced at the conformance endpoint so a
-> client knows before it asks.
+- **What needs agreement?** Identify the client-visible ambiguity or security failure that would
+  remain without the obligation. If the selected standard already supplies the answer, reference it.
+- **Why this scope?** Core contains what every implementation needs for the authorized RDF and query
+  contract. An additional client-facing capability can be an optional, discoverable module when
+  clients need an interoperable contract for it. An application feature or internal mechanism does
+  not acquire a specification chapter merely because it is useful.
+- **What must be observable?** Specify the operation's effect, authorization boundary or failure
+  outcome. Leave storage, algorithms, internal services and administrative interfaces to an
+  implementation unless a concrete interoperability or security need requires agreement there.
+- **Can different implementations satisfy it?** Use concrete allowed and denied cases to check the
+  intended contract. A design preference or a reference implementation's existing behavior is
+  insufficient reason to impose an obligation on every pod.
 
-Applied, it gives the shape the specification already has: linked data over HTTP, one context per
-statement, server-resolved grants, sandboxed reads and writes, query, and federated authentication
-are core, because a client cannot supply any of them. Media, agent tooling and the OIDC provider are
-modules.
+[Spec authoring](agents/spec-authoring.md) applies this test when selecting and identifying a
+standards profile or writing a requirement. [Governance](../GOVERNANCE.md#how-a-change-is-made)
+controls adoption; this vision does not adopt or override a protocol requirement.
 
-It also decides what the specification does **not** say. The contract describes **what is decided**,
-never **how**. Two pods that answer every request alike are equally conformant, whether one
-evaluates a policy language and the other has the rules in its code. A permission model is therefore
-an implementation's design, and appears here only where a client would otherwise be unable to rely
-on something — in which case it is behaviour, and gets written as behaviour.
+## The current contract and proposed changes
 
-## Where this is going
+The current core uses Contexts as its authorization boundary, per-Context grants and explicit
+Context selection on writes. Only the Context lifecycle HTTP surface is optional. The
+[chapter map](../spec/README.md#core) identifies the current core and modules.
 
-The direction is the old promise of the web, for knowledge rather than for pages: data that is
-linked, queryable and owned by the person or organisation it is about, with applications as guests
-that ask permission. Adoption of a contract is a numbers game, and numbers come from a low floor. So
-the specification grows by *deciding* more, not by *requiring* more — and every requirement it does
-not need is one an implementation does not have to meet.
+[Authorized data access](proposals/data-access.md) proposes a smaller core with an optional Context
+contract. Its adoption is tracked in [#68](https://github.com/sempods/sempods-spec/issues/68).
+That proposal remains distinct from both this selection test and the requirements in force.

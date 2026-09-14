@@ -12,7 +12,8 @@ Read it at the same Git revision as those sources.
 | Offline links and fragments | Local links and requirement anchors resolve. It excludes `site/`, whose hand-written links address the staged layout; the full site render checks those. It does not verify remote destinations. |
 | Requirement identifiers | Chapter/area placement, identifier changes against the base, OpenAPI requirement citations and the generated index are consistent. It enforces the observable part of [governance's identifier window](../../GOVERNANCE.md#deleting-and-renumbering-before-01); read notices as well as failures. It cannot detect an external adopter or prove semantic equivalence. |
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
-| Worked scenarios | The retained design's fixture expectations agree with the runner's transcription of ACP resolution. A green run establishes expressibility in that model; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
+| Worked scenarios | The supplied fixture expectations agree with the runner's ACP evaluations and model composition. A green run checks those cases; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
+| Site navigation regression tests | Source-relative links survive relocation, while the landing page retains its staged layout. |
 | Full site build | Inputs, the demo-pod destination and staged links survive strict rendering. The destination check prevents the try-it page from sending requests, including authenticated ones, to another host. It does not exercise the live OAuth or request flow. |
 
 These are repository checks and example execution, not product conformance claims. They do not
@@ -44,6 +45,7 @@ lychee --offline --include-fragments --no-progress --exclude-path site .
 .github/scripts/check-requirements.py origin/main
 .github/scripts/check-examples.py --self-test
 .github/scripts/check-examples.py
+python3 -m unittest discover -s site -p 'test_*.py'
 python3 site/build.py
 ```
 
