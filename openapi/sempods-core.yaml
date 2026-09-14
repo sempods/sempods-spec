@@ -475,6 +475,10 @@ paths:
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: Run a read-only SPARQL query inside the caller's sandbox.
       description: |
+        The SPARQL Protocol profile uses the direct POST binding (§2.1.3), with the unencoded
+        query in an `application/sparql-query` body. GET and form-encoded POST are outside the
+        core profile.
+
         Read-only. Every Update form is rejected, and so is `SERVICE` anywhere in the query,
         including inside a subquery. A malformed query and an Update are refused identically — an
         implementation cannot reliably tell them apart, and reporting the difference tells a prober

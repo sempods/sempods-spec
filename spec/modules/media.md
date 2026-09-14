@@ -10,7 +10,8 @@ hold binaries provides this.
 Profiles: [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) and
 [RFC 7232](https://www.rfc-editor.org/rfc/rfc7232.html) for clients and pod servers on the media HTTP
 surface and its conditional requests; [RFC 4648 §5](https://www.rfc-editor.org/rfc/rfc4648.html#section-5)
-for encoded IRIs in those routes. Error codes are [`../core/index.md`](../core/index.md) §5;
+for the media identifiers defined by [`SPS-MEDIA-003`](#SPS-MEDIA-003).
+Error codes are [`../core/index.md`](../core/index.md) §5;
 authorization is [`../core/grants.md`](../core/grants.md).
 
 ## 1. The model
