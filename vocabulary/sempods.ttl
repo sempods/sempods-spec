@@ -5,6 +5,7 @@
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix vann:    <http://purl.org/vocab/vann/> .
+@prefix sd:     <http://www.w3.org/ns/sparql-service-description#> .
 @prefix schema:  <https://schema.org/> .
 
 #
@@ -22,13 +23,14 @@
 <https://schema.sempods.org/>
   a                              owl:Ontology ;
   dcterms:title                  "The sempods vocabulary"@en ;
-  dcterms:description            """Terms specific to sempods: today, the metadata a `find`
-    response carries about each hit. Deliberately small — the model is expressed in RDF,
+  dcterms:description            """Terms specific to sempods: Context registry state, request-relative Context access summaries
+    and optional metadata about `find` hits. Deliberately small — the model is expressed in RDF,
     SPARQL, SHACL and schema.org, not in a vocabulary of its own."""@en ;
   vann:preferredNamespacePrefix  "sps" ;
   vann:preferredNamespaceUri     "https://schema.sempods.org/" ;
-  dcterms:hasVersion             "0.1.0" ;
+  dcterms:hasVersion             "0.2.0" ;
   dcterms:issued                 "2026-08-12"^^xsd:date ;
+  dcterms:modified               "2026-09-15"^^xsd:date ;
   dcterms:license                <https://creativecommons.org/licenses/by/4.0/> ;
   dcterms:publisher              <https://sempods.org/> ;
   rdfs:seeAlso                   <https://sempods.org/> .
@@ -102,3 +104,37 @@ sps:engine
 ## foreign term inside one's own vocabulary is exactly the redefinition NAMESPACE.md asks third
 ## parties not to do, and the rule holds for this project too.
 ##
+
+## Context registry response vocabulary
+
+sps:public
+  a rdf:Property, owl:DatatypeProperty ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "public"@en ;
+  rdfs:domain sd:NamedGraph ;
+  rdfs:range xsd:boolean ;
+  rdfs:comment "The Context registry's public-read setting. This value describes registry state; an ordinary data assertion using this predicate changes no access policy."@en .
+
+sps:readableContext
+  a rdf:Property, owl:ObjectProperty ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "readable Context"@en ;
+  rdfs:domain sd:GraphCollection ;
+  rdfs:range sd:NamedGraph ;
+  rdfs:comment "Links a registry catalogue to a Context for which the requesting client has effective read permission under the applicable Context contract. This is a response-relative summary, not a stored policy or a transferable capability. Later operations require current authorization."@en .
+
+sps:writableContext
+  a rdf:Property, owl:ObjectProperty ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "writable Context"@en ;
+  rdfs:domain sd:GraphCollection ;
+  rdfs:range sd:NamedGraph ;
+  rdfs:comment "Links a registry catalogue to a Context for which the requesting client has effective write permission under the applicable Context contract. This is a response-relative summary, not a stored policy or a transferable capability. Later operations require current authorization."@en .
+
+sps:manageableContext
+  a rdf:Property, owl:ObjectProperty ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "manageable Context"@en ;
+  rdfs:domain sd:GraphCollection ;
+  rdfs:range sd:NamedGraph ;
+  rdfs:comment "Links a registry catalogue to a Context for which the requesting client has effective manage permission under the applicable Context contract. This is a response-relative summary, not a stored policy or a transferable capability. Later operations require current authorization."@en .

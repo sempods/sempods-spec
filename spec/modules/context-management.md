@@ -89,6 +89,18 @@ would make omission the dangerous choice.
 Two callers creating the same context concurrently both get their post-condition, so the loser of
 that race is `200` and not an error.
 
+<a id="SPS-CTX-037"></a>
+**`SPS-CTX-037`** — Successful Context PUT responses (`200` and `201`) MUST return the registry RDF
+description defined by [`SPS-CTX-031`](../core/contexts.md#SPS-CTX-031) and
+[`SPS-CTX-032`](../core/contexts.md#SPS-CTX-032), using their content negotiation and
+[`SPS-CTX-036`](../core/contexts.md#SPS-CTX-036)'s cache isolation. The server MUST establish that
+an acceptable success representation can be returned before creating the Context; unsatisfiable
+`Accept` MUST return `406` without creation. The optional JSON creation input and the create-only
+`201`/`200` effects remain those of `SPS-CTX-015`, `SPS-CTX-016` and `SPS-CTX-027`.
+
+This response representation does not make PUT a general RDF update or add conditional writes.
+A client reads the registry with GET for its validator and conditional-read contract.
+
 <a id="SPS-CTX-017"></a>
 **`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
 remove the state that rested on it: the grants naming it, and the context's statements.

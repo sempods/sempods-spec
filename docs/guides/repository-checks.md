@@ -2,7 +2,9 @@
 
 This informative guide describes the checks in this repository's revision: the
 [requirement checker](../../.github/scripts/check-requirements.py),
-[example runner](../../.github/scripts/check-examples.py) and [site builder](../../site/build.py).
+[example runner](../../.github/scripts/check-examples.py),
+[Context representation checker](../../.github/scripts/check-context-registry.py) and
+[site builder](../../site/build.py).
 Read it at the same Git revision as those sources.
 
 ## What a passing run establishes
@@ -13,6 +15,7 @@ Read it at the same Git revision as those sources.
 | Requirement identifiers | Chapter/area placement, identifier changes against the base, OpenAPI requirement citations and the generated index are consistent. It enforces the observable part of [governance's identifier window](../../GOVERNANCE.md#deleting-and-renumbering-before-01); read notices as well as failures. It cannot detect an external adopter or prove semantic equivalence. |
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
 | Worked scenarios | The supplied fixture expectations agree with the runner's ACP evaluations and model composition. A green run checks those cases; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
+| Context registry representations | Actual OpenAPI examples and guide JSON-LD validate against their schemas and preserve registry RDF through N-Quads round trips; malformed legacy shapes are rejected. Unicode IRIs and language-tagged text are accepted; invalid IRIs are rejected. The Context module's references resolve without core, and shared components agree. Registry reads and creation document their authentication challenges; their successful and error responses reference the same cache guarantee. Creation dates admit XSD forms beyond RFC 3339; the checker does not validate the full XSD lexical space. No HTTP, authorization, caching or lifecycle implementation is tested. |
 | Site navigation regression tests | Source-relative links survive relocation and select the build commit; dirty previews and snapshot metadata are distinguished. |
 | Full site build | Inputs, the demo-pod destination and staged links survive strict rendering. The destination check prevents the try-it page from sending requests, including authenticated ones, to another host. It does not exercise the live OAuth or request flow. |
 
@@ -38,6 +41,15 @@ The example runner also needs the parser dependencies pinned in
 [Examples §Dependency](../../examples/README.md#dependency). Install them into the same environment.
 The site builder looks up `mkdocs` on `PATH`; the scripts use `python3`.
 
+The Context representation checker also needs the validator stack pinned in the Examples workflow:
+
+```bash
+python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2 PyYAML==6.0.3 jsonschema==4.25.1 attrs==26.1.0 jsonschema-specifications==2025.9.1 referencing==0.37.0 rpds-py==2026.6.3 rfc3987-syntax==1.1.0 lark==1.3.1
+```
+
+The checker explicitly requires IRI format support at startup. Without that dependency,
+`jsonschema` would silently ignore the format and accept invalid identifiers.
+
 ## Before requesting review
 
 ```bash
@@ -45,6 +57,7 @@ lychee --offline --include-fragments --no-progress --exclude-path site .
 .github/scripts/check-requirements.py origin/main
 .github/scripts/check-examples.py --self-test
 .github/scripts/check-examples.py
+python3 .github/scripts/check-context-registry.py
 python3 -m unittest discover -s site -p 'test_*.py'
 python3 site/build.py
 ```

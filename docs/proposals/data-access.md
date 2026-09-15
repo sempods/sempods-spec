@@ -278,8 +278,10 @@ contract; internal terminology alone is insufficient.
 [Discoverable Contexts and RDF registry descriptions](context-contract.md) recommends the module
 identity/version, integrated lifecycle, implicit access and caller-rights discovery under
 [#69](https://github.com/sempods/sempods-spec/issues/69) and
-[#90](https://github.com/sempods/sempods-spec/issues/90). It owns the registry representations,
-creation and staged adoption recommendations. The selector contract remains below.
+[#90](https://github.com/sempods/sempods-spec/issues/90). It owns the remaining module and lifecycle recommendations. The RDF registry surface is specified
+by [Contexts](../../spec/core/contexts.md#SPS-CTX-031) and
+[creation responses](../../spec/modules/context-management.md#SPS-CTX-037), under #92. The proposed
+selector contract remains below.
 
 The module preserves [ordinary implicit access](#recommended-implicit-scope). An implementation
 can expose D as a Context, but clients need not discover or select it for ordinary operations.

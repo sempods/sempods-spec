@@ -315,7 +315,7 @@ separate administrative interfaces, but those interfaces enforce their own autho
 on every write interface beyond sempods CRUD would prevent legitimate administration.
 
 Bulk administration has a distinct authorization question from editing one resource. The
-[Context lifecycle recommendation](context-contract.md#lifecycle) separates unregistering a view
+[Context lifecycle recommendation](context-contract.md#adopted-rdf-surface-and-proposed-lifecycle) separates unregistering a view
 from deleting its source data. Full adoption withdraws Context-bound authority without cascading
 into source assertions or independent views; current destructive deletion survives only in the
 initial response-only RDF delivery.
@@ -329,7 +329,7 @@ view does not make its source data writable. Core-only implementations need no C
 
 Where a pod adds finer restrictions, a reported Context grant describes that level's authority.
 It is not a guarantee that every resource operation succeeds. The
-[registry proposal](context-contract.md#catalogue-and-caller-rights) defines the caller-scoped
+[registry contract](../../spec/core/contexts.md#SPS-CTX-034) defines the caller-scoped
 summary and its cache boundary. Any more precise permission hint needs an explicit target and
 operation; the later request is still authorized.
 

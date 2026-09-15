@@ -13,7 +13,14 @@ and a pod provisioned outside that module still has contexts.
 
 **Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
 
-Profiles: RDF 1.1 (named graphs). Error codes are [`index.md`](index.md) §5.
+Profiles: RDF 1.1 (named graphs). Registry representations use the graph vocabulary from
+[SPARQL Service Description, 21 March 2013, §3](https://www.w3.org/TR/2013/REC-sparql11-service-description-20130321/#vocab),
+[RDF Schema 1.1, 25 February 2014](https://www.w3.org/TR/2014/REC-rdf-schema-20140225/) and
+[DCMI Terms, 20 January 2020](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/2020-01-20/).
+Only their term meanings are used; no service-description endpoint is required.
+[RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) §§8.8, 12 and 13 govern negotiated registry
+representations, validators and conditional reads; [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html)
+governs caching. Error codes are [`index.md`](index.md) §5.
 
 ## 1. The boundary
 
@@ -149,6 +156,74 @@ The last two are what let the context namespace move without a client change, an
 <a id="SPS-CTX-024"></a>
 **`SPS-CTX-024`** — `GET {pod}/_system/contexts/{path}` MUST return what the registry holds for that
 context. Where the caller cannot see the context, the response MUST be `404` — never `403`.
+
+### RDF representations
+
+Let C be a Context IRI and L be `{pod}/_system/contexts`. The response describes registry state;
+resource reads remain the separate surface for ordinary statements about those IRIs.
+
+<a id="SPS-CTX-031"></a>
+**`SPS-CTX-031`** — Successful GET responses for L and C MUST represent registry RDF using the
+canonical JSON-LD shape and content negotiation of [`SPS-CRUD-023`](lod-crud.md#SPS-CRUD-023),
+[`SPS-CRUD-024`](lod-crud.md#SPS-CRUD-024), [`SPS-CRUD-026`](lod-crud.md#SPS-CRUD-026) and
+[`SPS-CRUD-027`](lod-crud.md#SPS-CRUD-027). N-Quads MUST express the same RDF in its default graph.
+JSON-LD `@type` values MUST be arrays of absolute IRIs. These responses MUST NOT use the legacy `Context` or `ContextList` JSON envelopes.
+
+<a id="SPS-CTX-032"></a>
+**`SPS-CTX-032`** — A Context description MUST identify C as `sd:NamedGraph`, have exactly one
+`sd:name` equal to C, and have exactly one Boolean `sps:public` expressing its registry public-read
+setting, using a native JSON Boolean value in JSON-LD. It MUST include the registry's label and description, when present, as `rdfs:label` and
+`dcterms:description` string literals; a known creation time as `dcterms:created` with datatype
+`xsd:dateTime`; and an `rdfs:seeAlso` IRI `{pod}/_system/resources/{base64url(C)}` using UTF-8 and
+[`SPS-CRUD-005`](lod-crud.md#SPS-CRUD-005). It MUST NOT include caller permissions, stored policy
+rules or ordinary statements about C. Clients MUST tolerate additional descriptive predicates.
+
+Prefixes in this section have their published RDF meanings; `sps:` is
+`https://schema.sempods.org/`. `rdfs:seeAlso` asserts relevance, not data existence, equivalence or
+authority. Its construction needs no read of the ordinary data. Following it can return `404` even
+when the registry description is visible. Known timestamps are reported, not invented.
+
+<a id="SPS-CTX-033"></a>
+**`SPS-CTX-033`** — A catalogue MUST identify L as `sd:GraphCollection` and link every registered
+Context visible to this caller with `sd:namedGraph`. Its caller permissions MUST be direct
+`sps:readableContext`, `sps:writableContext` and `sps:manageableContext` IRI relationships from L
+to those Contexts. The sets MUST be complete, with no absent Contexts or hypothetical descendants;
+empty sets have no RDF triples. The catalogue MUST NOT embed the individual Context descriptions.
+An empty catalogue MUST still return `200` with L's identity and collection type.
+
+<a id="SPS-CTX-034"></a>
+**`SPS-CTX-034`** — The catalogue relationships MUST report the requesting client's current effective
+read, write and manage permissions under [`grants`](grants.md), including implied modes, delegation
+limits and applicable public read. Visibility MUST require at least one such mode. A server MUST
+NOT substitute a person's broader rights or treat a copied catalogue statement as authorization.
+Clients MUST treat the summary as response-relative information, not permission for a later request.
+
+Write therefore appears in both readable and writable sets; manage appears in all three. Anonymous
+callers see public Contexts through the readable relationship; invalid supplied credentials remain
+`401` under the authentication contract. Membership does not require data in the named graph.
+
+<a id="SPS-CTX-035"></a>
+**`SPS-CTX-035`** — Successful registry and catalogue GET responses MUST supply strong ETags and
+support `If-None-Match` under RFC 9110. The server MUST establish current authorization and the normal
+response status before evaluating a conditional read. Hidden and absent individual Contexts MUST
+both return indistinguishable `404` responses, including bodies, links and validators; a previously
+visible but now hidden Context MUST NOT return `304`. Individual tags MUST describe the registry
+representation, independently of graph contents or ordinary assertions about C. A catalogue tag
+MUST change when its represented membership or permissions change.
+
+<a id="SPS-CTX-036"></a>
+**`SPS-CTX-036`** — Registry responses, including errors, MUST NOT be reused across caller/client
+authorization contexts or without current authorization. Any stored response MUST preserve that
+isolation and representation freshness under RFC 9111. A request validator MUST NOT extend access
+or disclose a hidden Context.
+
+`Cache-Control: no-store` on all registry responses is one sufficient strategy. Private storage with
+mandatory revalidation can also satisfy the guarantees when cache selection distinguishes the
+credential/authorization inputs and negotiated variants. These are alternatives; neither storage
+layout nor one specific cache-header combination is prescribed.
+
+The [registry representation cases](../../docs/guides/context-registry.md) illustrate descriptions,
+empty and permission-bearing catalogues, conditional reads and authority separation.
 
 ## 4. `_system` is protected, not undescribable
 
