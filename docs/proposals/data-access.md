@@ -96,10 +96,17 @@ aggregate view, mutation placement and local-only graph resolution below are sem
 
 #### Ordinary access uses the aggregate graph
 
-Recommend one logical data space per pod. Statements can be unassigned to a named graph or occur
-in one or more logical named graphs. These are observable memberships, independent of physical
-partitions. A core-only pod can have no named graphs; exposing a native RDF graph does not by
-itself promise Context grants or management. Logical names exposed through SPARQL are IRIs.
+Recommend one logical data space per pod, with asserted statements and views of them. An assertion
+can have explicit named membership or no explicit assignment. A computed Context selects statements
+from that space without adding independent assertions: the same statement can occur in several
+views of the same source. View definitions and authorization inputs are part of test setup; physical
+partitions are not. All exposed graph names are IRIs.
+
+A Context identifies a logical view of RDF data; membership may be stored or computed. A rule-based
+selection, including one implemented using ACP authorization, needs no physical named graph.
+Expose each disclosable Context projection under its IRI in the SPARQL named dataset. This is a
+query representation of the view, not a requirement to store or mutate it as an independent graph.
+A core-only pod can also expose native named graphs without registering sempods Contexts.
 
 For a caller, the ordinary SPARQL default graph is the set union of all readable statements in
 that space, including readable statements from named graphs. Ordinary resource and slot reads,
@@ -108,10 +115,10 @@ the aggregate; SPARQL still applies its normal solution multiplicities. Preserve
 identity, including shared blank nodes; unrelated nodes do not become equal because two storage
 partitions use the same local label.
 
-The named part of the dataset contains the authorized projections of logical named graphs whose
-names may be disclosed and whose projections are nonempty. `GRAPH` operates on that named part,
-not on internal partitions or the unassigned statements. An empty or wholly unreadable graph is
-omitted, including from `GRAPH ?g {}`. This avoids requiring a persistent empty-graph registry in
+The named part contains authorized projections of native graphs and Context views whose names may
+be disclosed and whose projections are nonempty. `GRAPH` operates on those projections, not on
+internal partitions. An assertion with no explicit assignment can occur in a computed projection.
+An empty or wholly unreadable graph is omitted, including from `GRAPH ?g {}`. This avoids requiring a persistent empty-graph registry in
 core; Context lifecycle and rights discovery remain separate. A readable statement whose graph
 name cannot be disclosed can still occur in the aggregate, without exposing its membership.
 
@@ -123,31 +130,41 @@ logical data space unless an explicit contract exposes data about them.
 #### Writes have an observable graph effect
 
 Without a Context selector, resource, predicate, slot and edge scopes span the whole logical data
-space, before read filtering. Apply their specified removals to every occurrence in that scope.
-An ordinary DELETE cannot report removal while leaving another occurrence of the same triple in
-a named graph. New statements from an ordinary write are logically unassigned: they appear in the
-aggregate, but do not acquire named-graph membership. A request body does not choose a graph;
-existing accepted-input rules still apply.
+space before read filtering. Apply the mutation recommendations to the asserted data: removals
+remove every assertion of the addressed statements in that scope; additions have no explicit named
+assignment. Replacement removes the replaced statements' explicit memberships and inserts the
+supplied data without such assignment. Slot POST adds an unassigned assertion and preserves existing
+assertions. Subject/predicate boundaries and incoming-link preservation remain unchanged.
 
-Replacement removes the previous memberships of the replaced statements and inserts the supplied
-statements unassigned, even when a supplied value equals an old value. Predicate/slot operations
-preserve other predicates; resource replacement covers all outgoing statements. Incoming statements
-survive both. Slot POST adds an unassigned occurrence and preserves all
-existing occurrences; repeating it is idempotent, including when the same triple also occurs in a
-named graph. This placement rule prevents implementation-specific routing from changing later
-`GRAPH` results. It requires no physical default context, registry entry or public IRI.
+Recompute views over the resulting authorized data. An ordinary addition can immediately appear in
+computed Contexts whose selection it satisfies; an ordinary replacement can make a resource leave
+one view and enter another. This is selection, not arbitrary write routing or another stored copy.
+After removal of all source assertions, a computed selection cannot resurrect the removed fact.
+The common view contract here selects facts from the pod's logical data space; this proposal does
+not define an inference or CONSTRUCT language that invents additional facts.
 
-A Context-selected write instead has exactly that graph as its scope; additions stay in it and
-other graphs, including unassigned statements, are unchanged. Its readable effects also appear in
-the aggregate. Removing one occurrence can therefore leave the same triple in an ordinary read
-when another occurrence survives. Subject identity and graph selection remain independent.
+A selected write is supported here only for a Context providing the **membership-write contract**:
+its addressed assertions are independently mutable, additions acquire that explicit membership,
+and direct removals change only those assertions. Other independent assertions, including
+unassigned copies, survive. Computed views depending on the changed data are reevaluated and can
+change too. No physical named graph or particular policy store is required to realize this contract.
+It is the only selected-write meaning proposed here, not a choice an implementation can silently
+substitute with writes to shared source data.
 
-In either mode, authorization covers the complete requested effect, including removals and the
-placement of additions. Authority over one graph alone cannot authorize an ordinary whole-space
-replacement. Apply the mutation proposal's uniform refusal even when other graphs currently hold
-no matching statements; do not choose a writable graph by inspecting hidden collisions. An
-implementation may retain Context-based policies and storage, but needs an authorized realization
-of ordinary operations as well as any selected operations it advertises.
+A general computed view that cannot realize that contract is read-only through Context-selected
+CRUD. Do not advertise it as writable; after ordinary authentication/syntax checks, valid selected
+writes uniformly return `403`, including empty/no-op requests, without changing source data, view
+rules or grants. Do not fall back to aggregate writes. The caller can use ordinary CRUD separately
+when authorized for its complete effects. Defining a later write-through contract requires an
+explicit, discoverable source-update meaning, insertion placement and behavior when an update
+changes view membership. It is deliberately deferred, not an implementation-defined success case.
+
+In either supported write scope, authority covers the complete direct effect, including unreadable
+assertions and additions. Permission to manage or read a computed view alone does not authorize
+its source data. Apply uniform refusal independent of hidden collisions; do not discover authority
+by scanning for protected data. Derived projections satisfy the same authorized-query equivalence
+and disclosure guarantees as other reads. A successful response and subsequent read reflect the
+new data/view state; a stale materialization is not a conforming alternative result.
 
 LOD and system aliases agree for the same mode and scope. A validator identifies that selected
 representation: an aggregate tag does not validate a Context-selected write, or vice versa, even
@@ -161,8 +178,9 @@ merely because they express the same merged triples. This also applies to slot r
 where validators are emitted; it prescribes no serialization or tag-generation algorithm.
 
 Current complete-scope authority is still checked, and tags never validate unreadable facts or
-grant permission. A selected graph's changes cannot invalidate an unrelated graph's representation
-solely through a shared internal revision counter.
+grant permission. A changed source or view definition can change several computed representations;
+each corresponding strong tag changes when its represented data changes. A truly unrelated view's
+representation is not invalidated solely through a shared internal revision counter.
 
 #### Query dataset selection
 
@@ -194,13 +212,14 @@ pattern is zero. Use those standard results rather than a synthetic empty-respon
 #### Request cases for review
 
 Let `R` be `https://example.org/alice/notes/one`, `p` be `https://schema.org/name`, and `A` and `B`
-be distinct logical graph IRIs supplied by test setup. Each row starts from its stated initial data. Unless narrowed,
-policy allows reading the named graphs and complete writes over the stated scope. These are
+be distinct independent membership scopes unless a row explicitly names a computed view. Each row
+starts from its stated data and view definitions. Unless narrowed, policy allows reading the named
+projections and complete writes over the stated scope. These are
 proposed acceptance cases, not executable fixtures or an implementation conformance report.
 
 | Setup and request | Recommended result and effect |
 |---|---|
-| Empty pod with no named graphs; ordinary PUT R with p = "new" | `201`; ordinary GET and `SELECT ?v WHERE { <R> <p> ?v }` see "new". `GRAPH ?g { <R> <p> ?v }` has no match. Repeat the PUT: `200`/`204`, with no graph membership created. |
+| Empty pod with no named graphs or computed views; ordinary PUT R with p = "new" | `201`; ordinary GET and `SELECT ?v WHERE { <R> <p> ?v }` see "new". `GRAPH ?g { <R> <p> ?v }` has no match. Repeat the PUT: `200`/`204`, with no graph membership created. |
 | R p "same" in both A and B; ordinary GET and `SELECT (COUNT(*) AS ?n) WHERE { <R> <p> ?v }` | One value and count 1. `SELECT ?g WHERE { GRAPH ?g { <R> <p> "same" } }` returns A and B. |
 | R p "same" in A and B; authorized Context-selected DELETE of R in A | A loses R's outgoing statements; B retains them and ordinary GET still returns "same". |
 | R p "same" in A and B; authorized ordinary DELETE of R | All occurrences of R's outgoing statements disappear, in A, B and unassigned data; incoming links survive. Ordinary GET is `404` and the corresponding triple patterns match nothing. |
@@ -218,17 +237,25 @@ proposed acceptance cases, not executable fixtures or an implementation conforma
 | Same returned triples through ordinary and A-selected GET | Each tag is scoped to its representation; a tag from one scope cannot satisfy `If-Match` for the other. |
 | R p "same" moves from A to B; membership-collapsed GET returns identical representation data | Its strong ETag may remain unchanged; a GET with that matching `If-None-Match` tag can return `304`. |
 | Same membership move; graph-aware resource GET (`include_contexts=true` or N-Quads) | Represented graph names change, so the strong ETag changes. A GET with the old variant's `If-None-Match` tag returns the updated representation, not `304`. Repeat for slot variants where validators are emitted. |
+| Computed C selects source statements about tasks assigned to Alice; ordinary creation of such a task | New assertions have no explicit assignment but appear in C. Selected GET/find and `GRAPH <C>` expose the same authorized projection. |
+| Computed C selects Alice's tasks, D selects project X's tasks; one task matches both; ordinary PATCH changes assignee to Bob | Source changes; the task leaves C and remains in D. D's represented assignee and strong tag change. |
+| Same overlapping views; ordinary DELETE of the task's outgoing source statements | Both projections lose those statements; there were no independent copies to preserve. Incoming source links remain. |
+| Independent scope A feeds computed C; membership-write DELETE in A | Only A's assertions are directly removed; C changes on reevaluation. Independent B's assertions remain. |
+| C is a computed read-only view; selected PUT, PATCH, slot POST and DELETE, including no-ops | Uniform `403`, no source change or fallback. Ordinary source writes remain subject to their own authority. |
+| Same source data but computed C's selection definition changes | Source assertions stay unchanged; C's projection, selections and representation tags reflect the new definition. Registry authority is checked separately. |
 
 `<R>`, `<p>`, `<A>` and `<B>` in these query sketches stand for the full IRIs, not relative IRIs
 sent on the wire. Repeat ordinary-operation cases on a single graph, a Context-based store and an
 area/document-policy store. Repeat named-graph cases where that logical data is exposed, with
-identical graph names and membership; storage partitions are not fixture inputs. Blank-node cases
+identical graph names, explicit assertions and view definitions; storage partitions are not fixture
+inputs. Compare computed projections with evaluation over the authorized source dataset, including
+overlap and source/definition changes. Blank-node cases
 compare RDF identity up to consistent renaming, not response-local labels.
 
 ## Optional Context contracts
 
-A Context module provides a shared model where applications need it: named authorization areas,
-explicit selection, context-granular grants and their discovery. A pod can have internal areas
+A Context module exposes addressable logical views with stored or computed membership, explicit
+selection and caller access discovery. A pod can have internal areas
 without offering this contract. An implementation advertising it provides the whole declared
 contract; internal terminology alone is insufficient.
 
@@ -238,12 +265,11 @@ identity/version, lifecycle dependency, empty-pod bootstrap and caller-rights di
 [#90](https://github.com/sempods/sempods-spec/issues/90). It owns the registry representations,
 creation and staged adoption recommendations. The selector contract remains below.
 
-The module preserves the [ordinary aggregate access](#logical-dataset-and-operation-scope) and
-provides selection of its Context graphs. An ordinary write can leave statements logically
-unassigned even in a pod offering Contexts; the module does not require every core statement to
-belong to a public Context. An internal Context used to store those statements is not automatically
-a graph name in the logical dataset. This revises the proposed universal membership rule even
-within a Context-capable pod, not merely the location of the current chapter.
+The module preserves [ordinary aggregate access](#logical-dataset-and-operation-scope). A source
+assertion need not have explicit Context membership, but can appear in computed Contexts. Context
+IRIs name the exposed views; internal storage names and policy-rule IRIs do not automatically become
+public graph names. Read-only computed views are complete instances of this contract; optional
+lifecycle management does not imply that a view can accept data writes.
 
 Recommend the following selector outcomes after normal authentication and syntax checks:
 
@@ -253,7 +279,7 @@ Recommend the following selector outcomes after normal authentication and syntax
 | A core-only pod receives a Context selector or Context-output field, including an empty value or `include_contexts=false` | `400` for unsupported Context input; never silently ignore it. |
 | Context-capable pod; resource/slot read or find with one or more valid Context IRIs | Union of the requested authorized graph projections; absent/unreadable Contexts contribute nothing. Empty resource selection gives `404`; find gives its ordinary successful empty result. Selection also bounds find expansion. |
 | Context-capable pod; resource/slot read or find GET with exactly one empty `context=` parameter, or find POST with `contexts: []` | Explicit empty selection: resource GET is `404`, slot GET is `200` with an empty representation (an array by default), and find returns its successful empty result. No fallback to the aggregate. |
-| Context-capable pod; write with exactly one valid Context IRI | Only that graph is the operation scope. Apply the shared mutation authorization, precondition and response rules. |
+| Context-capable pod; write with exactly one valid Context IRI | With the membership-write contract and complete authority, change that scope's assertions and reevaluate dependent views. Otherwise uniform `403`; never reinterpret it as a source/aggregate write. |
 | Context-capable pod; malformed nonempty Context IRI, or empty/repeated selector on a write | `400`; write repetition counts occurrences, even identical or empty ones. Nonempty read repetition remains set selection; comma-separated lists are not decoded. |
 | Context-capable pod; read with `context=&context=A` or repeated empty values; find POST with an empty array member, such as `contexts: ["", "A"]` or `contexts: [""]`, or with `contexts: null` | `400`. A sole empty GET value encodes the empty list; an empty IRI inside a nonempty list is invalid. Do not drop invalid entries to produce a broader successful request. |
 | Context-capable pod; well-formed unknown or unauthorized write selector | Uniform `403`, no mutation or Context registration; a data write does not provision a selected Context. |
@@ -266,8 +292,9 @@ aggregate in both forms. This preserves
 by resource and slot reads; writes still require a nonempty target when a selector is present.
 The unsupported-input rule still applies on core-only pods, including these empty forms.
 
-Context-grouped output labels only disclosable named memberships. Unassigned statements remain
-unlabelled; requesting provenance does not invent a Context for them or expose a hidden graph name.
+Context-grouped output labels only disclosable projection membership, whether stored or computed.
+An assertion outside all disclosed projections remains unlabelled. A label reports view membership,
+not physical provenance or an independent copy; it never exposes a hidden graph name.
 The representation needs alignment with the existing find output at normative adoption.
 
 Context IRIs resolve consistently across the module's surfaces. Canonical IRIs remain accepted;
@@ -348,19 +375,20 @@ chapter and cross-reference sweep before the normative patch is complete.
 | Current contract | Proposed disposition |
 |---|---|
 | [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)–[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) | Keep indivisible core and modules; change core membership and specify the Context/lifecycle dependency. |
-| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001)–[`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) | Move Context identity and selected-graph membership to the optional contract. Permit unassigned core statements even on Context-capable pods, and remove the universal prohibition on other permission models. |
+| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001)–[`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) | Define optional Contexts as stored or computed logical views. Separate explicit assertion membership from computed projection, preserve ordinary access and permit other policy models. |
 | [`Contexts`](../../spec/core/contexts.md) namespace and discovery requirements | Move Context naming, selection support and the permissions catalogue to the module. No synthetic Context requirement in core. |
+| [`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017)–[`SPS-CTX-020`](../../spec/modules/context-management.md#SPS-CTX-020) | At full adoption, deleting a Context unregisters its view and withdraws Context-bound authority, retaining source assertions and independent authority. Preserve current destructive deletion in the earlier response-only RDF delivery. |
 | [`SPS-CTX-028`](../../spec/core/contexts.md#SPS-CTX-028), [`SPS-CTX-029`](../../spec/modules/context-management.md#SPS-CTX-029) | Remove the minimum registered count and last-visible-context deletion refusal. |
 | [`SPS-CTX-025`](../../spec/core/contexts.md#SPS-CTX-025), [`SPS-CTX-026`](../../spec/core/contexts.md#SPS-CTX-026), [`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030) | Preserve core protection of control-plane authority and explicit public access; generalize their subjects beyond Contexts. Data about a control-plane IRI remains data. |
-| [`Grants`](../../spec/core/grants.md) grammar, `manage` expansion and mode implications | Move Context-specific policy semantics to the module. Retain core delegation bounds, revocation, public-access rules and server enforcement, expressed independently of this grammar. |
+| [`Grants`](../../spec/core/grants.md) grammar, `manage` expansion and mode implications | Separate Context read, data-write and view-management authority. Keep legacy mode implications in their compatibility scope, without inferring write ability from management of a computed view. Retain core delegation, revocation and enforcement independently of stored grant grammar. |
 | [`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020)–[`SPS-GRANT-022`](../../spec/core/grants.md#SPS-GRANT-022), [`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031), [`SPS-GRANT-032`](../../spec/core/grants.md#SPS-GRANT-032), [`SPS-AUTH-042`](../../spec/core/auth.md#SPS-AUTH-042)–[`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044) | Preserve unauthenticated public reads and rejection of invalid credentials. Decide whether `public-read` survives, its authenticated/anonymous token behavior, current-policy evaluation and revocation semantics, and the replacement for the public-Context existence test. Align OAuth discovery and OpenAPI. |
 | [`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002), [`SPS-GRANT-018`](../../spec/core/grants.md#SPS-GRANT-018), [`SPS-AUTH-063`](../../spec/core/auth.md#SPS-AUTH-063) | Retain client/subject isolation and revocation-race outcomes; review prescribed storage lookups and write/check sequences as implementation mechanisms. |
-| [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025), [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007)–[`SPS-CRUD-014`](../../spec/core/lod-crud.md#SPS-CRUD-014) | Define ordinary authorized resource operations in core; put explicit Context selection and Context-local effects in the module. Replace the blanket multi-Context write prohibition with complete aggregate-operation effects. Keep invalid selectors from being ignored. |
+| [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025), [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007)–[`SPS-CRUD-014`](../../spec/core/lod-crud.md#SPS-CRUD-014) | Define ordinary source-data mutations and view reevaluation; selected writes use the explicit membership-write contract, with read-only computed views otherwise. Replace the blanket multi-Context write prohibition with complete aggregate-operation effects. Keep invalid selectors from being ignored. |
 | [`SPS-CRUD-015`](../../spec/core/lod-crud.md#SPS-CRUD-015)–[`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017), [`SPS-CORE-017`](../../spec/core/index.md#SPS-CORE-017) | Move Context downscoping, silent exclusion of unreadable Contexts and selector syntax to the module. Retain the core resource-read `404` and indistinguishability of absent and inaccessible data, expressed without a Context prerequisite. |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020)–[`SPS-CRUD-022`](../../spec/core/lod-crud.md#SPS-CRUD-022), [`SPS-CRUD-031`](../../spec/core/lod-crud.md#SPS-CRUD-031), [`SPS-CRUD-035`](../../spec/core/lod-crud.md#SPS-CRUD-035), [`SPS-CRUD-039`](../../spec/core/lod-crud.md#SPS-CRUD-039) | Apply the aggregate/selected operation scopes and the mutation recommendations, including partial visibility and hidden collisions. |
 | [`SPS-CRUD-002`](../../spec/core/lod-crud.md#SPS-CRUD-002), [`SPS-CRUD-029`](../../spec/core/lod-crud.md#SPS-CRUD-029), [`SPS-CRUD-034`](../../spec/core/lod-crud.md#SPS-CRUD-034), [`SPS-CRUD-050`](../../spec/core/lod-crud.md#SPS-CRUD-050)–[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052), [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) | Keep resource/slot representation and validator agreement, including graph-aware variants; separate Context-specific provenance and selection rules. Preserve the existing edge DELETE surface. |
 | [`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)–[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) | Specify an authorized view across query and retrieval; replace the rewrite prohibition with outcome equivalence. Keep supported SPARQL read-only and dataset clauses unable to widen access; review the blanket ban on other implementation write interfaces. |
-| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007), [`SPS-SPARQL-010`](../../spec/core/sparql.md#SPS-SPARQL-010)–[`SPS-SPARQL-014`](../../spec/core/sparql.md#SPS-SPARQL-014) | Apply the proposed aggregate default graph, named projections, unassigned additions and local dataset selection. Replace the empty-result shortcut with standard evaluation on empty datasets; align protocol precedence and empty selections in the chapter and OpenAPI. |
+| [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007), [`SPS-SPARQL-010`](../../spec/core/sparql.md#SPS-SPARQL-010)–[`SPS-SPARQL-014`](../../spec/core/sparql.md#SPS-SPARQL-014) | Apply the aggregate default graph, stored/computed named projections, additions without explicit assignment and local dataset selection. Replace the empty-result shortcut with standard evaluation on empty datasets; align protocol precedence and empty selections in the chapter and OpenAPI. |
 | [`SPS-FIND-004`](../../spec/core/find.md#SPS-FIND-004), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-010`](../../spec/core/find.md#SPS-FIND-010), [`SPS-FIND-013`](../../spec/core/find.md#SPS-FIND-013) | Keep equivalent GET/POST forms and strict parsing in core. Put `context`/`contexts` fields and downscoping through expansion in the module. Preserve GET/POST equivalence for absent, empty and nonempty selections, and reject unsupported Context fields on core-only pods. |
 | [`SPS-FIND-019`](../../spec/core/find.md#SPS-FIND-019), [`SPS-FIND-024`](../../spec/core/find.md#SPS-FIND-024) | Move `include_contexts` and Context-grouped output rules to the module. Retain the separation of transient result metadata from stored facts in core, without requiring named-graph provenance. |
 | [`SPS-FIND-015`](../../spec/core/find.md#SPS-FIND-015), [`SPS-FIND-021`](../../spec/core/find.md#SPS-FIND-021) | Preserve successful empty search results and caller-sensitive cache isolation in core using the authorized data view. Apply empty Context downscopes only where the module supplies that selector. |
@@ -385,14 +413,18 @@ external adoption can close it before the tag.
 
 - Review the [dataset and selection recommendations](#logical-dataset-and-operation-scope) together
   with the merged [mutation recommendations](access-control.md#mutations-and-partial-representations).
-  Confirm the aggregate effects, unassigned additions and named projections before normative drafting.
+  Confirm source assertions versus computed projections, additions without explicit assignment,
+  overlapping-view effects and the membership-write boundary. General write-through computed views
+  are deferred until their discoverable update contract is defined; do not claim that support here.
 - Profile the federated authentication, client identity and delegation flows precisely enough for
   one client to use both examples; "supports OAuth" alone is insufficient. Resolve the
   [`public-read` migration](access-control.md#public-access-and-public-read), including token
   issuance when no data is currently public.
 - Review the [Context registry and lifecycle recommendations](context-contract.md) with the
   [selection behavior](#optional-context-contracts). The authentication profile must realize their
-  ordinary bootstrap outcome without requiring a core client to create or select a Context.
+  ordinary bootstrap outcome without requiring a core client to create or select a Context. Review
+  independent view-management/data authority and non-destructive unregistration, including retained
+  source authorization and media lifecycle, before the full module adoption.
 - Define conformance fixtures with known allowed and denied data for both implementation models.
   Always returning `403` or an empty graph is not evidence of conformance. Test query semantics and
   revocation using implementation-specific setup but the same public operations.

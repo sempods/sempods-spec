@@ -87,7 +87,7 @@ possible enforcement mechanisms if they preserve that result.
 The [logical dataset recommendation](data-access.md#logical-dataset-and-operation-scope) defines
 an aggregate default graph, authorized named projections, ordinary-write placement and explicit
 selection. Graph placement and disclosable graph names are part of the result contract, not storage
-choices. Conformance fixtures use identical logical membership and names across implementations;
+choices. Conformance fixtures use identical assertions, view definitions and names across implementations;
 physical partitions remain free. Empty datasets still use standard query evaluation, including
 empty group patterns and aggregates.
 
@@ -122,9 +122,11 @@ algorithm follows from them.
 
 The **operation scope** consists of the addressed resource, slot or edge within the logical data
 space selected by the [dataset recommendation](data-access.md#logical-dataset-and-operation-scope):
-the whole space for an ordinary operation, or the explicitly selected Context graph. It is fixed
-independently of which stored facts happen to be readable. A filtered GET is a read representation, not permission to redefine
-a later PUT as replacement of just that visible subset.
+the whole space for an ordinary operation, or a selected Context's independently mutable assertions
+under the membership-write contract. General computed views are read-only through selected CRUD
+until a separate write-through contract is defined. The direct write scope is fixed independently
+of response filtering; dependent views are reevaluated after mutation. A filtered GET is not
+permission to redefine a later PUT as replacement of just that visible subset.
 
 | Operation | Recommended effect within that scope |
 |---|---|
@@ -313,15 +315,17 @@ separate administrative interfaces, but those interfaces enforce their own autho
 on every write interface beyond sempods CRUD would prevent legitimate administration.
 
 Bulk administration has a distinct authorization question from editing one resource. The
-[Context lifecycle recommendation](context-contract.md#lifecycle) authorizes its complete
-administrative effect independently of ordinary data-write restrictions. It specifies uniform
-outcomes across hidden-data differences and preserves unrelated memberships on deletion.
+[Context lifecycle recommendation](context-contract.md#lifecycle) separates unregistering a view
+from deleting its source data. Full adoption withdraws Context-bound authority without cascading
+into source assertions or independent views; current destructive deletion survives only in the
+initial response-only RDF delivery.
 
 ## Optional Context permissions
 
-The Context module supplies a named-graph access profile with explicit selection and observable
-Context-level modes. Those modes do not define RDF graph semantics or require stored grant strings;
-core-only implementations need neither synthetic Contexts nor a global rights catalogue.
+A Context identifies a logical view of RDF data; membership may be stored or computed. The module
+provides selection and observable access modes without requiring a physical named graph or stored
+grant strings. Read, data-write and view-management authority are distinct: managing a computed
+view does not make its source data writable. Core-only implementations need no Context catalogue.
 
 Where a pod adds finer restrictions, a reported Context grant describes that level's authority.
 It is not a guarantee that every resource operation succeeds. The
@@ -333,8 +337,8 @@ operation; the later request is still authorized.
 
 This is a proposed sharing design for Context-based implementations, retained for the worked
 resharing example. Core specifies no interpersonal sharing API and does not require this design.
-Its peer rules are candidates for an optional Context contract; the owner's implicit authority is
-already specified by `SPS-GRANT-011`.
+Its peer rules are candidates for a membership-based Context sharing profile. The current contract
+already specifies the owner's implicit authority in `SPS-GRANT-011`.
 
 Passing access to another person requires `manage` on the context. Reading it is not enough, and the
 difference is the whole design: a reader who may pass on what they can already see turns every grant
@@ -343,8 +347,8 @@ into the root of a tree somebody has to keep.
 Every holder of `manage` on a context is a peer of every other. There is no first among them and no
 order of precedence — a person granted `manage` yesterday may remove the grants of the person who
 granted it, and either may remove anybody else's. What makes that safe rather than reckless is a
-floor the pod supplies and nobody can edit: the owner holds every mode on every context implicitly,
-and [`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011) forbids requiring those grants to be
+floor the pod supplies and nobody can edit: that profile gives the owner every mode on each of its
+membership-based Contexts implicitly, and [`SPS-GRANT-011`](../../spec/core/grants.md#SPS-GRANT-011) forbids requiring those grants to be
 stored, so there is no row for a peer to delete. A peer set cannot empty itself out from under the
 pod.
 
