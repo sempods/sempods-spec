@@ -25,6 +25,7 @@ a synonym:
 |---|---|
 | General content semantics | `https://schema.org/` |
 | RDF / RDFS / OWL primitives | the W3C namespaces |
+| Context graph and catalogue descriptions | SPARQL Service Description, RDFS and DCMI Terms |
 | Hypermedia affordances | `http://www.w3.org/ns/hydra/core#` |
 | Shapes and validation | `http://www.w3.org/ns/shacl#` |
 | Provenance | `http://www.w3.org/ns/prov#` |
@@ -55,7 +56,20 @@ which is the outcome these guarantees exist to prevent.
 
 ## What is in it today
 
-Three terms, defining the metadata a `find` response **may** carry about each hit:
+Four terms describe the Context registry and its request-relative caller access:
+
+| Term | Meaning |
+|---|---|
+| `sps:public` | Registry public-read setting |
+| `sps:readableContext` | Catalogue link to a Context the requesting client may read |
+| `sps:writableContext` | Catalogue link to a Context the requesting client may write |
+| `sps:manageableContext` | Catalogue link to a Context the requesting client may manage |
+
+[`Contexts`](../spec/core/contexts.md#SPS-CTX-031) defines the response contract. These summaries
+are not stored policies or transferable capabilities; ordinary RDF assertions using these terms
+confer no authority. The related graph, label and timestamp terms reuse existing vocabularies.
+
+Three further terms define metadata a `find` response **may** carry about each hit:
 
 | Term | |
 |---|---|
@@ -66,7 +80,7 @@ Three terms, defining the metadata a `find` response **may** carry about each hi
 The excerpt and the rank on that node are `schema:text` and `schema:position` —
 schema.org terms, reused rather than duplicated here.
 
-**No implementation emits them yet**, including the reference implementation.
+**No implementation emits these find metadata terms yet**, including the reference implementation.
 [`SPS-FIND-022`](../spec/core/find.md#SPS-FIND-022) makes them optional and
 transient for that reason, and [`SPS-FIND-018`](../spec/core/find.md#SPS-FIND-018)
 is what the contract actually is today: a flat graph, with no ordering and no

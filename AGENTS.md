@@ -193,6 +193,8 @@ Vision, proposals and fixture explanation:
   descriptions, caller-rights catalogue, bootstrap and lifecycle under #69/#90
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design
+- [Context registry representations](docs/guides/context-registry.md) — RDF examples and HTTP
+  verification cases; the representation checker validates shapes and RDF, not a running server
 - [ACP fixture guide](docs/guides/acp-fixtures.md) — supplied model assumptions and what the examples
   establish; independent of an implementation's storage or management API
 - [Authorization implementation proposal support](docs/proposals/authorization-implementation/README.md)

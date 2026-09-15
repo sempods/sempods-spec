@@ -92,41 +92,134 @@ paths:
 
   /_system/contexts:
     get:
-      tags: [contexts]
+      tags:
+      - contexts
       operationId: listContexts
-      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
+      security:
+      - {}
+      - bearerAuth: []
+      - oauth2: []
       summary: The contexts visible to the caller, with effective permissions.
-      description: |
-        The authoritative client-visible view of effective context permissions. A token's `scope`
+      description: 'The authoritative client-visible view of effective context permissions. A token''s `scope`
+
         claim is not a context catalogue, and a client never constructs a context IRI itself.
-      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023]
+
+
+        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
+
+        '
+      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036]
       responses:
         '200':
-          description: Visible contexts, and which of them are writable.
+          description: The authorized registry representation.
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Strong tag for this authorized registry representation.
+            Vary:
+              schema:
+                type: string
+              description: Includes Accept.
+            Cache-Control:
+              schema:
+                type: string
+              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
           content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ContextList' }
-
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/ContextCatalogue'
+              example:
+                '@id': https://example.org/alice/_system/contexts
+                '@type':
+                - http://www.w3.org/ns/sparql-service-description#GraphCollection
+                http://www.w3.org/ns/sparql-service-description#namedGraph:
+                - '@id': https://example.org/alice/_system/contexts/tasks
+                https://schema.sempods.org/readableContext:
+                - '@id': https://example.org/alice/_system/contexts/tasks
+                https://schema.sempods.org/writableContext:
+                - '@id': https://example.org/alice/_system/contexts/tasks
+            application/n-quads:
+              schema:
+                type: string
+                description: The same registry RDF in the default graph.
+        '304':
+          $ref: '#/components/responses/RegistryNotModified'
+        '401':
+          $ref: '#/components/responses/RegistryUnauthorized'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+      parameters:
+      - $ref: '#/components/parameters/RegistryAccept'
+      - $ref: '#/components/parameters/IfNoneMatch'
   /_system/contexts/{contextPath}:
     parameters:
-      - $ref: '#/components/parameters/ContextPath'
+    - $ref: '#/components/parameters/ContextPath'
     get:
-      tags: [contexts]
+      tags:
+      - contexts
       operationId: getContext
-      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
+      security:
+      - {}
+      - bearerAuth: []
+      - oauth2: []
       summary: What the registry holds for this context.
-      description: |
-        Ask this route what a context **is**. What anyone has *said about* the same IRI is a
+      description: 'Ask this route what a context **is**. What anyone has *said about* the same IRI is a
+
         different question, answered by the resource routes.
-      x-sps-requirements: [SPS-CTX-024, SPS-CTX-026]
+
+
+        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
+
+        '
+      x-sps-requirements: [SPS-CTX-024, SPS-CTX-026, SPS-CTX-031, SPS-CTX-032, SPS-CTX-035, SPS-CTX-036]
       responses:
         '200':
-          description: The context.
+          description: The authorized registry representation.
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Strong tag for this authorized registry representation.
+            Vary:
+              schema:
+                type: string
+              description: Includes Accept.
+            Cache-Control:
+              schema:
+                type: string
+              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
           content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Context' }
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/ContextDescription'
+              example:
+                '@id': https://example.org/alice/_system/contexts/tasks
+                '@type':
+                - http://www.w3.org/ns/sparql-service-description#NamedGraph
+                http://www.w3.org/ns/sparql-service-description#name:
+                - '@id': https://example.org/alice/_system/contexts/tasks
+                http://www.w3.org/2000/01/rdf-schema#label:
+                - '@value': Tasks
+                https://schema.sempods.org/public:
+                - '@value': false
+                http://www.w3.org/2000/01/rdf-schema#seeAlso:
+                - '@id': https://example.org/alice/_system/resources/aHR0cHM6Ly9leGFtcGxlLm9yZy9hbGljZS9fc3lzdGVtL2NvbnRleHRzL3Rhc2tz
+            application/n-quads:
+              schema:
+                type: string
+                description: The same registry RDF in the default graph.
+        '304':
+          $ref: '#/components/responses/RegistryNotModified'
+        '401':
+          $ref: '#/components/responses/RegistryUnauthorized'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
         '404':
           $ref: '#/components/responses/NotFoundOrNotVisible'
+      parameters:
+      - $ref: '#/components/parameters/RegistryAccept'
+      - $ref: '#/components/parameters/IfNoneMatch'
 
   /{resourcePath}:
     description: |
@@ -841,6 +934,14 @@ components:
       required: false
       schema: { type: string }
 
+    RegistryAccept:
+      name: Accept
+      in: header
+      required: false
+      schema:
+        type: string
+      description: JSON-LD by default; application/json requests receive application/ld+json. N-Quads is also supported; no acceptable representation gives 406.
+
     IfNoneMatch:
       name: If-None-Match
       in: header
@@ -873,6 +974,24 @@ components:
       example: '<https://example.org/alice/contacts/bob?context=https%3A%2F%2Fexample.org%2Falice%2Fcontacts>; rel="edit"'
 
   responses:
+
+    RegistryNotModified:
+      description: Authorized representation unchanged; no body. Authorization and visibility precede conditional evaluation.
+      headers:
+        ETag:
+          schema:
+            type: string
+          description: Strong tag for this authorized registry representation.
+        Vary:
+          schema:
+            type: string
+          description: Includes Accept.
+        Cache-Control:
+          schema:
+            type: string
+          description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+    RegistryUnauthorized:
+      description: Supplied credentials are invalid; anonymous access is available only under the public-read contract.
 
     ResourceRepresentation:
       description: |
@@ -943,29 +1062,177 @@ components:
               version: { type: string }
       description: A client must tolerate unknown module identifiers and unknown members.
 
-    ContextList:
+    RegistryIri:
       type: object
+      required:
+      - '@id'
       properties:
-        podBaseUrl: { type: string, format: uri }
-        authenticated: { type: boolean }
-        contexts:
-          type: array
-          items: { $ref: '#/components/schemas/Context' }
-        writableContexts:
-          type: array
-          items: { type: string, format: uri }
-
-    Context:
+        '@id':
+          type: string
+          format: uri
+      additionalProperties: false
+    RegistryLiteral:
       type: object
+      required:
+      - '@value'
       properties:
-        contextUri: { type: string, format: uri }
-        label: { type: string }
-        description: { type: string }
-        public: { type: boolean }
-        permissions:
+        '@value':
+          type:
+          - string
+          - boolean
+          - number
+        '@type':
+          type: string
+          format: uri
+        '@language':
+          type: string
+      additionalProperties: false
+      not:
+        required:
+        - '@type'
+        - '@language'
+    RegistryNode:
+      type: object
+      required:
+      - '@id'
+      - '@type'
+      properties:
+        '@id':
+          type: string
+          format: uri
+        '@type':
           type: array
-          items: { type: string, enum: [read, write, manage] }
-          description: Collapsed — `write` and `manage` imply `read`.
+          items:
+            type: string
+            format: uri
+          minItems: 1
+          uniqueItems: true
+      propertyNames:
+        anyOf:
+        - enum:
+          - '@id'
+          - '@type'
+        - pattern: '^[A-Za-z][A-Za-z0-9+.-]*:'
+      additionalProperties:
+        type: array
+        items:
+          oneOf:
+          - $ref: '#/components/schemas/RegistryIri'
+          - $ref: '#/components/schemas/RegistryLiteral'
+    ContextDescription:
+      allOf:
+      - $ref: '#/components/schemas/RegistryNode'
+      - type: object
+        required:
+        - http://www.w3.org/ns/sparql-service-description#name
+        - https://schema.sempods.org/public
+        - http://www.w3.org/2000/01/rdf-schema#seeAlso
+        properties:
+          '@type':
+            contains:
+              const: http://www.w3.org/ns/sparql-service-description#NamedGraph
+          http://www.w3.org/ns/sparql-service-description#name:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            minItems: 1
+            maxItems: 1
+          https://schema.sempods.org/public:
+            type: array
+            items:
+              type: object
+              required:
+              - '@value'
+              properties:
+                '@value':
+                  type: boolean
+                '@type':
+                  const: http://www.w3.org/2001/XMLSchema#boolean
+              additionalProperties: false
+            minItems: 1
+            maxItems: 1
+          http://www.w3.org/2000/01/rdf-schema#seeAlso:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            minItems: 1
+          http://www.w3.org/2000/01/rdf-schema#label:
+            type: array
+            items:
+              type: object
+              required:
+              - '@value'
+              properties:
+                '@value':
+                  type: string
+                '@type':
+                  const: http://www.w3.org/2001/XMLSchema#string
+              additionalProperties: false
+            minItems: 1
+            maxItems: 1
+          http://purl.org/dc/terms/description:
+            type: array
+            items:
+              type: object
+              required:
+              - '@value'
+              properties:
+                '@value':
+                  type: string
+                '@type':
+                  const: http://www.w3.org/2001/XMLSchema#string
+              additionalProperties: false
+            minItems: 1
+            maxItems: 1
+          http://purl.org/dc/terms/created:
+            type: array
+            items:
+              type: object
+              required:
+              - '@value'
+              - '@type'
+              properties:
+                '@value':
+                  type: string
+                  format: date-time
+                '@type':
+                  const: http://www.w3.org/2001/XMLSchema#dateTime
+              additionalProperties: false
+            minItems: 1
+            maxItems: 1
+          https://schema.sempods.org/readableContext: false
+          https://schema.sempods.org/writableContext: false
+          https://schema.sempods.org/manageableContext: false
+      description: Registry RDF about the Context. sd:name equals @id; seeAlso is its derived system resource address. Caller rights and ordinary data are excluded (SPS-CTX-032).
+    ContextCatalogue:
+      allOf:
+      - $ref: '#/components/schemas/RegistryNode'
+      - type: object
+        properties:
+          '@type':
+            contains:
+              const: http://www.w3.org/ns/sparql-service-description#GraphCollection
+          http://www.w3.org/ns/sparql-service-description#namedGraph:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            uniqueItems: true
+          https://schema.sempods.org/readableContext:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            uniqueItems: true
+          https://schema.sempods.org/writableContext:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            uniqueItems: true
+          https://schema.sempods.org/manageableContext:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistryIri'
+            uniqueItems: true
+      description: '@id is the catalogue IRI. Relationship sets are complete, with the effective modes of the current caller; empty arrays may be omitted. Rights target visible members and include applicable implied modes (SPS-CTX-033/034).'
 
     CanonicalResource:
       type: object
