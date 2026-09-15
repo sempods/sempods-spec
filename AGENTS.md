@@ -189,6 +189,8 @@ Vision, proposals and fixture explanation:
   proposing a requirement. The site publishes it as informative guidance.
 - [Authorized data access](docs/proposals/data-access.md) — proposed smaller core and optional
   Context contract, operation cases, mirroring boundaries and requirement impact; adoption belongs to #68
+- [Context registry](docs/proposals/context-contract.md) — proposed optional Context discovery, RDF
+  descriptions, caller-rights catalogue, bootstrap and lifecycle under #69/#90
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design
 - [ACP fixture guide](docs/guides/acp-fixtures.md) — supplied model assumptions and what the examples
