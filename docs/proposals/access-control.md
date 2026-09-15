@@ -166,7 +166,11 @@ PATCH, the whole slot for replacement/clearing, and the named values for additio
 The authority covers both additions and removals. Finer authorized edits can therefore succeed
 while an entire resource replacement is refused. A response that distinguishes existence, such as
 resource creation versus replacement, additionally requires authority to observe that distinction.
-No exported policy catalogue or new authorization flag is needed.
+In particular, unconditional predicate replacement by PATCH or slot PUT needs complete write
+authority over that predicate, including any unreadable values it removes; complete read visibility
+is not an additional requirement. Hidden values that are not writable still prevent replacement.
+Use a content-free success response (`204` for PATCH, `200` for slot PUT), subject to the metadata
+rule below. No exported policy catalogue or new authorization flag is needed.
 
 "Complete" is a property of the authority for that scope, including empty states. Comparing the
 currently visible facts with the stored facts is insufficient: accepting when no hidden fact
@@ -187,10 +191,10 @@ must not depend on hidden facts.
 
 Write authority need not imply read authority universally. For example, an explicitly authorized
 set addition can return the uniform `204` proposed below without revealing whether the value was
-already present. That does not authorize removing a protected existing value. Resource PUT keeps
-its creation/replacement distinction and therefore needs visibility of that distinction as well as
-complete write authority. A pod cannot claim success for a partial replacement, or accept a hidden
-collision by redirecting the write elsewhere.
+already present. That does not authorize removing a protected existing value. A resource PUT
+supplying outgoing statements keeps its creation/replacement distinction and therefore needs
+visibility of that distinction as well as complete write authority. A pod cannot claim success for
+a partial replacement, or accept a hidden collision by redirecting the write elsewhere.
 
 #### Preconditions and concurrent changes
 
@@ -207,21 +211,22 @@ representation agree. A changed scope cannot reuse a previous tag to validate a 
 a changed policy is always enforced, even if the selected bytes and tag are unchanged. Resource
 and slot tags remain specific to their own representations.
 
-Blind slot mutations require a coordinated change to
-[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052): recommend echoing a slot validator only
-when the caller may read the complete slot representation that it validates. Without that
-visibility, a successful mutation carries no ETag, Last-Modified or other metadata derived from
-unreadable slot state. A tag for a filtered slot view cannot be used to validate the complete slot.
-Uniform `204` alone does not prevent a validator from disclosing hidden changes.
+For every mutation, response content and metadata reveal only state the caller may read. A blind
+replacement therefore does not echo the stored values. A validator is emitted only when the caller
+may read the complete representation it validates; omit ETag, Last-Modified and other metadata
+derived from unreadable state. A filtered-view tag cannot validate replacement of unreadable
+facts. Uniform status codes alone do not prevent this disclosure. For slots, this requires a
+coordinated change to [`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052).
 
-A caller lacking complete slot visibility also cannot probe that state with any otherwise applicable
-slot precondition that tests it, including `If-Match` and `If-None-Match` with `*`. Recommend the
-same `403` for those conditional
-requests regardless of values or tags, with no mutation or validator. Unconditional authorized
-additions remain available. This applies to empty slot POST too; its no-op status does not make a
-conditional existence probe safe. Existing rule-prescribed ignoring of conditions, such as edge
-DELETE's `If-Match`, remains separate from evaluating a condition and introduces no state test.
-The proposed restriction changes the scope of CRUD-052/053/054 and needs matching OpenAPI wording.
+An otherwise applicable condition that tests unreadable state, or would validate replacement of
+unreadable facts, receives uniform `403`, with no mutation or validator. This includes `If-Match`
+and `If-None-Match: *`; do not evaluate a hidden-state predicate and distinguish true from false.
+For a slot mutation that evaluates a complete-slot condition, the caller therefore needs complete
+slot visibility. Unconditional authorized additions, replacements and clearing remain available.
+Empty slot POST and empty resource PUT follow the same condition rule. Existing prescribed
+ignoring of conditions, such as edge DELETE's `If-Match`, remains separate from evaluation and
+introduces no state test. The proposal changes CRUD-034/052/053/054's applicability and needs
+matching OpenAPI wording at adoption.
 
 The current Context-specific slot-tag rules continue to bind until normative adoption;
 [#9](https://github.com/sempods/sempods-spec/issues/9) can repair their current OpenAPI view
@@ -243,9 +248,19 @@ refuses the complete request; no permitted prefix is inserted. The permission to
 is checked even if it already exists, so a no-op cannot disclose membership by bypassing a denial.
 
 Recommend the same `204` completion for slot and edge DELETE, including an already empty slot or
-absent edge after authorization. Resource PUT retains `201` plus Location for creation and
-`200`/`204` for replacement; resource DELETE retains `204`/`404` after authorization. The resource
-outcomes may distinguish existence only for callers permitted to observe that scope.
+absent edge after authorization. For a resource PUT supplying at least one outgoing RDF statement,
+retain `201` plus Location when the addressed scope previously had none, and `200`/`204` otherwise.
+Resource DELETE retains `204`/`404` after authorization. These existence distinctions require
+permission to observe that scope.
+
+A valid resource PUT supplying no outgoing RDF statements is a clearing operation, including a
+body containing only the matching `@id` or only empty predicate arrays. With complete whole-resource
+write authority, return `204` without a body, Location or validator whether the scope was empty or
+not; preserve incoming links. No separate resource marker is created. A subsequent GET with no
+visible outgoing statements returns `404`. Conditional requests follow the rules above: a caller
+entitled to test existence can use `If-None-Match: *`; a false condition still gives `412`, while
+repeating an empty PUT against the empty scope succeeds with `204`. This explicitly revises
+CRUD-033's creation classification rather than making empty RDF input invalid.
 
 This deliberately replaces the current custom slot/edge outcome bodies and POST `201` distinction
 in CRUD-044/047, together with the validator changes above. A client permitted to read resulting
@@ -263,9 +278,9 @@ states policy setup; it is a proposed protocol case, not an executed ACP fixture
 | Setup and request | Recommended response and effect |
 |---|---|
 | Complete resource authority; PUT R with only `p = ["new"]` over `p = ["old"]` | `200` or `204`; the outgoing resource is replaced, incoming links survive. |
-| Same authority, absent R; PUT with `If-None-Match: *` | `201`, Location R; repeating it gives `412` and preserves the first write. |
+| Same authority, absent R; PUT supplying p with `If-None-Match: *` | `201`, Location R; repeating it gives `412` and preserves the first write. |
 | Policy permits only p; GET R returns p; PUT R containing p | `403`, no changes, both when q has hidden values and when q is empty. A resource replacement is outside this authority in both states. |
-| Same policy; PATCH R with `{"https://schema.org/name":[{"@value":"new"}]}` | Success with the complete p array replaced; q is unchanged. Complete authority over p is assumed; partial visibility within p would require refusal. |
+| Same policy; PATCH R with `{"https://schema.org/name":[{"@value":"new"}]}` | Success with the complete p array replaced; q is unchanged. Complete write authority over p is assumed, including unreadable values; partial read visibility alone does not require refusal. Return `204` without unreadable content or metadata. |
 | Policy gives no complete authority over R; PUT R with `If-None-Match: *` | Same `403` for a hidden existing R and an absent R; no Location, validator or mutation. |
 | Complete slot authority; p contains A; POST the IRI values A and B | `204`; p contains A and B. Repeating gives `204` with no further change. |
 | Caller may add A but lacks authority for B; POST A and B | `403`; neither value is added, including when B is absent. |
@@ -277,6 +292,10 @@ states policy setup; it is a proposed protocol case, not an executed ACP fixture
 | Same blind writer; slot POST B or `[]` with `If-Match` or `If-None-Match: *` | Uniform `403`, no change, for both matching/nonmatching tags and empty/nonempty slots. |
 | Caller may edit p of R but not q; unconditional PATCH `{}` or a matching `@id` only | `204`, no validator or creation, whether R is present or absent. A read-only caller gets `403` in both cases. |
 | Caller may add B to p; unconditional slot POST `[]` | `204`, no validator or creation, whether p is empty or not. A caller with no addition authority gets `403`; missing/invalid credentials get `401`. |
+| Complete resource write authority; unconditional PUT R with only its matching `@id` | `204`, no Location, validator or persistent marker, on both absent and existing R. Outgoing statements are cleared, incoming links survive; repetition remains `204`. |
+| Same writer may observe existence; empty PUT R with `If-None-Match: *` | `412` if outgoing statements exist; otherwise `204`, including repetitions. Without authority to test that state, uniform `403`. |
+| Complete write authority over p, only partial read visibility; unconditional slot PUT with a new array | `200`, no body or unreadable-state metadata; all p values are replaced, including writable hidden ones, and q survives. |
+| Some existing p values are outside write authority; PATCH replacing p or slot PUT | Uniform `403`, no change, whether protected values currently exist or not. |
 
 Repeat the cases through aliases and in a single-graph, Context-based and area/document-policy
 model once their logical scopes are defined. Include concurrent revocation, input validation,
