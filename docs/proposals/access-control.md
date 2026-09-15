@@ -312,10 +312,10 @@ Ordinary RDF about a control-plane IRI is data. It is not a policy update. Imple
 separate administrative interfaces, but those interfaces enforce their own authority; a blanket ban
 on every write interface beyond sempods CRUD would prevent legitimate administration.
 
-Bulk administration has a distinct authorization question from editing one resource. An optional
-Context-management contract must decide how deletion interacts with finer policies, without
-revealing hidden resources through its success or failure. It cannot leave that decision to the
-phrase "both must allow" or silently inherit ordinary document-write permissions.
+Bulk administration has a distinct authorization question from editing one resource. The
+[Context lifecycle recommendation](context-contract.md#lifecycle) authorizes its complete
+administrative effect independently of ordinary data-write restrictions. It specifies uniform
+outcomes across hidden-data differences and preserves unrelated memberships on deletion.
 
 ## Optional Context permissions
 
@@ -324,9 +324,10 @@ context-level grants. Those are promises to clients using that module. They do n
 core-only implementation to synthesize a Context or a global rights catalogue.
 
 Where a pod adds finer restrictions, a reported Context grant describes that level's authority.
-It is not a guarantee that every resource operation succeeds. The module must define that meaning
-so clients do not mistake a coarse grant for the fully evaluated request decision. Any more precise
-permission hint needs an explicit target and operation; the later request is still authorized.
+It is not a guarantee that every resource operation succeeds. The
+[registry proposal](context-contract.md#catalogue-and-caller-rights) defines the caller-scoped
+summary and its cache boundary. Any more precise permission hint needs an explicit target and
+operation; the later request is still authorized.
 
 ## Who may share, and why there is no chain
 

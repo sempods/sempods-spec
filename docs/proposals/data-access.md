@@ -232,24 +232,11 @@ explicit selection, context-granular grants and their discovery. A pod can have 
 without offering this contract. An implementation advertising it provides the whole declared
 contract; internal terminology alone is insufficient.
 
-The existing `context-management` module can remain a separate lifecycle extension, depending on
-the Context module. That dependency, the new module's identity and version, and the distribution of
-requirements have to be specified together. No new module IRI or discovery field is allocated here.
-Published module IRIs retain their existing identities.
-
-The two Context questions have the following homes:
-
-- **An empty pod and first authorization.** Core requires authorization to access data, not the
-  creation of a Context first. Implementations can provision their own structures during authorized
-  setup. In the Context module, decide how owner consent supplies authority for ordinary aggregate
-  operations and unassigned additions, including on an empty pod. Internal placement does not turn
-  that request into a graph-selected write. Provisioning cannot manufacture authority or require
-  that application to call a management API it does not use.
-- **A client querying its grants.** The Context module can keep `GET {pod}/_system/contexts` and
-  its context-level rights. A single-graph implementation offering that module can synthesize one
-  stable Context identity. A core-only implementation owes no such object. Where further policies
-  can narrow access within a Context, the catalogue describes the context-level authority rather
-  than guaranteeing every operation inside it.
+[Discoverable Contexts and RDF registry descriptions](context-contract.md) recommends the module
+identity/version, lifecycle dependency, empty-pod bootstrap and caller-rights discovery under
+[#69](https://github.com/sempods/sempods-spec/issues/69) and
+[#90](https://github.com/sempods/sempods-spec/issues/90). It owns the registry representations,
+creation/replacement and transition recommendations. The selector contract remains below.
 
 The module preserves the [ordinary aggregate access](#logical-dataset-and-operation-scope) and
 provides selection of its Context graphs. An ordinary write can leave statements logically
@@ -286,9 +273,9 @@ The representation needs alignment with the existing find output at normative ad
 Context IRIs resolve consistently across the module's surfaces. Canonical IRIs remain accepted;
 any supported relative Context paths resolve before selection. SPARQL dataset IRIs follow the
 standard's IRI resolution and identify those same logical graphs by absolute IRI. Knowing a graph
-name, or seeing a Context rights hint, never substitutes for authorizing an operation. The exact
-module identity/version, lifecycle dependency and bootstrap/rights flows remain decisions under
-#69; this iteration allocates no discovery field or module IRI.
+name, or seeing a Context rights hint, never substitutes for authorizing an operation. The
+[module proposal](context-contract.md) supplies their discovery and lifecycle boundary; it allocates
+no normative identifier or additional discovery field.
 
 ## Two implementation examples
 
@@ -403,9 +390,9 @@ external adoption can close it before the tag.
   one client to use both examples; "supports OAuth" alone is insufficient. Resolve the
   [`public-read` migration](access-control.md#public-access-and-public-read), including token
   issuance when no data is currently public.
-- Complete the Context module identity/version, lifecycle dependency, bootstrap and rights discovery
-  against the [proposed selection behavior](#optional-context-contracts). Resolve how authorized
-  setup supplies ordinary write authority without requiring a core client to select a Context.
+- Review the [Context registry and lifecycle recommendations](context-contract.md) with the
+  [selection behavior](#optional-context-contracts). The authentication profile must realize their
+  ordinary bootstrap outcome without requiring a core client to create or select a Context.
 - Define conformance fixtures with known allowed and denied data for both implementation models.
   Always returning `403` or an empty graph is not evidence of conformance. Test query semantics and
   revocation using implementation-specific setup but the same public operations.
