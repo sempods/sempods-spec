@@ -319,9 +319,9 @@ outcomes across hidden-data differences and preserves unrelated memberships on d
 
 ## Optional Context permissions
 
-The Context module can standardize named areas, explicit selection, mode implications and
-context-level grants. Those are promises to clients using that module. They do not require a
-core-only implementation to synthesize a Context or a global rights catalogue.
+The Context module supplies a named-graph access profile with explicit selection and observable
+Context-level modes. Those modes do not define RDF graph semantics or require stored grant strings;
+core-only implementations need neither synthetic Contexts nor a global rights catalogue.
 
 Where a pod adds finer restrictions, a reported Context grant describes that level's authority.
 It is not a guarantee that every resource operation succeeds. The

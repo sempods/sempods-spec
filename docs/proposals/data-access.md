@@ -236,7 +236,7 @@ contract; internal terminology alone is insufficient.
 identity/version, lifecycle dependency, empty-pod bootstrap and caller-rights discovery under
 [#69](https://github.com/sempods/sempods-spec/issues/69) and
 [#90](https://github.com/sempods/sempods-spec/issues/90). It owns the registry representations,
-creation/replacement and transition recommendations. The selector contract remains below.
+creation and staged adoption recommendations. The selector contract remains below.
 
 The module preserves the [ordinary aggregate access](#logical-dataset-and-operation-scope) and
 provides selection of its Context graphs. An ordinary write can leave statements logically
