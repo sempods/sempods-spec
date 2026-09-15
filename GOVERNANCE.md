@@ -1,32 +1,14 @@
 # Governance
 
-How this specification is versioned, when it starts binding implementations, and how a change to it
-is made.
+How this specification is versioned and published, how its development text binds implementations,
+and how a change is adopted.
 
 ## Versioning
 
-**The specification has its own version line** — `0.1`, `0.2`, … — independent of any
-implementation. The reference implementation is on `0.2.0-SNAPSHOT` while this specification starts
-at `0.1`, and locking the two together would mean every implementation release forced a
-specification release and the reverse.
-
-**The implementation's line is equally its own.** Independence has two directions and only one of
-them is obvious. The specification not following an implementation is the half that protects the
-specification; an implementation not mirroring the specification's number is the half that protects
-the implementation, and it is a decision rather than an omission. A scheme deriving one from the
-other — spec `0.1` giving an implementation `0.1.<n>` — was considered and rejected: the reference
-implementation is on `0.2.0-SNAPSHOT` against `0.1-dev` here, and that scheme could not express it
-without renumbering one of the two backwards. What an implementation owes is the declaration below,
-not a matching digit.
-
-An implementation states which specification version it implements, and that statement is
-machine-readable rather than prose in a README. The reference implementation carries it in
-`gradle.properties`; every implementation exposes it to clients at the conformance discovery
-endpoint. Without such a declaration "implements sempods 0.1" is a claim nobody can check.
-
-**Modules version separately from core.** A pod may implement core `0.1` and media `0.2`. That is
-the point of the split — a module that moves fast must not drag the core version with it, and an
-implementation that skips a module entirely is still conformant.
+**Core and each module have their own version lines**, independent of implementation releases.
+An implementation declares the core and module versions it supports through the existing
+conformance discovery contract; its own release number need not match any of them. Publication
+records exact source revisions without adding a protocol negotiation mechanism.
 
 ### What a version number promises
 
@@ -40,6 +22,54 @@ implementation that skips a module entirely is still conformant.
   from that — including that the first one to appear closes the window without waiting for the tag.
 - **Published IRIs never change.** Module IRIs and vocabulary terms under
   `https://schema.sempods.org/` are permanent identifiers, `0.x` included.
+
+### Publication identities and corrections
+
+A core publication uses a tag such as `0.1`; a module publication uses
+`module-<name>-<version>`, such as `module-media-0.2`. Each tag identifies one immutable repository
+commit containing the matching chapters, OpenAPI, vocabulary and generated index. The release notes
+record the complete core/module version map and which component is being published. Other components
+in that snapshot keep their own status and version; their presence does not release a `-dev` version.
+Publishing a module does not advance the core version.
+
+While the version line is `0.x`, a contract change uses the next minor version, such as `0.2`.
+Purely editorial corrections with no change to obligations, capabilities or observable behavior may
+use `0.1.1`, then `0.1.2`. The first publication of a minor is `0.1`, not a separate `0.1.0` release.
+A purported clarification that changes what passes or fails is a contract change. Patch publication
+does not relax the existing requirement-identifier and withdrawal rules. The affected
+component advances; the release notes state compatibility and any affected requirement IDs.
+Shared vocabulary or cross-component changes identify every affected component and coordinate their
+versions. This is publication policy, not a promise of wire-level backward compatibility.
+
+Published tags are never moved or reused, including after a discovered error. Corrections require a
+new reviewed commit and publication. A withdrawn distribution remains identifiable: mark its GitHub
+Release as withdrawn, explain the reason and link a replacement when available. Preserve the tag,
+commit, source artifacts and original notes; append a dated withdrawal notice rather than silently
+replacing the contract. Requirement withdrawal remains the separate process below.
+
+**GitHub Releases is the canonical release-note source.** Each published entry identifies its tag,
+full commit, component versions, changes, affected requirements, compatibility/migration implications
+and publication/check evidence. There is no parallel maintained changelog. Draft notes are reviewed
+with the publication issue before the release is published.
+
+`0.1-dev` and later `-dev` labels are mutable development labels, not immutable revisions. Cite the
+full commit alongside a development label. The development website follows `main`; every build
+identifies its source commit. A website deployment neither creates a release nor first makes the
+normative text binding. Published versions and their source archives are reached through
+[GitHub Releases](https://github.com/sempods/sempods-spec/releases).
+
+### Reader publication boundary
+
+The site renders normative chapters, vocabulary, governance and the informative vision. Proposals,
+guides, example explanations and contributor instructions remain on GitHub, linked at the same
+commit as the rendered source. They do not become normative through a link or a passing example.
+[Repository checks](docs/guides/repository-checks.md) is the canonical explanation of check evidence.
+Implementation release status and implementation conformance reports stay with implementations.
+
+The [revision guide](docs/guides/specification-revisions.md) explains consumption; the
+[publication procedure](docs/agents/publish-specification.md) applies this policy. Resource-IRI
+continuity and protocol version negotiation remain
+[#21](https://github.com/sempods/sempods-spec/issues/21)'s separate contract decisions.
 
 ## What the tag changes, and what it no longer does
 

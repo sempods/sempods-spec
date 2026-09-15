@@ -13,7 +13,7 @@ Read it at the same Git revision as those sources.
 | Requirement identifiers | Chapter/area placement, identifier changes against the base, OpenAPI requirement citations and the generated index are consistent. It enforces the observable part of [governance's identifier window](../../GOVERNANCE.md#deleting-and-renumbering-before-01); read notices as well as failures. It cannot detect an external adopter or prove semantic equivalence. |
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
 | Worked scenarios | The supplied fixture expectations agree with the runner's ACP evaluations and model composition. A green run checks those cases; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
-| Site navigation regression tests | Source-relative links survive relocation, while the landing page retains its staged layout. |
+| Site navigation regression tests | Source-relative links survive relocation and select the build commit; dirty previews and snapshot metadata are distinguished. |
 | Full site build | Inputs, the demo-pod destination and staged links survive strict rendering. The destination check prevents the try-it page from sending requests, including authenticated ones, to another host. It does not exercise the live OAuth or request flow. |
 
 These are repository checks and example execution, not product conformance claims. They do not
@@ -65,3 +65,8 @@ Report the commands, results and skipped checks in the work record. A substitute
 written for an individual change cannot establish the required fragment validation; install the
 tool or report that check as not run. Review prose and semantic effects alongside the checks:
 unchanged IDs, valid links and passing fixtures cannot establish an unchanged contract.
+
+The site build needs a Git checkout to identify its source commit. Local uncommitted changes produce
+an explicitly marked preview; source links identify its base commit. Pages uses `--require-clean`
+before publishing, and every rendered page links its revision and original artifacts. The API page's
+demo-address copies are separate from those original sources.

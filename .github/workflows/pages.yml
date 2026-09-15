@@ -55,7 +55,7 @@ jobs:
       - name: Check the inputs, then render
         run: |
           python3 -m unittest discover -s site -p 'test_*.py'
-          python3 site/build.py
+          python3 site/build.py --require-clean
 
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'

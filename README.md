@@ -24,24 +24,21 @@ implementation can test.
 This is the only text duplicated across the three repositories. Everything else lives in exactly
 one of them and is linked from the others.
 
-## Status
+## Status and revisions
 
-**Pre-`0.1`, and the specification was extracted rather than invented.** All six core chapters and
-all four modules are written, together with hand-written OpenAPI descriptions of the HTTP surface.
-The reference implementation cites this contract. The `0.1` release and conformance suite remain
-unfinished.
+**Development: `0.1-dev`; no specification release has been published yet.** The normative chapters
+already bind under [governance](GOVERNANCE.md). A development label changes over time; cite the exact
+Git commit when recording what a client or implementation was checked against.
 
-This repository is the source of truth: an implementation that disagrees with it is the bug. The
-text goes on being written after `0.1`; what the tag ends is deleting an identifier, renumbering
-one, or changing what one stands for. [`GOVERNANCE.md`](GOVERNANCE.md) states both, and what else
-can end them.
+- [Development website](https://spec.sempods.org/) — the rendered `main` snapshot, with its source revision
+- [Published versions and release notes](https://github.com/sempods/sempods-spec/releases) — immutable tags and matching artifacts when published
+- [Selecting a revision](docs/guides/specification-revisions.md) — obtain and use a consistent snapshot
+- [Proposals](docs/proposals/README.md) — non-normative designs with explicit adoption status
+- [Repository checks](docs/guides/repository-checks.md) — what validation establishes and what it does not
+- [Issues](https://github.com/sempods/sempods-spec/issues) and [0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) — work and agreed release conditions
 
-What that means concretely: **you can implement against this repository, and you cannot yet prove
-you did.** The requirements are stable enough to build against, and an identifier may still be
-deleted or renumbered until [`GOVERNANCE.md`](GOVERNANCE.md) says that ends; what does not exist is
-the suite that would check an implementation against them.
-The [0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) tracks release conditions;
-[issues](https://github.com/sempods/sempods-spec/issues) track other work and its dependencies.
+Core and module chapters, OpenAPI and vocabulary are present. A product conformance suite remains
+unfinished; passing repository checks is not a product conformance claim.
 
 ## What a specification is here
 

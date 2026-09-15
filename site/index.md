@@ -3,20 +3,28 @@
 A **pod** is a person's or an organisation's own store of linked data: they hold it, they say who
 may read and write which part of it, and applications talk to it over HTTP. This site is the
 contract such a pod implements. It is written so that somebody who has never seen the reference
-implementation can build a conformant pod in a language of their choosing — and can tell whether
-they succeeded.
+implementation can build a conformant pod in a language of their choosing without depending on its internals.
 
 The point is not a new protocol stack. sempods profiles and composes standards that already exist:
 HTTP resources, RDF and named graphs, JSON-LD, SPARQL, OAuth/OIDC and MCP. The specification adds
 the pod contract between them: one base URL, one context per statement, server-resolved grants,
 sandboxed reads and writes, and an agent surface that uses the same rules as every other client.
 
-!!! warning "This specification can still change"
+## Revisions and status
 
-    This text decides: an implementation that disagrees with it is the bug. What it is not yet is
-    **fixed** — a requirement may still be deleted, renumbered, or change meaning, so nothing here
-    is safe to cite from a conformance report. [Governance](GOVERNANCE.md) says what ends that, and
-    when.
+This website follows `main`. Its normative text already binds under [governance](GOVERNANCE.md),
+subject to the stated pre-publication limits. A changing development label is not a published version.
+[This build's revision](revision.md) identifies its source and matching artifacts.
+
+[Published versions and canonical release notes](https://github.com/sempods/sempods-spec/releases)
+are separate from website deployments. [Selecting a revision](docs/guides/specification-revisions.md)
+explains how to consume one consistent snapshot.
+
+[Proposals](docs/proposals/README.md) and [guides](docs/guides/specification-revisions.md) remain
+informative GitHub documents at this build's source revision.
+[Repository checks](docs/guides/repository-checks.md) explains validation limits;
+[issues](https://github.com/sempods/sempods-spec/issues) and the
+[0.1 milestone](https://github.com/sempods/sempods-spec/milestone/1) track the remaining work.
 
 ## Core and modules
 
