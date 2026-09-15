@@ -24,6 +24,7 @@ RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 class RegistryRepresentations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.formats = FormatChecker(formats=['iri'])
         cls.core = yaml.safe_load((ROOT / 'openapi/sempods-core.yaml').read_text())
         cls.module = yaml.safe_load((ROOT / 'openapi/module-context-management.yaml').read_text())
         cls.registry = Registry().with_resources((url, Resource.from_contents(doc, default_specification=DRAFT202012))
@@ -35,7 +36,7 @@ class RegistryRepresentations(unittest.TestCase):
         source = self.core if document == CORE else self.module
         registry = Registry().with_resource(document, Resource.from_contents(source, default_specification=DRAFT202012))
         return Draft202012Validator({'$ref': document + '#/components/schemas/' + name},
-            registry=registry, format_checker=FormatChecker())
+            registry=registry, format_checker=self.formats)
 
     def graph(self, payload):
         return Graph().parse(data=json.dumps(payload), format='json-ld')
@@ -158,7 +159,7 @@ class RegistryRepresentations(unittest.TestCase):
         for kind, names in (
             ('schemas', ('RegistryIri', 'RegistryLiteral', 'RegistryNode', 'ContextDescription')),
             ('parameters', ('RegistryAccept',)),
-            ('responses', ('RegistryUnauthorized', 'NotAcceptable')),
+            ('responses', ('NotAcceptable',)),
         ):
             for name in names:
                 with self.subTest(kind=kind, name=name):
@@ -167,7 +168,65 @@ class RegistryRepresentations(unittest.TestCase):
             content = self.module['paths']['/_system/contexts/{contextPath}']['put']['responses'][code]['content']['application/ld+json']
             pointer = MODULE + '#/paths/~1_system~1contexts~1{contextPath}/put/responses/' + code + '/content/application~1ld+json/schema'
             Draft202012Validator({'$ref': pointer}, registry=registry,
-                                 format_checker=FormatChecker()).validate(content['example'])
+                                 format_checker=self.formats).validate(content['example'])
+
+    def test_unicode_iris_are_accepted_and_invalid_iris_rejected(self):
+        iri = 'https://example.org/über-uns'
+        predicate = 'https://example.org/Bezüge'
+        for document in (CORE, MODULE):
+            with self.subTest(document=document):
+                self.validator('RegistryIri', document).validate({'@id': iri})
+                self.validator('RegistryLiteral', document).validate({'@value': 'text', '@type': iri})
+                self.validator('RegistryNode', document).validate({'@id': iri, '@type': [iri]})
+                payload = copy.deepcopy(self.description)
+                payload[predicate] = [{'@id': iri}]
+                payload['@type'].append(iri)
+                self.validator('ContextDescription', document).validate(payload)
+                g = self.graph(payload)
+                self.assertEqual(set(g.objects(URIRef(payload['@id']), URIRef(predicate))), {URIRef(iri)})
+            for invalid in ('relative/path', 'https://example.org/has space', 'https://example.org/%GG'):
+                with self.subTest(document=document, invalid=invalid):
+                    self.assertFalse(self.validator('RegistryIri', document).is_valid({'@id': invalid}))
+                    self.assertFalse(self.validator('RegistryLiteral', document).is_valid({'@value': 'text', '@type': invalid}))
+                    self.assertFalse(self.validator('RegistryNode', document).is_valid({'@id': invalid, '@type': [iri]}))
+                    self.assertFalse(self.validator('RegistryNode', document).is_valid({'@id': iri, '@type': [invalid]}))
+                    payload = copy.deepcopy(self.description)
+                    payload[invalid] = [{'@value': 'text'}]
+                    self.assertFalse(self.validator('ContextDescription', document).is_valid(payload))
+        payload = copy.deepcopy(self.catalogue)
+        payload['@type'].append(iri)
+        payload[predicate] = [{'@id': iri}]
+        self.validator('ContextCatalogue').validate(payload)
+
+    def test_registry_text_preserves_language_tags(self):
+        c = URIRef(self.description['@id'])
+        for document in (CORE, MODULE):
+            for predicate in (str(RDFS.label), 'http://purl.org/dc/terms/description'):
+                with self.subTest(document=document, predicate=predicate):
+                    payload = copy.deepcopy(self.description)
+                    payload[predicate] = [{'@value': 'Aufgaben', '@language': 'de'}]
+                    validator = self.validator('ContextDescription', document)
+                    validator.validate(payload)
+                    g = self.graph(payload)
+                    self.assertEqual(set(g.objects(c, URIRef(predicate))), {Literal('Aufgaben', lang='de')})
+                    self.assertTrue(isomorphic(g, self.graph(json.loads(g.serialize(format='json-ld')))))
+                    for literal in ({'@value': 'Aufgaben', '@language': 123},
+                                    {'@value': 123, '@language': 'de'},
+                                    {'@value': 'Aufgaben', '@language': 'de', '@type': 'http://www.w3.org/2001/XMLSchema#string'}):
+                        payload[predicate] = [literal]
+                        self.assertFalse(validator.is_valid(payload))
+
+    def test_creation_requires_authentication_and_documents_the_challenge(self):
+        self.assertTrue(self.module['security'])
+        self.assertNotIn({}, self.module['security'])
+        put = self.module['paths']['/_system/contexts/{contextPath}']['put']
+        self.assertNotIn('security', put)
+        self.assertIn('SPS-CORE-015', put['x-sps-requirements'])
+        response = self.registry.resolver(MODULE).lookup(put['responses']['401']['$ref']).contents
+        challenge = response['headers']['WWW-Authenticate']
+        self.assertTrue(challenge['required'])
+        self.assertEqual(challenge['example'], 'Bearer error="invalid_token"')
+        Draft202012Validator(challenge['schema']).validate(challenge['example'])
 
     def test_vocabulary_declares_all_summary_predicates(self):
         g = Graph().parse(ROOT / 'vocabulary/sempods.ttl', format='turtle')

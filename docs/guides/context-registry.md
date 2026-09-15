@@ -105,7 +105,8 @@ retain the current Context membership, grant implications and lifecycle contract
 | Manager creates absent C with ContextCreate JSON, or no body | `201` with RDF description and private defaults where public is omitted. JSON input remains accepted. |
 | Same creation request for existing C, including a different label | `200` with its unchanged registry description. No metadata update is implied. |
 | Manager's creation request has an unsatisfiable Accept | `406`, no new Context. Authentication and management checks still apply. |
-| Non-manager tries PUT/DELETE of C or X | Current uniform `403`; this RDF migration adds no authority. |
+| Creation request with missing versus rejected bearer token | Same `401` response with `invalid_token` under SPS-CORE-015; public-read access does not authorize creation. |
+| Authenticated non-manager tries PUT/DELETE of C or X | Current uniform `403`; this RDF migration adds no authority. |
 | Manager deletes C | Existing destructive deletion and last-visible-Context `409` rules still apply. No proposed non-destructive lifecycle or default access is adopted here. |
 
 Normative sources: [`SPS-CTX-031`](../../spec/core/contexts.md#SPS-CTX-031)–

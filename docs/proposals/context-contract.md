@@ -1,10 +1,13 @@
 # Discoverable Contexts and RDF registry descriptions
 
 Status: **Partly adopted in this revision; remaining recommendations are non-normative.**
-Owning issues: [#69](https://github.com/sempods/sempods-spec/issues/69) for the module boundary and
-[#90](https://github.com/sempods/sempods-spec/issues/90) for registry descriptions and their lifecycle.
-Adoption: [#68](https://github.com/sempods/sempods-spec/issues/68), through its coordinated normative
-preparation and validation. The linked normative chapters own the adopted RDF slice; this document retains the remaining recommendations.
+RDF registry adoption: [#92](https://github.com/sempods/sempods-spec/issues/92), implemented by
+[PR #93](https://github.com/sempods/sempods-spec/pull/93), owns descriptions, catalogues and creation
+response representations in the linked normative chapters. [#90](https://github.com/sempods/sempods-spec/issues/90)
+is the completed recommendation source.
+Remaining proposal: [#69](https://github.com/sempods/sempods-spec/issues/69) owns the module/default-access
+and full lifecycle decisions; [#68](https://github.com/sempods/sempods-spec/issues/68), through #69–#74,
+owns their coordinated normative adoption. This document retains those non-normative recommendations.
 
 ## Scope and standards
 

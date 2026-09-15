@@ -189,8 +189,9 @@ Vision, proposals and fixture explanation:
   proposing a requirement. The site publishes it as informative guidance.
 - [Authorized data access](docs/proposals/data-access.md) — proposed smaller core and optional
   Context contract, operation cases, mirroring boundaries and requirement impact; adoption belongs to #68
-- [Context registry](docs/proposals/context-contract.md) — proposed optional Context discovery, RDF
-  descriptions, caller-rights catalogue, bootstrap and lifecycle under #69/#90
+- [Context registry](docs/proposals/context-contract.md) — remaining optional-module, default-access,
+  bootstrap and lifecycle recommendations under #69/#68; #92/PR #93 owns the separate RDF registry
+  adoption, based on the completed #90 recommendation
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design
 - [Context registry representations](docs/guides/context-registry.md) — RDF examples and HTTP

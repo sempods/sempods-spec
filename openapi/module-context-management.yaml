@@ -46,7 +46,7 @@ paths:
       operationId: putContext
       summary: Create a context, idempotently.
       description: "The body is optional. Where the `public` flag is absent \u2014 including on a request with no\nbody at all \u2014 the context is created **private**: the quiet path is the one without a body,\nand a context becomes readable without a grant because somebody said so, never because they\nsaid nothing.\n\nSuccessful responses are registry RDF (SPS-CTX-037). Negotiate the response before creation; an unsatisfiable Accept gives 406 without mutation. JSON input and create-only effects are unchanged.\n"
-      x-sps-requirements: [SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027, SPS-CTX-037]
+      x-sps-requirements: [SPS-CORE-015, SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027, SPS-CTX-037]
       requestBody:
         required: false
         content:
@@ -121,7 +121,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
-          $ref: '#/components/responses/RegistryUnauthorized'
+          $ref: '#/components/responses/AuthenticationRequired'
         '406':
           $ref: '#/components/responses/NotAcceptable'
       parameters:
@@ -195,8 +195,16 @@ components:
 
   responses:
 
-    RegistryUnauthorized:
-      description: Supplied credentials are invalid; anonymous access is available only under the public-read contract.
+    AuthenticationRequired:
+      description: >-
+        Authentication is required. Missing and rejected bearer tokens produce the same
+        401 response with invalid_token (SPS-CORE-015). Context creation has no public-read exception.
+      headers:
+        WWW-Authenticate:
+          required: true
+          description: Bearer challenge carrying error="invalid_token" for both missing and rejected tokens.
+          schema: { type: string }
+          example: 'Bearer error="invalid_token"'
 
     NotAcceptable:
       description: The `Accept` header cannot be satisfied.
@@ -232,7 +240,7 @@ components:
       properties:
         '@id':
           type: string
-          format: uri
+          format: iri
       additionalProperties: false
 
     RegistryLiteral:
@@ -247,7 +255,7 @@ components:
           - number
         '@type':
           type: string
-          format: uri
+          format: iri
         '@language':
           type: string
       additionalProperties: false
@@ -264,12 +272,12 @@ components:
       properties:
         '@id':
           type: string
-          format: uri
+          format: iri
         '@type':
           type: array
           items:
             type: string
-            format: uri
+            format: iri
           minItems: 1
           uniqueItems: true
       propertyNames:
@@ -277,7 +285,7 @@ components:
         - enum:
           - '@id'
           - '@type'
-        - pattern: '^[A-Za-z][A-Za-z0-9+.-]*:'
+        - format: iri
       additionalProperties:
         type: array
         items:
@@ -333,7 +341,11 @@ components:
                   type: string
                 '@type':
                   const: http://www.w3.org/2001/XMLSchema#string
+                '@language':
+                  type: string
               additionalProperties: false
+              not:
+                required: ['@type', '@language']
             minItems: 1
             maxItems: 1
           http://purl.org/dc/terms/description:
@@ -347,7 +359,11 @@ components:
                   type: string
                 '@type':
                   const: http://www.w3.org/2001/XMLSchema#string
+                '@language':
+                  type: string
               additionalProperties: false
+              not:
+                required: ['@type', '@language']
             minItems: 1
             maxItems: 1
           http://purl.org/dc/terms/created:

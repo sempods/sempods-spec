@@ -15,7 +15,7 @@ Read it at the same Git revision as those sources.
 | Requirement identifiers | Chapter/area placement, identifier changes against the base, OpenAPI requirement citations and the generated index are consistent. It enforces the observable part of [governance's identifier window](../../GOVERNANCE.md#deleting-and-renumbering-before-01); read notices as well as failures. It cannot detect an external adopter or prove semantic equivalence. |
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
 | Worked scenarios | The supplied fixture expectations agree with the runner's ACP evaluations and model composition. A green run checks those cases; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
-| Context registry representations | Actual OpenAPI examples and guide JSON-LD validate against their schemas and preserve registry RDF through N-Quads round trips; malformed legacy shapes are rejected. The Context module's references resolve without core, and shared components agree. Creation dates admit XSD forms beyond RFC 3339; the checker does not validate the full XSD lexical space. No HTTP, authorization, caching or lifecycle implementation is tested. |
+| Context registry representations | Actual OpenAPI examples and guide JSON-LD validate against their schemas and preserve registry RDF through N-Quads round trips; malformed legacy shapes are rejected. Unicode IRIs and language-tagged text are accepted; invalid IRIs are rejected. The Context module's references resolve without core, shared components agree, and creation documents its required authentication challenge. Creation dates admit XSD forms beyond RFC 3339; the checker does not validate the full XSD lexical space. No HTTP, authorization, caching or lifecycle implementation is tested. |
 | Site navigation regression tests | Source-relative links survive relocation and select the build commit; dirty previews and snapshot metadata are distinguished. |
 | Full site build | Inputs, the demo-pod destination and staged links survive strict rendering. The destination check prevents the try-it page from sending requests, including authenticated ones, to another host. It does not exercise the live OAuth or request flow. |
 
@@ -44,8 +44,11 @@ The site builder looks up `mkdocs` on `PATH`; the scripts use `python3`.
 The Context representation checker also needs the validator stack pinned in the Examples workflow:
 
 ```bash
-python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2 PyYAML==6.0.3 jsonschema==4.25.1 attrs==26.1.0 jsonschema-specifications==2025.9.1 referencing==0.37.0 rpds-py==2026.6.3
+python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2 PyYAML==6.0.3 jsonschema==4.25.1 attrs==26.1.0 jsonschema-specifications==2025.9.1 referencing==0.37.0 rpds-py==2026.6.3 rfc3987-syntax==1.1.0 lark==1.3.1
 ```
+
+The checker explicitly requires IRI format support at startup. Without that dependency,
+`jsonschema` would silently ignore the format and accept invalid identifiers.
 
 ## Before requesting review
 
