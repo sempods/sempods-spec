@@ -105,7 +105,7 @@ paths:
         claim is not a context catalogue, and a client never constructs a context IRI itself.
 
 
-        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
+        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Every response, including errors, satisfies the authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
 
         '
       x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036]
@@ -122,9 +122,7 @@ paths:
                 type: string
               description: Includes Accept.
             Cache-Control:
-              schema:
-                type: string
-              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+              $ref: '#/components/headers/RegistryCacheControl'
           content:
             application/ld+json:
               schema:
@@ -148,7 +146,7 @@ paths:
         '401':
           $ref: '#/components/responses/RegistryUnauthorized'
         '406':
-          $ref: '#/components/responses/NotAcceptable'
+          $ref: '#/components/responses/RegistryNotAcceptable'
       parameters:
       - $ref: '#/components/parameters/RegistryAccept'
       - $ref: '#/components/parameters/IfNoneMatch'
@@ -169,7 +167,7 @@ paths:
         different question, answered by the resource routes.
 
 
-        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
+        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Every response, including errors, satisfies the authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
 
         '
       x-sps-requirements: [SPS-CTX-024, SPS-CTX-026, SPS-CTX-031, SPS-CTX-032, SPS-CTX-035, SPS-CTX-036]
@@ -186,9 +184,7 @@ paths:
                 type: string
               description: Includes Accept.
             Cache-Control:
-              schema:
-                type: string
-              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+              $ref: '#/components/headers/RegistryCacheControl'
           content:
             application/ld+json:
               schema:
@@ -214,9 +210,9 @@ paths:
         '401':
           $ref: '#/components/responses/RegistryUnauthorized'
         '406':
-          $ref: '#/components/responses/NotAcceptable'
+          $ref: '#/components/responses/RegistryNotAcceptable'
         '404':
-          $ref: '#/components/responses/NotFoundOrNotVisible'
+          $ref: '#/components/responses/RegistryNotFoundOrNotVisible'
       parameters:
       - $ref: '#/components/parameters/RegistryAccept'
       - $ref: '#/components/parameters/IfNoneMatch'
@@ -960,6 +956,21 @@ components:
 
   headers:
 
+    RegistryCacheControl:
+      description: >-
+        RFC 9111 cache policy satisfying SPS-CTX-036 for every registry response, including errors.
+        Stored responses preserve caller/client authorization isolation, current authorization and
+        representation freshness. No-store is one sufficient strategy; private storage with mandatory
+        revalidation also requires cache selection to distinguish authorization inputs and negotiated
+        variants. No particular header combination is prescribed.
+      schema: { type: string }
+      examples:
+        noStore:
+          value: no-store
+        revalidate:
+          summary: Private revalidation with authorization-aware cache selection.
+          value: private, no-cache
+
     EditLinks:
       description: >-
         Optional edit-URL advertisement under SPS-CRUD-058. When present, the Link header
@@ -987,11 +998,35 @@ components:
             type: string
           description: Includes Accept.
         Cache-Control:
-          schema:
-            type: string
-          description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+          $ref: '#/components/headers/RegistryCacheControl'
     RegistryUnauthorized:
-      description: Supplied credentials are invalid; anonymous access is available only under the public-read contract.
+      description: >-
+        Supplied bearer credentials were rejected; the server does not fall back to anonymous access.
+        A request without a token can still use public-read access (SPS-CORE-016).
+      headers:
+        WWW-Authenticate:
+          required: true
+          description: >-
+            Bearer challenge required by RFC 9110 section 11.6.1. RFC 6750 sections 3 and 3.1
+            recommend the invalid_token error for invalid or expired bearer credentials.
+          schema: { type: string }
+          example: 'Bearer error="invalid_token"'
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
+
+    RegistryNotFoundOrNotVisible:
+      description: >-
+        The Context does not exist or the caller cannot see it. Bodies, links, validators and cache
+        behavior do not distinguish the two cases; registry cache isolation still applies.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
+
+    RegistryNotAcceptable:
+      description: The `Accept` header cannot be satisfied; registry cache isolation still applies.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
 
     ResourceRepresentation:
       description: |

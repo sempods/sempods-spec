@@ -45,7 +45,7 @@ paths:
     put:
       operationId: putContext
       summary: Create a context, idempotently.
-      description: "The body is optional. Where the `public` flag is absent \u2014 including on a request with no\nbody at all \u2014 the context is created **private**: the quiet path is the one without a body,\nand a context becomes readable without a grant because somebody said so, never because they\nsaid nothing.\n\nSuccessful responses are registry RDF (SPS-CTX-037). Negotiate the response before creation; an unsatisfiable Accept gives 406 without mutation. JSON input and create-only effects are unchanged.\n"
+      description: "The body is optional. Where the `public` flag is absent \u2014 including on a request with no\nbody at all \u2014 the context is created **private**: the quiet path is the one without a body,\nand a context becomes readable without a grant because somebody said so, never because they\nsaid nothing.\n\nSuccessful responses are registry RDF (SPS-CTX-037). Negotiate the response before creation; an unsatisfiable Accept gives 406 without mutation. JSON input and create-only effects are unchanged. Every registry response, including errors, preserves the cache isolation and freshness of SPS-CTX-036.\n"
       x-sps-requirements: [SPS-CORE-015, SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027, SPS-CTX-037]
       requestBody:
         required: false
@@ -82,9 +82,7 @@ paths:
                 type: string
               description: Includes Accept.
             Cache-Control:
-              schema:
-                type: string
-              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+              $ref: '#/components/headers/RegistryCacheControl'
         '201':
           description: Created.
           content:
@@ -113,17 +111,15 @@ paths:
                 type: string
               description: Includes Accept.
             Cache-Control:
-              schema:
-                type: string
-              description: RFC 9111 policy preserving current authorization and caller isolation; no-store is one sufficient strategy.
+              $ref: '#/components/headers/RegistryCacheControl'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/RegistryBadRequest'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: '#/components/responses/RegistryForbidden'
         '401':
           $ref: '#/components/responses/AuthenticationRequired'
         '406':
-          $ref: '#/components/responses/NotAcceptable'
+          $ref: '#/components/responses/RegistryNotAcceptable'
       parameters:
       - $ref: '#/components/parameters/RegistryAccept'
     delete:
@@ -193,6 +189,23 @@ components:
       description: |
         The context IRI's path, and the same string as the IRI's own. May contain slashes.
 
+  headers:
+
+    RegistryCacheControl:
+      description: >-
+        RFC 9111 cache policy satisfying SPS-CTX-036 for every registry response, including errors.
+        Stored responses preserve caller/client authorization isolation, current authorization and
+        representation freshness. No-store is one sufficient strategy; private storage with mandatory
+        revalidation also requires cache selection to distinguish authorization inputs and negotiated
+        variants. No particular header combination is prescribed.
+      schema: { type: string }
+      examples:
+        noStore:
+          value: no-store
+        revalidate:
+          summary: Private revalidation with authorization-aware cache selection.
+          value: private, no-cache
+
   responses:
 
     AuthenticationRequired:
@@ -205,12 +218,27 @@ components:
           description: Bearer challenge carrying error="invalid_token" for both missing and rejected tokens.
           schema: { type: string }
           example: 'Bearer error="invalid_token"'
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
 
-    NotAcceptable:
-      description: The `Accept` header cannot be satisfied.
+    RegistryNotAcceptable:
+      description: The `Accept` header cannot be satisfied; registry cache isolation still applies.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
 
-    BadRequest:
+    RegistryBadRequest:
       description: The request could not be understood, or names a context path that is refused.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
+
+    RegistryForbidden:
+      description: Authenticated, but lacking the owner or context-management authority required for creation.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/RegistryCacheControl'
+
     Forbidden:
       description: |
         A valid token whose grants do not cover this operation. The pod owner, or a `#manage` grant

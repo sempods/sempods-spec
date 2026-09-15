@@ -159,7 +159,8 @@ class RegistryRepresentations(unittest.TestCase):
         for kind, names in (
             ('schemas', ('RegistryIri', 'RegistryLiteral', 'RegistryNode', 'ContextDescription')),
             ('parameters', ('RegistryAccept',)),
-            ('responses', ('NotAcceptable',)),
+            ('responses', ('RegistryNotAcceptable',)),
+            ('headers', ('RegistryCacheControl',)),
         ):
             for name in names:
                 with self.subTest(kind=kind, name=name):
@@ -227,6 +228,35 @@ class RegistryRepresentations(unittest.TestCase):
         self.assertTrue(challenge['required'])
         self.assertEqual(challenge['example'], 'Bearer error="invalid_token"')
         Draft202012Validator(challenge['schema']).validate(challenge['example'])
+
+    def test_registry_reads_document_rejected_token_challenges_and_public_access(self):
+        for path in ('/_system/contexts', '/_system/contexts/{contextPath}'):
+            with self.subTest(path=path):
+                get = self.core['paths'][path]['get']
+                self.assertIn({}, get['security'])
+                response = self.registry.resolver(CORE).lookup(get['responses']['401']['$ref']).contents
+                challenge = response['headers']['WWW-Authenticate']
+                self.assertTrue(challenge['required'])
+                self.assertEqual(challenge['example'], 'Bearer error="invalid_token"')
+                Draft202012Validator(challenge['schema']).validate(challenge['example'])
+
+    def test_registry_success_and_error_responses_share_cache_guarantees(self):
+        operations = ((CORE, self.core['paths'][path]['get'])
+                      for path in ('/_system/contexts', '/_system/contexts/{contextPath}'))
+        operations = [*operations, (MODULE, self.module['paths']['/_system/contexts/{contextPath}']['put'])]
+        for document, operation in operations:
+            resolver = self.registry.resolver(document)
+            for status, response in operation['responses'].items():
+                with self.subTest(document=document, operation=operation['operationId'], status=status):
+                    if '$ref' in response: response = resolver.lookup(response['$ref']).contents
+                    policy = response['headers']['Cache-Control']
+                    if '$ref' in policy: policy = resolver.lookup(policy['$ref']).contents
+                    self.assertIn('isolation', policy['description'])
+                    self.assertNotIn('const', policy['schema'])
+                    self.assertNotIn('enum', policy['schema'])
+                    self.assertFalse(policy.get('required', False))
+                    for value in ('no-store', 'private, no-cache'):
+                        Draft202012Validator(policy['schema']).validate(value)
 
     def test_vocabulary_declares_all_summary_predicates(self):
         g = Graph().parse(ROOT / 'vocabulary/sempods.ttl', format='turtle')
