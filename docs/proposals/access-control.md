@@ -143,8 +143,21 @@ a later PUT as replacement of just that visible subset.
 For every operation, authorization covers its entire effect, including facts removed by omission
 and the values being added. A request either applies that effect completely or changes nothing.
 A body that names only permitted additions does not authorize replacing protected old values.
-A no-op does not bypass authorization. Atomicity here concerns one addressed operation; it neither
-adds a bulk API nor resolves the separate logical-graph scope question.
+A no-op does not bypass authorization. Admission to a write request is checked even when the body
+names no changes: PATCH requires current authority to edit at least one predicate of the addressed
+resource; slot POST requires current authority to add at least one value to the addressed slot.
+These are permissions over possible edits, independent of whether any such fact currently exists.
+For a non-empty body, admission alone is insufficient: every requested effect is also authorized.
+This describes an authorization outcome, not a new stored permission or policy API.
+
+An empty `{}` PATCH, a PATCH containing only the matching `@id`, and an empty `[]` slot POST remain
+valid no-op inputs. After admission and applicable preconditions, recommend `204` with no body,
+Location or validator and no resource creation. An authenticated read-only or unrelated caller gets
+`403` for existing, hidden and absent targets alike; missing or invalid credentials get `401`.
+The target's absence alone does not prevent admission where policy permits an edit there. An empty
+slot PUT or a PATCH assigning an empty array is different: it clears values and needs authority for
+that effect. Atomicity concerns one addressed operation; it neither adds a bulk API nor resolves
+the separate logical-graph scope question.
 
 #### Complete scope authority and non-disclosure
 
@@ -183,15 +196,34 @@ collision by redirecting the write elsewhere.
 
 Apply current authorization independently of the supplied validator. Follow RFC 9110 §13.2.1 for
 precondition evaluation after the normal request checks: an unauthorized caller gets the same
-refusal with `If-Match`, `If-None-Match: *` or no conditional field. Once the operation is
-otherwise permitted, a false applicable precondition yields `412` and no change.
+refusal with `If-Match`, `If-None-Match: *` or no conditional field. Preconditions are evaluated
+only when the unconditional response would be successful or `412`; otherwise preserve the normal
+error. Thus an authorized resource DELETE of an absent target stays `404` even with `If-Match: *`.
+When evaluation applies, a false precondition yields `412` and no change.
 
 Validators identify the selected representation. They grant no authority and must not change
 solely because hidden data changed. LOD and system aliases for the same subject, logical scope and
 representation agree. A changed scope cannot reuse a previous tag to validate a different target;
 a changed policy is always enforced, even if the selected bytes and tag are unchanged. Resource
-and slot tags remain specific to their own representations. The existing merged-Context slot-tag
-rules remain in force until the dataset/Context decision supplies a reviewed replacement;
+and slot tags remain specific to their own representations.
+
+Blind slot mutations require a coordinated change to
+[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052): recommend echoing a slot validator only
+when the caller may read the complete slot representation that it validates. Without that
+visibility, a successful mutation carries no ETag, Last-Modified or other metadata derived from
+unreadable slot state. A tag for a filtered slot view cannot be used to validate the complete slot.
+Uniform `204` alone does not prevent a validator from disclosing hidden changes.
+
+A caller lacking complete slot visibility also cannot probe that state with any otherwise applicable
+slot precondition that tests it, including `If-Match` and `If-None-Match` with `*`. Recommend the
+same `403` for those conditional
+requests regardless of values or tags, with no mutation or validator. Unconditional authorized
+additions remain available. This applies to empty slot POST too; its no-op status does not make a
+conditional existence probe safe. Existing rule-prescribed ignoring of conditions, such as edge
+DELETE's `If-Match`, remains separate from evaluating a condition and introduces no state test.
+The proposed restriction changes the scope of CRUD-052/053/054 and needs matching OpenAPI wording.
+
+The current Context-specific slot-tag rules continue to bind until normative adoption;
 [#9](https://github.com/sempods/sempods-spec/issues/9) can repair their current OpenAPI view
 independently.
 
@@ -216,7 +248,8 @@ absent edge after authorization. Resource PUT retains `201` plus Location for cr
 outcomes may distinguish existence only for callers permitted to observe that scope.
 
 This deliberately replaces the current custom slot/edge outcome bodies and POST `201` distinction
-in CRUD-044/047. A client needing resulting values reads the slot. No batch result envelope,
+in CRUD-044/047, together with the validator changes above. A client permitted to read resulting
+values reads the slot. No batch result envelope,
 literal-edge URL, or arbitrary choice of one new edge for Location is introduced. The normative
 patch must align the status/body descriptions and references together; this recommendation changes
 no current OpenAPI schema.
@@ -239,6 +272,11 @@ states policy setup; it is a proposed protocol case, not an executed ACP fixture
 | Authorized resource edit with stale `If-Match` | `412`, no changes. With authority revoked before the request, `403` instead. |
 | Hidden q changes while the caller can read only p | The visible representation/tag and the authorized p-only edit are unaffected; whole-resource replacement remains uniformly refused. |
 | An authorized edge is already absent; DELETE that edge | `204`; other values survive. Without authority for that edge, uniform `403` whether present or absent. |
+| Authorized resource DELETE of absent R, with `If-Match: *` or a supplied tag | `404`, no change; the unconditional error makes the precondition inapplicable. |
+| Caller may add B to p but cannot read the complete slot; unconditional POST B | `204`, no validator or hidden-state metadata. Hidden A changing before a repeat does not change the response. |
+| Same blind writer; slot POST B or `[]` with `If-Match` or `If-None-Match: *` | Uniform `403`, no change, for both matching/nonmatching tags and empty/nonempty slots. |
+| Caller may edit p of R but not q; unconditional PATCH `{}` or a matching `@id` only | `204`, no validator or creation, whether R is present or absent. A read-only caller gets `403` in both cases. |
+| Caller may add B to p; unconditional slot POST `[]` | `204`, no validator or creation, whether p is empty or not. A caller with no addition authority gets `403`; missing/invalid credentials get `401`. |
 
 Repeat the cases through aliases and in a single-graph, Context-based and area/document-policy
 model once their logical scopes are defined. Include concurrent revocation, input validation,
