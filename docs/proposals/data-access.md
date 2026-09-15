@@ -102,8 +102,8 @@ partitions. A core-only pod can have no named graphs; exposing a native RDF grap
 itself promise Context grants or management. Logical names exposed through SPARQL are IRIs.
 
 For a caller, the ordinary SPARQL default graph is the set union of all readable statements in
-that space, including readable statements from named graphs. Ordinary resource/slot/edge reads
-and find use that same aggregate graph. The same triple occurring in two graphs appears once in
+that space, including readable statements from named graphs. Ordinary resource and slot reads,
+and find, use that same aggregate graph. The same triple occurring in two graphs appears once in
 the aggregate; SPARQL still applies its normal solution multiplicities. Preserve logical RDF term
 identity, including shared blank nodes; unrelated nodes do not become equal because two storage
 partitions use the same local label.
@@ -151,11 +151,18 @@ of ordinary operations as well as any selected operations it advertises.
 
 LOD and system aliases agree for the same mode and scope. A validator identifies that selected
 representation: an aggregate tag does not validate a Context-selected write, or vice versa, even
-when the returned triples coincide. Aggregate resource tags validate the aggregate representation,
-not named-graph membership; a membership-only change need not alter them. Current complete-scope
-authority is still checked, and tags never validate unreadable facts or grant permission. A selected
-graph's changes cannot invalidate an unrelated graph's representation solely through a shared
-internal revision counter.
+when the returned triples coincide. Apply
+[RFC 9110 §8.8.1](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.1) to each representation:
+a membership-only change may leave the strong tag of the membership-collapsed representation
+unchanged only if its representation data remain unchanged. Graph-aware variants, such as
+`include_contexts=true` JSON-LD or N-Quads carrying graph names, need a different strong tag when
+their represented memberships change. Different representation data cannot share a strong tag
+merely because they express the same merged triples. This also applies to slot representations
+where validators are emitted; it prescribes no serialization or tag-generation algorithm.
+
+Current complete-scope authority is still checked, and tags never validate unreadable facts or
+grant permission. A selected graph's changes cannot invalidate an unrelated graph's representation
+solely through a shared internal revision counter.
 
 #### Query dataset selection
 
@@ -209,6 +216,8 @@ proposed acceptance cases, not executable fixtures or an implementation conforma
 | Query text uses `FROM <A>`; protocol supplies only `default-graph-uri=` | Both dataset components are empty. No fallback to A or the aggregate; `ASK {}` is true and a triple-pattern count is 0. |
 | Only absent/unreadable IRIs selected, including an external HTTPS IRI | Empty dataset with ordinary query semantics, no fetch and no existence diagnostic. `GRAPH <missing> {}` has no match. |
 | Same returned triples through ordinary and A-selected GET | Each tag is scoped to its representation; a tag from one scope cannot satisfy `If-Match` for the other. |
+| R p "same" moves from A to B; membership-collapsed GET returns identical representation data | Its strong ETag may remain unchanged; a GET with that matching `If-None-Match` tag can return `304`. |
+| Same membership move; graph-aware resource GET (`include_contexts=true` or N-Quads) | Represented graph names change, so the strong ETag changes. A GET with the old variant's `If-None-Match` tag returns the updated representation, not `304`. Repeat for slot variants where validators are emitted. |
 
 `<R>`, `<p>`, `<A>` and `<B>` in these query sketches stand for the full IRIs, not relative IRIs
 sent on the wire. Repeat ordinary-operation cases on a single graph, a Context-based store and an
@@ -354,7 +363,7 @@ chapter and cross-reference sweep before the normative patch is complete.
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025), [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007)–[`SPS-CRUD-014`](../../spec/core/lod-crud.md#SPS-CRUD-014) | Define ordinary authorized resource operations in core; put explicit Context selection and Context-local effects in the module. Replace the blanket multi-Context write prohibition with complete aggregate-operation effects. Keep invalid selectors from being ignored. |
 | [`SPS-CRUD-015`](../../spec/core/lod-crud.md#SPS-CRUD-015)–[`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017), [`SPS-CORE-017`](../../spec/core/index.md#SPS-CORE-017) | Move Context downscoping, silent exclusion of unreadable Contexts and selector syntax to the module. Retain the core resource-read `404` and indistinguishability of absent and inaccessible data, expressed without a Context prerequisite. |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020)–[`SPS-CRUD-022`](../../spec/core/lod-crud.md#SPS-CRUD-022), [`SPS-CRUD-031`](../../spec/core/lod-crud.md#SPS-CRUD-031), [`SPS-CRUD-035`](../../spec/core/lod-crud.md#SPS-CRUD-035), [`SPS-CRUD-039`](../../spec/core/lod-crud.md#SPS-CRUD-039) | Apply the aggregate/selected operation scopes and the mutation recommendations, including partial visibility and hidden collisions. |
-| [`SPS-CRUD-002`](../../spec/core/lod-crud.md#SPS-CRUD-002), [`SPS-CRUD-029`](../../spec/core/lod-crud.md#SPS-CRUD-029), [`SPS-CRUD-034`](../../spec/core/lod-crud.md#SPS-CRUD-034), [`SPS-CRUD-050`](../../spec/core/lod-crud.md#SPS-CRUD-050)–[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052), [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) | Keep representation and validator agreement across resource, slot and edge operations; separate Context-specific provenance and selection rules. |
+| [`SPS-CRUD-002`](../../spec/core/lod-crud.md#SPS-CRUD-002), [`SPS-CRUD-029`](../../spec/core/lod-crud.md#SPS-CRUD-029), [`SPS-CRUD-034`](../../spec/core/lod-crud.md#SPS-CRUD-034), [`SPS-CRUD-050`](../../spec/core/lod-crud.md#SPS-CRUD-050)–[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052), [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) | Keep resource/slot representation and validator agreement, including graph-aware variants; separate Context-specific provenance and selection rules. Preserve the existing edge DELETE surface. |
 | [`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)–[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) | Specify an authorized view across query and retrieval; replace the rewrite prohibition with outcome equivalence. Keep supported SPARQL read-only and dataset clauses unable to widen access; review the blanket ban on other implementation write interfaces. |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007), [`SPS-SPARQL-010`](../../spec/core/sparql.md#SPS-SPARQL-010)–[`SPS-SPARQL-014`](../../spec/core/sparql.md#SPS-SPARQL-014) | Apply the proposed aggregate default graph, named projections, unassigned additions and local dataset selection. Replace the empty-result shortcut with standard evaluation on empty datasets; align protocol precedence and empty selections in the chapter and OpenAPI. |
 | [`SPS-FIND-004`](../../spec/core/find.md#SPS-FIND-004), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-010`](../../spec/core/find.md#SPS-FIND-010), [`SPS-FIND-013`](../../spec/core/find.md#SPS-FIND-013) | Keep equivalent GET/POST forms and strict parsing in core. Put `context`/`contexts` fields and downscoping through expansion in the module; define rejection of unsupported Context fields so a core-only pod never silently broadens a request. |
