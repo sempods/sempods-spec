@@ -84,8 +84,9 @@ pod resolves the resource and authorizes its specified effect. LOD and system ad
 resource agree, including conditional requests; queries and retrieval expose the same read policy.
 Revocation never redirects a retry to a different destination or broadens its authority.
 
-An authorized read may reveal only part of a resource. The write contract must say what replacement
-and deletion mean in that case before the normative change is adopted. A read-modify-write must not
+An authorized read may reveal only part of a resource. The
+[mutation recommendations](access-control.md#mutations-and-partial-representations) define complete
+effects and uniform refusals for review under #69. A read-modify-write must not
 silently erase protected statements or mutate only part of what the response claims was changed.
 The [operation cases](access-control.md#operation-boundaries) include this and creation at an
 IRI already used by hidden data. A smaller core still owes answers to those questions.
@@ -227,8 +228,9 @@ external adoption can close it before the tag.
 
 ## Decisions before normative adoption
 
-- Define the generic write scope for partial resources and hidden-resource collisions, with
-  consistent authorization and conditional-request behavior. See [access control](access-control.md).
+- Review the [mutation recommendations](access-control.md#mutations-and-partial-representations)
+  for partial representations, hidden collisions and slot batches. Bind their operation scopes to
+  the selected logical dataset and Context contract before normative adoption.
 - Profile the federated authentication, client identity and delegation flows precisely enough for
   one client to use both examples; "supports OAuth" alone is insufficient. Resolve the
   [`public-read` migration](access-control.md#public-access-and-public-read), including token

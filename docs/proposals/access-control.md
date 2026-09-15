@@ -110,22 +110,140 @@ Find's ranking may remain implementation-defined, while this isolation property 
 
 ### Mutations and partial representations
 
-A permitted operation has the specified effect on its addressed resource, slot or edge. Storage
-partitions cannot silently redirect it, and a failed authorization cannot leave a partial mutation.
-Conditional requests validate the representation and operation scope they protect. LOD and system
-addresses for the same resource agree.
+The following recommendations are the mutation portion of
+[#69](https://github.com/sempods/sempods-spec/issues/69), reviewed against specification revision
+`4e7a27044dbcadc318f288cb9111edc8eeccd9ec`. They remain **proposed**, including the changed slot
+outcomes. The [current CRUD chapter](../../spec/core/lod-crud.md) continues to bind. The separate
+[dataset decision](#queries-and-retrieval) must identify the logical graphs a request addresses
+before these guarantees can form a complete normative contract.
 
-Three cases require exact normative answers before the proposal can be adopted:
+#### Standard behavior and the pod's remaining choice
 
-| Case | Property to preserve |
+Use [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) for method and conditional-request
+semantics, [RFC 5789 §2](https://www.rfc-editor.org/rfc/rfc5789.html#section-2) for PATCH atomicity,
+and [RFC 7396 §2](https://www.rfc-editor.org/rfc/rfc7396.html#section-2) for JSON Merge Patch.
+Those standards do not select the RDF facts addressed by a pod operation or its authorization
+boundary. These are the choices below. No policy language, storage partition or transaction
+algorithm follows from them.
+
+The **operation scope** consists of the addressed resource, slot or edge within the logical data
+space selected by the eventual core/Context contract. It is fixed independently of which stored
+facts happen to be readable. A filtered GET is a read representation, not permission to redefine
+a later PUT as replacement of just that visible subset.
+
+| Operation | Recommended effect within that scope |
 |---|---|
-| A read hides some properties, then a client sends PUT based on that read | Protected statements are not silently removed; the response does not claim a complete replacement when only a different subset changed. |
-| A client creates a resource whose IRI is already used by hidden data | Neither overwriting hidden data nor distinguishing its existence through a different outcome is acceptable. |
-| A policy or destination changes between GET and a conditional write | A validator for the earlier representation cannot authorize an unrelated mutation or bypass the current permission decision. |
+| Resource PUT | Replace all outgoing statements of the addressed subject; preserve incoming statements. |
+| Resource DELETE | Remove all outgoing statements of that subject; preserve incoming statements. |
+| Object-shaped merge PATCH | Replace or remove the complete values of each named predicate, including `@type` where supplied; preserve unnamed predicates. Apply the existing canonical-shape constraints and RFC 7396 arrays/nulls. |
+| Slot PUT / DELETE | Replace / clear all values of the addressed subject and predicate. |
+| Slot POST | Add the supplied set of values as one operation; existing values are unchanged. |
+| IRI edge DELETE | Remove the single addressed triple; preserve other values. |
 
-The normative write scope must say when the entire operation is authorized, when it is refused and
-whether a separately specified partial operation is available. Applying permissions to the request
-body alone is insufficient: replacement and deletion also affect statements the body does not name.
+For every operation, authorization covers its entire effect, including facts removed by omission
+and the values being added. A request either applies that effect completely or changes nothing.
+A body that names only permitted additions does not authorize replacing protected old values.
+A no-op does not bypass authorization. Atomicity here concerns one addressed operation; it neither
+adds a bulk API nor resolves the separate logical-graph scope question.
+
+#### Complete scope authority and non-disclosure
+
+Recommend authorizing the whole resource for PUT/DELETE, the complete named predicates for merge
+PATCH, the whole slot for replacement/clearing, and the named values for addition or edge removal.
+The authority covers both additions and removals. Finer authorized edits can therefore succeed
+while an entire resource replacement is refused. A response that distinguishes existence, such as
+resource creation versus replacement, additionally requires authority to observe that distinction.
+No exported policy catalogue or new authorization flag is needed.
+
+"Complete" is a property of the authority for that scope, including empty states. Comparing the
+currently visible facts with the stored facts is insufficient: accepting when no hidden fact
+exists and refusing when one exists would itself disclose hidden data. Under unchanged authorization state (including policy inputs),
+caller-visible data and request, varying hidden facts cannot change the refusal or any visible
+mutation effect. If the implementation cannot satisfy that property for a scope, it refuses that
+class of mutation consistently, including on the corresponding empty scope. A deployment can
+still grant complete authority over selected subjects, predicates or values and support their
+successful operations.
+
+For a valid authenticated caller whose operation is not authorized, recommend a uniform `403`
+without existence diagnostics, validators or a Location header. An invalid credential remains a
+`401`; data reads keep their absent/inaccessible `404` behavior. Determine authorization before
+returning an existence-dependent write result. This is the proposed generalization of
+[#45](https://github.com/sempods/sempods-spec/issues/45); that issue still owns the current
+Context-oracle repair. Syntax errors and unsupported media types retain their normal errors and
+must not depend on hidden facts.
+
+Write authority need not imply read authority universally. For example, an explicitly authorized
+set addition can return the uniform `204` proposed below without revealing whether the value was
+already present. That does not authorize removing a protected existing value. Resource PUT keeps
+its creation/replacement distinction and therefore needs visibility of that distinction as well as
+complete write authority. A pod cannot claim success for a partial replacement, or accept a hidden
+collision by redirecting the write elsewhere.
+
+#### Preconditions and concurrent changes
+
+Apply current authorization independently of the supplied validator. Follow RFC 9110 §13.2.1 for
+precondition evaluation after the normal request checks: an unauthorized caller gets the same
+refusal with `If-Match`, `If-None-Match: *` or no conditional field. Once the operation is
+otherwise permitted, a false applicable precondition yields `412` and no change.
+
+Validators identify the selected representation. They grant no authority and must not change
+solely because hidden data changed. LOD and system aliases for the same subject, logical scope and
+representation agree. A changed scope cannot reuse a previous tag to validate a different target;
+a changed policy is always enforced, even if the selected bytes and tag are unchanged. Resource
+and slot tags remain specific to their own representations. The existing merged-Context slot-tag
+rules remain in force until the dataset/Context decision supplies a reviewed replacement;
+[#9](https://github.com/sempods/sempods-spec/issues/9) can repair their current OpenAPI view
+independently.
+
+Authorization, preconditions and effects need one coherent outcome under races. A completed
+revocation precedes authorization of the next request. Overlapping writes and revocation may be
+ordered either way, but must not combine an earlier permission decision with a later incompatible
+target or return a partly applied effect. This requires observable consistency, not a particular
+lock, database transaction or write/check sequence.
+
+#### Slot batches and outcomes
+
+For [#6](https://github.com/sempods/sempods-spec/issues/6), recommend retaining multi-value slot
+POST and reporting successful completion with `204`, without a body or Location. The effect is
+set addition regardless of whether none, some or all supplied values were already present.
+Duplicates in the request do not create duplicate RDF statements. A single unauthorized value
+refuses the complete request; no permitted prefix is inserted. The permission to add a named value
+is checked even if it already exists, so a no-op cannot disclose membership by bypassing a denial.
+
+Recommend the same `204` completion for slot and edge DELETE, including an already empty slot or
+absent edge after authorization. Resource PUT retains `201` plus Location for creation and
+`200`/`204` for replacement; resource DELETE retains `204`/`404` after authorization. The resource
+outcomes may distinguish existence only for callers permitted to observe that scope.
+
+This deliberately replaces the current custom slot/edge outcome bodies and POST `201` distinction
+in CRUD-044/047. A client needing resulting values reads the slot. No batch result envelope,
+literal-edge URL, or arbitrary choice of one new edge for Location is introduced. The normative
+patch must align the status/body descriptions and references together; this recommendation changes
+no current OpenAPI schema.
+
+#### Request cases for review
+
+Let `R` be `https://example.org/alice/notes/one`, `p` be `https://schema.org/name`, and `q` be
+`https://example.org/private`. Requests use the existing LOD and system route encodings. Each row
+states policy setup; it is a proposed protocol case, not an executed ACP fixture.
+
+| Setup and request | Recommended response and effect |
+|---|---|
+| Complete resource authority; PUT R with only `p = ["new"]` over `p = ["old"]` | `200` or `204`; the outgoing resource is replaced, incoming links survive. |
+| Same authority, absent R; PUT with `If-None-Match: *` | `201`, Location R; repeating it gives `412` and preserves the first write. |
+| Policy permits only p; GET R returns p; PUT R containing p | `403`, no changes, both when q has hidden values and when q is empty. A resource replacement is outside this authority in both states. |
+| Same policy; PATCH R with `{"https://schema.org/name":[{"@value":"new"}]}` | Success with the complete p array replaced; q is unchanged. Complete authority over p is assumed; partial visibility within p would require refusal. |
+| Policy gives no complete authority over R; PUT R with `If-None-Match: *` | Same `403` for a hidden existing R and an absent R; no Location, validator or mutation. |
+| Complete slot authority; p contains A; POST the IRI values A and B | `204`; p contains A and B. Repeating gives `204` with no further change. |
+| Caller may add A but lacks authority for B; POST A and B | `403`; neither value is added, including when B is absent. |
+| Authorized resource edit with stale `If-Match` | `412`, no changes. With authority revoked before the request, `403` instead. |
+| Hidden q changes while the caller can read only p | The visible representation/tag and the authorized p-only edit are unaffected; whole-resource replacement remains uniformly refused. |
+| An authorized edge is already absent; DELETE that edge | `204`; other values survive. Without authority for that edge, uniform `403` whether present or absent. |
+
+Repeat the cases through aliases and in a single-graph, Context-based and area/document-policy
+model once their logical scopes are defined. Include concurrent revocation, input validation,
+retries, mixed batches and zero-change outcomes. The observable cases are the acceptance target;
+implementation setup may differ.
 
 ### Creation and lifecycle
 
