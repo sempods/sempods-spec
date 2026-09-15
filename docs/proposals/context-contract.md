@@ -12,7 +12,7 @@ Applications describe resources and their relationships in RDF. A Context identi
 view of that data; membership may be stored or computed. It does not define the application's
 vocabulary, a folder for a resource, or a physical store. The same resource IRI can occur across Contexts without changing
 what it identifies. Ordinary clients use the
-[aggregate data contract](data-access.md#logical-dataset-and-operation-scope) without this module.
+[implicit data-scope recommendation](data-access.md#logical-dataset-and-operation-scope) without this module.
 
 The [vision's selection test](../vision.md#what-belongs-in-the-contract) separates three concerns:
 
@@ -20,7 +20,7 @@ The [vision's selection test](../vision.md#what-belongs-in-the-contract) separat
 |---|---|
 | Semantic data | RDF identities, assertions and stored/computed views; a native named graph need not be a registered sempods Context. |
 | Context access profile | An advertised Context has registry RDF, a caller-authorized projection and an access summary. Its SPARQL projection is a logical named graph, including when computed over a store with no physical named graphs. |
-| Lifecycle | A separate module supplies authorized creation/deletion. Storage, policy language, provisioning and additional administration remain implementation choices. |
+| Lifecycle | The same contexts module supplies authorized creation/deletion. Storage, policy language, provisioning and additional administration remain implementation choices. |
 
 In the first RDF delivery, retain the current Context-mode implications for compatibility. In the
 full view contract, read, data-write and view-management authority are independent. A manager can
@@ -45,42 +45,47 @@ endpoint or assert that the registry is the caller's query dataset. HTTP cache d
 
 ## Module boundary and bootstrap
 
-Recommend `https://schema.sempods.org/module/contexts` as the new module identity, initially
-`0.1-dev`. It covers Context identities, registry reads, Context-granular rights and their discovery,
-explicit data selection and the [existing proposed selector outcomes](data-access.md#optional-context-contracts).
-The lifecycle module keeps `https://schema.sempods.org/module/context-management` and its own version.
-At adoption its revised development contract depends on `contexts` `0.1-dev`; publishing either
-component follows governance and records the supported dependency version. Neither identity is
-allocated or advertised by this proposal merge. A development version alone does not identify an
-immutable contract; adoption and implementation evidence also name the source revision.
+Use one optional module, `https://schema.sempods.org/module/contexts`, initially `0.1-dev`. It covers
+Context selection, identities, registry reads, caller-access discovery and lifecycle together.
+A core client needs none of those capabilities. The module preserves ordinary requests without a
+selector through the [implicit-scope recommendation](data-access.md#recommended-implicit-scope),
+whose four access cases still await decision in #69. The single-module boundary is the selected
+direction; the particular default-access effects are recommendations for review.
 
-Use the existing conformance response fields, for example after adoption:
+At full adoption, this module supersedes the current `context-management` contract and the
+Context-specific parts of current core. It is not a second layer depending on a lifecycle module.
+Keep the old IRI's historical meaning and published references; do not silently alias or rename it.
+The earlier RDF response delivery still uses the current core and `context-management` declarations.
+The new identity is allocated and advertised only with its coordinated normative adoption.
+A development version is mutable; adoption and implementation evidence also name the source revision.
+
+For the later adopted contract, the existing conformance fields suffice:
 
 ```json
 {
   "specVersion": "0.1-dev",
   "modules": [
-    {"id": "https://schema.sempods.org/module/contexts", "version": "0.1-dev"},
-    {"id": "https://schema.sempods.org/module/context-management", "version": "0.1-dev"}
+    {"id": "https://schema.sempods.org/module/contexts", "version": "0.1-dev"}
   ]
 }
 ```
 
-A pod can advertise neither module, `contexts` alone, or both. Advertising lifecycle without its
-compatible Context dependency is an invalid conformance claim. A client discovers capabilities
-through this response; it does not infer them from stored RDF or probe management routes. An
-unsupported Context input retains the proposed `400` outcome. No additional discovery field,
-policy-management API or general version-negotiation scheme is introduced.
+For these capabilities there are two configurations: core alone, or core with `contexts`.
+Advertising the module commits to its complete API contract, including lifecycle. Authorization
+can deny individual operations and some views can be read-only; those are data/access states, not
+additional module combinations. Validation includes permitted operations, not only denials; an
+implementation cannot replace a missing advertised capability with universal `403`. Unsupported
+Context input on a core-only pod retains the proposed `400` outcome. No extra capability flags or
+policy-management API are introduced.
 
-For the full core/module adoption, zero registered Contexts is valid. Authorized ordinary resource
-creation without a selector adds assertions without explicit membership while the registry can
-remain empty; existing computed views can select the new facts. Read, find
-and SPARQL expose that data within the caller's authority; without consent the write is `403`.
-Provisioning supplies no authority, and a core client need not create or select a Context.
-[The data-access cases](data-access.md#two-implementation-examples) define the ordinary operations.
-#69's authentication iteration still owes the exact authorization-request profile that realizes
-this outcome. Context-level authority alone does not authorize an ordinary replacement across other
-graphs and unassigned statements. The initial RDF delivery retains the current minimum-count rules.
+In the default-access recommendation, the pod supplies an implicit D scope even with no registered
+Contexts. An authorized ordinary creation writes there without registry setup. D can be backed by
+an internal default Context or storage with no Context concept; its public Context IRI is optional.
+Additional Context registration does not change D. Read, find and the ordinary SPARQL default graph
+use that same scope within the caller's authority. Source writes may change dependent computed views.
+#69 still owes the exact core authorization/delegation profile for this access; choosing a default
+creates no authority and permission on an independent A does not authorize a write to D.
+The initial RDF delivery retains the current selector and minimum-count rules.
 
 A single physical graph can support several computed Contexts, for example tasks selected by
 assignee or project. A pod can implement the selection with query evaluation, an ACP-based access
@@ -102,7 +107,7 @@ however implemented. Such writes can change dependent computed views, while unre
 assertions survive. A computed view lacking that contract is read-only through selected CRUD,
 even if its manager can edit its definition or its callers can separately edit the sources.
 Omit `writableContext` for it; valid selected writes give uniform `403`, including no-ops and absent
-targets. No fallback to source or aggregate writes and no implicit changes to selection rules.
+targets. No fallback to source or default-scope writes and no implicit changes to selection rules.
 
 This bounds the first computed-view support. General write-through views need a later explicitly
 discoverable contract for source updates, insertion placement, overlap and updates that leave the
@@ -173,7 +178,8 @@ A portable server-side registry query profile would need its own discovery and d
 it is neither a prerequisite for RDF discovery nor prohibited by this proposal.
 
 The `rdfs:seeAlso` target is derived without testing data existence. Following it applies ordinary
-resource-read authorization and can yield `404` while `GET C` succeeds, or vice versa. This link
+resource-read authorization and scope: in the full default-access recommendation it addresses D,
+not every Context containing statements about C. It can yield `404` while `GET C` succeeds, or vice versa. This link
 asserts relevance, not authority, equivalence or a promise of content. A duplicate HTTP `Link` is
 unnecessary for this contract. Ordinary writes can store `<C> sps:public true` as data without
 changing the registry's `false`, registry validators or access decisions.
@@ -312,9 +318,10 @@ own complete effect; view-management permission cannot substitute for that autho
 
 Authorize unregistering independently of hidden source contents. Existing authorized C gives `204`,
 absent C gives `404`; outside management authority both give `403`. Success completes the full
-unregistration and authority withdrawal; failure leaves both unapplied. No minimum Context count or
-replacement Context is required at full adoption. Creation with the existing ContextCreate fields
-creates an empty membership-capable view; provisioning computed definitions stays with an
+unregistration and authority withdrawal; failure leaves both unapplied. No minimum registered Context count or
+replacement Context is required at full adoption. Unregistering a public name for D leaves the
+implicit data scope in place; it neither redirects ordinary writes nor grants new source access.
+Creation with the existing ContextCreate fields creates an empty membership-capable view; provisioning computed definitions stays with an
 implementation's authorized administration, without adding a rule language to this contract.
 
 The normative adoption must reconcile CTX-017 and consumers such as MEDIA-021 with the separation
@@ -331,11 +338,11 @@ state their distinct setup and modes. Repeat discovery cases with empty and none
 | Setup and request | Expected response/effect |
 |---|---|
 | Core-only pod; conformance GET, then authorized ordinary resource PUT | No Context modules; `201` without registry setup or selection. A Context selector gives `400`. |
-| Context module, empty registry; catalogue GET, then consented ordinary resource PUT | Empty RDF collection `200`; write `201`, no explicit membership, registry still empty. No consent: write `403`. |
-| Context module without lifecycle; client discovers modules | Registry/selection available; client does not assume management support. |
+| Context module, empty registry; catalogue GET, then consented ordinary resource PUT | Empty RDF collection `200`; write to D `201`, registry still empty. Storage may use an internal default Context. No consent: write `403`. |
+| Context module advertised; client discovers modules | Selection, registry, access discovery and lifecycle form one supported contract; caller authority is checked per operation. No second module dependency. |
 | Read caller; GET L and GET C | L links C through `readableContext` only; C description `200`, with no caller rights. |
 | Write caller; GET L, GET C, selected data PUT | L links C through `readableContext` and `writableContext`; same C description; data write succeeds. Lifecycle PUT/DELETE remains `403`. |
-| Manage caller; GET L, GET C, lifecycle PUT for C/sub | All three modes for C, same description; new child `201` when lifecycle is advertised. No absent child is listed before creation. |
+| Manage caller; GET L, GET C, lifecycle PUT for C/sub | All three modes for C, same description; new child `201` under the module lifecycle contract. No absent child is listed before creation. |
 | No-access caller; GET L, C and absent X | C/X omitted from L, both direct GETs `404` with no distinguishing validators or links. |
 | Public C, anonymous GET L and C | L links C through `readableContext`; C description `200`. Invalid supplied credential: `401`. |
 | Read revoked after GET C with tag E; GET C with `If-None-Match: E` | `404`. Authorized unchanged request: `304`. |
@@ -345,10 +352,10 @@ state their distinct setup and modes. Repeat discovery cases with empty and none
 | Same caller; create absent C without a body, then repeat on existing C | `201` with private defaults, then `200` unchanged. No metadata-edit capability is implied. |
 | Non-manager; well-formed PUT/DELETE C versus absent X, including conditional requests | Uniform `403`, no existence signal or effect. Invalid credential is `401`. |
 | Lifecycle PUT C with `?context=C` | `400`, no creation or change. |
-| Manage caller deletes the last C at full adoption | `204`, empty registry; source assertions survive under independent authorization, with no public fallback. Old C-bound grants do not revive on recreation. |
+| Manage caller deletes the last C at full adoption, including C exposing D | `204`, empty registry; source assertions survive under independent authorization. D remains the implicit scope, with no write redirection or public fallback. Old C-bound grants do not revive on recreation. |
 | Authorized administrator unregisters C; another registered view C/sub selects the same source | `204`, C's published projection disappears; source assertions and C/sub's independent definition survive. |
 | Same administrative authority; unregister C with versus without hidden source data whose writes are denied | Both `204`; no source deletion. A policy denying the administrative action itself gives uniform `403`, also for an absent target. |
-| No physical named graphs; computed C selects Alice's tasks; ordinary creation and then assignee update | C includes the matching task, then drops it when it no longer matches. No Context-membership write was needed. |
+| No physical named graphs; computed C selects Alice's tasks from D; ordinary creation and then assignee update | C includes the matching task, then drops it when it no longer matches. No Context-membership write was needed. |
 | GET C with Accept N-Quads; GET L with Accept JSON-LD | Same registry meaning in RDF; L's grant summary stays on L. Rights are never added to C. |
 | GET C or L with only `Accept: application/json` after RDF adoption | RDF JSON-LD under the existing media-type alias, no legacy Context/ContextList DTO. |
 | Local query above on retrieved catalogue/description RDF, with and without C's label | Returns C in both cases; optional label when present, no grant-string parsing. |
@@ -357,8 +364,8 @@ state their distinct setup and modes. Repeat discovery cases with empty and none
 | C has child path C/sub and both views select the same task | No domain relation or RDF containment is inferred from the path; updates to shared source data can change both projections. |
 | Write revoked but read retained; conditional catalogue GET with its former strong tag | Updated representation omits `writableContext` C and is not `304` for that tag. |
 | Caller manages computed C but cannot read or edit its sources | Catalogue links C through `manageableContext` only; registry GET `200`, data projection empty, selected writes `403`. No read/write implication from manage. |
-| Readable computed C has no membership-write contract; selected PATCH/PUT/DELETE, including no-op requests | Uniform `403`; source facts, rules and grants unchanged. Authorized ordinary writes remain available separately. |
-| Manager unregisters computed C backed by a rule also used by independent D | C's projection disappears and its bound grants cease to authorize; shared rule/source assertions and D survive. Re-creating C does not restore old C-bound authority. |
+| Readable computed C has no membership-write contract; selected PATCH/PUT/DELETE, including no-op requests | Uniform `403`; source facts, rules and grants unchanged. Authorized ordinary writes address sources inside D; no implicit write-through to sources outside D. |
+| Manager unregisters computed C backed by a rule also used by independent E | C's projection disappears and its bound grants cease to authorize; shared rule/source assertions and E survive. Re-creating C does not restore old C-bound authority. |
 
 ## Delivery boundary and adoption impact
 
@@ -368,11 +375,11 @@ Recommend two bounded deliveries, with their work and dependency records owned b
 | Delivery | Observable scope and prerequisite |
 |---|---|
 | RDF Context surface | On the current Context model, migrate GET C, GET L and successful creation representations to the registry RDF and structured caller summary above. Preserve current Context identity/membership, selector semantics, creation input/effects, minimum-count/deletion rules and grant semantics. Agree on text, OpenAPI, vocabulary, HTTP cases and the server/client migration together. No new optional-module claim. |
-| Optional Context contract | After #69's authentication/delegation decisions, adopt the smaller core, module discovery/dependency, asserted/computed dataset semantics, bootstrap, read-only general views and non-destructive view deletion with matching artifacts and validation under #70–#74. |
+| Optional Context contract | After #69's authentication/delegation decisions, adopt the smaller core, one module declaration, the decided implicit-scope/explicit-selection semantics, bootstrap, read-only general views and non-destructive view deletion with matching artifacts and validation under #70–#74. |
 
 The first delivery does not require metadata editing, a registry query service, a new policy engine
 or the full core migration. Its read/summary cases can be checked against the current Context model;
-computed-view, aggregate, zero-Context, independent manage/data modes and revised deletion cases
+computed-view, implicit-scope, zero-Context, independent manage/data modes and revised deletion cases
 belong to the second delivery. Normative changes
 still require review, validation and downstream preparation before merging. Completing the first
 delivery does not complete #68 or advertise the new Context module. The work records must explicitly

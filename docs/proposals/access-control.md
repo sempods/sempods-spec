@@ -85,7 +85,7 @@ implementation need not materialize it. Views, native store restrictions and que
 possible enforcement mechanisms if they preserve that result.
 
 The [logical dataset recommendation](data-access.md#logical-dataset-and-operation-scope) defines
-an aggregate default graph, authorized named projections, ordinary-write placement and explicit
+a coherent implicit default scope, authorized named projections, ordinary-write placement and explicit
 selection. Graph placement and disclosable graph names are part of the result contract, not storage
 choices. Conformance fixtures use identical assertions, view definitions and names across implementations;
 physical partitions remain free. Empty datasets still use standard query evaluation, including
@@ -122,7 +122,7 @@ algorithm follows from them.
 
 The **operation scope** consists of the addressed resource, slot or edge within the logical data
 space selected by the [dataset recommendation](data-access.md#logical-dataset-and-operation-scope):
-the whole space for an ordinary operation, or a selected Context's independently mutable assertions
+the implicit D scope for an ordinary operation, or a selected Context's independently mutable assertions
 under the membership-write contract. General computed views are read-only through selected CRUD
 until a separate write-through contract is defined. The direct write scope is fixed independently
 of response filtering; dependent views are reevaluated after mutation. A filtered GET is not
@@ -154,7 +154,7 @@ Location or validator and no resource creation. An authenticated read-only or un
 The target's absence alone does not prevent admission where policy permits an edit there. An empty
 slot PUT or a PATCH assigning an empty array is different: it clears values and needs authority for
 that effect. Atomicity covers the addressed logical scope, including all occurrences affected by an
-ordinary aggregate operation; it introduces no bulk-operation API.
+ordinary operation in D; it introduces no bulk-operation API.
 
 #### Complete scope authority and non-disclosure
 
