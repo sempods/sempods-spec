@@ -84,18 +84,12 @@ against the caller-authorized dataset. The dataset is a semantic model of what c
 implementation need not materialize it. Views, native store restrictions and query rewriting are
 possible enforcement mechanisms if they preserve that result.
 
-The dataset includes graph placement and observable graph names, not only a set of triples
-([SPARQL 1.1 §13](https://www.w3.org/TR/sparql11-query/#rdfDataset)). A triple in the default graph
-does not match `GRAPH ?g { ?s ?p ?o }`; the same triple in a named graph does. An implementation
-cannot expose arbitrary storage partitions and still claim equivalent results for the same logical
-data. A named graph is not automatically a sempods Context.
-
-The client-visible layout is an open contract decision before adoption: define the default graph,
-which named graphs are observable, where ordinary core writes appear, and how explicit Context
-selection interacts with both. Settle `GRAPH`, `FROM`, `FROM NAMED` and protocol dataset parameters
-against that layout. The RDF dataset model alone does not choose it, and this proposal does not
-exclude graph-sensitive queries to avoid the decision. Conformance fixtures need identical logical
-graph placement and names across implementations, while physical storage remains free.
+The [logical dataset recommendation](data-access.md#logical-dataset-and-operation-scope) defines
+an aggregate default graph, authorized named projections, ordinary-write placement and explicit
+selection. Graph placement and disclosable graph names are part of the result contract, not storage
+choices. Conformance fixtures use identical logical membership and names across implementations;
+physical partitions remain free. Empty datasets still use standard query evaluation, including
+empty group patterns and aggregates.
 
 Client-supplied dataset clauses and graph names cannot widen access. Store-local authorization data
 and other pods are outside the caller's data view unless an explicit contract makes them available.
@@ -113,9 +107,9 @@ Find's ranking may remain implementation-defined, while this isolation property 
 The following recommendations are the mutation portion of
 [#69](https://github.com/sempods/sempods-spec/issues/69), reviewed against specification revision
 `4e7a27044dbcadc318f288cb9111edc8eeccd9ec`. They remain **proposed**, including the changed slot
-outcomes. The [current CRUD chapter](../../spec/core/lod-crud.md) continues to bind. The separate
-[dataset decision](#queries-and-retrieval) must identify the logical graphs a request addresses
-before these guarantees can form a complete normative contract.
+outcomes. The [current CRUD chapter](../../spec/core/lod-crud.md) continues to bind. The proposed
+[logical dataset](data-access.md#logical-dataset-and-operation-scope) identifies the graphs a
+request addresses; both recommendations need coordinated review before normative adoption.
 
 #### Standard behavior and the pod's remaining choice
 
@@ -127,8 +121,9 @@ boundary. These are the choices below. No policy language, storage partition or 
 algorithm follows from them.
 
 The **operation scope** consists of the addressed resource, slot or edge within the logical data
-space selected by the eventual core/Context contract. It is fixed independently of which stored
-facts happen to be readable. A filtered GET is a read representation, not permission to redefine
+space selected by the [dataset recommendation](data-access.md#logical-dataset-and-operation-scope):
+the whole space for an ordinary operation, or the explicitly selected Context graph. It is fixed
+independently of which stored facts happen to be readable. A filtered GET is a read representation, not permission to redefine
 a later PUT as replacement of just that visible subset.
 
 | Operation | Recommended effect within that scope |
@@ -156,8 +151,8 @@ Location or validator and no resource creation. An authenticated read-only or un
 `403` for existing, hidden and absent targets alike; missing or invalid credentials get `401`.
 The target's absence alone does not prevent admission where policy permits an edit there. An empty
 slot PUT or a PATCH assigning an empty array is different: it clears values and needs authority for
-that effect. Atomicity concerns one addressed operation; it neither adds a bulk API nor resolves
-the separate logical-graph scope question.
+that effect. Atomicity covers the addressed logical scope, including all occurrences affected by an
+ordinary aggregate operation; it introduces no bulk-operation API.
 
 #### Complete scope authority and non-disclosure
 
