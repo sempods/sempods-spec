@@ -1194,7 +1194,10 @@ components:
               properties:
                 '@value':
                   type: string
-                  format: date-time
+                  description: >-
+                    An xsd:dateTime lexical form (SPS-CTX-032), including forms without a timezone.
+                    JSON Schema's date-time format denotes RFC 3339 and is narrower; this schema
+                    checks the string representation and datatype, not XSD lexical validity.
                 '@type':
                   const: http://www.w3.org/2001/XMLSchema#dateTime
               additionalProperties: false

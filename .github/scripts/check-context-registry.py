@@ -31,9 +31,11 @@ class RegistryRepresentations(unittest.TestCase):
         text = (ROOT / 'docs/guides/context-registry.md').read_text()
         cls.description, cls.catalogue, cls.empty = [json.loads(s) for s in re.findall(r'```json\n(.*?)\n```', text, re.S)]
 
-    def validator(self, name):
-        return Draft202012Validator({'$ref': CORE + '#/components/schemas/' + name},
-            registry=self.registry, format_checker=FormatChecker())
+    def validator(self, name, document=CORE):
+        source = self.core if document == CORE else self.module
+        registry = Registry().with_resource(document, Resource.from_contents(source, default_specification=DRAFT202012))
+        return Draft202012Validator({'$ref': document + '#/components/schemas/' + name},
+            registry=registry, format_checker=FormatChecker())
 
     def graph(self, payload):
         return Graph().parse(data=json.dumps(payload), format='json-ld')
@@ -118,6 +120,54 @@ class RegistryRepresentations(unittest.TestCase):
         payload[str(RDFS.label)][0]['@type'] = 'http://www.w3.org/2001/XMLSchema#string'
         self.validator('ContextDescription').validate(payload)
         self.assertEqual(set(self.graph(payload).objects(URIRef(payload['@id']), SPS.public)), {Literal(False)})
+
+    def test_created_accepts_xsd_datetime_forms_beyond_rfc3339(self):
+        created = 'http://purl.org/dc/terms/created'
+        datatype = 'http://www.w3.org/2001/XMLSchema#dateTime'
+        for document in (CORE, MODULE):
+            validator = self.validator('ContextDescription', document)
+            for lexical in ('2026-09-15T10:00:00Z', '2026-09-15T10:00:00',
+                            '2026-09-15T24:00:00', '12026-09-15T10:00:00Z',
+                            '-0001-09-15T10:00:00Z'):
+                with self.subTest(document=document, lexical=lexical):
+                    payload = copy.deepcopy(self.description)
+                    payload[created] = [{'@value': lexical, '@type': datatype}]
+                    validator.validate(payload)
+            for literal in ({'@value': 123, '@type': datatype},
+                            {'@value': '2026-09-15T10:00:00'},
+                            {'@value': '2026-09-15T10:00:00', '@type': 'http://www.w3.org/2001/XMLSchema#string'}):
+                with self.subTest(document=document, literal=literal):
+                    payload = copy.deepcopy(self.description)
+                    payload[created] = [literal]
+                    self.assertFalse(validator.is_valid(payload))
+
+    def test_module_resolves_alone_and_shared_components_agree(self):
+        registry = Registry().with_resource(MODULE, Resource.from_contents(self.module, default_specification=DRAFT202012))
+        resolver = registry.resolver(MODULE)
+
+        def check_refs(value):
+            if isinstance(value, dict):
+                if '$ref' in value:
+                    self.assertTrue(value['$ref'].startswith('#/'), value['$ref'])
+                    resolver.lookup(value['$ref'])
+                for child in value.values(): check_refs(child)
+            elif isinstance(value, list):
+                for child in value: check_refs(child)
+
+        check_refs(self.module)
+        for kind, names in (
+            ('schemas', ('RegistryIri', 'RegistryLiteral', 'RegistryNode', 'ContextDescription')),
+            ('parameters', ('RegistryAccept',)),
+            ('responses', ('RegistryUnauthorized', 'NotAcceptable')),
+        ):
+            for name in names:
+                with self.subTest(kind=kind, name=name):
+                    self.assertEqual(self.module['components'][kind][name], self.core['components'][kind][name])
+        for code in ('200', '201'):
+            content = self.module['paths']['/_system/contexts/{contextPath}']['put']['responses'][code]['content']['application/ld+json']
+            pointer = MODULE + '#/paths/~1_system~1contexts~1{contextPath}/put/responses/' + code + '/content/application~1ld+json/schema'
+            Draft202012Validator({'$ref': pointer}, registry=registry,
+                                 format_checker=FormatChecker()).validate(content['example'])
 
     def test_vocabulary_declares_all_summary_predicates(self):
         g = Graph().parse(ROOT / 'vocabulary/sempods.ttl', format='turtle')

@@ -42,6 +42,10 @@ split into five documents, a reader has to merge them before anything is usable,
 components have to be duplicated or referenced across files. A module is different — it is optional,
 so its description has to be separable, and it is.
 
+The Context module carries local copies of the registry components used by its creation responses.
+The [representation checker](../.github/scripts/check-context-registry.py) verifies that they agree
+with core and that the module's references resolve using only that file.
+
 **The OIDC file describes one route**, and that is the whole of what the module adds to a *pod*.
 Everything else it specifies happens at an identity service, as standard OpenID Connect; restating
 that here would be the re-explanation the writing rules rule out, so it is named and linked instead.
@@ -58,3 +62,7 @@ Two consequences visible in the files themselves. A path parameter like `resourc
 slashes, which OpenAPI path templating has no way to express — tooling will render it as one
 segment. And a `404` frequently means *does not exist, or you may not see that it does*, which is a
 security property rather than a description of the resource.
+
+For registry creation dates, the schema checks the JSON-LD string and `xsd:dateTime` datatype;
+XSD lexical validity remains part of the RDF contract. JSON Schema's `date-time` format uses the
+narrower RFC 3339 syntax and would reject valid XSD values, including timestamps without a timezone.
