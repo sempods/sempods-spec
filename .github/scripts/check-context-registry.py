@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import unittest
+from urllib.request import parse_http_list, parse_keqv_list
 
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
@@ -217,6 +218,15 @@ class RegistryRepresentations(unittest.TestCase):
                         payload[predicate] = [literal]
                         self.assertFalse(validator.is_valid(payload))
 
+    def assert_bearer_discovery(self, value):
+        scheme, parameters = value.split(' ', 1)
+        self.assertEqual(scheme, 'Bearer')
+        fields = parse_keqv_list(parse_http_list(parameters))
+        self.assertEqual(fields['error'], 'invalid_token')
+        self.assertEqual(fields['realm'], 'https://example.org/alice')
+        self.assertEqual(fields['resource_metadata'],
+                         'https://example.org/alice/.well-known/oauth-protected-resource')
+
     def test_creation_requires_authentication_and_documents_the_challenge(self):
         self.assertTrue(self.module['security'])
         self.assertNotIn({}, self.module['security'])
@@ -226,7 +236,7 @@ class RegistryRepresentations(unittest.TestCase):
         response = self.registry.resolver(MODULE).lookup(put['responses']['401']['$ref']).contents
         challenge = response['headers']['WWW-Authenticate']
         self.assertTrue(challenge['required'])
-        self.assertEqual(challenge['example'], 'Bearer error="invalid_token"')
+        self.assert_bearer_discovery(challenge['example'])
         Draft202012Validator(challenge['schema']).validate(challenge['example'])
 
     def test_registry_reads_document_rejected_token_challenges_and_public_access(self):
@@ -237,7 +247,7 @@ class RegistryRepresentations(unittest.TestCase):
                 response = self.registry.resolver(CORE).lookup(get['responses']['401']['$ref']).contents
                 challenge = response['headers']['WWW-Authenticate']
                 self.assertTrue(challenge['required'])
-                self.assertEqual(challenge['example'], 'Bearer error="invalid_token"')
+                self.assert_bearer_discovery(challenge['example'])
                 Draft202012Validator(challenge['schema']).validate(challenge['example'])
 
     def test_registry_success_and_error_responses_share_cache_guarantees(self):

@@ -53,7 +53,7 @@ paths:
         tool does not declare is refused before dispatch, never silently dropped. The caller is a
         language model, and ignoring an invented argument executes a different operation than the
         one it asked for — broader on a read, wrong on a write — and returns success.
-      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028]
+      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -76,8 +76,12 @@ paths:
             caller exactly as for an HTTP caller.
           headers:
             WWW-Authenticate:
+              required: true
+              description: >-
+                SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
+                resource_metadata URL. Rejected credentials carry invalid_token.
               schema: { type: string }
-              example: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+              example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
@@ -91,17 +95,12 @@ paths:
       operationId: mcpProtectedResourceMetadata
       summary: RFC 9728 Protected Resource Metadata, at the MCP URL.
       description: |
-        Some clients read the MCP URL itself as the protected-resource identifier and build this
-        address from it. What they get is the **pod-level** document — the one
-        `{pod}/.well-known/oauth-protected-resource` serves, `resource` naming the pod. The MCP URL
-        is another spelling of the same protected resource, so a client that discovered the pod
-        here and one that discovered it there end at the same authorization server.
-
-        The host-rooted address RFC 9728 §3.1 builds from an MCP URL sits on the origin, above the
-        pod's base URL, and a pod cannot serve what is above it. A client that probes there first
-        finds nothing and falls back to the `401` above.
+        An alias for the pod-level metadata, with resource and sole authorization server equal
+        to the canonical pod base URL. SPS-AUTH-067/068 define the pod-local address and
+        validation exceptions. Generic RFC 9728 clients matching resource to the MCP URL may
+        reject this document.
       security: [{}]
-      x-sps-requirements: [SPS-MCP-031]
+      x-sps-requirements: [SPS-MCP-031, SPS-AUTH-065, SPS-AUTH-067, SPS-AUTH-068]
       responses:
         '200':
           description: The pod-level metadata document.
@@ -172,9 +171,20 @@ components:
       type: object
       required: [resource, authorization_servers, bearer_methods_supported]
       properties:
-        resource: { type: string, format: uri }
-        authorization_servers: { type: array, items: { type: string, format: uri } }
-        bearer_methods_supported: { type: array, items: { type: string } }
+        resource:
+          type: string
+          format: uri
+          description: The canonical pod base URL, including at the MCP alias.
+        authorization_servers:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { type: string, format: uri }
+          description: The sole value is the canonical pod base URL.
+        bearer_methods_supported:
+          type: array
+          items: { type: string }
+          contains: { const: header }
         scopes_supported:
           type: array
           items: { type: string }

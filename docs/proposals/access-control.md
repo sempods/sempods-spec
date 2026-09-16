@@ -267,7 +267,9 @@ current-contract issues. #65's removal of guaranteed refresh-token issuance rema
 | GRANT-020/021/022/031/032, AUTH-042/043/044 | Retain additive public-read and credential-free reads; generalize to public assertions in the requested scope and permit public-only issuance on an empty pod. Keep invalid-credential rejection. |
 | MCP-011/012/013/030 | Coordinate core-only authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact core-only result shape remains a module-view decision. |
 
-The equivalent-identity wire claim (#5), discovery/address rules (#66/#67), remaining #82
+The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies pod-local
+metadata and pod-base identities. External service identities remain proposed under #96.
+The equivalent-identity wire claim (#5), remaining #82
 transport/registration/token-profile candidates and #77's validation issues retain their ownership.
 This iteration does not invent their missing fields or claim a complete federation profile.
 The full Context lifecycle, independent view/data authority and retained-source/media behavior

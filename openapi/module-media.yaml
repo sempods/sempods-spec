@@ -54,7 +54,7 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026, SPS-MEDIA-028]
+      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026, SPS-MEDIA-028, SPS-AUTH-064]
       requestBody:
         required: true
         description: |
@@ -71,6 +71,7 @@ paths:
           application/vnd.sempods.media-source+json:
             schema: { $ref: '#/components/schemas/MediaSource' }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '201':
           description: Stored, or already stored — indistinguishable on purpose.
           headers:
@@ -90,8 +91,9 @@ paths:
       operationId: getMediaMetadata
       summary: What this pod records about the bytes.
       description: Lists only the assignments the caller may read.
-      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-012, SPS-MEDIA-015]
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-012, SPS-MEDIA-015, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: |
             The metadata. Private and credential-varying like the content response, and for a
@@ -108,8 +110,9 @@ paths:
     head:
       operationId: headMediaMetadata
       summary: The metadata headers, with no body.
-      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010]
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Headers only. }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
     put:
@@ -124,8 +127,9 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008]
+      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Assigned, or already assigned. }
         '403': { description: Missing write on the target, or read on an existing assignment. }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
@@ -140,8 +144,9 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-022, SPS-MEDIA-023]
+      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-022, SPS-MEDIA-023, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: The assignment is absent. }
         '403': { description: No write grant on the named context. }
 
@@ -161,8 +166,9 @@ paths:
         callers with different read access legitimately receive different declared types, and so
         different representations, at this one URL — a tag over the bytes alone would let a
         conditional request or a cache carry one caller's representation to the other.
-      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-013, SPS-MEDIA-014, SPS-MEDIA-015, SPS-MEDIA-016, SPS-MEDIA-017, SPS-MEDIA-018, SPS-MEDIA-027]
+      x-sps-requirements: [SPS-MEDIA-009, SPS-MEDIA-010, SPS-MEDIA-013, SPS-MEDIA-014, SPS-MEDIA-015, SPS-MEDIA-016, SPS-MEDIA-017, SPS-MEDIA-018, SPS-MEDIA-027, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: |
             `Content-Disposition` is an allowlist — inline for a small set of known-safe image
@@ -184,8 +190,9 @@ paths:
     head:
       operationId: headMediaContent
       summary: The content headers, with no body.
-      x-sps-requirements: [SPS-MEDIA-014, SPS-MEDIA-015]
+      x-sps-requirements: [SPS-MEDIA-014, SPS-MEDIA-015, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Headers only. }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
 
@@ -227,6 +234,20 @@ components:
       description: The SHA-256 of the bytes, base64url without padding.
 
   responses:
+
+    BearerUnauthorized:
+      description: >-
+        Missing credentials on a protected operation, or rejected credentials on any bearer
+        resource operation. Public access without credentials remains available where specified.
+      headers:
+        WWW-Authenticate:
+          required: true
+          description: >-
+            SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
+            resource_metadata URL. Rejected credentials carry invalid_token.
+          schema: { type: string }
+          example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+
     NotFoundOrNotVisible:
       description: |
         No such media, or not readable by this caller. Deliberately indistinguishable — the

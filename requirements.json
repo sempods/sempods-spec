@@ -423,6 +423,41 @@
       "withdrawn": false
     },
     {
+      "id": "SPS-AUTH-064",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "Every `401` from a pod's bearer-protected resource endpoint, in core or a module, MUST include a `WWW-Authenticate: Bearer` challenge.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-065",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "The pod's resource metadata MUST set `resource` to its canonical base URL, set `authorization_servers` to an array containing only that URL, and include `header` in `bearer_methods_supported`.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-066",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "An implementation MUST serve Authorization Server Metadata at `GET {pod}/.well-known/oauth-authorization-server`, without authentication.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-067",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "For pod-local discovery, servers and clients MUST append `/.well-known/oauth-protected-resource` or `/.well-known/oauth-authorization-server` to the canonical pod base URL.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-068",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A client using this profile MUST validate discovery against the canonical pod base URL it intended to access, not a base inferred from returned metadata.",
+      "withdrawn": false
+    },
+    {
       "id": "SPS-CORE-001",
       "part": "core",
       "chapter": "spec/core/index.md",

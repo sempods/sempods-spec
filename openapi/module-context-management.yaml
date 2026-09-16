@@ -46,7 +46,7 @@ paths:
       operationId: putContext
       summary: Create a context, idempotently.
       description: "The body is optional. Where the `public` flag is absent \u2014 including on a request with no\nbody at all \u2014 the context is created **private**: the quiet path is the one without a body,\nand a context becomes readable without a grant because somebody said so, never because they\nsaid nothing.\n\nSuccessful responses are registry RDF (SPS-CTX-037). Negotiate the response before creation; an unsatisfiable Accept gives 406 without mutation. JSON input and create-only effects are unchanged. Every registry response, including errors, preserves the cache isolation and freshness of SPS-CTX-036.\n"
-      x-sps-requirements: [SPS-CORE-015, SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027, SPS-CTX-037]
+      x-sps-requirements: [SPS-CORE-015, SPS-CTX-005, SPS-CTX-009, SPS-CTX-012, SPS-CTX-013, SPS-CTX-014, SPS-CTX-015, SPS-CTX-016, SPS-CTX-019, SPS-CTX-027, SPS-CTX-037, SPS-AUTH-064]
       requestBody:
         required: false
         content:
@@ -135,8 +135,9 @@ paths:
         have one, and the condition is the caller's view rather than the pod's count: written
         against the pod's last context, the status would tell a delegated manager whether contexts
         exist that they may not see.
-      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020, SPS-CTX-029]
+      x-sps-requirements: [SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-020, SPS-CTX-029, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/AuthenticationRequired' }
         '204': { description: Removed. }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NoSuchContext' }
@@ -211,13 +212,15 @@ components:
     AuthenticationRequired:
       description: >-
         Authentication is required. Missing and rejected bearer tokens produce the same
-        401 response with invalid_token (SPS-CORE-015). Context creation has no public-read exception.
+        401 response with invalid_token (SPS-CORE-015). Context lifecycle writes have no public-read exception.
       headers:
         WWW-Authenticate:
           required: true
-          description: Bearer challenge carrying error="invalid_token" for both missing and rejected tokens.
+          description: >-
+            SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
+            resource_metadata URL. Rejected credentials carry invalid_token.
           schema: { type: string }
-          example: 'Bearer error="invalid_token"'
+          example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
         Cache-Control:
           $ref: '#/components/headers/RegistryCacheControl'
 

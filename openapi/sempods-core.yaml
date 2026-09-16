@@ -108,7 +108,7 @@ paths:
         Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Every response, including errors, satisfies the authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
 
         '
-      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036]
+      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036, SPS-AUTH-064]
       responses:
         '200':
           description: The authorized registry representation.
@@ -170,7 +170,7 @@ paths:
         Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Every response, including errors, satisfies the authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
 
         '
-      x-sps-requirements: [SPS-CTX-024, SPS-CTX-026, SPS-CTX-031, SPS-CTX-032, SPS-CTX-035, SPS-CTX-036]
+      x-sps-requirements: [SPS-CTX-024, SPS-CTX-026, SPS-CTX-031, SPS-CTX-032, SPS-CTX-035, SPS-CTX-036, SPS-AUTH-064]
       responses:
         '200':
           description: The authorized registry representation.
@@ -234,8 +234,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-014, SPS-CRUD-015, SPS-CRUD-017, SPS-CRUD-020, SPS-CRUD-021, SPS-CRUD-022, SPS-CRUD-026, SPS-CRUD-027, SPS-CRUD-029, SPS-CRUD-058]
+      x-sps-requirements: [SPS-CRUD-014, SPS-CRUD-015, SPS-CRUD-017, SPS-CRUD-020, SPS-CRUD-021, SPS-CRUD-022, SPS-CRUD-026, SPS-CRUD-027, SPS-CRUD-029, SPS-CRUD-058, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { $ref: '#/components/responses/ResourceRepresentation' }
         '304': { description: Not modified. }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
@@ -245,8 +246,9 @@ paths:
       operationId: headResource
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of a dereference, with no body.
-      x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029, SPS-CRUD-058]
+      x-sps-requirements: [SPS-CRUD-018, SPS-CRUD-029, SPS-CRUD-058, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: Headers only.
           headers:
@@ -271,7 +273,7 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatch'
-      x-sps-requirements: [SPS-CRUD-007, SPS-CRUD-008, SPS-CRUD-010, SPS-CRUD-011, SPS-CRUD-012, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-033, SPS-CRUD-034]
+      x-sps-requirements: [SPS-CRUD-007, SPS-CRUD-008, SPS-CRUD-010, SPS-CRUD-011, SPS-CRUD-012, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-033, SPS-CRUD-034, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -280,6 +282,7 @@ paths:
           application/n-quads:
             schema: { type: string }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Replaced. }
         '201':
           description: Created.
@@ -302,13 +305,14 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-CRUD-038]
+      x-sps-requirements: [SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-CRUD-038, SPS-AUTH-064]
       requestBody:
         required: true
         content:
           application/merge-patch+json:
             schema: { type: object }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Patched. }
         '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -322,8 +326,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-039]
+      x-sps-requirements: [SPS-CRUD-039, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Removed. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -345,8 +350,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-001, SPS-CRUD-002, SPS-CRUD-003, SPS-CRUD-005, SPS-CRUD-006, SPS-CRUD-058]
+      x-sps-requirements: [SPS-CRUD-001, SPS-CRUD-002, SPS-CRUD-003, SPS-CRUD-005, SPS-CRUD-006, SPS-CRUD-058, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { $ref: '#/components/responses/ResourceRepresentation' }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
         '406': { $ref: '#/components/responses/NotAcceptable' }
@@ -355,8 +361,9 @@ paths:
       operationId: headResourceByIri
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The headers of that dereference, with no body.
-      x-sps-requirements: [SPS-CRUD-040, SPS-CRUD-058]
+      x-sps-requirements: [SPS-CRUD-040, SPS-CRUD-058, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: Headers only.
           headers:
@@ -381,7 +388,7 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043]
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043, SPS-AUTH-064]
       requestBody:
         required: true
         description: |
@@ -393,6 +400,7 @@ paths:
           application/n-quads:
             schema: { type: string }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Replaced. }
         '201':
           description: Created.
@@ -408,13 +416,14 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037]
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-AUTH-064]
       requestBody:
         required: true
         content:
           application/merge-patch+json:
             schema: { type: object }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { description: Patched. }
         '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -425,8 +434,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-039]
+      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-039, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Removed. }
         '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
 
@@ -447,8 +457,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-046, SPS-CRUD-050, SPS-CRUD-051, SPS-CRUD-057]
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-046, SPS-CRUD-050, SPS-CRUD-051, SPS-CRUD-057, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: The slot's values.
           content:
@@ -463,13 +474,14 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatchSlot'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-048, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054]
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-048, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054, SPS-AUTH-064]
       requestBody:
         required: true
         content:
           application/ld+json:
             schema: { $ref: '#/components/schemas/SlotValues' }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: Replaced. Carries the slot's new entity tag.
           headers:
@@ -489,7 +501,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054]
+      x-sps-requirements: [SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054, SPS-AUTH-064]
       requestBody:
         required: true
         description: One value, or several — SPS-CRUD-041 defines the verb as adding the given value or values.
@@ -500,6 +512,7 @@ paths:
                 - $ref: '#/components/schemas/SlotValue'
                 - $ref: '#/components/schemas/SlotValues'
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: |
             The value was already present. Carries the slot's tag like any other successful slot
@@ -527,8 +540,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-044, SPS-CRUD-052]
+      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-044, SPS-CRUD-052, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: '`cleared`, or `already_empty`. Carries the post-clear entity tag.'
           headers:
@@ -554,8 +568,9 @@ paths:
         "ensure this triple does not exist" without a prior read.
       parameters:
         - $ref: '#/components/parameters/WriteContext'
-      x-sps-requirements: [SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054]
+      x-sps-requirements: [SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: '`removed`, or `already_absent`.'
           content:
@@ -589,13 +604,14 @@ paths:
           required: false
           schema: { type: array, items: { type: string, format: uri } }
           explode: true
-      x-sps-requirements: [SPS-SPARQL-001, SPS-SPARQL-002, SPS-SPARQL-003, SPS-SPARQL-004, SPS-SPARQL-005, SPS-SPARQL-007, SPS-SPARQL-008, SPS-SPARQL-011, SPS-SPARQL-012, SPS-SPARQL-013, SPS-SPARQL-015, SPS-SPARQL-016, SPS-SPARQL-017, SPS-SPARQL-018]
+      x-sps-requirements: [SPS-SPARQL-001, SPS-SPARQL-002, SPS-SPARQL-003, SPS-SPARQL-004, SPS-SPARQL-005, SPS-SPARQL-007, SPS-SPARQL-008, SPS-SPARQL-011, SPS-SPARQL-012, SPS-SPARQL-013, SPS-SPARQL-015, SPS-SPARQL-016, SPS-SPARQL-017, SPS-SPARQL-018, SPS-AUTH-064]
       requestBody:
         required: true
         content:
           application/sparql-query:
             schema: { type: string }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
           description: |
             `SELECT` and `ASK` answer SPARQL results JSON; `CONSTRUCT` and `DESCRIBE` answer RDF. An
@@ -634,8 +650,9 @@ paths:
           in: query
           required: false
           schema: { type: integer, minimum: 1 }
-      x-sps-requirements: [SPS-FIND-004, SPS-FIND-005, SPS-FIND-006, SPS-FIND-007, SPS-FIND-008, SPS-FIND-009, SPS-FIND-010, SPS-FIND-011, SPS-FIND-012, SPS-FIND-014, SPS-FIND-015, SPS-FIND-016, SPS-FIND-018, SPS-FIND-019, SPS-FIND-020, SPS-FIND-021]
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-005, SPS-FIND-006, SPS-FIND-007, SPS-FIND-008, SPS-FIND-009, SPS-FIND-010, SPS-FIND-011, SPS-FIND-012, SPS-FIND-014, SPS-FIND-015, SPS-FIND-016, SPS-FIND-018, SPS-FIND-019, SPS-FIND-020, SPS-FIND-021, SPS-AUTH-064]
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { $ref: '#/components/responses/FindGraph' }
         '400': { $ref: '#/components/responses/BadRequest' }
     post:
@@ -644,13 +661,14 @@ paths:
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The same operation, for a request that no longer fits in a URL.
       description: The body is parsed strictly — an unknown member is rejected, never ignored.
-      x-sps-requirements: [SPS-FIND-004, SPS-FIND-013]
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-013, SPS-AUTH-064]
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/FindRequest' }
       responses:
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { $ref: '#/components/responses/FindGraph' }
         '400': { $ref: '#/components/responses/BadRequest' }
 
@@ -758,31 +776,56 @@ paths:
             application/json:
               schema: { type: object }
 
-  # The append form, and the only Protected Resource Metadata address this specification requires.
-  # The host-rooted form RFC 9728 §3.1 constructs is a route on the origin, outside any one pod's
-  # base URL, so a pod cannot serve it and nothing here asks it to. A deployment that hosts many
-  # pods can, as an extension of its own.
   /.well-known/oauth-protected-resource:
     get:
       tags: [auth]
       operationId: protectedResourceMetadata
-      summary: RFC 9728 Protected Resource Metadata.
+      summary: The pod's resource and authorization-server identities.
       description: |
-        Never enumerates the pod's public context IRIs — a count may be advertised, the URIs would
-        be a topology leak on an unauthenticated route.
-
-        A client that has not been told this address reaches it the ordinary way: an
-        unauthenticated request, a `401`, and the `resource_metadata` hint in `WWW-Authenticate`.
-        Pre-flight RFC 9728 discovery against the host-rooted address does not find a path-scoped
-        pod.
+        Public JSON at the pod-local append address (SPS-AUTH-067). The resource and sole
+        authorization server are the canonical pod base URL. Context IRIs are never listed.
+        A Bearer challenge points here; successful public requests need no challenge.
       security: [{}]
-      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047]
+      x-sps-requirements: [SPS-AUTH-045, SPS-AUTH-046, SPS-AUTH-047, SPS-AUTH-065, SPS-AUTH-067, SPS-AUTH-068]
       responses:
         '200':
-          description: The metadata document.
+          description: The pod-level metadata document.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
+              example:
+                resource: https://example.org/alice
+                authorization_servers: [https://example.org/alice]
+                bearer_methods_supported: [header]
+
+  /.well-known/oauth-authorization-server:
+    get:
+      tags: [auth]
+      operationId: authorizationServerMetadata
+      summary: The pod's OAuth endpoints and supported methods.
+      description: |
+        Public JSON at the pod-local append address. SPS-AUTH-067 deliberately replaces
+        RFC 8414's host-rooted address construction; issuer validation still uses the exact
+        canonical pod base URL. Optional host-rooted routes require deployment support.
+      security: [{}]
+      x-sps-requirements: [SPS-AUTH-048, SPS-AUTH-066, SPS-AUTH-067, SPS-AUTH-068]
+      responses:
+        '200':
+          description: Authorization Server Metadata for this pod; this example has registered service clients.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthorizationServerMetadata' }
+              example:
+                issuer: https://example.org/alice
+                authorization_endpoint: https://example.org/alice/_system/auth/authorize
+                token_endpoint: https://example.org/alice/_system/auth/token
+                registration_endpoint: https://example.org/alice/_system/auth/register
+                jwks_uri: https://example.org/alice/_system/auth/jwks.json
+                response_types_supported: [code]
+                grant_types_supported: [authorization_code, refresh_token, client_credentials]
+                token_endpoint_auth_methods_supported: [none, client_secret_basic]
+                code_challenge_methods_supported: [S256]
+
 
 components:
 
@@ -986,6 +1029,19 @@ components:
 
   responses:
 
+    BearerUnauthorized:
+      description: >-
+        Missing credentials on a protected operation, or rejected credentials on any bearer
+        resource operation. Public access without credentials remains available where specified.
+      headers:
+        WWW-Authenticate:
+          required: true
+          description: >-
+            SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
+            resource_metadata URL. Rejected credentials carry invalid_token.
+          schema: { type: string }
+          example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+
     RegistryNotModified:
       description: Authorized representation unchanged; no body. Authorization and visibility precede conditional evaluation.
       headers:
@@ -1007,10 +1063,10 @@ components:
         WWW-Authenticate:
           required: true
           description: >-
-            Bearer challenge required by RFC 9110 section 11.6.1. RFC 6750 sections 3 and 3.1
-            recommend the invalid_token error for invalid or expired bearer credentials.
+            SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
+            resource_metadata URL. Rejected credentials carry invalid_token.
           schema: { type: string }
-          example: 'Bearer error="invalid_token"'
+          example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
         Cache-Control:
           $ref: '#/components/headers/RegistryCacheControl'
 
@@ -1397,9 +1453,20 @@ components:
       type: object
       required: [resource, authorization_servers, bearer_methods_supported]
       properties:
-        resource: { type: string, format: uri }
-        authorization_servers: { type: array, items: { type: string, format: uri } }
-        bearer_methods_supported: { type: array, items: { type: string } }
+        resource:
+          type: string
+          format: uri
+          description: The canonical pod base URL, including at the MCP alias.
+        authorization_servers:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { type: string, format: uri }
+          description: The sole value is the canonical pod base URL.
+        bearer_methods_supported:
+          type: array
+          items: { type: string }
+          contains: { const: header }
         scopes_supported:
           type: array
           items: { type: string }
@@ -1410,3 +1477,33 @@ components:
         public_contexts:
           type: integer
           description: A count. Never the URIs.
+
+    AuthorizationServerMetadata:
+      type: object
+      required: [issuer, authorization_endpoint, token_endpoint, registration_endpoint, jwks_uri, response_types_supported, grant_types_supported, token_endpoint_auth_methods_supported, code_challenge_methods_supported]
+      description: >-
+        RFC 8414 fields describing the chapter's endpoints and supported capabilities. Issuer
+        equals the canonical pod base URL. client_credentials is listed only if service clients
+        are registered (SPS-AUTH-048). Unknown fields remain permitted.
+      properties:
+        issuer: { type: string, format: uri }
+        authorization_endpoint: { type: string, format: uri }
+        token_endpoint: { type: string, format: uri }
+        registration_endpoint: { type: string, format: uri }
+        jwks_uri: { type: string, format: uri }
+        response_types_supported:
+          type: array
+          minItems: 1
+          items: { type: string }
+        grant_types_supported:
+          type: array
+          minItems: 1
+          items: { type: string }
+        token_endpoint_auth_methods_supported:
+          type: array
+          minItems: 1
+          items: { type: string }
+        code_challenge_methods_supported:
+          type: array
+          minItems: 1
+          items: { type: string }
