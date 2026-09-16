@@ -187,6 +187,8 @@ Vision, proposals and fixture explanation:
 
 - [Vision](docs/vision.md) — canonical direction and requirement-selection test; read before
   proposing a requirement. The site publishes it as informative guidance.
+- [Pod and service discovery](docs/proposals/pod-discovery.md) — proposed entry link, conformance
+  description and service bindings under #96, with external endpoints and stable local reserved paths
 - [Authorized data access](docs/proposals/data-access.md) — proposed smaller core and optional
   Context contract, operation cases, mirroring boundaries and requirement impact; adoption belongs to #68
 - [Context registry](docs/proposals/context-contract.md) — remaining optional-module, default-access,
