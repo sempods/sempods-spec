@@ -38,6 +38,9 @@ realization without prescribing it or asserting it exists. The
 
 ## The writing rules
 
+These rules apply to specification prose, informative documents, docstrings and code comments.
+Normative statements also follow [spec authoring](spec-authoring.md).
+
 **1. Normative text is prescriptive.** Proposals state proposed behavior; maintained guides explain
 the revision they reference. Keep proposed and current claims distinct, including in retained
 implementation proposal support. An implementation's behavior does not establish the contract.
@@ -46,33 +49,27 @@ implementation proposal support. An implementation's behavior does not establish
 owns the framework direction. Use [spec authoring](spec-authoring.md#standards-incorporation) to
 select and declare standards profiles; implementation documentation is not a source of obligations.
 
-**3. Short, direct, plain.** Take the shortest wording that is still correct.
+**3. Short, direct, plain.** Use familiar words and short sentences, with one main point per sentence.
+Keep the detail an implementer needs. Use defined protocol terms consistently.
 
-- **Say what the thing is**, not what it is not, and drop the rhetorical shape. `Make context
-  management a module, and let one area span both halves` — not `Stop forbidding an area from
-  spanning core and a module`. Holds for headings, prose and commit subjects alike. What it targets
-  is negation used as rhetoric; a real prohibition stays as it is, because `MUST NOT` in a
-  requirement and the `never` in an invariant are already the shortest correct wording.
-- **No history, no decision log**, no "this used to be X" — that is what the commit message is for.
-  The one exception is a rationale a future reader genuinely needs in order not to undo it, and in
-  this repository that rationale usually belongs in a guide or proposal rather than inline.
-- **A change rewrites the paragraph, it does not append to it.** Where a statement stops being
-  true, replace the prose that carried it — a requirement has its own procedure, in rule 5. Writing
-  the correction after it — `X. And since Y, also Z.` — leaves the stale half as the first thing a
-  reader meets and the current rule as something they assemble. This is the one a review catches
-  late, because each added clause is correct on its own.
+- **Name the actor and action.** "The server rejects the request" is clearer than "Rejection of
+  the request is performed". For normative wording, follow [spec authoring](spec-authoring.md#2-write-it).
+- **Say what the thing is.** Use "Make context management optional" instead of "Stop requiring
+  context management". This applies to headings, prose, test names and commit subjects. Keep real
+  prohibitions such as `MUST NOT`.
+- **Keep useful rationale.** Put history in commit messages. Keep a reason a reader needs to
+  maintain the contract in a guide or proposal.
 
 **4. Check inherited obligations before assigning IDs.** Follow
 [spec authoring](spec-authoring.md#standards-incorporation) for profile scope and
 [the chapter reading rules](../../spec/README.md) for what an incorporated standard already supplies.
 
-**5. When a deviation becomes ordinary, its text shrinks or goes.** A special case that folds into
-the normal path takes its explanation with it, and deleting that explanation is a correct change.
-*Replacing* it is the failure mode: a paragraph on why the thing is now ordinary is a longer way of
-writing nothing. The requirement itself is **withdrawn**, never deleted, because its ID is cited
-elsewhere. There is one exception while its window is open, stated in
-[`../../GOVERNANCE.md`](../../GOVERNANCE.md) and applied in
-[`spec-authoring.md`](spec-authoring.md) §5.
+**5. Remove explanations that no longer help.** When an adopted contract change removes a special
+case, delete its obsolete explanation. For example, remove a note about a separate request format
+once the operation uses the chapter's shared format. Requirements follow
+[governance's withdrawal and deletion rules](../../GOVERNANCE.md#withdrawing-a-requirement), applied
+in [spec authoring](spec-authoring.md#5-withdraw-never-delete); becoming ordinary does not itself
+remove an obligation.
 
 **6. Every sempods-authored obligation has a requirement ID.** Obligations inherited from an
 explicitly incorporated standard retain that standard's identifiers; informative references create
@@ -86,23 +83,34 @@ link target that lies.
 **8. This repository is public.** Nothing strategic, commercial or personal goes into it — roadmaps
 included. Technical milestones are public; the business around them is not.
 
-**9. Show the case.** Where a rule has a consequence a reader would otherwise have to derive, write
-the consequence out instead of hedging the prose around it — one concrete case is shorter than the
-hedging it replaces, and it is the half a reader remembers. It belongs in the chapter's prose, in a
-guide or proposal, or in access control best in a worked example under
-[`../../examples/`](../../examples/README.md), the one place a case is machine-checked. What binds
-stays in the requirement: the condition fixing where an obligation applies
-([`SPS-MEDIA-002`](../../spec/modules/media.md#SPS-MEDIA-002)) and the case it reaches
-([`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030)) are the obligation itself. What a
-requirement must not carry is its own argument — [`spec-authoring.md`](spec-authoring.md)
-§"Pitfalls".
+**9. Show the case.** Give a concrete input and outcome when readers would otherwise have to derive
+a consequence. Use a list or table for several cases. For example, these informative write-request
+cases illustrate [SPS-CRUD-007](../../spec/core/lod-crud.md#SPS-CRUD-007) and
+[SPS-CRUD-008](../../spec/core/lod-crud.md#SPS-CRUD-008):
 
-**10. Length is a budget, not an entitlement.** Add a paragraph, look for one to delete — usually
-the one the new paragraph made redundant — and treat a section that has doubled since it was written
-as one to cut rather than extend. The budget buys prose: an explanation, a rationale, an example
-that no longer earns its place. It never buys a requirement. Rule 5 owns what becomes of one —
-withdrawn, or deleted while the pre-`0.1` window is open — and neither is ever done because a
-section got long.
+| Request | Outcome |
+|---|---|
+| A write without `?context=` | `400` |
+| A write with `?context=valid&context=` | `400`: two occurrences, even though one value is empty |
+
+Keep examples informative and link their requirements. Put them in the chapter's explanatory prose,
+a guide or proposal; use [worked fixtures](../../examples/README.md) for executable access-control
+cases. Conditions and exceptions stay in the requirement, as in
+[SPS-MEDIA-002](../../spec/modules/media.md#SPS-MEDIA-002) and
+[SPS-CTX-030](../../spec/core/contexts.md#SPS-CTX-030). Keep rationale separate under
+[spec authoring](spec-authoring.md#pitfalls).
+
+**10. Length is a budget.** Replace outdated prose when the described behavior changes, including
+in review fixes. When adding a paragraph, remove text it makes redundant. Review a growing section
+for repetition; retain explanations and examples readers need. A section's length is never a reason
+to remove a requirement. Rule 5 governs requirement removal; [spec authoring](spec-authoring.md#2-write-it)
+governs wording changes.
+
+**11. Link the source of a contract.** When explaining protocol behavior in guides, examples or
+code comments, cite the requirement ID or incorporated standards profile. A request-validation
+comment can link `SPS-CRUD-008` and explain how the checker counts parameters. Keep protocol obligations in the
+[contract sources](../../GOVERNANCE.md#contract-sources). Maintain their required OpenAPI and
+vocabulary views together; removing duplicate prose does not permit omitting a contract view.
 
 ## Issue planning
 

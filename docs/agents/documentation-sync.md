@@ -85,6 +85,17 @@ disposition and adoption links; for partial adoption, keep remaining scope visib
 Reference the revision a guide explains. Reduce redundant text while preserving useful explanation
 and required evidence. A proposal merge does not change the normative contract.
 
+Apply [the writing rules](documentation-strategy.md#the-writing-rules) to prose, docstrings and
+code comments:
+
+- Can each sentence be understood on first reading? Split dense sentences and use familiar words.
+- Would a concrete input and outcome make a consequence clearer? Keep the example informative and
+  link its requirement.
+- Does explanatory text repeat a contract? Link its source and explain only what the reader needs here.
+- Did the edit make any text redundant? Remove it; keep useful explanations and examples.
+- For wording-only edits, compare actors, obligation levels, conditions, exceptions and outcomes
+  under [spec authoring](spec-authoring.md#2-write-it). An example cannot supply a missing obligation.
+
 ## 6. Work record
 
 Apply [Issue planning](documentation-strategy.md#issue-planning), including its private-security
