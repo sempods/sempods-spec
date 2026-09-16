@@ -88,8 +88,9 @@ Contexts. An authorized ordinary creation writes there without registry setup. D
 an internal default Context or storage with no Context concept; its public Context IRI is optional.
 Additional Context registration does not change D. Read, find and the ordinary SPARQL default graph
 use that same scope within the caller's authority. Source writes may change dependent computed views.
-#69 still owes the exact core authorization/delegation profile for this access; choosing a default
-creates no authority and permission on an independent A does not authorize a write to D.
+The [authorization proposal](access-control.md#authorization-without-context-setup) defines the
+consent/delegation recommendation for this access, with remaining profile decisions under #69.
+Choosing a default creates no authority; permission on independent A does not authorize a write to D.
 The initial RDF delivery retains the current selector and minimum-count rules.
 
 A single physical graph can support several computed Contexts, for example tasks selected by

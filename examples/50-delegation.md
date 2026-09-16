@@ -404,14 +404,14 @@ All three decisions are in that block, which is what makes the claim a claim. Re
 application's delegation, or shut Bob out of the context, and this case goes empty — so the sentence
 above is about a delegation that is genuinely still standing rather than one nothing checks.
 
-Whether that is right is an open question rather than a settled rule.
-[`SPS-GRANT-019`](../spec/core/grants.md#SPS-GRANT-019) says widening a person's grants must not
-widen an application retroactively, and its reason is that regaining access should not silently
-re-arm every application that once wanted it. No grant was widened here — Alice changed a policy,
-which is a different act — so the rule is kept and its reason is walked around.
+The fixture supplies a delegation described only as *read, as Bob, in this pod*. It does not model
+what Bob approved about future data. The [proposal's delegation recommendation](../docs/proposals/access-control.md#delegation-and-revocation)
+distinguishes a fixed resource selection from an explicitly approved dynamic data space. In its fixed
+case, this newly shared document is excluded. A dynamic selection can include future members only
+inside its described delegable boundary; access to one document does not authorize all future
+shares. Narrowed or withdrawn authority does not return without fresh consent.
 
-The alternative is a ceiling scoped finely enough to exclude the new document — an enumerated set a
-person extends rather than a scope that tracks, which is what a photo picker does when it hands an
-application selected items instead of a library. Consent per resource is impractical as a dialog and
-not impossible as a selection, so this is a design choice rather than a dead end. The [proposal](../docs/proposals/access-control.md#delegation-and-revocation) records
-both shapes; this scenario is what neither of them looks like.
+[`SPS-GRANT-019`](../spec/core/grants.md#SPS-GRANT-019) remains the current contract. The proposal
+requires coordinated adoption; this static fixture checks its supplied broad policy, not consent,
+future-membership approval or revocation transitions. It demonstrates the ambiguity the proposed
+boundary addresses, rather than testing that boundary.
