@@ -60,7 +60,8 @@ implementation MUST NOT silently downgrade it to anonymous.
 **`SPS-MCP-009`** — Every `401` MUST carry `WWW-Authenticate: Bearer` naming the pod's realm and the
 pod-level Protected Resource Metadata URL.
 
-This is the same challenge required by [SPS-AUTH-064](../core/auth.md#SPS-AUTH-064).
+The metadata hint follows [SPS-AUTH-064](../core/auth.md#SPS-AUTH-064); this module also requires
+the pod's realm.
 [SPS-AUTH-068](../core/auth.md#SPS-AUTH-068) validates it against the caller's known pod identity.
 
 ## 3. The `authorize` tool

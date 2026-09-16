@@ -78,8 +78,8 @@ paths:
             WWW-Authenticate:
               required: true
               description: >-
-                SPS-AUTH-064: Bearer challenge with the canonical pod realm and pod-local
-                resource_metadata URL. Rejected credentials carry invalid_token.
+                RFC 6750 Bearer challenge with realm required by SPS-MCP-009 and the pod-local
+                resource_metadata URL required by SPS-AUTH-064.
               schema: { type: string }
               example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
           content:

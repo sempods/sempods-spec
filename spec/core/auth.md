@@ -464,16 +464,20 @@ Optional metadata fields retain their standard meanings; they add no required OA
 
 ### Resource metadata and challenges
 
+Bearer challenges follow [RFC 9110 §11.6.1](https://www.rfc-editor.org/rfc/rfc9110.html#section-11.6.1)
+and [RFC 6750 §3](https://www.rfc-editor.org/rfc/rfc6750.html#section-3), with the missing/rejected
+credential rule in [SPS-CORE-015](index.md#SPS-CORE-015). RFC 6750 leaves `realm` optional;
+[SPS-MCP-009](../modules/mcp.md#SPS-MCP-009) retains the MCP module's requirement to include it.
+
 <a id="SPS-AUTH-045"></a>
 **`SPS-AUTH-045`** — An implementation MUST serve RFC 9728 Protected Resource Metadata at
 `GET {pod}/.well-known/oauth-protected-resource`, without authentication, carrying at least
 `resource`, `authorization_servers` and `bearer_methods_supported`.
 
 <a id="SPS-AUTH-064"></a>
-**`SPS-AUTH-064`** — Every `401` from a pod's bearer-protected resource endpoint, in core or a
-module, MUST include a `WWW-Authenticate: Bearer` challenge. Every Bearer challenge from such an
-endpoint MUST carry `realm` equal to the canonical pod base URL and `resource_metadata` equal to
-`{pod}/.well-known/oauth-protected-resource`, as absolute URLs.
+**`SPS-AUTH-064`** — Every Bearer challenge from a pod's protected-resource endpoint, in core or
+a module, MUST carry `resource_metadata` equal to the absolute URL
+`{pod}/.well-known/oauth-protected-resource`.
 
 This covers missing credentials on protected operations and rejected credentials on public reads.
 It does not turn a successful public request into a `401` (SPS-CORE-016), or change OAuth token
@@ -481,7 +485,7 @@ endpoint errors into resource challenges. For example, a write requiring authent
 
 ```http
 HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"
+WWW-Authenticate: Bearer error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"
 ```
 
 <a id="SPS-AUTH-065"></a>

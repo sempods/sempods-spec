@@ -223,7 +223,6 @@ class RegistryRepresentations(unittest.TestCase):
         self.assertEqual(scheme, 'Bearer')
         fields = parse_keqv_list(parse_http_list(parameters))
         self.assertEqual(fields['error'], 'invalid_token')
-        self.assertEqual(fields['realm'], 'https://example.org/alice')
         self.assertEqual(fields['resource_metadata'],
                          'https://example.org/alice/.well-known/oauth-protected-resource')
 

@@ -426,7 +426,7 @@
       "id": "SPS-AUTH-064",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "Every `401` from a pod's bearer-protected resource endpoint, in core or a module, MUST include a `WWW-Authenticate: Bearer` challenge.",
+      "summary": "Every Bearer challenge from a pod's protected-resource endpoint, in core or a module, MUST carry `resource_metadata` equal to the absolute URL `{pod}/.well-known/oauth-protected-resource`.",
       "withdrawn": false
     },
     {
