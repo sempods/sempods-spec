@@ -32,6 +32,9 @@ useful; a maintained guide describes the adopted revision and links to its contr
 
 ## Proposed designs
 
+- [Pod and service discovery](pod-discovery.md) — proposed path-independent entry discovery,
+  conformance and service bindings, including external endpoints; design and adoption planning
+  belong to [#96](https://github.com/sempods/sempods-spec/issues/96).
 - [Authorized data access](data-access.md) and [access control](access-control.md) — one proposal
   for a smaller core, optional Context contracts and policy-independent guarantees. Normative
   adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
