@@ -453,43 +453,133 @@ same host. That follows from what each pod accepts, which is where it can be tes
 
 ## 10. Discovery
 
+A client starts with the pod's canonical base URL, for example `https://example.org/alice`.
+The pod is both the protected resource and the token issuer (SPS-AUTH-028).
+
+This section profiles [RFC 9728 §§2–7](https://www.rfc-editor.org/rfc/rfc9728.html#section-2)
+for resource metadata and Bearer discovery, and
+[RFC 8414 §§2–4 and 6](https://www.rfc-editor.org/rfc/rfc8414.html#section-2) for authorization
+server metadata. SPS-AUTH-067/068 define the pod-local address and validation deviations.
+Optional metadata fields retain their standard meanings; they add no required OAuth flow.
+
+### Resource metadata and challenges
+
+Bearer challenges follow [RFC 9110 §11.6.1](https://www.rfc-editor.org/rfc/rfc9110.html#section-11.6.1)
+and [RFC 6750 §3](https://www.rfc-editor.org/rfc/rfc6750.html#section-3), with the missing/rejected
+credential rule in [SPS-CORE-015](index.md#SPS-CORE-015). RFC 6750 leaves `realm` optional;
+[SPS-MCP-009](../modules/mcp.md#SPS-MCP-009) retains the MCP module's requirement to include it.
+
 <a id="SPS-AUTH-045"></a>
 **`SPS-AUTH-045`** — An implementation MUST serve RFC 9728 Protected Resource Metadata at
 `GET {pod}/.well-known/oauth-protected-resource`, without authentication, carrying at least
 `resource`, `authorization_servers` and `bearer_methods_supported`.
 
-That is the append form, and it is the only one this specification requires. The host-rooted address
-RFC 9728 §3.1 constructs — the well-known segment inserted between the authority and the resource's
-path — is a route on the origin rather than under the pod base, and a pod whose base URL is
-path-scoped cannot serve it without owning everything beside it. A deployment can, and one that
-hosts many pods is the right place for it.
+<a id="SPS-AUTH-064"></a>
+**`SPS-AUTH-064`** — Every Bearer challenge from a pod's protected-resource endpoint, in core or
+a module, MUST carry `resource_metadata` equal to the absolute URL
+`{pod}/.well-known/oauth-protected-resource`.
 
-The narrowing that follows is deliberate rather than an oversight. A generic client doing RFC 9728
-discovery ahead of its first request finds nothing at the host-rooted address of a path-scoped pod,
-and reaches the metadata only by asking the pod: an unauthenticated request, a `401`, and the
-`resource_metadata` hint in `WWW-Authenticate` that names the address above.
+This covers missing credentials on protected operations and rejected credentials on public reads.
+It does not turn a successful public request into a `401` (SPS-CORE-016), or change OAuth token
+endpoint errors into resource challenges. For example, a write requiring authentication returns:
 
-**Core does not yet require that hint**, which makes the fallback weaker than it reads.
-[`SPS-MCP-009`](../modules/mcp.md#SPS-MCP-009) requires it of a pod that provides the MCP module,
-and nothing requires it of one that does not — so a client of such a pod is left constructing the
-append form by convention. This chapter is likewise silent on where RFC 8414 Authorization Server
-Metadata lives, though it profiles the standard and [`SPS-AUTH-048`](#SPS-AUTH-048) constrains what
-that document may claim. [Issue #66](https://github.com/sempods/sempods-spec/issues/66) owns the
-core hint and [#67](https://github.com/sempods/sempods-spec/issues/67) owns the metadata address.
-Both remain conditions for `0.1`; neither gap is resolved by recording it.
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"
+```
+
+<a id="SPS-AUTH-065"></a>
+**`SPS-AUTH-065`** — The pod's resource metadata MUST set `resource` to its canonical base URL,
+set `authorization_servers` to an array containing only that URL, and include `header` in
+`bearer_methods_supported`.
+
+Fetching the example's metadata URL without credentials gives `200 application/json`:
+
+```json
+{
+  "resource": "https://example.org/alice",
+  "authorization_servers": ["https://example.org/alice"],
+  "bearer_methods_supported": ["header"]
+}
+```
 
 <a id="SPS-AUTH-046"></a>
 **`SPS-AUTH-046`** — Protected Resource Metadata MUST NOT enumerate the pod's public context IRIs.
 A count MAY be advertised.
 
-The URIs would be a topology leak on an unauthenticated route — the same rule as
-[`SPS-CORE-017`](index.md#SPS-CORE-017), reached from the other direction.
-
 <a id="SPS-AUTH-047"></a>
 **`SPS-AUTH-047`** — A consumer MUST tolerate members of the metadata document it does not
 recognise.
+
+### Authorization server metadata
+
+<a id="SPS-AUTH-066"></a>
+**`SPS-AUTH-066`** — An implementation MUST serve Authorization Server Metadata at
+`GET {pod}/.well-known/oauth-authorization-server`, without authentication. The document MUST
+set `issuer` to the canonical pod base URL and advertise the chapter's authorization, token,
+registration and signing-key endpoints in `authorization_endpoint`, `token_endpoint`,
+`registration_endpoint` and `jwks_uri`. It MUST explicitly list the supported response types,
+grant types, token-endpoint authentication methods and PKCE methods in their RFC 8414 fields.
+
+For Alice, the metadata URL is
+`https://example.org/alice/.well-known/oauth-authorization-server`. Its `issuer` is
+`https://example.org/alice`; its `token_endpoint` is `https://example.org/alice/_system/auth/token`.
+The issuer identifies the pod, not its auth route. The metadata describes the flows already
+required by this chapter; SPS-AUTH-048 still limits service-client advertisement.
 
 <a id="SPS-AUTH-048"></a>
 **`SPS-AUTH-048`** — Where an implementation advertises RFC 8414 Authorization Server Metadata, its
 `grant_types_supported` MUST list `client_credentials` only if the implementation registers service
 clients.
+
+### Addresses and validation
+
+<a id="SPS-AUTH-067"></a>
+**`SPS-AUTH-067`** — For pod-local discovery, servers and clients MUST append
+`/.well-known/oauth-protected-resource` or `/.well-known/oauth-authorization-server` to the
+canonical pod base URL. This replaces the host-rooted construction in RFC 9728 §§3/3.1 and
+RFC 8414 §§3/3.1, including the address mapping used by their §3.3 validation. A deployment MAY
+also serve the corresponding host-rooted addresses; each MUST return the same pod's metadata.
+
+| Pod / issuer | Required authorization metadata URL | Optional RFC 8414 address |
+|---|---|---|
+| `https://alice.example` | `https://alice.example/.well-known/oauth-authorization-server` | Same address |
+| `https://example.org/alice` | `https://example.org/alice/.well-known/oauth-authorization-server` | `https://example.org/.well-known/oauth-authorization-server/alice` |
+| `https://example.org/bob` | `https://example.org/bob/.well-known/oauth-authorization-server` | `https://example.org/.well-known/oauth-authorization-server/bob` |
+
+The resource metadata addresses use `oauth-protected-resource` in the same positions. A path-scoped
+pod can serve the required routes itself; the optional routes need the host's cooperation. A generic
+OAuth client that only constructs host-rooted addresses needs those optional routes. This pod-local
+profile does not promise that every generic OAuth or MCP client can discover a path-scoped pod.
+
+<a id="SPS-AUTH-068"></a>
+**`SPS-AUTH-068`** — A client using this profile MUST validate discovery against the canonical pod
+base URL it intended to access, not a base inferred from returned metadata. It MUST reject a
+challenge whose `resource_metadata` differs from that pod's append-form URL, resource metadata
+whose `resource` or sole `authorization_servers` entry differs from that pod URL, or authorization
+server metadata whose `issuer` differs from it. In RFC 9728 §3.3 validation, clients MUST use this
+pod URL as the expected resource for data and MCP endpoints, accepting the MCP append alias
+(SPS-MCP-031) as an additional metadata location for that pod. This replaces endpoint-URL
+comparison and the alias's resource-to-location mapping. A client MUST NOT use rejected metadata
+to start authorization or send credentials; the standards' exact string comparison and TLS checks
+still apply.
+
+The known pod identity supplies the boundary: Alice's challenge cannot redirect a client to Bob's
+issuer. The MCP alias still describes Alice's pod; it does not create an MCP-specific issuer.
+
+### Cases to check
+
+These are contract examples, not results from a running implementation.
+
+| Case | Expected result |
+|---|---|
+| Protected write without a token, on a pod without MCP | `401` with the pod metadata hint; the two public metadata GETs identify its authorization endpoints. |
+| Public read without a token | Normal public response; discovery does not force an authentication challenge. |
+| Public read with a rejected bearer | `401` with the same pod metadata hint; no anonymous fallback. |
+| Metadata GET without credentials | `200 application/json`; no context IRIs, including public ones. Unknown fields remain tolerable. |
+| Alice and Bob share an origin | Each has its own resource, issuer and metadata URLs as above. |
+| A challenge from Alice names Bob's metadata, or Alice's document names Bob's resource/issuer | Reject discovery; do not authorize against Bob. |
+| Metadata for Alice names `https://example.org/alice/_system/auth` as issuer | Reject: the issuer is the pod base, even though the auth routes live below it. |
+| Host-rooted routes are unavailable for a path-scoped pod | The sempods client uses the required pod-local addresses. |
+| MCP challenge or MCP append alias | The same pod identity and checks apply; a client applying unmodified RFC 9728 endpoint matching may reject this profile. |
+| Required metadata is unavailable or fails validation | Discovery has not completed; the failure supplies no authority to use another pod's metadata. |

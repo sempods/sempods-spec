@@ -207,23 +207,18 @@ corresponding authorization withdrawal. A backend that cannot enforce the promis
 cannot be advertised as satisfying that profile. Discovery changes no permission-store algorithm
 and does not require a particular token exchange or gateway.
 
-### What this means for #66 and #67
+### Relationship to the current OAuth profile
 
-[#66](https://github.com/sempods/sempods-spec/issues/66) can define the challenge hint without
-requiring a general discovery catalogue first. For external service profiles, its resource binding
-must be explicit: pod-level metadata cannot silently stand in for metadata naming a query endpoint.
+[Core discovery](../../spec/core/auth.md#10-discovery), developed under
+[#66](https://github.com/sempods/sempods-spec/issues/66) and
+[#67](https://github.com/sempods/sempods-spec/issues/67), uses pod-local metadata and the pod base
+as resource and issuer. Its challenge and validation rules need no general service catalogue.
 
-[#67](https://github.com/sempods/sempods-spec/issues/67) still owns the issuer/address decision.
-This example chooses standard host-rooted metadata addresses served by the query and authorization
-operators. A pod entry hosted only under `/alice` need not serve either host-rooted route itself.
-That moves the hosting responsibility; it does not remove it. An operator controlling only a service
-subpath still needs support for those standard routes or an explicitly reviewed deviation. A general
-discovery document cannot make a nonstandard OAuth route discoverable to every generic OAuth client.
-
-The worked example changes AUTH-028's pod-base issuer assumption and adds service-targeted issuance.
-The merged authorization proposal alone does neither. Keep those changes explicit when coordinating
-#69 and #66/#67; this proposal creates no new dependency on implementing AI, S3 or a general
-discovery system first.
+This external-service example instead uses standard host-rooted metadata served by the service
+operators, with a separate resource and issuer. It requires explicit adoption of those identity,
+address and token-target changes. An operator controlling only a service subpath needs host support
+for the standard routes; discovery alone cannot supply it. This remains design work under #96,
+coordinated with #69, without blocking the current pod-local profile.
 
 ## Cases to review
 

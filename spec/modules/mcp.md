@@ -60,9 +60,9 @@ implementation MUST NOT silently downgrade it to anonymous.
 **`SPS-MCP-009`** — Every `401` MUST carry `WWW-Authenticate: Bearer` naming the pod's realm and the
 pod-level Protected Resource Metadata URL.
 
-The pod is the protected resource for an MCP caller exactly as it is for an HTTP caller, so both get
-the same metadata address. A separate MCP-level resource identity would fork the OAuth flow for no
-gain.
+The metadata hint follows [SPS-AUTH-064](../core/auth.md#SPS-AUTH-064); this module also requires
+the pod's realm.
+[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068) validates it against the caller's known pod identity.
 
 ## 3. The `authorize` tool
 
@@ -130,15 +130,10 @@ challenge loop.
 implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
 and it MUST return the **pod-level** document.
 
-The MCP URL is an alternative spelling of the same protected resource, not a resource of its own:
-the pod stays the unit of access control ([`SPS-AUTH-045`](../core/auth.md#SPS-AUTH-045)).
-
-The host-rooted address RFC 9728 §3.1 constructs from an MCP URL is not required here, for the
-reason [`../core/auth.md`](../core/auth.md) §10 gives for the pod-level one: it inserts the
-well-known segment in front of the path, which puts it on the origin rather than under the pod's
-base URL. A pod cannot serve what is above it. A client that probes there before its first request
-finds nothing and falls back to the `401`, which [`SPS-MCP-009`](#SPS-MCP-009) makes a complete
-answer for this module.
+This is a metadata alias for the pod. The pod-local address and resource-validation exceptions
+are defined by [SPS-AUTH-067/068](../core/auth.md#SPS-AUTH-067). A generic RFC 9728 client that
+requires `resource` to equal the MCP URL may reject this document; the alias does not promise
+compatibility with that client.
 
 <a id="SPS-MCP-032"></a>
 **`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
