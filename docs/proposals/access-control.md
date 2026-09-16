@@ -45,66 +45,52 @@ ability to read a resource nor possession of an access token grants policy-manag
 
 ### Authorization without Context setup
 
-This is the proposed authorization resolution for
-[#69](https://github.com/sempods/sempods-spec/issues/69), against revision
-`721b109342a2031500038850a80718d3d707fb75`. It complements the
-[default-access cases](data-access.md#four-default-access-decisions). Current auth/grant requirements
-remain binding until coordinated normative adoption. This iteration selects consent, delegation,
-public-read and revocation behavior; the remaining profile decisions are identified below.
+A notes app asks Alice for permission to read, create and edit notes in her pod. Alice approves
+the data and operations it may use. The app can then create a note, even in an empty pod, without
+choosing or creating a Context. This section proposes that consent flow, its delegation limits, public reads and withdrawal
+of access. It complements the [default-access cases](data-access.md#four-default-access-decisions);
+D is the implicit data scope used by ordinary requests.
 
-Use [RFC 6749 §§4.1, 4.4, 5.2 and 6](https://www.rfc-editor.org/rfc/rfc6749.html) for code exchange,
-service authentication, errors and refresh, [RFC 7636 §4](https://www.rfc-editor.org/rfc/rfc7636.html#section-4)
-for PKCE, and [RFC 6750 §§2.1 and 3](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1) for
-Bearer presentation and challenges. Apply
-[RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.1)
-to code-injection/CSRF protection and refresh-token replay. These references cover those operations,
-not every optional OAuth extension or an unversioned OAuth 2.1 draft. The sempods choices are the
-consent boundary over RDF operations, immediate loss of revoked authority and public-read behavior.
+The app starts authorization without Context grant strings or a new data-scope parameter. The pod
+authenticates Alice and asks for approval. Alice need not own the pod or install the app, but she can
+approve only access she may delegate. The app then uses its Bearer token on the ordinary routes;
+no Context registry request is needed.
 
-Keep the existing `did:web:`, dynamically registered `dyn:` and operator-provisioned service client
-roles, pod-local authorization/token routes and token format for this iteration. Each distinct client
-identity needs its own authority; switching client shapes does not transfer consent. Retain the local
-origin/path validation of `did:web:`; it establishes the permitted redirect, not proof of a person's
-identity or consent. For both user-facing client shapes, recommend Authorization Code with S256
-PKCE. This replaces AUTH-023's exemption for `did:web:`; an origin-bound redirect does not protect
-an intercepted code at exchange. Discovery and redirect-profile refinements remain coordinated
-with #66/#67 and the remaining #82 candidates.
+Keep the [existing client roles, pod-local routes and token format](../../spec/core/auth.md).
+For both `did:web:` and `dyn:` apps, recommend Authorization Code with S256 PKCE. This changes
+AUTH-023: validating a `did:web:` redirect does not protect an intercepted authorization code.
+Its local origin/path validation still applies; it proves neither Alice's identity nor her consent.
+Each client identity needs its own permission, even if one app switches between these client types.
 
-An ordinary application opens authorization without Context grant strings or a new data-scope
-parameter. The pod authenticates the person and obtains approval for a described data/operation
-boundary. That boundary can include reading D and creating/editing data in D even when D is empty.
-The application then uses the resulting Bearer token on the ordinary routes. No Context creation,
-registry request, ownership or application installation is a prerequisite. A non-owner can approve
-only what they may delegate. A service instead uses Client Credentials and its operator-authorized
-boundary, with no person's consent or fictional person in its token. The existing prohibition on
-service `public-read` and OIDC scopes remains; a service can separately make a credential-free public read.
+A service uses Client Credentials and access approved by its operator. It acts as itself, with no
+person's consent or invented person in its token. Service `public-read` and OIDC scopes remain
+prohibited; a service can separately read public data without credentials.
 
-Consent binds the verified person, pod, client, redirect and approved boundary to the authorization
-transaction. Acceptance is single-use; cancellation, a swapped transaction or replay cannot create
-or restore authority. The browser's session alone is not approval. Preserve the existing `prompt`
-semantics and interactive `dyn:` confirmation; a UI's layout, policy language and internal consent
-record are free. The authorization server echoes `state` exactly when supplied and omits it when
-absent, as in RFC 6749 §4.1.2. Clients still prevent CSRF and multi-issuer mix-up under RFC 9700;
-optional `state` does not waive those protections. This is the proposed resolution for #10.
+Approval binds Alice, the pod, client, redirect and allowed access to one authorization transaction.
+It can be accepted only once. Cancellation, replay or swapping transactions cannot create or restore
+permission. A browser login alone is not approval. Existing `prompt` rules and interactive `dyn:`
+confirmation remain; implementations choose the UI, policy language and consent storage.
 
-Verified person and client remain separate inputs to every request. Identity assertions and browser
-sessions retain their existing pod/audience restrictions and cannot substitute for a pod API token.
-A person is externally identified by their WebID URI. Only equivalences established through a trusted
-identity relationship count; RDF data claiming `owl:sameAs`, an email match or a caller-supplied
-alias cannot join permissions. Consent change, withdrawal and forced reauthorization reach the
-same person's established aliases for the affected pod/client. Recommend retaining that observable
-coverage while freeing AUTH-052's write-only lookup placement. The cross-issuer equivalent-identity
-claim name/shape still belongs to #5; these cases assume a configured trusted mapping and do not
-claim to finish the federation wire profile.
+For #10, return `state` unchanged when supplied and omit it otherwise (RFC 6749 §4.1.2). Clients
+still protect against CSRF and multi-issuer mix-up under RFC 9700, including when they omit `state`.
+
+Each request checks the person and client separately. Identity assertions and browser sessions keep
+their pod/audience restrictions and cannot replace a pod API token. A person's external identifier
+is their WebID URI. Two identifiers count as the same person only through a trusted identity
+relationship; `owl:sameAs` data, matching email addresses and caller-supplied aliases do not suffice.
+Consent changes, withdrawal and forced reauthorization cover that person's trusted aliases for the
+affected pod/client. Keep that coverage while leaving the lookup placement open (AUTH-052).
+These cases assume a configured trusted mapping; #5 still owns the cross-issuer claim name and shape.
 
 ### Delegation and revocation
 
-For a non-public operation, recommend checking the intersection of the person's current delegable
-authority, the application's still-valid consent boundary and the pod's current policy for the
-complete operation. Service authority substitutes for the first two inputs on a service request.
-Feature scopes and possession of a valid token cannot widen that intersection. Public reads have
-the separate branch below. Tokens identify their client and subject; no core Context-grant list
-or client-side policy evaluation is introduced.
+For a non-public operation, check three limits: what the person may currently delegate, what the
+app still has consent to do, and what the pod's current policy permits for the complete operation.
+All three must allow it. For example, Alice's permission to edit a note does not let an app edit it
+if she approved only reading. For a service, its operator-approved authority replaces the first two
+limits. Feature scopes and a valid token do not grant extra access. Public reads follow the rules
+below. Tokens identify their client and subject; core introduces no Context-grant list or client-side
+policy evaluation.
 
 Consent describes both the allowed effects and the data selection's behavior over time:
 
@@ -256,6 +242,18 @@ Repeat with and without refresh issuance, and with consent/withdrawal under U's 
 | Client completes fresh challenge-bound consent, then replays MCP authorize | One acknowledgement, subject to current sufficient authority; no challenge loop. An unrelated or expired challenge cannot be consumed. |
 
 ### Adoption impact and remaining profile work
+
+This authorization recommendation for [#69](https://github.com/sempods/sempods-spec/issues/69)
+is based on revision `721b109342a2031500038850a80718d3d707fb75`. Current auth/grant requirements
+remain binding until coordinated normative adoption.
+
+The proposed OAuth profile uses [RFC 6749 §§4.1, 4.4, 5.2 and 6](https://www.rfc-editor.org/rfc/rfc6749.html)
+for code exchange, service authentication, errors and refresh;
+[RFC 7636 §4](https://www.rfc-editor.org/rfc/rfc7636.html#section-4) for PKCE;
+[RFC 6750 §§2.1 and 3](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1) for Bearer presentation
+and challenges; and [RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.1)
+for code-injection/CSRF protection and refresh-token replay. This selects those operations, not every
+optional OAuth extension or an unversioned OAuth 2.1 draft.
 
 The proposed changes below are coordinated under #70/#71 and reviewed before #74 adoption. This
 proposal allocates no identifiers, changes no normative endpoint and closes none of the linked
