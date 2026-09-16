@@ -15,8 +15,9 @@ storage layout or permission model. A single RDF graph and a platform with sever
 policy conditions can implement the same data operations.
 
 The proposal reduces core and adds one optional `contexts` module for selection, discovery and
-lifecycle. The implicit access scope below is a recommendation awaiting decision in #69. The examples and requirement
-impact below allocate no identifiers and make no conformance claim. Requirement selection follows
+lifecycle. The default-access decision below fixes one coherent ordinary data surface and states
+its acceptance cases for review under #69. The examples and requirement impact allocate no
+identifiers and make no conformance claim. Requirement selection follows
 [the vision](../vision.md#what-belongs-in-the-contract).
 
 ## The specified boundary
@@ -82,7 +83,7 @@ and scope; it never substitutes for authorizing the later request.
 
 These are the dataset recommendations for
 [#69](https://github.com/sempods/sempods-spec/issues/69), against merged revision
-`3b8cb0a08e4476d4dcf0fad850171844ad7296ba`. They bind the
+`cc41031a5c844d0bcf431d2e5221364182579083`, including its adopted RDF registry surface. They bind the
 [mutation recommendations](access-control.md#mutations-and-partial-representations) to a logical
 scope, while remaining **proposed**. Current Context selection and query rules continue to bind
 until coordinated adoption.
@@ -109,6 +110,8 @@ exposes neither a required name nor a configuration protocol for it. Resolve the
 ordinary routes; do not choose another scope according to HTTP method, a resource's existence,
 hidden collisions or an authorization failure. A successful allowed write is visible through the
 ordinary read/query surface when that caller also has read authority and the state is unchanged.
+Find evaluates matches and expansion within that same authorized scope; this does not prescribe
+its matching algorithm, ranking or a result for every newly written resource.
 
 Registering additional Contexts does not enlarge D. A separately selected A or B can hold statements
 about the same resource IRI without contributing them to ordinary reads or mutations. The resource
@@ -119,20 +122,101 @@ Explicit independent scopes and computed projections have the effects described 
 The tradeoff is deliberate: a core-only client does not automatically search every Context merely
 because it may read them. It gets one coherent ordinary data surface. The alternative of reading
 all Contexts while writing only a default target can leave old values after PUT; globally replacing
-all those scopes broadens the write effect. #69 owns the decision on this recommendation. The four
-cases below make that decision reviewable before normative drafting.
+all those scopes broadens the write effect. The four cases below define the proposed resolution
+for #69. Accepting these cases settles this data-scope choice; authentication, delegation and full Context
+lifecycle remain separate decisions before normative adoption.
 
 #### Four default-access decisions
 
 D, A and B are independently mutable scopes in this fixture; A and B are outside D. C is explicitly
-a computed view over D. Policies allow the stated reads and complete writes. Each case starts fresh.
+a computed view over D. Policies allow the stated reads and complete writes, including observing
+existence. Each case starts fresh. Requests carry valid credentials, use the existing routes and
+media types, and omit Context selectors unless stated. PUT bodies in these four cases contain at
+least one outgoing statement; empty input and denied requests are covered separately below.
 
-| Case | Recommended observable behavior |
+#### Default-access acceptance sequences
+
+Use `R = https://example.org/pod/tasks/one`, `p = https://schema.org/name`,
+`a = https://example.org/assignee`, `Alice = https://example.org/alice` and
+`Bob = https://example.org/bob`. In the table, `p="old"` abbreviates the triple
+`R p "old"`; `a=Alice` abbreviates `R a Alice`. An incoming link is a triple
+`https://example.org/pod/inbox https://schema.org/hasPart R`. Neither these application terms nor
+the names D/A/B/C are new sempods vocabulary. Wire bodies use full IRIs, for example:
+
+```json
+{
+  "@id": "https://example.org/pod/tasks/one",
+  "https://schema.org/name": [{"@value": "new"}]
+}
+```
+
+Each row is a sequential scenario; reset before the next row. Compare RDF assertions, not JSON
+array order. Replacement success may use the existing `200` or `204` form. The query probe is
+`SELECT ?v WHERE { <https://example.org/pod/tasks/one> <https://schema.org/name> ?v }` on the existing
+SPARQL POST route. Its results below refer to that bare pattern; a query explicitly selecting a
+named graph can see separately authorized data outside D.
+
+| Initial state | Requests and proposed observations |
 |---|---|
-| Create R without a selector | PUT creates R in D (`201`). Ordinary GET, find and the SPARQL default graph see it. Storage may assign it to the implementation's default Context; no unassigned-data requirement or client-side Context setup follows. |
-| R exists only in A; a core client reads and edits R | Ordinary GET/resource DELETE are `404`; PATCH applies its predicate and no-op rules within D. Ordinary PUT creates R in D (`201`), leaving A unchanged. Explicit selection of A reads/edits A under its own authority. No lookup-and-write-through fallback. |
-| R has independent assertions in A and B; optionally also in D | Ordinary GET returns only D's authorized description. PUT replaces only D's outgoing assertions; DELETE removes only those assertions and preserves incoming links. A/B remain unchanged. Without R in D, ordinary PUT is creation and resource DELETE is `404`, independent of A/B's existence. |
-| Computed C selects Alice's tasks from D | An ordinary PUT of a matching task makes it visible in D and C. PATCH changing its assignee to Bob changes D and makes it leave C; resource DELETE removes its outgoing source assertions from D and hence C. Other independent scopes survive. C is read-only through selected CRUD unless it supports the membership-write contract. |
+| D has no outgoing R statements; no Context is registered | PUT `p="new"` → `201`, Location R. GET → `200`, exactly `p="new"`; query probe → `"new"`. Repeat PUT with `p="changed"` → replacement success; GET/query contain only `"changed"`. No registry request, Context IRI or Context-module support is required. |
+| D has no outgoing R statements; A has `p="a"` | GET → `404`; query probe → no rows; resource DELETE → `404`. PUT `p="new"` → `201`, Location R. GET/query now expose only `"new"`. Authorized A-selected GET still exposes `"a"`. The earlier DELETE has not changed A. |
+| D has `p="old"` and the incoming link; A has `p="a"`, B has `p="b"` | PUT `p="new"` → replacement success. GET/query expose only `"new"`; A/B still expose `"a"`/`"b"`. Resource DELETE → `204`; GET → `404`, query probe → no rows. The incoming link and A/B assertions remain; repeating resource DELETE → `404`. |
+| D has the incoming link but no outgoing R statements; A has `p="a"`; computed C selects all outgoing statements of D subjects with `a=Alice` | PUT `p="new", a=Alice` → `201`. Ordinary and C-selected GET expose those two triples. PATCH `a=Bob` → success; ordinary GET exposes `p="new", a=Bob`, C-selected GET → `404`, and `GRAPH <C>` has no outgoing R statements. Resource DELETE → `204`; ordinary GET → `404`. The incoming link and A's independent assertion remain. |
+
+Repeat the ordinary operations through their system aliases. For find, compare against the same
+engine on D's authorized fixture: change only independent A/B assertions and verify that ordinary
+matches, ranking and expansion are unaffected. This checks scope without prescribing search recall.
+For C, compare its selected representation and named query projection after each source change;
+materialization may not supply a stale successful result.
+
+#### Authorization and conditional boundaries
+
+These cases apply the existing [mutation recommendations](access-control.md#mutations-and-partial-representations)
+to D; they introduce no permission type or credential claim. A refusal leaves source assertions and
+dependent projections unchanged. Each row starts fresh, and authorization permits the complete
+operation and observation of D unless the row narrows it.
+
+| Setup and request | Proposed observation |
+|---|---|
+| R exists only in independent A; ordinary nonempty PUT with `If-None-Match: *` | `201`, Location R, creation in D. A's existence does not make the precondition false and A remains unchanged. |
+| R exists in D; ordinary nonempty PUT with `If-None-Match: *` | `412`, D and A/B unchanged. |
+| R exists only in A; ordinary resource DELETE with `If-Match: *` | `404`, no change. The ordinary not-found response precedes precondition evaluation. |
+| Caller may write A but has no applicable D write authority; ordinary PUT/PATCH/DELETE, with or without conditions | Uniform `403`, whether R is absent, visible or hidden. No retry against A, automatic registration or fallback; conditional fields do not grant authority. |
+| D contains unreadable values of p; caller may edit only visible values; ordinary PUT or PATCH replacing p | Uniform `403`, also in the counterpart with those hidden values absent under the same authority. Complete-scope authority is required; filtering GET does not narrow the replacement. |
+| Caller can completely replace D's R but cannot observe its existence; ordinary nonempty PUT | Uniform `403`, with no Location or validator. The `201`/replacement distinction cannot reveal unreadable existence. Uniform slot operations retain their separately defined blind-write cases. |
+| Whole-resource write is allowed; unconditional PUT containing only R's `@id` | `204`, no Location or validator, whether D's R was empty or populated. Outgoing R statements in D are cleared; incoming links and independent A/B survive. GET → `404`; no persistent resource marker is created. |
+| D has `p="old"`; read its ordinary representation and obtain ETag E; change only independent A with D's representation and authorization inputs unchanged; conditional ordinary GET/PUT using E | A's change alone does not invalidate E: GET with `If-None-Match: E` → `304`; a permitted PUT with `If-Match: E` succeeds. Use a representation that does not include A's membership; graph-aware variants follow their represented data. |
+| Current D write permission is revoked after GET returned E; PUT with `If-Match: E` | `403`, even if the representation and tag are unchanged. An ETag does not preserve authority. |
+| C is the computed read-only view above; caller can edit D and manage C; valid C-selected PUT/PATCH/DELETE | Uniform `403`, including absent targets and no-ops. Sources and the view definition remain unchanged. A separately authorized ordinary write can edit D. |
+
+The fixture permissions describe admission to the complete effect, not the mere absence of a
+protected triple. Test denied mutations against empty and populated counterparts under the same
+authority. Cases reaching precondition evaluation assume no intervening change except the one
+stated, normal request checks pass and the caller can observe the tested representation. They do not specify an ETag
+algorithm or an authorization-state storage mechanism.
+
+#### Framework boundary and validation
+
+RDF supplies graphs and shared identities; SPARQL supplies evaluation of the selected dataset.
+[RFC 9110 §9.3.4](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.4) supplies PUT's
+creation/replacement response distinction, and
+[§13.2.1](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.1) orders preconditions after
+normal request checks. The mutation proposal owns PATCH, empty-input and non-disclosure choices.
+The additional sempods choice here is which logical assertions those operations address: D for
+ordinary requests, the selected view for explicit Context requests. It prevents discovery, HTTP
+method or hidden collisions from silently changing the operation's target.
+
+Run the ordinary sequences on a single graph, an internal default Context and an area/document-policy
+implementation configured with equivalent D and authority. A/B/C cases require the optional Context
+contract; a core-only implementation is tested without those surfaces. Physical partition counts,
+policy languages, indexes and view materialization strategies are free. The same IRI may occur in
+independent scopes without requiring copies to be reconciled or all scopes to be searched.
+
+These are acceptance cases for [#72](https://github.com/sempods/sempods-spec/issues/72), not an
+executed HTTP suite. Logical RDF/query checks can verify the stated projections; they do not prove
+HTTP outcomes, find behavior, authorization, atomic mutation or cache isolation. Reviewing this
+decision does not allocate requirement IDs, change the adopted registry, advertise `contexts`, or
+settle the remaining authentication and lifecycle decisions in #69.
 
 #### Query projections
 
@@ -429,11 +513,11 @@ external adoption can close it before the tag.
 
 ## Decisions before normative adoption
 
-- Review the [dataset and selection recommendations](#logical-dataset-and-operation-scope) together
-  with the merged [mutation recommendations](access-control.md#mutations-and-partial-representations).
-  Decide the [four default-access cases](#four-default-access-decisions): coherent implicit D access,
-  implementation-supplied placement, separate Context data and computed-view effects. General write-through computed views
-  are deferred until their discoverable update contract is defined; do not claim that support here.
+- Review the [default-access resolution and acceptance sequences](#four-default-access-decisions)
+  together with the [mutation recommendations](access-control.md#mutations-and-partial-representations)
+  and remaining dataset/selector cases. Preserve coherent D access, independent assertions and
+  computed projections when preparing their coordinated requirements. General write-through computed
+  views remain deferred until their discoverable update contract is defined.
 - Profile the federated authentication, client identity and delegation flows precisely enough for
   one client to use both examples; "supports OAuth" alone is insufficient. Resolve the
   [`public-read` migration](access-control.md#public-access-and-public-read), including token

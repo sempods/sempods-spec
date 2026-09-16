@@ -128,6 +128,11 @@ until a separate write-through contract is defined. The direct write scope is fi
 of response filtering; dependent views are reevaluated after mutation. A filtered GET is not
 permission to redefine a later PUT as replacement of just that visible subset.
 
+The [default-access acceptance sequences](data-access.md#default-access-acceptance-sequences)
+apply this boundary to core-only, independent-Context and computed-view cases. Their
+[authorization and conditional cases](data-access.md#authorization-and-conditional-boundaries)
+exercise the guarantees below against the same D scope, including hidden collisions and revocation.
+
 | Operation | Recommended effect within that scope |
 |---|---|
 | Resource PUT | Replace all outgoing statements of the addressed subject; preserve incoming statements. |

@@ -51,9 +51,11 @@ endpoint or assert that the registry is the caller's query dataset. HTTP cache d
 Use one optional module, `https://schema.sempods.org/module/contexts`, initially `0.1-dev`. It covers
 Context selection, identities, registry reads, caller-access discovery and lifecycle together.
 A core client needs none of those capabilities. The module preserves ordinary requests without a
-selector through the [implicit-scope recommendation](data-access.md#recommended-implicit-scope),
-whose four access cases still await decision in #69. The single-module boundary is the selected
-direction; the particular default-access effects are recommendations for review.
+selector through the [implicit-scope recommendation](data-access.md#recommended-implicit-scope).
+Its [four acceptance sequences](data-access.md#default-access-acceptance-sequences) and
+[authorization/conditional cases](data-access.md#authorization-and-conditional-boundaries) specify
+the proposed default-access resolution for #69. The single-module boundary is the selected
+direction; this resolution remains non-normative pending coordinated adoption.
 
 At full adoption, this module supersedes the current `context-management` contract and the
 Context-specific parts of current core. It is not a second layer depending on a lifecycle module.
@@ -187,8 +189,8 @@ model. Their vocabulary properties and representations are owned by the normativ
 [Kotlin #180](https://github.com/sempods/sempods-kotlin/issues/180), coordinating #166/#176.
 
 Full adoption of the context-free core and optional `contexts` module remains under #69–#74/#68.
-It must settle the implicit-scope cases and authentication/delegation decisions, then align module
-identity/version, core boundaries, stored/computed projections, membership-write limits, independent
+It must review the default-access resolution and settle authentication/delegation decisions, then
+align module identity/version, core boundaries, stored/computed projections, membership-write limits, independent
 modes, zero-Context bootstrap and non-destructive lifecycle, including media. The adopted RDF slice
 advertises no new module and does not satisfy #68's adoption gate. The
 [data-access inventory](data-access.md#requirement-changes-to-prepare) owns the wider impact.
