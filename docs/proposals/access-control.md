@@ -43,37 +43,242 @@ policy syntax, evaluating a request and editing permissions are separate capabil
 client need not understand private attributes or reproduce the server's evaluator. Neither the
 ability to read a resource nor possession of an access token grants policy-management authority.
 
+### Authorization without Context setup
+
+This is the proposed authorization resolution for
+[#69](https://github.com/sempods/sempods-spec/issues/69), against revision
+`721b109342a2031500038850a80718d3d707fb75`. It complements the
+[default-access cases](data-access.md#four-default-access-decisions). Current auth/grant requirements
+remain binding until coordinated normative adoption. This iteration selects consent, delegation,
+public-read and revocation behavior; the remaining profile decisions are identified below.
+
+Use [RFC 6749 §§4.1, 4.4, 5.2 and 6](https://www.rfc-editor.org/rfc/rfc6749.html) for code exchange,
+service authentication, errors and refresh, [RFC 7636 §4](https://www.rfc-editor.org/rfc/rfc7636.html#section-4)
+for PKCE, and [RFC 6750 §§2.1 and 3](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1) for
+Bearer presentation and challenges. Apply
+[RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.1)
+to code-injection/CSRF protection and refresh-token replay. These references cover those operations,
+not every optional OAuth extension or an unversioned OAuth 2.1 draft. The sempods choices are the
+consent boundary over RDF operations, immediate loss of revoked authority and public-read behavior.
+
+Keep the existing `did:web:`, dynamically registered `dyn:` and operator-provisioned service client
+roles, pod-local authorization/token routes and token format for this iteration. Each distinct client
+identity needs its own authority; switching client shapes does not transfer consent. Retain the local
+origin/path validation of `did:web:`; it establishes the permitted redirect, not proof of a person's
+identity or consent. For both user-facing client shapes, recommend Authorization Code with S256
+PKCE. This replaces AUTH-023's exemption for `did:web:`; an origin-bound redirect does not protect
+an intercepted code at exchange. Discovery and redirect-profile refinements remain coordinated
+with #66/#67 and the remaining #82 candidates.
+
+An ordinary application opens authorization without Context grant strings or a new data-scope
+parameter. The pod authenticates the person and obtains approval for a described data/operation
+boundary. That boundary can include reading D and creating/editing data in D even when D is empty.
+The application then uses the resulting Bearer token on the ordinary routes. No Context creation,
+registry request, ownership or application installation is a prerequisite. A non-owner can approve
+only what they may delegate. A service instead uses Client Credentials and its operator-authorized
+boundary, with no person's consent or fictional person in its token. The existing prohibition on
+service `public-read` and OIDC scopes remains; a service can separately make a credential-free public read.
+
+Consent binds the verified person, pod, client, redirect and approved boundary to the authorization
+transaction. Acceptance is single-use; cancellation, a swapped transaction or replay cannot create
+or restore authority. The browser's session alone is not approval. Preserve the existing `prompt`
+semantics and interactive `dyn:` confirmation; a UI's layout, policy language and internal consent
+record are free. The authorization server echoes `state` exactly when supplied and omits it when
+absent, as in RFC 6749 §4.1.2. Clients still prevent CSRF and multi-issuer mix-up under RFC 9700;
+optional `state` does not waive those protections. This is the proposed resolution for #10.
+
+Verified person and client remain separate inputs to every request. Identity assertions and browser
+sessions retain their existing pod/audience restrictions and cannot substitute for a pod API token.
+A person is externally identified by their WebID URI. Only equivalences established through a trusted
+identity relationship count; RDF data claiming `owl:sameAs`, an email match or a caller-supplied
+alias cannot join permissions. Consent change, withdrawal and forced reauthorization reach the
+same person's established aliases for the affected pod/client. Recommend retaining that observable
+coverage while freeing AUTH-052's write-only lookup placement. The cross-issuer equivalent-identity
+claim name/shape still belongs to #5; these cases assume a configured trusted mapping and do not
+claim to finish the federation wire profile.
+
 ### Delegation and revocation
 
-An authenticated application receives only the non-public authority actually delegated to it, bounded
-by what the person may delegate. Public access is separately authorized by the pod's policy.
-Service clients are authorized as themselves; they do not acquire a fictional person's delegation.
-Client isolation survives whichever storage model supplies the answer.
+For a non-public operation, recommend checking the intersection of the person's current delegable
+authority, the application's still-valid consent boundary and the pod's current policy for the
+complete operation. Service authority substitutes for the first two inputs on a service request.
+Feature scopes and possession of a valid token cannot widen that intersection. Public reads have
+the separate branch below. Tokens identify their client and subject; no core Context-grant list
+or client-side policy evaluation is introduced.
 
-A completed revocation affects the next request even if a credential has not expired. Narrowing the
-person's authority narrows dependent delegations; widening it does not silently restore a delegation
-that was removed. Races between consent, token issuance and revocation must preserve those outcomes.
-Core specifies that result rather than a mandatory order of database writes and reads.
+Consent describes both the allowed effects and the data selection's behavior over time:
 
-A changing audience makes the delegation boundary a substantive contract question. Access to a
-collection may include resources added later; access to a selected set may not. These are different
-authorizations. The [delegation example](../../examples/50-delegation.md) illustrates why a policy
-change can broaden reachable data without changing a stored grant. Settle how consent distinguishes
-such scopes before generalizing the current per-Context ceiling; a broad token scope is not an
-answer on its own.
+| Consent shape | Proposed ceiling |
+|---|---|
+| Fixed selection, such as two chosen resource IRIs | Only those resources and approved operations. Later sharing of another document adds no application authority. |
+| A bounded dynamic data space, such as D or the tasks in project X | Future resources matching the agreed boundary may be included where the person may delegate that boundary. The approval makes this future-membership effect explicit. Creation can be allowed before any resource exists. |
+
+These are descriptions of authority, not required UI controls, policy syntax or new OAuth scope
+strings. An implementation can offer either shape or both; it still supports ordinary authorized
+creation without Context setup. The dynamic case needs authority over the described space, rather
+than an inference from the few documents currently visible. A person permitted to share only two
+documents cannot authorize all of D. A newly created task inside an approved project is data growth
+within the ceiling; adding another project or granting additional modes is a ceiling expansion
+requiring fresh consent. An unspecified "whatever this person can access later" is not a substitute
+for the described boundary. This resolves the ambiguity illustrated by the
+[delegation fixture](../../examples/50-delegation.md) without requiring a photo-picker or ACP.
+
+Narrowing the person's authority also narrows dependent delegations. Removed authority stays removed
+from the old delegation if the person's permissions later grow again; fresh consent is needed to
+restore it. Client X's consent never grants client Y access, even for the same person or alias.
+Changing data membership under an agreed dynamic selection differs from removing/reinstating the
+person's permission or broadening the selection rule. A stored grant representation is not required,
+but losing track of that distinction cannot be repaired by silently broadening a client's access.
+
+A completed withdrawal takes effect on the next request, including requests using unexpired tokens.
+Narrowing a delegation need not invalidate its token: reads lose the withdrawn private assertions
+and refused writes give `403`. Disconnecting the connection or requiring fresh authorization ends
+its previous codes, refresh credentials and API tokens; presenting such a token gives `401` rather
+than silently becoming anonymous. Reconnecting creates a new authorization basis; it cannot make
+old credentials usable again. An independently obtained public-only credential is separate.
+
+#### Consent and credential races
+
+Recommend replacing GRANT-018/AUTH-063's prescribed write/check order with this outcome: concurrent
+consent, code/refresh exchange and withdrawal have an order consistent with completed operations.
+If withdrawal or required reauthorization completes before an old exchange is admitted, exchange
+fails with OAuth `invalid_grant` (`400`). If an exchange takes effect first, its credentials are
+covered by the later withdrawal even when its HTTP response arrives afterwards. No credential from
+the withdrawn authorization can authorize a subsequent request or seed a surviving refresh family.
+Apply this to session-only access tokens as well as refresh-token families. Retain rotation and
+family revocation on refresh-token reuse; no guaranteed refresh-token issuance is restored.
+
+A changed consent decision invalidates its outstanding codes (AUTH-062), including changes under a
+trusted equivalent identity. A forced-reauthorization challenge is itself a barrier even if the
+person has not answered yet. For #49, acknowledge the MCP replay only when its authorization comes
+from a fresh consent transaction completed after that barrier for the same person, pod and client;
+that transaction is bound to the pending challenge. A newly minted token from an older code or a
+refresh exchange is insufficient. This comparison concerns the authorization transaction, not
+clock precision, token `iat` or a new public claim. Existing one-time challenge consumption and
+expiry remain. A second barrier invalidates an unfinished transaction tied to the first.
+
+Locks, serializable transactions, conditional generation checks or another design can enforce this
+outcome. For example, an exchange conditionally tied to a live authorization generation can lose to
+a generation change; if it wins, credentials tied to that old generation cease to authorize after
+the change. A design spanning stores must close the check/commit race as well. Merely checking a
+flag before minting, waiting for JWT expiry, or sweeping only refresh families fails the cases.
+This illustrates an implementation path, not an algorithm required by core.
 
 ### Public access and `public-read`
 
-Public access follows explicit current policy and is available without a credential. Omission does
-not publish data, and a rejected credential never turns into an anonymous request. A client receives
-deterministic protocol errors without learning whether inaccessible data exists.
+Recommend retaining `public-read` as an additive feature scope for valid non-service API tokens.
+It permits reading the currently public projection of the requested data scope. Without a token,
+that public projection is also readable. With a valid token lacking `public-read`, only the
+caller's independently authorized projection is exposed. A rejected credential always fails;
+it is never retried as anonymous. Public read permission grants no writes or administrative rights.
 
-Before adoption, decide whether the `public-read` OAuth scope survives. If retained, define how it
-adds public data to an authenticated caller's view, how an anonymous subject receives a token, and
-how policy changes and delegation revocation affect it. Replace the current "no public context"
-issuance test with a rule that a core-only pod can implement, including a pod with no currently
-public data. If removed, define the replacement behavior and migration for clients requesting it.
-Unauthenticated public reads and invalid-credential rejection remain guarantees in either case.
+Public policy is evaluated for each request. For ordinary reads it contributes only data in D;
+explicit named/Context selection still bounds the operation. A public Context outside D does not
+silently enlarge the default graph. Direct reads, query results and find use the same resulting
+scope and the proposal's non-disclosure/cache guarantees.
+
+Keep authorization requests for `scope=public-read` with or without a person. Without a person,
+use the existing per-request opaque anonymous subject and bind the code/token to the requesting
+client; this subject grants no private identity or delegation. Validate client, redirect and PKCE
+normally. An invalid presented identity assertion gives `access_denied`, not anonymous success.
+An interactive public-only approval can confirm that feature without identifying a person; it
+creates no private delegation. The existing prompt rules still apply, including `prompt=none`
+refusal without the required remembered identity/consent. For an otherwise valid request, issue
+the public-read access token even when no data is currently public. Replace AUTH-044 and the
+public-existence branch of GRANT-014 accordingly: the feature can be authorized independently of today's data, without querying or exposing a Context registry.
+An ordinary private-delegation request with no surviving authority and no approved public-read
+scope still receives `consent_required`; explicit refusal remains `access_denied`.
+
+Removing private authority does not remove `public-read` from a token that remains valid. Removing
+a public policy removes its read contribution immediately; any separate private authority still
+applies. Token expiry, explicit credential revocation and a connection disconnect are credential
+failures and give `401`, including on public read routes. An anonymous public-only credential has
+no private authority to restore. Refresh availability remains the existing separate choice: this
+recommendation neither requires nor prohibits issuing refresh tokens to that class.
+
+Retaining the scope preserves the difference between existing authenticated clients with and
+without it. At adoption, translate existing Context delegations only where an equivalent bounded
+authority can be established. A grant on independent A cannot become permission on D. If an old
+credential's subject/client, scope, consent boundary or revocation lineage cannot be preserved,
+reject it and require fresh authorization; never treat it as anonymous or broad D access. This is
+a fail-closed credential transition, not a general protocol-version negotiation mechanism (#21).
+The current no-public-Context issuance refusal remains binding until normative adoption.
+
+### Authorization request cases
+
+These are proposed acceptance cases for #72, not executed HTTP or race tests. Use a core-only pod
+P, empty implicit D, person U and clients X/Y. U can delegate read and complete resource creation/
+replacement in D unless a row narrows it. Valid test requests use the existing media types, a
+validated redirect and fresh S256 PKCE; table rows reset state. The independent-A case adds the
+Contexts module, and MCP challenge cases add MCP. Installation of policy and the consent UI are implementation-specific; public protocol requests and observations are shared.
+
+| Setup and request | Proposed result |
+|---|---|
+| X obtains U's approval for D read/write through Authorization Code, without a Context scope or registry call; exchanges the code, then PUTs nonempty RDF at a new LOD R | Code exchange `200`; PUT `201`, Location R; GET `200`. No Context identity, membership grant or ownership is required. Repeat with a non-owner who may delegate the same authority. |
+| X repeats authorization using its registered `dyn:` identity or its origin-bound `did:web:` identity | The respective existing client validation/consent rules apply; both use S256 PKCE and reach the same approved ordinary operations. |
+| A public client omits PKCE, or redeems a code with the wrong verifier | Missing challenge is refused at authorization (`invalid_request`); wrong verifier gives token endpoint `400 invalid_grant`. The failed step issues no access token and cannot enlarge legitimate consent. |
+| X supplies `state=s` versus omitting it in otherwise protected/valid authorization transactions | The response echoes exactly s versus no state parameter. No invented state value; the client still checks transaction and issuer binding. |
+| U refuses consent, or an earlier consent submission is replayed after narrowing | Explicit refusal returns `access_denied`; replay is rejected without restoring the earlier permission. Neither case issues a code for that old authority. |
+| Y has a valid token naming U, but no private delegation; X's consent allows R | Y's private resource GET is `404`, its valid write `403`, regardless of X's authority. No subject-only grant lookup. |
+| Context-capable variant; U has consented only to independent A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
+| Service S is provisioned with D read/write; uses Client Credentials and then ordinary PUT | Token response `200`; allowed nonempty creation `201`. Subject is S and no person/Context setup is fabricated. A `dyn:` client cannot obtain this service authority. |
+| U approves a fixed selection containing R; later gains access to unrelated private R2 | X's R2 GET remains `404`, write `403`; fresh consent is required. |
+| U can delegate the project-X data space and approves its dynamic read selection; a new task joins that project | X can read that task. A task in project Y remains hidden; changing the agreed selection to include Y requires fresh consent. |
+| U loses permission to R, then regains it, without fresh application consent | X loses the delegated R access at the first change and does not regain it at the second, even with an unexpired token. Independent public access is tested separately. |
+| Two configured trusted URIs identify U; withdrawal arrives under the other URI | X loses the same authority and affected credentials across both aliases. A claim from an untrusted issuer or ordinary `owl:sameAs` data cannot gain or revoke another person's authority. |
+
+The following cases isolate public-read behavior. R is inside D; successful resource reads have
+visible outgoing statements. Use empty or unrelated public data in the zero-data cases so status
+codes do not depend on undisclosed resources.
+
+| Setup and request | Proposed result |
+|---|---|
+| R is public; GET without a credential | `200`. R private/absent instead gives the same `404`; find/query have their ordinary authorized-empty results. |
+| R is public; valid token has no private R authority, with versus without `public-read` | GET `200` with the scope, `404` without it. The public branch does not add write authority. |
+| No public data or registered Contexts; valid anonymous `scope=public-read` authorization and code exchange | Public-read code/token flow succeeds; token endpoint `200`. Resource reads are `404`, find/query use the empty projection. No registry-existence prerequisite or mandatory refresh token. |
+| A public-only token exists; R becomes public and then private | GET changes from `404` to `200` to `404` without reissuing the token. |
+| Private R authority is withdrawn but R is public and the token remains valid with `public-read` | GET remains `200` through the public branch; the removed private write gives `403`. |
+| R is public; expired, wrong-pod or explicitly revoked Bearer token | `401` with a Bearer challenge; no anonymous fallback. The same R remains readable by a separate credential-free request. |
+| Anonymous public-read authorization carries an invalid identity assertion | `access_denied`; no anonymous code/token is issued. |
+| An existing A-bound credential cannot be mapped to an equivalent authorization after adoption | Reject the credential (`401` on data access; `400 invalid_grant` for its invalidated refresh credential). Fresh consent is needed; it never acquires D authority by migration. |
+
+For races, control the relative completion points rather than sleeping for token timestamps.
+Repeat with and without refresh issuance, and with consent/withdrawal under U's equivalent URI.
+
+| Interleaving | Proposed result |
+|---|---|
+| Consent approved; withdrawal completes; old code is exchanged | `400 invalid_grant`; no usable API token or refresh family. |
+| Code exchange takes effect; disconnect completes; exchange response then arrives | Returned credentials cannot authorize the next request (`401`) or refresh (`400 invalid_grant`). The response arriving last does not revive the connection. |
+| Consent narrowed while an older code is outstanding | Older code gives `400 invalid_grant` even if some permissions survive. A code for the new decision can exercise only that decision. |
+| Session-only exchange overlaps a forced MCP reauthorization barrier | Old-consent token cannot acknowledge the replay or access private data after the barrier. Fresh challenge-bound consent is required even though no refresh family exists. |
+| An older consent screen is submitted after that barrier, or after a newer barrier supersedes it | No usable authorization for that challenge; the stale transaction cannot count as its fresh consent. |
+| Client refreshes while its connection is disconnected | Refresh fails, or its earlier-issued result is unusable after disconnect; a replacement family cannot survive. |
+| Client completes fresh challenge-bound consent, then replays MCP authorize | One acknowledgement, subject to current sufficient authority; no challenge loop. An unrelated or expired challenge cannot be consumed. |
+
+### Adoption impact and remaining profile work
+
+The proposed changes below are coordinated under #70/#71 and reviewed before #74 adoption. This
+proposal allocates no identifiers, changes no normative endpoint and closes none of the linked
+current-contract issues. #65's removal of guaranteed refresh-token issuance remains intact.
+
+| Existing contract | Proposed disposition |
+|---|---|
+| AUTH-013/014/024, GRANT-013/014/028/029/030 | Express ordinary consent and service authority without Context prerequisites. Keep the Context-specific management boundary in the optional module; no pod-wide service administration follows from D data access. |
+| AUTH-009/022/023/025 | S256 PKCE for both user-facing client shapes; conditional state echo resolves #10. Preserve client/redirect validation while reviewing the remaining profile separately. |
+| AUTH-026, GRANT-002/015/016/018/019, AUTH-052/061/062/063 | Retain client isolation, trusted-alias coverage, delegation ceilings and fresh-consent barriers; replace prescribed storage/lookups/write ordering with the tested outcomes above. Narrowing never silently restores removed authority. |
+| GRANT-020/021/022/031/032, AUTH-042/043/044 | Retain additive public-read and credential-free reads; generalize to public assertions in the requested scope and permit public-only issuance on an empty pod. Keep invalid-credential rejection. |
+| MCP-011/012/013/030 | Coordinate core-only authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact core-only result shape remains a module-view decision. |
+
+The equivalent-identity wire claim (#5), discovery/address rules (#66/#67), remaining #82
+transport/registration/token-profile candidates and #77's validation issues retain their ownership.
+This iteration does not invent their missing fields or claim a complete federation profile.
+The full Context lifecycle, independent view/data authority and retained-source/media behavior
+also need the integrated review recorded in #69/#68.
+
+Validation compares these cases on a Context-backed store and a policy-based store with equivalent
+authority, including empty D and future creation. Existing ACP fixtures demonstrate their supplied
+static policy model; they do not execute these consent, credential, migration or race transitions.
+An implementation path must show all relevant interleavings, not merely report a green query model.
 
 ## Operation boundaries
 
@@ -403,9 +608,8 @@ matches, ranking and expansion. Cover public reads without credentials, tokens w
 `public-read`, no currently public data, policy changes, revocation and invalid credentials.
 An enforcement mechanism earns conformance from these observable properties, not its name.
 
-The outstanding protocol decisions are generic mutation scope, the delegation ceiling for changing
-audiences, the `public-read` migration, client-visible dataset layout and the optional Context
-contracts. Rewrite correctness is an implementation obligation.
+Review the authorization cases and their [remaining profile work](#adoption-impact-and-remaining-profile-work)
+alongside the mutation/dataset recommendations and optional Context contracts before adoption. Rewrite correctness is an implementation obligation.
 Installation of an implementation's policies is a deployment concern unless a client-facing
 management contract is being specified.
 
