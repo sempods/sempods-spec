@@ -150,8 +150,9 @@ the names D/A/B/C are new sempods vocabulary. Wire bodies use full IRIs, for exa
 }
 ```
 
-Each row is a sequential scenario; reset before the next row. Compare RDF assertions, not JSON
-array order. Replacement success may use the existing `200` or `204` form. The query probe is
+Each row is a sequential scenario using R's LOD route; reset before the next row. Compare RDF
+assertions, not JSON array order. Replacement success may use the existing `200` or `204` form.
+The query probe is
 `SELECT ?v WHERE { <https://example.org/pod/tasks/one> <https://schema.org/name> ?v }` on the existing
 SPARQL POST route. Its results below refer to that bare pattern; a query explicitly selecting a
 named graph can see separately authorized data outside D.
@@ -163,17 +164,21 @@ named graph can see separately authorized data outside D.
 | D has `p="old"` and the incoming link; A has `p="a"`, B has `p="b"` | PUT `p="new"` → replacement success. GET/query expose only `"new"`; A/B still expose `"a"`/`"b"`. Resource DELETE → `204`; GET → `404`, query probe → no rows. The incoming link and A/B assertions remain; repeating resource DELETE → `404`. |
 | D has the incoming link but no outgoing R statements; A has `p="a"`; computed C selects all outgoing statements of D subjects with `a=Alice` | PUT `p="new", a=Alice` → `201`. Ordinary and C-selected GET expose those two triples. PATCH `a=Bob` → success; ordinary GET exposes `p="new", a=Bob`, C-selected GET → `404`, and `GRAPH <C>` has no outgoing R statements. Resource DELETE → `204`; ordinary GET → `404`. The incoming link and A's independent assertion remain. |
 
-Repeat the ordinary operations through their system aliases. For find, compare against the same
-engine on D's authorized fixture: change only independent A/B assertions and verify that ordinary
-matches, ranking and expansion are unaffected. This checks scope without prescribing search recall.
+Repeat the ordinary operations through their system aliases with the same data effects. For each
+system-layer resource creation, expect Location to name the system-layer resource route for R,
+as specified by [`SPS-CRUD-043`](../../spec/core/lod-crud.md#SPS-CRUD-043); the RDF identity remains R.
+This route-specific expectation also applies when repeating the conditional cases below.
+For find, compare against the same engine on D's authorized fixture: change only independent A/B
+assertions and verify that ordinary matches, ranking and expansion are unaffected. This checks
+scope without prescribing search recall.
 For C, compare its selected representation and named query projection after each source change;
 materialization may not supply a stale successful result.
 
 #### Authorization and conditional boundaries
 
 These cases apply the existing [mutation recommendations](access-control.md#mutations-and-partial-representations)
-to D; they introduce no permission type or credential claim. A refusal leaves source assertions and
-dependent projections unchanged. Each row starts fresh, and authorization permits the complete
+to D through R's LOD route; they introduce no permission type or credential claim. A refusal leaves
+source assertions and dependent projections unchanged. Each row starts fresh, and authorization permits the complete
 operation and observation of D unless the row narrows it.
 
 | Setup and request | Proposed observation |
@@ -275,7 +280,8 @@ is independent of hidden collisions; failed writes leave the effect unapplied. P
 the shared authorized-query equivalence. An allowed response and subsequent read reflect the new
 state; stale materialization is not an alternative successful effect.
 
-LOD and system aliases agree for the same mode and scope. A validator identifies that selected
+LOD and system aliases agree on data effects and representations for the same mode and scope;
+creation Location headers follow the route-specific rule above. A validator identifies that selected
 representation: an implicit-scope tag does not validate a Context-selected write, or vice versa, even
 when the returned triples coincide. Apply
 [RFC 9110 §8.8.1](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.1) to each representation:
@@ -428,8 +434,10 @@ Context, `#write` grant string or context-discovery request is needed by the pro
 | `GET P/notes/one` | `404` |
 
 Requests use the media types already specified for those operations. Repeat against the system
-resource and slot routes where the same effect is expressible; check stale validators and denied
-writes. Query and `find` see the authorized data, including additions and removals. The adapter
+resource and slot routes where the same effect is expressible. A system-layer resource creation
+returns its system-layer route in Location, following
+[`SPS-CRUD-043`](../../spec/core/lod-crud.md#SPS-CRUD-043). Check stale validators and denied writes.
+Query and `find` see the authorized data, including additions and removals. The adapter
 still supplies all core operations; wrapping a graph alone is not a conformance claim.
 
 ### Areas combined with document policies
