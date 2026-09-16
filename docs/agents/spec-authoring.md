@@ -54,6 +54,13 @@ Subject and voice: name the actor. "The server MUST reject…", "A client MUST N
 requirement in the passive voice hides who is bound by it, and in a protocol with two sides that is
 the ambiguity that costs an interoperability bug.
 
+For a wording-only edit, preserve the actor, obligation level, conditions, exceptions and observable
+outcomes. For example, shortening "MUST reject writes without `?context=`" to "MUST reject writes"
+broadens the obligation.
+If an implementation could pass before and fail after, or the reverse, follow
+[normative adoption](../../GOVERNANCE.md#how-a-change-is-made) and
+[the identifier lifecycle](#5-withdraw-never-delete).
+
 ## 3. Give it an ID
 
 ```
