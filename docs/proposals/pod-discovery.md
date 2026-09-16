@@ -16,10 +16,39 @@ conformance declarations with service locations. Detailed operations and access 
 service's identified protocol profile. This follows [the vision](../vision.md#what-belongs-in-the-contract):
 sempods connects contracts while leaving deployment and storage choices open.
 
-A pod can have local services, external services, or only external operational endpoints. Its entry
-address still answers discovery requests. It remains an authorized semantic data space with the full
-core contract; advertising a collection of unrelated services does not establish conformance. AI and
-S3 compatibility are possible future profiles, not prerequisites or choices made here.
+A pod can keep its services under `/_system/`, use external services, or combine both. Local services
+remain a permanent option. Discovery removes the client's need to construct their addresses; it does
+not require implementations to remove them. A pod with only external operational endpoints still
+answers discovery at its entry address and satisfies the full authorized-data core. AI and S3
+compatibility are possible future profiles, not choices made here.
+
+## Keep the local data namespace predictable
+
+Keep the existing reservations: `_system` and `.well-known`, immediately below the pod base, and
+all their descendants are unavailable to ordinary LOD resources. They stay reserved even when no
+service is hosted there. Segment boundaries matter: `/alice/_system-notes` is not `/alice/_system`.
+
+Service routes and discovery documents inside the pod namespace use those reserved spaces. External
+endpoints may lie outside the pod's namespace, including elsewhere on the same origin; they do not
+reserve more of its local data space. A binding for ordinary LOD access retains the existing data
+addressing rules. Publishing a query or token endpoint at `/alice/notes` cannot turn an ordinary data
+address into a service route. Clients need no changing list of implementation-defined reservations.
+
+The exact pod entry `/alice` has a separate, public bootstrap role. Its GET response and discovery
+link are controlled by the pod, not read from an ordinary user-writable RDF resource. Ordinary LOD
+PUT, PATCH and DELETE cannot replace or remove it. Statements *about* that IRI can still be stored
+and accessed through the data API; they do not configure the entry or its services. This is an
+explicit proposed exception to ordinary LOD addressing, to be reconciled with CRUD-001–004/018 at
+adoption. #78 still owns whether a pod base itself may end in a reserved segment.
+
+Apply one common separation rule: service requests are handled under their service contract.
+Unsupported methods or representations never fall through to ordinary LOD CRUD. Generic data
+operations cannot read service internals, change service state or bypass service authorization.
+A service may return RDF when its contract specifies it; its IRI may also be described as data.
+Neither turns user-authored RDF into authoritative service configuration. Modules define their own
+operations and permissions, and inherit this shared boundary instead of repeating it. Reservation
+does not require authentication: a discovery document can be public while remaining outside ordinary
+LOD CRUD.
 
 ## Find the description without guessing a path
 
@@ -32,17 +61,18 @@ Host: pods.example
 Accept: */*
 
 HTTP/1.1 200 OK
-Link: <https://pods.example/descriptions/alice>; rel="service-desc"; type="application/sempods-discovery+json"
+Link: <https://pods.example/alice/_system/description>; rel="service-desc"; type="application/sempods-discovery+json"
 Content-Type: text/html
 Access-Control-Allow-Origin: *
 Access-Control-Expose-Headers: Link
 Cache-Control: no-cache
 ```
 
-The body may be Alice's public landing page. A client follows the typed link, requests that media
-type and validates the returned description. The media type above is a **proposed, unregistered
-name**; its registration and exact format need review before adoption. The `service-desc` relation
-already exists in [RFC 8631 §4.2](https://www.rfc-editor.org/rfc/rfc8631.html#section-4.2).
+The body may be Alice's public landing page or a service-defined RDF description of the pod. A client
+follows the typed link, requests that media type and validates the returned description. The media
+type above is a **proposed, unregistered name**; its registration and exact format need review before adoption. The `service-desc` relation
+is registered by [RFC 8631 §4.2](https://www.rfc-editor.org/rfc/rfc8631.html#section-4.2), an
+Informational RFC. It defines the relation, not this proposed description format.
 [RFC 8288 §3](https://www.rfc-editor.org/rfc/rfc8288.html#section-3) supplies link parsing and context.
 
 Keep this first bootstrap small: one link from the entry URL and one description fetch, both with
@@ -62,18 +92,18 @@ without that link is not authoritative. Moving the entry identity is separate wo
 Discovery GETs send no bearer token or ambient credentials. Browser access needs CORS for the entry
 and description, including exposure of `Link` (see the informative
 [Fetch CORS explanation](https://fetch.spec.whatwg.org/#http-cors-protocol)); service profiles also
-need to account for their own browser requests. A server-side client retains its network-access restrictions when following URLs,
-including checks after DNS resolution. A trusted discovery link is not permission to reach an
-otherwise forbidden internal address. This proposal's external cases use HTTPS; loopback-only
-development remains a separate, explicitly configured case.
+need to account for their own browser requests. A server-side client retains its network-access
+restrictions when following URLs, including checks after DNS resolution. A trusted discovery link is
+not permission to reach an otherwise forbidden internal address. This proposal's external cases use
+HTTPS; loopback-only development remains a separate, explicitly configured case.
 
 ### Alternatives
 
 | Approach | Assessment |
 |---|---|
-| Typed `service-desc` link from the pod entry | Recommended. Reuses a relation and preserves the entry's HTML or RDF representation. Hosting controls one entry response and the linked document. |
+| Typed `service-desc` link from the pod entry | Recommended. Reuses a relation and allows an HTML or RDF bootstrap response. The linked description can be under `/_system/` or outside the pod namespace. |
 | Content negotiation directly at the pod entry | Viable alternative with one fewer request. It adds the discovery representation to the entry's existing representation and cache handling. Keep one required bootstrap rather than requiring both. |
-| A new fixed `/_system/` or pod-relative metadata path | Retains the layout assumption this design is meant to remove. Existing routes remain a migration option. |
+| A fixed `/_system/` path as the sole bootstrap | Requires the client to construct that address. Keep the reserved namespace and allow services there permanently; the entry link also supports an external description. |
 | A host-rooted well-known path | Useful when the host supports it, but cannot be the sole general bootstrap for a pod that controls only its own path. Protocol-specific well-known requirements still apply. |
 | RDF links alone | Natural for semantic clients, but a client needs a defined representation and authoritative link before it can find the right RDF. It does not by itself settle bootstrap. |
 
@@ -191,8 +221,9 @@ subpath still needs support for those standard routes or an explicitly reviewed 
 discovery document cannot make a nonstandard OAuth route discoverable to every generic OAuth client.
 
 The worked example changes AUTH-028's pod-base issuer assumption and adds service-targeted issuance.
-The merged authorization proposal alone does neither. Keep those changes explicit when coordinating #69 and #66/#67; this
-proposal creates no new dependency on implementing AI, S3 or a general discovery system first.
+The merged authorization proposal alone does neither. Keep those changes explicit when coordinating
+#69 and #66/#67; this proposal creates no new dependency on implementing AI, S3 or a general
+discovery system first.
 
 ## Cases to review
 
@@ -202,9 +233,13 @@ same authorized data, not merely an empty result everywhere.
 
 | Setup and sequence | Expected outcome |
 |---|---|
-| All local: entry links a description; query endpoint is `https://pods.example/alice/_system/sparql/query`; use its selected profile | Follow the published URL. Existing clients continue to use their current routes during an additive rollout. A future OAuth binding is not inferred for an unchanged legacy token profile. |
+| All local: entry links `https://pods.example/alice/_system/description`; query endpoint is `https://pods.example/alice/_system/sparql/query`; use its selected profile | Follow the published URLs. This layout remains supported, not scheduled for removal. During an additive rollout, existing clients keep their routes and token contract. |
 | Mixed: entry describes local RDF access and the external query binding above; approve and query | Query sees the same authorized logical data as the pod's RDF surface. The endpoint location adds no permission. |
-| External only: entry serves the link; description and every operational endpoint are on other hosts; `/_system/` returns `404` | A discovery-aware client completes the five steps above. Query succeeds; no guessed `/_system/` request or host administration by the pod entry is required. Other core operations need their own adopted bindings. |
+| External only: entry serves the link; description and every operational endpoint are on other hosts; no service is served under `/alice/_system` | A discovery-aware client completes the five steps above. Both reserved local spaces remain unavailable to ordinary LOD CRUD despite being unused. Other core operations need their own adopted bindings. |
+| Ordinary resource creation targets `/alice/_system`, `/alice/_system/notes`, `/alice/.well-known` or `/alice/.well-known/notes`, with data-write authority | No ordinary LOD resource is created and no service state changes, whether services occupy those addresses or not. `/alice/_system-notes` remains an ordinary data address under the usual CRUD rules. |
+| A new query binding names `/alice/notes`, where ordinary data may live | Reject that service placement; keep the data address and its behavior. A descriptor cannot create a new local reservation or displace existing data. |
+| A valid RDF PUT targets the pod entry or a token endpoint; an unsupported method or representation is sent to a service route | The relevant entry/service contract refuses it without ordinary LOD fallback or configuration changes. Data-write permission is not service-management permission. |
+| A service returns RDF under its own contract; a client separately stores RDF statements about the pod or service IRI through the data API | Both are possible under their respective permissions. Stored statements do not alter the bootstrap link, endpoint routing or service state. The service response is not a generic LOD view. |
 | Alice and Bob have distinct pod entries and `/tenants/alice/query` versus `/tenants/bob/query` on one host; present Alice's token at Bob's endpoint | Rejected credential (`401`); no Bob data. A token properly authorized for Bob can query Bob's allowed data. The service cannot select Alice's pod from an unchecked request field. |
 | Valid Alice token, but no permission to one private statement | That statement has no effect on query results under the query sandbox. Discovery does not turn an empty authorized view into a `403`. |
 | Required authorization refused, or resource/issuer metadata conflicts with the binding | No authorized private query. OAuth refusal stays a refusal; mismatched metadata stops discovery/authorization, without a fallback token or endpoint. |
@@ -235,11 +270,11 @@ reuse option for detailed feature discovery. These references do not adopt every
 
 | Current contract | Proposed impact |
 |---|---|
-| CORE-007/008/019/020: addressing and reserved paths | Preserve a stable, canonical pod entry identity while allowing service locations outside its prefix. Add public entry discovery; reconsider path reservations when a deployment has no control-plane routes there. Coordinate #78. |
+| CORE-007/008/019/020: addressing and reserved paths | Allow service locations outside the pod prefix while retaining both local reserved spaces, even when unused. Give the exact pod entry its bootstrap role; keep ordinary data paths free of new service reservations. #78 retains the pod-base naming question. |
 | CORE-010–013: conformance route and document | Reuse core/module claims inside the linked description. Add format identification and service bindings. Keep unknown-extension tolerance without weakening known-profile validation. |
 | AUTH-008/021/027/028/030/045–048: OAuth routes, issuer and metadata | Separate service resource, issuer and pod identities; support resource-targeted issuance and validation. Preserve client, consent and revocation boundaries. #66/#67 own the immediate discovery gaps. |
 | SPARQL-001 and MCP-001/009: fixed endpoints and pod-level resource | Identify complete operation endpoints and their authorization binding. A general catalogue does not override a protocol's own discovery/initialization rules. |
-| CRUD-001–004/018/040–044, FIND-004, Context/media/OIDC module routes | External placement needs explicit operation bindings and compatible resource addressing. Endpoint movement alone cannot preserve LOD dereference behavior; keep an identity resolver/forwarding arrangement or adopt a reviewed replacement. No such full binding is supplied here. |
+| CRUD-001–004/018/040–044, FIND-004, Context/media/OIDC module routes | Reconcile the pod-entry exception and central service/data separation with existing addressing. Retain reserved-path exclusions. External placement still needs operation bindings and stable LOD dereferencing through an identity resolver/forwarding arrangement or a reviewed replacement. No full external CRUD binding is supplied here. |
 | OpenAPI, vocabulary, index and conformance versions | Coordinated adoption needs matching descriptions, registered/owned media and profile identifiers, version decisions and downstream client/server changes. This proposal changes none of them. |
 
 Recommend the smallest adoption slice as the typed entry link and description format, with bindings
@@ -249,9 +284,10 @@ A missing new link can lead to the fixed route only when the client deliberately
 contract and the entry response establishes that discovery is absent. An invalid new description or
 network failure is not absence and does not trigger a downgrade.
 
-Removing fixed routes or advertising external bindings requires adoption of their full profiles and
-a compatible core version. Old clients cannot use an external-only pod by assumption. Before that
-step, resolve media-type/format publication, complete bindings for all required core operations,
+A deployment may keep its local routes indefinitely. Retiring particular routes or advertising
+external bindings requires adopted profiles and a compatible core version; neither releases the local reserved
+spaces for data. Old clients cannot use an external-only pod by assumption. Before that step, resolve
+media-type/format publication, complete bindings for all required core operations,
 browser access, migration and the identity/authorization changes above. #96 owns this remaining
 design; #21 owns general identity/version transitions. The existing vision and invariants of pod
 isolation and authorized data access remain the criteria, not a requirement to co-locate services.
