@@ -76,9 +76,9 @@ continuity and protocol version negotiation remain
 This is the one piece of process worth stating precisely, because it silently never happens
 otherwise.
 
-**The text decides.** A behaviour change is settled here first, and an implementation that
-disagrees is the bug — the reference implementation included. It gets no standing it does not earn
-by being correct.
+**The text decides.** A behaviour change is settled here first. An implementation that disagrees
+with the specification revision it claims to satisfy has a defect — the reference implementation
+included. Its existing behavior does not decide the contract.
 
 **Identifiers freeze at the tag, or at the first adopter, whichever comes first.** Until then a
 requirement may be deleted, an identifier renumbered, and a requirement that changes meaning may
@@ -165,6 +165,19 @@ change any of these sources.
    describing its changes. Publication follows the versioning and release conditions above;
    it is not what first makes the development text prescriptive.
 
+### Implementation follow-up
+
+The reference implementation may lag behind the specification. Opening or merging an implementation
+PR, including one that refreshes its vendored requirement index, is not a prerequisite for
+specification adoption. An implementation path is still required; conformance claims apply only to
+the revisions the implementation actually satisfies.
+
+Record known downstream effects and remaining work in the specification issue or PR. Normally open
+or reuse a linked implementation issue for behavior, documentation, index and citation changes. If
+there is no such issue, keep the remaining work visible in the specification record. A follow-up
+issue tracks work; it does not establish implementation conformance or block completion of the
+separately scoped specification change.
+
 ### Withdrawing a requirement
 
 A requirement is never deleted. It is marked `withdrawn`, keeps its ID, states the version it was
@@ -209,9 +222,10 @@ The consumer that holds identifiers today is the reference implementation, and r
 `checkDocLinks` validates them by *existence* against the vendored index — so a citation of a number
 that was deleted and later reused goes on passing while pointing at a different obligation. That is
 the one failure nothing downstream can see, and it is the reason reuse is bounded by this window
-rather than merely inconvenient. A change that deletes, renumbers or reuses therefore carries the
-downstream sweep with it: re-vendor the index, and read every citation of an affected identifier.
-Both belong to the change that caused it, not to whoever finds the mismatch later.
+rather than merely inconvenient. For deleted, renumbered, reused or redefined identifiers, identify
+the affected downstream citations and track the index refresh and citation corrections under
+[Implementation follow-up](#implementation-follow-up). Complete them when updating the implementation
+to that specification revision; a stale index is not evidence of conformance to the newer contract.
 
 `.github/scripts/check-requirements.py` carries the matching exception, and it closes on its own
 rather than by memory. The relaxation holds only while the repository has no `0.1` tag **and** the

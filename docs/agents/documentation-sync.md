@@ -118,17 +118,15 @@ link validation cannot find those references.
 
 ## 8. Downstream
 
-Where the change overtakes an implementation, raise the defect there in an issue.
+Apply [Implementation follow-up](../../GOVERNANCE.md#implementation-follow-up): record known gaps
+and normally open or reuse an implementation issue with the needed behavior, documentation and
+verification work. Link that record from the specification PR; implementation delivery may follow.
 
-Where it deletes an identifier, renumbers one, or changes what one stands for, the sweep is part of
-this change rather than a note about it: the companion pull request re-vendoring
-[`requirements.json`](../../requirements.json) is open, and every citation of the affected
-identifier has been read. A reused number passes a downstream existence check while pointing at a
-different obligation, and `GOVERNANCE.md` §"Deleting and renumbering, before `0.1`" calls that the
-one failure nothing downstream can see.
-
-Neither fits in this repository's commit, which is why both are opened before this pull request is
-rather than remembered after it merges.
+For deleted, renumbered, reused or redefined identifiers, inspect downstream citations and include
+the index refresh and citation corrections in the follow-up. A stale index can still accept a
+deleted identifier or hide changed meaning. Record the affected paths and remaining work; do not
+report downstream synchronization as complete until it is verified. No companion PR is required
+before this specification PR can be reviewed or merged.
 
 ## 9. Report
 

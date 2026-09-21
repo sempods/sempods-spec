@@ -179,10 +179,9 @@ Every PR completes the following for its own diff before review:
 - proposal disposition and guide revision references agree with the delivered scope;
 - `spec/README.md`'s chapter table still reflects reality;
 - every relative link resolves, and any new document is reachable from an `AGENTS.md`;
-- where the change leaves an implementation behind, an issue is open in that repository — this text
-  decides, so one that no longer matches it is the defect; and where an identifier was deleted,
-  renumbered or redefined, the pull request re-vendoring the index there is open too. Neither fits
-  in this commit, which is why this is the item that gets forgotten.
+- known implementation gaps and remaining index/citation work are recorded under
+  [Implementation follow-up](../../GOVERNANCE.md#implementation-follow-up), normally in a linked
+  implementation issue. A companion implementation PR is not a prerequisite for this PR.
 
 [`documentation-sync.md`](documentation-sync.md) is the procedure that walks this list.
 

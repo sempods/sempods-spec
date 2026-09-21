@@ -603,8 +603,8 @@ def main():
                     notices.append(
                         f"{ident} says something else than it did at {base}. Keeping an identifier "
                         f"through a change of meaning is allowed until {RELEASE_TAG} is tagged, and "
-                        f"it owes the sweep GOVERNANCE.md names: re-vendor the index downstream, "
-                        f"and read every citation of {ident} there."
+                        f"it needs the implementation follow-up GOVERNANCE.md names: inspect "
+                        f"downstream citations of {ident} and record the index/citation updates."
                     )
                 else:
                     problems.append(
