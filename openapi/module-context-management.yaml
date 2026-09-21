@@ -13,8 +13,8 @@ info:
     `https://schema.sempods.org/module/context-management` at the conformance endpoint.
 
     The route and the context IRI are one string, so there is no identifier to map and nothing to
-    migrate when the namespace moves. A pod that is provisioned once and never grows a second
-    context does not provide this module, and reading its contexts still works: `GET
+    migrate when the namespace moves. A fixed deployment may omit this module and provision its
+    contexts outside this interface. Reading its contexts still works: `GET
     /_system/contexts` and `GET /_system/contexts/{contextPath}` are core.
 
     Requirements here carry `SPS-CTX-` identifiers, the same area the core contexts chapter uses.

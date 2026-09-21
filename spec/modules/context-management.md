@@ -102,7 +102,8 @@ A client reads the registry with GET for its validator and conditional-read cont
 
 <a id="SPS-CTX-017"></a>
 **`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
-remove the state that rested on it: the grants naming it, and the context's statements.
+remove the state that rested on it: the grants naming it, and the context's statements. Successful
+deletion MUST answer `204`.
 
 No refresh token rests on it: this specification gives one no binding to a context, and authority
 over a context is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)). The grant removal
