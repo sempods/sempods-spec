@@ -1119,7 +1119,7 @@
       "id": "SPS-CTX-017",
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
-      "summary": "`DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also remove the state that rested on it: the grants naming it, and the context's statements.",
+      "summary": "`DELETE {pod}/_system/contexts/{path}` MUST remove the context together with its statements and the grants naming it, and MUST answer `204` on successful deletion.",
       "withdrawn": false
     },
     {

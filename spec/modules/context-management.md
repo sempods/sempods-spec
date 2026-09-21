@@ -101,9 +101,8 @@ This response representation does not make PUT a general RDF update or add condi
 A client reads the registry with GET for its validator and conditional-read contract.
 
 <a id="SPS-CTX-017"></a>
-**`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context, and MUST also
-remove the state that rested on it: the grants naming it, and the context's statements. Successful
-deletion MUST answer `204`.
+**`SPS-CTX-017`** — `DELETE {pod}/_system/contexts/{path}` MUST remove the context together with
+its statements and the grants naming it, and MUST answer `204` on successful deletion.
 
 No refresh token rests on it: this specification gives one no binding to a context, and authority
 over a context is a grant ([`SPS-GRANT-001`](../core/grants.md#SPS-GRANT-001)). The grant removal
