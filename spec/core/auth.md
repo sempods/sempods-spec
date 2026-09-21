@@ -463,15 +463,12 @@ same host. That follows from what each pod accepts, which is where it can be tes
 ## 10. Discovery
 
 A client starts with the pod's canonical base URL, for example `https://example.org/alice`.
-The endpoint-only MCP entry establishes that URL through
-[SPS-MCP-033](../modules/mcp.md#SPS-MCP-033). The pod is both the protected resource and the token
-issuer (SPS-AUTH-028).
+The pod is both the protected resource and the token issuer (SPS-AUTH-028).
 
 This section profiles [RFC 9728 §§2–7](https://www.rfc-editor.org/rfc/rfc9728.html#section-2)
 for resource metadata and Bearer discovery, and
 [RFC 8414 §§2–4 and 6](https://www.rfc-editor.org/rfc/rfc8414.html#section-2) for authorization
-server metadata. SPS-AUTH-067/068 define the pod-local address and resource-validation deviations;
-SPS-AUTH-069 identifies the expected authorization-server issuer.
+server metadata. SPS-AUTH-067/068 define the pod-local address and validation deviations.
 Optional metadata fields retain their standard meanings; they add no required OAuth flow.
 
 ### Resource metadata and challenges
@@ -565,24 +562,17 @@ OAuth client that only constructs host-rooted addresses needs those optional rou
 profile does not promise that every generic OAuth or MCP client can discover a path-scoped pod.
 
 <a id="SPS-AUTH-068"></a>
-**`SPS-AUTH-068`** — A client using this profile MUST validate resource discovery against the
-canonical pod base URL it intended to access, established independently of returned metadata.
-It MUST reject a challenge whose `resource_metadata` differs from that pod's append-form URL,
-or resource metadata whose `resource` or sole `authorization_servers` entry differs from that
-pod URL. In RFC 9728 §3.3 validation, the expected resource MUST be this pod URL for both data
-and MCP endpoints, replacing endpoint-URL comparison. A client MUST NOT use rejected metadata
-to start authorization or send credentials; exact string comparison and TLS checks still apply.
-
-<a id="SPS-AUTH-069"></a>
-**`SPS-AUTH-069`** — A client using this profile MUST validate authorization-server metadata with
-the intended canonical pod base URL as the expected issuer under RFC 8414 §3.3, and MUST NOT use
-metadata with a different `issuer` to start authorization or send credentials.
+**`SPS-AUTH-068`** — A client using this profile MUST validate discovery against the canonical pod
+base URL it intended to access, not a base inferred from returned metadata. It MUST reject a
+challenge whose `resource_metadata` differs from that pod's append-form URL, resource metadata
+whose `resource` or sole `authorization_servers` entry differs from that pod URL, or authorization
+server metadata whose `issuer` differs from it. In RFC 9728 §3.3 validation, clients MUST use this
+pod URL as the expected resource for data and MCP endpoints. This replaces endpoint-URL
+comparison. A client MUST NOT use rejected metadata to start authorization or send credentials;
+the standards' exact string comparison and TLS checks still apply.
 
 The known pod identity supplies the boundary: Alice's challenge cannot redirect a client to Bob's
-issuer. Matching an origin or a parent path is insufficient. The MCP endpoint-only entry obtains
-that identity from the specified endpoint layout before applying these checks; it does not adopt
-an identity returned by a metadata document. A deployment-specific metadata alias supplies no
-exception to these validation rules.
+issuer. The MCP endpoint does not create an MCP-specific issuer.
 
 ### Cases to check
 
@@ -598,5 +588,5 @@ These are contract examples, not results from a running implementation.
 | A challenge from Alice names Bob's metadata, or Alice's document names Bob's resource/issuer | Reject discovery; do not authorize against Bob. |
 | Metadata for Alice names `https://example.org/alice/_system/auth` as issuer | Reject: the issuer is the pod base, even though the auth routes live below it. |
 | Host-rooted routes are unavailable for a path-scoped pod | The sempods client uses the required pod-local addresses. |
-| Client knows only the canonical sempods MCP endpoint | Establish the pod base under SPS-MCP-033, then use the same pod-local metadata and exact checks. A generic MCP client needs explicit support for this sempods profile. |
+| MCP challenge | The same known pod identity and checks apply; a client applying unmodified RFC 9728 endpoint matching may reject this profile. Endpoint-only interoperability remains open under [#99](https://github.com/sempods/sempods-spec/issues/99). |
 | Required metadata is unavailable or fails validation | Discovery has not completed; the failure supplies no authority to use another pod's metadata. |

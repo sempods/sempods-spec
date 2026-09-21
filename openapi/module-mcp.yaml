@@ -48,16 +48,11 @@ paths:
         the read tools against the pod's public contexts. Write tools require a bearer. An invalid
         bearer is rejected rather than downgraded to anonymous.
 
-        A sempods-aware client configured with only this canonical endpoint establishes the pod
-        base under SPS-MCP-033, then uses the pod-local discovery profile. The metadata resource
-        and issuer are validated independently under SPS-AUTH-068 and SPS-AUTH-069. Generic MCP
-        discovery alone does not implement that profile.
-
         Tool schemas are closed and the closure is **enforced**: a call carrying an argument the
         tool does not declare is refused before dispatch, never silently dropped. The caller is a
         language model, and ignoring an invented argument executes a different operation than the
         one it asked for — broader on a read, wrong on a write — and returns success.
-      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028, SPS-MCP-033, SPS-AUTH-064, SPS-AUTH-068, SPS-AUTH-069]
+      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028, SPS-AUTH-064]
       requestBody:
         required: true
         content:

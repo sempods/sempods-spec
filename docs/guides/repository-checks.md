@@ -83,33 +83,3 @@ The site build needs a Git checkout to identify its source commit. Local uncommi
 an explicitly marked preview; source links identify its base commit. Pages uses `--require-clean`
 before publishing, and every rendered page links its revision and original artifacts. The API page's
 demo-address copies are separate from those original sources.
-
-## MCP discovery probe
-
-[`probe-mcp-discovery.mjs`](../../.github/scripts/probe-mcp-discovery.mjs) executes the official
-TypeScript MCP SDK 1.30.0, using protocol revision 2025-11-25, against a scripted `fetch` fixture.
-It compares generic discovery with a supplied sempods-profile adapter for
-[SPS-MCP-033](../../spec/modules/mcp.md#SPS-MCP-033) and
-[SPS-AUTH-068/069](../../spec/core/auth.md#SPS-AUTH-068). The adapter is test code, not a shipped client.
-
-With Node.js 22 available, install the probe's SDK outside the repository and pass its directory:
-
-```bash
-probe_dir=$(mktemp -d)
-npm install --prefix "$probe_dir" --ignore-scripts --no-audit --no-fund --save-exact @modelcontextprotocol/sdk@1.30.0
-node .github/scripts/probe-mcp-discovery.mjs "$probe_dir/node_modules/@modelcontextprotocol/sdk"
-```
-
-This optional investigation tool adds no package manifest or build dependency to the specification.
-Run it when changing the endpoint-only discovery contract. It prints every requested URL and the
-terminal outcome. It covers anonymous initialization followed by `authorize`, proactive discovery,
-root and path-scoped pods, wrong-pod/resource/issuer/hint cases, unavailable metadata, and invalid
-entry URLs. Assertions check rejection before registration or authorization. Its header parser
-handles only the fixture's single quoted hint; it is not a general OAuth header parser.
-
-Successful cases stop at the authorization redirect. No live HTTP server, TLS, browser consent,
-token exchange, credential migration or Kotlin implementation is exercised. Generic SDK behavior,
-including permissive metadata acceptance, is an observation about this pinned SDK, not proof of
-RFC or sempods conformance. [#99](https://github.com/sempods/sempods-spec/issues/99) records the
-reviewed experiment; [Kotlin #193](https://github.com/sempods/sempods-kotlin/issues/193) owns deployment
-and consumer verification.
