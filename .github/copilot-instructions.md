@@ -19,9 +19,13 @@ have bounded roles described in [repository checks](../docs/guides/repository-ch
 
 ## What decides here
 
-**This specification decides. An implementation that disagrees with it is the bug**, the reference
-implementation included. An identifier may still be deleted, renumbered, or come to mean something
-else within the window [`GOVERNANCE.md`](../GOVERNANCE.md) defines.
+**This specification decides.** An implementation that disagrees with the revision it claims to
+satisfy has a defect, including the reference implementation. The reference implementation may lag;
+a companion implementation PR is not a prerequisite. Record remaining work, normally in a linked
+issue, under [Implementation follow-up](../GOVERNANCE.md#implementation-follow-up).
+
+An identifier may still be deleted, renumbered, or come to mean something else within the window
+[`GOVERNANCE.md`](../GOVERNANCE.md) defines.
 
 ## Non-negotiable invariants
 

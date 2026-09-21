@@ -169,9 +169,10 @@ yielding to a successor — `GOVERNANCE.md` §"Deleting and renumbering, before 
 shuts, and it can shut before the tag. Check there rather than assuming it is still open. Deletion is for a statement
 that should never have been written, or one a later requirement has swallowed whole; not for one
 that is merely in the way; a withdrawal notice for
-text nobody was ever bound by preserves a promise nobody was given. Deleting still costs a
-re-vendored `requirements.json` downstream and a citation sweep through `openapi/`, and the
-requirements checker reports the deletion as a notice so it is reviewed rather than absorbed.
+text nobody was ever bound by preserves a promise nobody was given. Update this repository's index
+and OpenAPI citations together; track the downstream index and citation changes under
+[Implementation follow-up](../../GOVERNANCE.md#implementation-follow-up). The requirements checker
+reports the deletion as a notice so it is reviewed rather than absorbed.
 
 The two are not interchangeable. Where a requirement has a half that a single pod can satisfy and a
 half it cannot, the half is what goes — the identifier stays and the text narrows. Deleting a

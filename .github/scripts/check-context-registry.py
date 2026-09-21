@@ -114,7 +114,9 @@ class RegistryRepresentations(unittest.TestCase):
             self.assertEqual(put['responses'][code]['content']['application/ld+json']['example'], self.description)
         self.assertIn('406', put['responses'])
         self.assertNotIn('304', put['responses'])
-        self.assertIn('409', self.module['paths']['/_system/contexts/{contextPath}']['delete']['responses'])
+        deletion = self.module['paths']['/_system/contexts/{contextPath}']['delete']['responses']
+        self.assertIn('204', deletion)
+        self.assertNotIn('409', deletion)
 
     def test_explicit_datatypes_preserve_native_public_and_registry_strings(self):
         payload = copy.deepcopy(self.description)

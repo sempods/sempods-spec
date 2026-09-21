@@ -5,6 +5,9 @@ RDF registry adoption: [#92](https://github.com/sempods/sempods-spec/issues/92),
 [PR #93](https://github.com/sempods/sempods-spec/pull/93), owns descriptions, catalogues and creation
 response representations in the linked normative chapters. [#90](https://github.com/sempods/sempods-spec/issues/90)
 is the completed recommendation source.
+Empty-registry lifecycle: [#37](https://github.com/sempods/sempods-spec/issues/37) /
+[PR #104](https://github.com/sempods/sempods-spec/pull/104) permits empty registries with the current
+context-management module; deletion remains destructive.
 Remaining proposal: [#69](https://github.com/sempods/sempods-spec/issues/69) owns the module/default-access
 and full lifecycle decisions; [#68](https://github.com/sempods/sempods-spec/issues/68), through #69–#74,
 owns their coordinated normative adoption. This document retains those non-normative recommendations.
@@ -91,7 +94,9 @@ use that same scope within the caller's authority. Source writes may change depe
 The [authorization proposal](access-control.md#authorization-without-context-setup) defines the
 consent/delegation recommendation for this access, with remaining profile decisions under #69.
 Choosing a default creates no authority; permission on independent A does not authorize a write to D.
-The initial RDF delivery retains the current selector and minimum-count rules.
+The current contract still requires explicit Context selection on data writes. Its minimum count
+applies only without context-management ([`SPS-CTX-028`](../../spec/core/contexts.md#SPS-CTX-028));
+an empty registry with that module permits Context creation, not Context-free data writes.
 
 A single physical graph can support several computed Contexts, for example tasks selected by
 assignee or project. A pod can implement the selection with query evaluation, an ACP-based access
@@ -132,8 +137,10 @@ The RDF registry surface from #90 is adopted separately under
 Current grant implications, creation input/effects and destructive deletion remain in force.
 The full optional module's independent read/write/manage modes remain a recommendation under #69.
 
-The full optional-Context adoption changes deletion and empty-pod behavior below. These effects
-are not part of the initial RDF delivery, which preserves current destructive Context deletion.
+Current context-management permits deletion of the last Context and owner creation in an empty
+registry under [`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017) and
+[`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019). The proposed non-destructive
+deletion below remains separate from that contract.
 
 Deleting C unregisters its view and withdraws its published Context projection; it does not delete
 source assertions, clear an underlying graph or remove independent views. Retained assertions do
@@ -192,6 +199,6 @@ model. Their vocabulary properties and representations are owned by the normativ
 Full adoption of the context-free core and optional `contexts` module remains under #69–#74/#68.
 It must review the default-access resolution and settle authentication/delegation decisions, then
 align module identity/version, core boundaries, stored/computed projections, membership-write limits, independent
-modes, zero-Context bootstrap and non-destructive lifecycle, including media. The adopted RDF slice
+modes, Context-free data writes and non-destructive lifecycle, including media. The adopted RDF slice
 advertises no new module and does not satisfy #68's adoption gate. The
 [data-access inventory](data-access.md#requirement-changes-to-prepare) owns the wider impact.
