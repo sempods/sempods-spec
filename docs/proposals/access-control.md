@@ -2,7 +2,8 @@
 
 Status: **Partly adopted; remaining design is proposed and non-normative.**
 The conditional `state` echo is specified by [SPS-AUTH-025](../../spec/core/auth.md#SPS-AUTH-025)
-under [#10](https://github.com/sempods/sempods-spec/issues/10).
+under [#10](https://github.com/sempods/sempods-spec/issues/10), with normative adoption in
+[PR #105](https://github.com/sempods/sempods-spec/pull/105).
 Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
 The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
 not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
