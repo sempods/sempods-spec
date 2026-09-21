@@ -208,14 +208,20 @@ MUST NOT reject a `did:web:` authorization request solely because it carries no 
 contexts. The authorizing person selects contexts at consent time.
 
 <a id="SPS-AUTH-025"></a>
-**`SPS-AUTH-025`** — On success the implementation MUST redirect to the request's **validated**
-`redirect_uri` carrying `code` and `state`; on failure, carrying `error` and `error_description`, and
-OPTIONALLY `error_uri`. A client MUST treat `error_uri` as optional.
+**`SPS-AUTH-025`** — The implementation MUST use the authorization responses defined by
+[RFC 6749 §§4.1.2 and 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.2),
+redirecting only to the request's **validated** `redirect_uri` and echoing `state` unchanged only
+when supplied in the authorization request.
 
-"Validated" rather than "registered", because a `did:web:` client registers nothing
-([`SPS-AUTH-007`](#SPS-AUTH-007)) — its address is validated against the origin its identifier names
-(`SPS-AUTH-004`, `SPS-AUTH-005`). A `dyn:` client's address is validated against what it registered.
-Both are validated; only one is registered.
+[RFC 6749 §4.1.1](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.1) recommends `state`;
+it is not a required request parameter. Success carries `code`; a redirectable failure carries
+`error`, with optional `error_description` and `error_uri`. Both responses echo a supplied `state`;
+without it, neither adds one. Invalid client identifiers or redirect URIs do not receive an error
+redirect. Optional `state` does not remove the client's CSRF protection obligations under
+[RFC 6749 §10.12](https://www.rfc-editor.org/rfc/rfc6749.html#section-10.12).
+
+Validation uses the `did:web:` origin/path rules (`SPS-AUTH-004`, `SPS-AUTH-005`) or the `dyn:`
+client's registered address. A `did:web:` client needs no registration (`SPS-AUTH-007`).
 
 <a id="SPS-AUTH-055"></a>
 **`SPS-AUTH-055`** — The response parameters MUST be **added to** the redirect URI's query

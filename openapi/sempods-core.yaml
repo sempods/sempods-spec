@@ -693,7 +693,13 @@ paths:
         - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
         - { name: client_id, in: query, required: true, schema: { type: string } }
         - { name: redirect_uri, in: query, required: true, schema: { type: string, format: uri } }
-        - { name: state, in: query, required: false, schema: { type: string } }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+          description: |
+            Recommended by RFC 6749 §4.1.1. When supplied, echoed unchanged in success and
+            error redirects; omitted from both when absent (`SPS-AUTH-025`).
         - { name: code_challenge, in: query, required: false, schema: { type: string } }
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
@@ -701,16 +707,30 @@ paths:
       x-sps-requirements: [SPS-AUTH-001, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-021, SPS-AUTH-022, SPS-AUTH-023, SPS-AUTH-024, SPS-AUTH-025, SPS-AUTH-039, SPS-AUTH-040, SPS-AUTH-041, SPS-AUTH-042, SPS-AUTH-043, SPS-AUTH-044, SPS-AUTH-061]
       responses:
         '302':
-          description: Redirect carrying `code` and `state`, or `error` and `error_description`.
+          description: |
+            Redirect to the validated `redirect_uri` per RFC 6749 §§4.1.2 and 4.1.2.1
+            (`SPS-AUTH-025`). Success carries `code`; failure carries `error`, with optional
+            `error_description` and `error_uri`. Both echo `state` unchanged when supplied
+            in the authorization request and omit it otherwise.
           headers:
-            Location: { schema: { type: string, format: uri } }
+            Location:
+              schema: { type: string, format: uri }
+              examples:
+                successWithState:
+                  value: https://app.example/cb?code=example-code&state=s
+                successWithoutState:
+                  value: https://app.example/cb?code=example-code
+                errorWithState:
+                  value: https://app.example/cb?error=access_denied&state=s
+                errorWithoutState:
+                  value: https://app.example/cb?error=access_denied
         '200': { description: The consent screen. }
         '400':
           description: |
-            Served directly rather than redirected, because `redirect_uri` is the parameter that
-            failed: absent, not a usable address (`SPS-AUTH-018`, `SPS-AUTH-056`), or not one this
-            `client_id` may be answered at. RFC 6749 §4.1.2.1 forbids sending an error to an
-            address that did not validate, so there is no `Location` to carry it.
+            Served directly rather than redirected when `client_id` is absent or invalid, or
+            `redirect_uri` is absent, not a usable address (`SPS-AUTH-018`, `SPS-AUTH-056`), or
+            not one this `client_id` may be answered at. RFC 6749 §4.1.2.1 forbids an error
+            redirect in these cases, so there is no `Location` to carry it.
           content:
             text/plain:
               schema: { type: string }
