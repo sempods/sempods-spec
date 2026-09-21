@@ -2113,7 +2113,7 @@
       "id": "SPS-OIDC-005",
       "part": "oidc",
       "chapter": "spec/modules/oidc.md",
-      "summary": "The assertion MAY carry the equivalent identity URIs known for the person.",
+      "summary": "An issuer MAY carry the person's equivalent identity URIs in the ID Token claim `https://schema.sempods.org/claims/equivalent-identities`, whose value MUST be a JSON array of strings matching the `URI` syntax of [RFC 3986 §3](https://www.rfc-editor.org/rfc/rfc3986.html#section-3).",
       "withdrawn": false
     },
     {
@@ -2184,6 +2184,13 @@
       "part": "oidc",
       "chapter": "spec/modules/oidc.md",
       "summary": "The callback MUST reject a `state` it did not park, and MUST consume each one exactly once.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-OIDC-016",
+      "part": "oidc",
+      "chapter": "spec/modules/oidc.md",
+      "summary": "A relying party MUST reject the identity assertion if the equivalent-identity claim is present with a value other than the array of URI strings defined by [`SPS-OIDC-005`](#SPS-OIDC-005), including `null` or an array containing any invalid entry.",
       "withdrawn": false
     },
     {

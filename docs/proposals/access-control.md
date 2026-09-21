@@ -4,6 +4,9 @@ Status: **Partly adopted; remaining design is proposed and non-normative.**
 The conditional `state` echo is specified by [SPS-AUTH-025](../../spec/core/auth.md#SPS-AUTH-025)
 under [#10](https://github.com/sempods/sempods-spec/issues/10), with normative adoption in
 [PR #105](https://github.com/sempods/sempods-spec/pull/105).
+The equivalent-identity claim is specified by [SPS-OIDC-005](../../spec/modules/oidc.md#SPS-OIDC-005)
+and [SPS-OIDC-016](../../spec/modules/oidc.md#SPS-OIDC-016) under
+[#5](https://github.com/sempods/sempods-spec/issues/5).
 Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
 The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
 not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
@@ -85,7 +88,9 @@ is their WebID URI. Two identifiers count as the same person only through a trus
 relationship; `owl:sameAs` data, matching email addresses and caller-supplied aliases do not suffice.
 Consent changes, withdrawal and forced reauthorization cover that person's trusted aliases for the
 affected pod/client. Keep that coverage while leaving the lookup placement open (AUTH-052).
-These cases assume a configured trusted mapping; #5 still owns the cross-issuer claim name and shape.
+These cases assume a trusted mapping. The OIDC wire claim follows
+[SPS-OIDC-005](../../spec/modules/oidc.md#SPS-OIDC-005); changing AUTH-052's prescribed lookup
+placement remains proposed here.
 
 ### Service clients and registration authority
 
@@ -357,9 +362,9 @@ proposal adopts no normative changes. #65's removal of guaranteed refresh-token 
 
 The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies pod-local
 metadata and pod-base identities. External service identities remain proposed under #96.
-The equivalent-identity wire claim (#5), remaining #82
+The equivalent-identity wire claim is specified separately under #5; the remaining #82
 transport/registration/token-profile candidates and #77's validation issues retain their ownership.
-This iteration does not invent their missing fields or claim a complete federation profile.
+This iteration does not settle those remaining choices or claim a complete federation profile.
 The full Context lifecycle, independent view/data authority and retained-source/media behavior
 also need the integrated review recorded in #69/#68.
 

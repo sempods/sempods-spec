@@ -10,6 +10,11 @@ other way is conformant without it.
 Profiles: OpenID Connect Core 1.0, OIDC Discovery 1.0, RFC 7636 (PKCE). What a pod stores about a
 person regardless of this module is [`../core/auth.md`](../core/auth.md) §9.
 
+The equivalent-identity claim uses the additional-claim mechanism in
+[OpenID Connect Core 1.0, errata set 2, §5.1.2](https://openid.net/specs/openid-connect-core-1_0.html#AdditionalClaims)
+and the collision-resistant claim naming of
+[RFC 7519 §4.2](https://www.rfc-editor.org/rfc/rfc7519.html#section-4.2).
+
 ## 1. What the module adds
 
 A pod knows people as WebID URIs whether or not this module is present. What the module adds is a
@@ -44,9 +49,43 @@ makes it worth stealing. This requirement exists because that token shape was sh
 to be withdrawn.
 
 <a id="SPS-OIDC-005"></a>
-**`SPS-OIDC-005`** — The assertion MAY carry the equivalent identity URIs known for the person. A
-relying party MUST apply them only where a grant or ownership is decided
+**`SPS-OIDC-005`** — An issuer MAY carry the person's equivalent identity URIs in the ID Token claim
+`https://schema.sempods.org/claims/equivalent-identities`, whose value MUST be a JSON array of strings
+matching the `URI` syntax of [RFC 3986 §3](https://www.rfc-editor.org/rfc/rfc3986.html#section-3).
+Each entry identifies the same person as `sub`. A relying party MUST interpret the array as an
+unordered set, with omission or an empty array asserting no additional identities in this token.
+It MUST apply the identities only from an issuer trusted to assert equivalence for this subject,
+and only where a grant or ownership is decided
 ([`SPS-AUTH-052`](../core/auth.md#SPS-AUTH-052)).
+
+<a id="SPS-OIDC-016"></a>
+**`SPS-OIDC-016`** — A relying party MUST reject the identity assertion if the equivalent-identity
+claim is present with a value other than the array of URI strings defined by
+[`SPS-OIDC-005`](#SPS-OIDC-005), including `null` or an array containing any invalid entry.
+
+URI syntax includes a scheme and permits a fragment, so both a `urn:` identity and an HTTPS WebID
+ending in `#me` fit. Duplicate entries or an entry equal to `sub` add no identity. An omitted or
+empty claim says nothing about previously established equivalences; it is not a revocation signal.
+Token validation under [`SPS-OIDC-006`](#SPS-OIDC-006) still applies. Trust in an issuer for login
+alone does not establish its authority to assert another identity's equivalence.
+
+For example, this excerpt asserts two equivalent identities for the person named by `sub`:
+
+```json
+{
+  "sub": "https://id.example/alice#me",
+  "https://schema.sempods.org/claims/equivalent-identities": [
+    "https://other.example/alice#me",
+    "urn:example:alice"
+  ]
+}
+```
+
+This is an ID Token excerpt, not a browser callback payload. A scalar string, `[null]`, or
+`["/alice"]` fails [`SPS-OIDC-016`](#SPS-OIDC-016). The claim name is a JWT identifier, not a new RDF
+property. The registered `also_known_as` claim describes a human pseudonym, not identity equivalence
+([informative reference](https://openid.net/specs/openid-connect-4-ida-claims-1_0.html#Claims)); it
+does not substitute for this claim.
 
 <a id="SPS-OIDC-006"></a>
 **`SPS-OIDC-006`** — A relying party MUST validate issuer, audience, nonce, expiry and signature
