@@ -114,13 +114,13 @@ out of the grant string `<context-iri>#<permission>`, because `…foo#bar#read` 
 split points and the wrong one wins.
 
 <a id="SPS-CTX-028"></a>
-**`SPS-CTX-028`** — A pod MUST have at least one registered context.
+**`SPS-CTX-028`** — A pod that does not provide the
+[context-management module](../modules/context-management.md) MUST have at least one registered
+context.
 
-Where the context-management module ([`../modules/context-management.md`](../modules/context-management.md))
-is not provided, there is no route that creates one, so the first context comes into existence at
-deployment and outside this interface. Without this requirement the specification would permit a pod
-with no contexts and no specified way to make one — conformant, and unable to hold a statement, since
-`SPS-CTX-001` puts every statement in a context and a write names the one it targets.
+Without the module, contexts are provisioned outside this interface. The minimum keeps such a pod
+able to hold statements. With the module, a pod can start or become empty: the owner can create a
+context through `PUT`. Every stored statement still belongs to a context (`SPS-CTX-001`).
 
 <a id="SPS-CTX-030"></a>
 **`SPS-CTX-030`** — A context MUST be private unless it was made public by an explicit choice. This

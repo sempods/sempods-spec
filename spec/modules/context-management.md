@@ -11,10 +11,9 @@ that cannot be addressed again — those bind however a context comes into exist
 invariants and this chapter only enforces them at creation. A pod provisioned outside this interface
 is held to them all the same.
 
-A pod that never grows a second context — a fixed deployment serving public knowledge, provisioned
-once — has no use for this and is conformant without it. Its contexts come into existence at
-deployment, outside this interface, and core says a pod always has at least one
-([`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028)).
+A fixed deployment can provision its contexts outside this interface and omit the module;
+[`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028) requires it to have at least one. A pod providing
+the module can have an empty registry and let its owner create the first context.
 
 The requirements here carry `SPS-CTX-` identifiers, which is the same area the core contexts
 chapter uses. That is deliberate: `SPS-CORE-003` makes an identifier permanent from the `0.1` tag,
@@ -130,25 +129,5 @@ For example, an authenticated caller without `manage` on `apps/notes` receives `
 well-formed `PUT` whether that type root exists or not. The creation-only naming restriction does
 not turn the absent case into `400` for that caller.
 
-<a id="SPS-CTX-029"></a>
-**`SPS-CTX-029`** — `DELETE` MUST refuse to remove the only context **visible to the caller**, with
-`409`.
-
-Core requires a pod to have one ([`SPS-CTX-028`](../core/contexts.md#SPS-CTX-028)), and this is the
-only route that could take it away. Refusing here rather than letting the pod repair itself
-afterwards is what keeps the core requirement true at every moment rather than eventually.
-
-**The condition is the caller's view and not the pod's count**, which is the part worth reading
-twice. Written against the pod's last context, the status answers a question the caller may not ask:
-a delegated manager deleting the one context they can see would get `409` where the pod holds nothing
-else and `204` where it holds contexts they cannot see, so the response would report the size of a
-namespace [`SPS-CTX-024`](../core/contexts.md#SPS-CTX-024) hides from them.
-
-Asked of what the caller can see, the answer is the same either way and the invariant still holds.
-That is also which clause of [`SPS-CORE-014`](../core/index.md#SPS-CORE-014) the `409` falls under:
-where the pod holds contexts this caller cannot see, deleting would leave one standing and break no
-invariant — the refusal is there so that the outcome does not depend on state they may not see.
-The pod owner sees every context ([`SPS-GRANT-011`](../core/grants.md#SPS-GRANT-011)), so for them
-the two conditions are one. Nobody else can empty the pod, because reaching zero would mean deleting
-a context while seeing a second one — and where the pod has one context, there is no second one for
-anybody to see.
+An authorized caller deleting its only visible context receives `204`, whether or not the pod
+contains other contexts. The owner can create a new context even after the registry becomes empty.

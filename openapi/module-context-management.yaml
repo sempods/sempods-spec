@@ -1,8 +1,8 @@
 openapi: 3.1.0
 
 # The context-management module's HTTP surface. Optional: where the module is not provided these
-# routes do not exist. Reading contexts stays in the core description — a pod always has at least
-# one and always says which ones a caller may reach; what is optional is making and removing them.
+# routes do not exist. Reading contexts stays in the core description; what is optional is making
+# and removing them. A pod providing this module can have an empty registry.
 
 info:
   title: sempods — context management module
@@ -129,17 +129,14 @@ paths:
         Removes the grants naming the context and its statements (`SPS-CTX-017`). Does
         **not** cascade into sub-contexts: deleting `R` leaves `R/sub`.
 
-        The **only context visible to the caller** is refused with `409`. Core requires a pod to
-        have one, and the condition is the caller's view rather than the pod's count: written
-        against the pod's last context, the status would tell a delegated manager whether contexts
-        exist that they may not see.
-      x-sps-requirements: [SPS-CORE-018, SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-CTX-029, SPS-AUTH-064]
+        An authorized caller can remove its only visible context, including the pod's last
+        registered context. Both cases succeed with `204`.
+      x-sps-requirements: [SPS-CORE-018, SPS-CTX-017, SPS-CTX-018, SPS-CTX-019, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/AuthenticationRequired' }
         '204': { description: Removed. }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NoSuchContext' }
-        '409': { $ref: '#/components/responses/LastContext' }
 
 components:
 
@@ -250,16 +247,6 @@ components:
         Status, headers and content do not distinguish whether the target exists (`SPS-CORE-018`).
     NoSuchContext:
       description: No such context, for the pod owner or a caller whose manage grant covers the path.
-    LastContext:
-      description: |
-        The only context visible to this caller. Core requires a pod to have at least one, so this
-        route refuses rather than letting the pod repair itself afterwards.
-
-        `409` under `SPS-CORE-014`, and which of its clauses depends on what the pod holds. Where
-        this really is the pod's only context, completing the request would break an invariant.
-        Where the pod holds others the caller cannot see, it would not — and the refusal is there so
-        that the outcome does not depend on state they may not see, which is the same row's third
-        clause. Both give the identical response, which is the point.
 
   schemas:
 

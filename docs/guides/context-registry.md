@@ -109,11 +109,16 @@ retain the current Context membership, grant implications and lifecycle contract
 | Manager's creation request has an unsatisfiable Accept | `406`, no new Context. Authentication and management checks still apply. |
 | Creation request with missing versus rejected bearer token | Same `401` response with `invalid_token` under SPS-CORE-015; public-read access does not authorize creation. |
 | Authenticated non-manager tries PUT/DELETE of C or X | Current uniform `403`; this RDF migration adds no authority. |
-| Manager deletes C | Existing destructive deletion and last-visible-Context `409` rules still apply. No proposed non-destructive lifecycle or default access is adopted here. |
+| Manager deletes its only visible C, with or without other hidden Contexts | `204` in both cases. C, its statements, grants and media assignments are removed; other Contexts remain. |
+| Owner deletes the pod's last C | `204`; the registry is empty. An authorized catalogue GET returns `200` with no Context entries. |
+| Owner creates C in an empty pod providing context-management | `201`; this also works after deleting the last Context. |
+| Pod does not provide context-management | At least one registered Context is provided outside this HTTP interface (SPS-CTX-028). |
 
 Normative sources: [`SPS-CTX-031`](../../spec/core/contexts.md#SPS-CTX-031)–
 [`SPS-CTX-036`](../../spec/core/contexts.md#SPS-CTX-036),
 [`SPS-CTX-037`](../../spec/modules/context-management.md#SPS-CTX-037), and the existing
-[grant](../../spec/core/grants.md) and [lifecycle](../../spec/modules/context-management.md) contracts.
-Actual server/client verification belongs to
-[Kotlin #180](https://github.com/sempods/sempods-kotlin/issues/180).
+[grant](../../spec/core/grants.md), [lifecycle](../../spec/modules/context-management.md) and
+[media cleanup](../../spec/modules/media.md#SPS-MEDIA-021) contracts.
+Server/client verification of the RDF registry belongs to
+[Kotlin #180](https://github.com/sempods/sempods-kotlin/issues/180); empty-registry lifecycle and
+client contract synchronization belong to [Kotlin #186](https://github.com/sempods/sempods-kotlin/issues/186).

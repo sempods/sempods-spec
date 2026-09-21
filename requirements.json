@@ -1189,14 +1189,7 @@
       "id": "SPS-CTX-028",
       "part": "core",
       "chapter": "spec/core/contexts.md",
-      "summary": "A pod MUST have at least one registered context.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-CTX-029",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
-      "summary": "`DELETE` MUST refuse to remove the only context **visible to the caller**, with `409`.",
+      "summary": "A pod that does not provide the [context-management module](../modules/context-management.md) MUST have at least one registered context.",
       "withdrawn": false
     },
     {
