@@ -136,7 +136,11 @@ write path can reach.
 <a id="SPS-GRANT-011"></a>
 **`SPS-GRANT-011`** — The pod owner MUST hold `read`, `write` and `manage` on every registered
 context of that pod, implicitly. An implementation MUST NOT require the owner's grants to be stored
-or granted.
+or granted. For authorization of a single target context in that pod, the owner's implicit authority
+MUST apply whether or not the context is registered.
+
+An owner's write to an absent context therefore retains the operation's missing-target behavior.
+Applications still receive only their delegated grants under [`SPS-GRANT-013`](#SPS-GRANT-013).
 
 <a id="SPS-GRANT-012"></a>
 **`SPS-GRANT-012`** — Any other person's grants MUST be explicit, stored per pod and per identity.

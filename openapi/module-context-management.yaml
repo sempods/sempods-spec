@@ -235,7 +235,10 @@ components:
           $ref: '#/components/headers/RegistryCacheControl'
 
     RegistryForbidden:
-      description: Authenticated, but lacking the owner or context-management authority required for creation.
+      description: |
+        Authenticated, but lacking the owner or context-management authority required for creation.
+        Status, headers and content do not distinguish whether the target exists (`SPS-CORE-018`).
+        A creation-only naming rejection does not take precedence over this denial.
       headers:
         Cache-Control:
           $ref: '#/components/headers/RegistryCacheControl'
@@ -245,9 +248,8 @@ components:
         A valid token whose grants do not cover this operation. The pod owner, or a `#manage` grant
         covering the target under the slash-delimited rule, is what this route requires.
         Status, headers and content do not distinguish whether the target exists (`SPS-CORE-018`).
-        A creation-only naming rejection does not take precedence over this denial.
     NoSuchContext:
-      description: No such context, for a caller whose authority covers the path.
+      description: No such context, for the pod owner or a caller whose manage grant covers the path.
     LastContext:
       description: |
         The only context visible to this caller. Core requires a pod to have at least one, so this

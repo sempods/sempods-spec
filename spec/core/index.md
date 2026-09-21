@@ -238,8 +238,8 @@ that context exists. Other request failures MAY take precedence only when their 
 independent of target-context existence. The denial's headers and content MUST NOT distinguish an
 existing context from a nonexistent one.
 
-This applies to data writes and context-management operations. An authorized operation retains its
-specified missing-target behavior, including context creation and ensure-absent deletion.
+This includes RDF writes, media writes and context-management operations. An authorized operation
+retains its specified missing-target behavior, including context creation and ensure-absent deletion.
 MCP tools map the denial through [`SPS-MCP-018`](../modules/mcp.md#SPS-MCP-018).
 
 ## 6. Standards profiled

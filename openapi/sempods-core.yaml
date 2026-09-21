@@ -1127,12 +1127,15 @@ components:
         indistinguishable.
 
     UnknownContext:
-      description: The named context is not registered, and the caller's authority covers the target.
+      description: |
+        The named context is not registered, and the caller's authority covers the target
+        (including the pod owner's implicit authority under `SPS-GRANT-011`).
 
     WriteTargetNotFound:
       description: |
         The caller's authority covers the target context, but that context is not registered or
-        the resource has no statements in it.
+        the resource has no statements in it. This includes the pod owner's implicit authority
+        under `SPS-GRANT-011`.
 
     BadRequest:
       description: Malformed request.

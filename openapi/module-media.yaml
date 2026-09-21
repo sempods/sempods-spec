@@ -81,7 +81,10 @@ paths:
               schema: { $ref: '#/components/schemas/Media' }
         '400': { description: Malformed request, or a source the address policy refuses. }
         '403': { $ref: '#/components/responses/WriteForbidden' }
-        '404': { description: The named context is not registered, and the caller's authority covers the target. }
+        '404':
+          description: |
+            The named context is not registered, and the caller's authority covers the target
+            (including the pod owner's implicit authority under `SPS-GRANT-011`).
         '409': { description: The context was deleted while the upload was in flight. }
 
   /_system/media/{id}:
@@ -135,12 +138,14 @@ paths:
         '404':
           description: |
             The caller's authority covers the target context, but that context is not registered
-            or the media is absent or unreadable.
+            or the media is absent or unreadable. This includes the pod owner's implicit authority
+            under `SPS-GRANT-011`.
     delete:
       operationId: unassignMedia
       summary: Drop one assignment.
       description: |
-        Ensure-absent: dropping an assignment that is not there succeeds. Emptying the assignment
+        Ensure-absent: an authorized caller, including the pod owner, succeeds when the assignment
+        is absent even if its target context is unregistered. Emptying the assignment
         set marks the media unreferenced; the bytes are collected only after a grace period.
       parameters:
         - name: context
