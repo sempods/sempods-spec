@@ -22,6 +22,11 @@ not require implementations to remove them. A pod with only external operational
 answers discovery at its entry address and satisfies the full authorized-data core. AI and S3
 compatibility are possible future profiles, not choices made here.
 
+The current fixed-route MCP entry is specified separately by
+[SPS-MCP-033](../../spec/modules/mcp.md#SPS-MCP-033) under
+[#99](https://github.com/sempods/sempods-spec/issues/99). Its exact endpoint-to-pod mapping does not
+apply to the external service bindings proposed here or to arbitrary resource URLs.
+
 ## Keep the local data namespace predictable
 
 Keep the existing reservations: `_system` and `.well-known`, immediately below the pod base, and

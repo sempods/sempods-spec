@@ -454,7 +454,14 @@
       "id": "SPS-AUTH-068",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A client using this profile MUST validate discovery against the canonical pod base URL it intended to access, not a base inferred from returned metadata.",
+      "summary": "A client using this profile MUST validate resource discovery against the canonical pod base URL it intended to access, established independently of returned metadata.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-AUTH-069",
+      "part": "core",
+      "chapter": "spec/core/auth.md",
+      "summary": "A client using this profile MUST validate authorization-server metadata with the intended canonical pod base URL as the expected issuer under RFC 8414 §3.3, and MUST NOT use metadata with a different `issuer` to start authorization or send credentials.",
       "withdrawn": false
     },
     {
@@ -1858,17 +1865,10 @@
       "withdrawn": false
     },
     {
-      "id": "SPS-MCP-031",
+      "id": "SPS-MCP-033",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Some clients treat the MCP URL itself as the protected-resource identifier.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-MCP-032",
-      "part": "mcp",
-      "chapter": "spec/modules/mcp.md",
-      "summary": "An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.",
+      "summary": "A client using the sempods discovery profile with only a canonical MCP endpoint URL MUST establish the intended pod base by removing exactly the literal `/_system/mcp` suffix specified by [SPS-MCP-001](#SPS-MCP-001).",
       "withdrawn": false
     },
     {

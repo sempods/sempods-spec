@@ -362,7 +362,9 @@ proposal adopts no normative changes. #65's removal of guaranteed refresh-token 
 | MCP-011/012/013/030 | Coordinate core-only authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact core-only result shape remains a module-view decision. |
 
 The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies pod-local
-metadata and pod-base identities. External service identities remain proposed under #96.
+metadata and pod-base identities. The fixed-route MCP entry follows
+[SPS-MCP-033](../../spec/modules/mcp.md#SPS-MCP-033); external service identities remain proposed
+under #96.
 The equivalent-identity wire claim is specified separately under #5; the remaining #82
 transport/registration/token-profile candidates and #77's validation issues retain their ownership.
 This iteration does not settle those remaining choices or claim a complete federation profile.

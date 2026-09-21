@@ -62,7 +62,8 @@ pod-level Protected Resource Metadata URL.
 
 The metadata hint follows [SPS-AUTH-064](../core/auth.md#SPS-AUTH-064); this module also requires
 the pod's realm.
-[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068) validates it against the caller's known pod identity.
+[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068) validates it against the caller's intended pod identity,
+including the [endpoint-only entry](#endpoint-only-discovery).
 
 ## 3. The `authorize` tool
 
@@ -125,21 +126,35 @@ challenge loop.
 <a id="SPS-MCP-014"></a>
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
 
-<a id="SPS-MCP-031"></a>
-**`SPS-MCP-031`** — Some clients treat the MCP URL itself as the protected-resource identifier. An
-implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
-and it MUST return the **pod-level** document.
+### Endpoint-only discovery
 
-This is a metadata alias for the pod. The pod-local address and resource-validation exceptions
-are defined by [SPS-AUTH-067/068](../core/auth.md#SPS-AUTH-067). A generic RFC 9728 client that
-requires `resource` to equal the MCP URL may reject this document; the alias does not promise
-compatibility with that client.
+<a id="SPS-MCP-033"></a>
+**`SPS-MCP-033`** — A client using the sempods discovery profile with only a canonical MCP endpoint
+URL MUST establish the intended pod base by removing exactly the literal `/_system/mcp` suffix
+specified by [SPS-MCP-001](#SPS-MCP-001). The supplied URL MUST be exactly the resulting valid pod
+base ([SPS-CORE-019](../core/index.md#SPS-CORE-019)) plus that suffix, without user information,
+query or fragment. The client MUST reject an input that fails this check or whose path changes
+during URL parsing, without deriving an alternative base by decoding path segments, following a
+redirect or trimming other segments.
 
-<a id="SPS-MCP-032"></a>
-**`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
+For `https://example.org/alice/_system/mcp`, the intended pod is `https://example.org/alice`.
+For `https://alice.example/_system/mcp`, it is `https://alice.example`. This inversion is specific to
+the fixed route in this module. It is not discovery from an arbitrary MCP or RDF URL, nor a way to
+locate an external service proposed under [#96](https://github.com/sempods/sempods-spec/issues/96).
 
-The MCP URL is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves
-to match the URL it was fetched from. There is no document that could satisfy both.
+The client then uses the two pod-local metadata addresses in
+[SPS-AUTH-067](../core/auth.md#SPS-AUTH-067). Resource/hint validation follows
+[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068); issuer validation follows
+[SPS-AUTH-069](../core/auth.md#SPS-AUTH-069). It can do so proactively or after anonymous
+initialization and the `authorize` tool's challenge. Anonymous initialization itself needs no OAuth
+round trip. Neither entry needs a metadata route under the MCP endpoint.
+
+This profile deliberately differs from the discovery addresses and resource matching in
+[MCP 2025-11-25 authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-server-discovery).
+A generic client needs support for the sempods profile; serving extra metadata aliases alone does
+not establish that support. The [discovery probe](../../docs/guides/repository-checks.md#mcp-discovery-probe)
+distinguishes generic SDK behavior from explicit profile validation. The cited MCP revision is the
+comparison baseline, not adoption of its other optional capabilities.
 
 ## 4. Client registration
 

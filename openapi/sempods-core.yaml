@@ -838,7 +838,7 @@ paths:
         RFC 8414's host-rooted address construction; issuer validation still uses the exact
         canonical pod base URL. Optional host-rooted routes require deployment support.
       security: [{}]
-      x-sps-requirements: [SPS-AUTH-048, SPS-AUTH-066, SPS-AUTH-067, SPS-AUTH-068]
+      x-sps-requirements: [SPS-AUTH-048, SPS-AUTH-066, SPS-AUTH-067, SPS-AUTH-069]
       responses:
         '200':
           description: Authorization Server Metadata for this pod; this example has registered service clients.
