@@ -54,7 +54,7 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026, SPS-MEDIA-028, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-MEDIA-003, SPS-MEDIA-004, SPS-MEDIA-005, SPS-MEDIA-006, SPS-MEDIA-011, SPS-MEDIA-019, SPS-MEDIA-020, SPS-MEDIA-026, SPS-MEDIA-028, SPS-AUTH-064]
       requestBody:
         required: true
         description: |
@@ -80,8 +80,11 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Media' }
         '400': { description: Malformed request, or a source the address policy refuses. }
-        '403': { description: No write grant on the named context. }
-        '404': { description: The named context is not registered. }
+        '403': { $ref: '#/components/responses/WriteForbidden' }
+        '404':
+          description: |
+            The named context is not registered, and the caller's authority covers the target
+            (including the pod owner's implicit authority under `SPS-GRANT-011`).
         '409': { description: The context was deleted while the upload was in flight. }
 
   /_system/media/{id}:
@@ -127,28 +130,33 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-008, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Assigned, or already assigned. }
-        '403': { description: Missing write on the target, or read on an existing assignment. }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '403': { $ref: '#/components/responses/WriteForbidden' }
+        '404':
+          description: |
+            The caller's authority covers the target context, but that context is not registered
+            or the media is absent or unreadable. This includes the pod owner's implicit authority
+            under `SPS-GRANT-011`.
     delete:
       operationId: unassignMedia
       summary: Drop one assignment.
       description: |
-        Ensure-absent: dropping an assignment that is not there succeeds. Emptying the assignment
+        Ensure-absent: an authorized caller, including the pod owner, succeeds when the assignment
+        is absent even if its target context is unregistered. Emptying the assignment
         set marks the media unreferenced; the bytes are collected only after a grace period.
       parameters:
         - name: context
           in: query
           required: true
           schema: { type: string, format: uri }
-      x-sps-requirements: [SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-022, SPS-MEDIA-023, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-MEDIA-006, SPS-MEDIA-007, SPS-MEDIA-022, SPS-MEDIA-023, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: The assignment is absent. }
-        '403': { description: No write grant on the named context. }
+        '403': { $ref: '#/components/responses/WriteForbidden' }
 
   /_system/media/{id}/content:
     parameters:
@@ -248,6 +256,11 @@ components:
           schema: { type: string }
           example: 'Bearer error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
 
+    WriteForbidden:
+      description: |
+        Missing authority for the write. Without write authority on the target context, status,
+        headers and content do not distinguish whether that context exists (`SPS-CORE-018`).
+        `PUT` also requires read on an existing assignment (`SPS-MEDIA-008`).
     NotFoundOrNotVisible:
       description: |
         No such media, or not readable by this caller. Deliberately indistinguishable — the

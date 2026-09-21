@@ -101,13 +101,8 @@ to its non-blank values. `?context=valid&context=` is a repeated parameter and M
 **`SPS-CRUD-009`** — An implementation MUST accept a canonical context IRI, and MAY additionally
 accept a pod-relative context path which it resolves to the canonical IRI.
 
-<a id="SPS-CRUD-010"></a>
-**`SPS-CRUD-010`** — A `?context=` value naming a context that is not registered MUST be `404`; a
-registered context the caller may not write MUST be `403`
-([`SPS-CORE-018`](index.md#SPS-CORE-018)).
-
-This is [`SPS-CORE-018`](index.md#SPS-CORE-018)'s oracle stated from the CRUD side, and the fix
-closes both: authorize before testing existence, and the two answers stop differing.
+Write failures follow the [core error model](index.md#SPS-CORE-014), including
+[`SPS-CORE-018`](index.md#SPS-CORE-018)'s protection of context existence.
 
 <a id="SPS-CRUD-011"></a>
 **`SPS-CRUD-011`** — The resource IRI and the target context are **independent dimensions**. An

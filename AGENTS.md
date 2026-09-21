@@ -26,9 +26,8 @@ are in `GOVERNANCE.md`; work rules are here or under `docs/agents/`; a pointer t
 implementation included. Assuming the code decides is the most likely way to damage this
 repository, which is why this stands before the mission.
 
-Two limits, both [`GOVERNANCE.md`](GOVERNANCE.md)'s, which says when each ends: an identifier may
-still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
-wrong binds nobody.
+An identifier may still be deleted, renumbered, or come to mean something else within the window
+[`GOVERNANCE.md`](GOVERNANCE.md) defines.
 
 ## Project mission
 

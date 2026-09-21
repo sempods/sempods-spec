@@ -124,6 +124,12 @@ to treat a shared prefix as containment.
 **`SPS-CTX-019`** — `PUT` and `DELETE` MUST require the pod owner, or a `#manage` grant covering the
 target context under the slash-delimited rule of [`SPS-GRANT-007`](../core/grants.md#SPS-GRANT-007).
 
+Authorization failures follow [`SPS-CORE-018`](../core/index.md#SPS-CORE-018).
+
+For example, an authenticated caller without `manage` on `apps/notes` receives `403` for a
+well-formed `PUT` whether that type root exists or not. The creation-only naming restriction does
+not turn the absent case into `400` for that caller.
+
 <a id="SPS-CTX-029"></a>
 **`SPS-CTX-029`** — `DELETE` MUST refuse to remove the only context **visible to the caller**, with
 `409`.
@@ -146,9 +152,3 @@ The pod owner sees every context ([`SPS-GRANT-011`](../core/grants.md#SPS-GRANT-
 the two conditions are one. Nobody else can empty the pod, because reaching zero would mean deleting
 a context while seeing a second one — and where the pod has one context, there is no second one for
 anybody to see.
-
-<a id="SPS-CTX-020"></a>
-**`SPS-CTX-020`** — On `DELETE`, an implementation MUST check authorization **before** existence, so
-that a caller outside their sandbox receives `403` and not a `404` that would confirm the context
-exists.
-

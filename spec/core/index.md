@@ -197,7 +197,7 @@ The chapters that follow use these status codes with these meanings and do not r
 | `400` | Malformed request — including an invalid grant string and invalid SPARQL |
 | `401` | Authentication is required and was missing, or was present and rejected |
 | `403` | Authenticated, but lacking the grant or scope the operation requires |
-| `404` | The resource or context does not exist, or the caller cannot see that it does |
+| `404` | The resource or context does not exist, or the caller cannot see that it does; a write without the required authority on its target context follows [`SPS-CORE-018`](#SPS-CORE-018) |
 | `409` | The request was well formed and authorized, and cannot be completed against the pod's current state — because that state changed underneath the request, because completing it would break an invariant this specification requires, or because the outcome would otherwise depend on state the caller may not see. A target that does not exist is `404` and never this |
 | `500` | Server error |
 
@@ -232,26 +232,15 @@ empty result then means is the chapter's business: a resource read answers `404`
 `find` answers success with nothing in it.
 
 <a id="SPS-CORE-018"></a>
-**`SPS-CORE-018`** — On a **write**, the two failures are currently distinguished: a context that is
-not registered produces `404`, and a registered context the caller may not write produces `403`.
+**`SPS-CORE-018`** — For an authenticated **write on the direct HTTP surface**, an implementation
+MUST return `403` when the caller lacks the authority required on the target context, whether or not
+that context exists. Other request failures MAY take precedence only when their applicability is
+independent of target-context existence. The denial's headers and content MUST NOT distinguish an
+existing context from a nonexistent one.
 
-**This is a known defect, recorded rather than blessed, and it binds nobody**
-([`../../GOVERNANCE.md`](../../GOVERNANCE.md)): an implementation that authorizes before testing
-existence is conformant today. It is what the reference implementation does, and the asymmetry with
-`SPS-CORE-017` is a context-enumeration oracle, not a design. A caller who can reach the write path
-learns which guessed context IRIs are registered by watching which answer comes back, and context
-names are freely chosen, so guessing is not hard.
-
-What makes it narrower than the read path, and only narrower: a write names one context per request
-rather than accepting a list, so enumeration costs one request per guess.
-
-What an implementation is asked to weigh, given that this requirement will change: answering `404`
-for both costs a caller the ability to tell "no such context" from "not yours", and a client that
-cannot tell them apart retries a permission problem forever. Checking authorization *before*
-existence — which context deletion already does ([`SPS-CTX-020`](../modules/context-management.md#SPS-CTX-020)) — gives
-`403` without confirming anything, and is the shape this should take.
-[Issue #45](https://github.com/sempods/sempods-spec/issues/45) owns the repair, which remains a
-condition for `0.1`.
+This includes RDF writes, media writes and context-management operations. An authorized operation
+retains its specified missing-target behavior, including context creation and ensure-absent deletion.
+MCP tools map the denial through [`SPS-MCP-018`](../modules/mcp.md#SPS-MCP-018).
 
 ## 6. Standards profiled
 

@@ -580,7 +580,7 @@
       "id": "SPS-CORE-018",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "On a **write**, the two failures are currently distinguished: a context that is not registered produces `404`, and a registered context the caller may not write produces `403`.",
+      "summary": "For an authenticated **write on the direct HTTP surface**, an implementation MUST return `403` when the caller lacks the authority required on the target context, whether or not that context exists.",
       "withdrawn": false
     },
     {
@@ -665,13 +665,6 @@
       "part": "core",
       "chapter": "spec/core/lod-crud.md",
       "summary": "An implementation MUST accept a canonical context IRI, and MAY additionally accept a pod-relative context path which it resolves to the canonical IRI.",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-CRUD-010",
-      "part": "core",
-      "chapter": "spec/core/lod-crud.md",
-      "summary": "A `?context=` value naming a context that is not registered MUST be `404`; a registered context the caller may not write MUST be `403` ([`SPS-CORE-018`](index.md#SPS-CORE-018)).",
       "withdrawn": false
     },
     {
@@ -1141,13 +1134,6 @@
       "part": "context-management",
       "chapter": "spec/modules/context-management.md",
       "summary": "`PUT` and `DELETE` MUST require the pod owner, or a `#manage` grant covering the target context under the slash-delimited rule of [`SPS-GRANT-007`](../core/grants.md#SPS-GRANT-007).",
-      "withdrawn": false
-    },
-    {
-      "id": "SPS-CTX-020",
-      "part": "context-management",
-      "chapter": "spec/modules/context-management.md",
-      "summary": "On `DELETE`, an implementation MUST check authorization **before** existence, so that a caller outside their sandbox receives `403` and not a `404` that would confirm the context exists.",
       "withdrawn": false
     },
     {
@@ -1693,7 +1679,7 @@
       "id": "SPS-MCP-004",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Error responses MUST use JSON-RPC codes: parse error, invalid request, method or tool not found, invalid params, internal error.",
+      "summary": "Protocol errors MUST use JSON-RPC codes: parse error, invalid request, method or tool not found, invalid params, internal error.",
       "withdrawn": false
     },
     {

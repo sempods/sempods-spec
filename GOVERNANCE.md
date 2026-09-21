@@ -85,16 +85,6 @@ requirement may be deleted, an identifier renumbered, and a requirement that cha
 keep its identifier. That freedom rests on there being nobody outside this project to promise to,
 which is why this half can end without a tag: somebody outside can end it.
 
-**A known defect binds nobody.** Where a chapter records that a requirement is wrong —
-`SPS-CORE-018` is one, a context-enumeration oracle — an implementation that does the right thing
-instead is conformant, and stays conformant until that requirement is repaired. The note ends with
-the repair and not with a date: an adopter arriving first would otherwise make a defect binding
-that nobody has fixed yet.
-
-Once identifiers freeze, no further note is added. A requirement that turns out wrong from then on is
-**withdrawn** and replaced by a successor, because a standing note that some requirements do not
-count would nullify them without an identifier anybody can cite.
-
 ### When `0.1` gets tagged
 
 **The current version is `0.1-dev`, and it is not close to a tag.** That is a decision, not a
@@ -102,8 +92,7 @@ delay.
 
 A tag is a promise to somebody. There is nobody yet: no second implementation, no client outside
 this project whose build breaks when a requirement moves. Tagging before there is buys nothing and
-spends the freedom to still be wrong about the shape — which the specification currently is in at
-least one place it knows of, and probably more it does not.
+spends the freedom to still be wrong about the shape.
 
 So the trigger is not a date. **`0.1` is tagged when two things hold at once:** somebody is there
 to promise to — a second implementation, or a client outside this project that depends on the
@@ -123,11 +112,9 @@ the tag; completing a preparation issue does not adopt the contract it prepares.
 removing a condition requires an explicit reviewed governance decision and matching milestone
 changes. Keeping one list prevents conflicting release gates.
 
-One condition is a **known security defect**: `SPS-CORE-018` is a context-enumeration oracle,
-tracked in [#45](https://github.com/sempods/sempods-spec/issues/45). The note above keeps it from
-binding until it is repaired; publication still requires the repair. The external-adopter trigger
-in §"When `0.1` gets tagged" also remains necessary. After-`0.1` work and announcement planning
-do not become release conditions merely by being tracked in the same repository.
+The external-adopter trigger in §"When `0.1` gets tagged" also remains necessary. After-`0.1`
+work and announcement planning do not become release conditions merely by being tracked in the
+same repository.
 
 The heaviest of them, because it decides whether a version change is survivable at all:
 [how a pod moves between versions](https://github.com/sempods/sempods-spec/issues/21) without changing
