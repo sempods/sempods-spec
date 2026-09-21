@@ -49,6 +49,9 @@ paths:
         asking for it.
 
         A `state` this pod did not park is rejected, and each one is consumed exactly once.
+        The back-channel ID Token's optional equivalent-identity claim follows `SPS-OIDC-005`;
+        a malformed value, including a non-WebID URI, rejects the assertion under `SPS-OIDC-016`.
+        `SPS-OIDC-017` defines set interpretation; `SPS-OIDC-018` bounds trust and use.
       security: [{}]
       parameters:
         # Two shapes arrive here, and `state` is the only parameter common to both — so neither
@@ -81,7 +84,7 @@ paths:
           in: query
           required: false
           schema: { type: string }
-      x-sps-requirements: [SPS-OIDC-002, SPS-OIDC-004, SPS-OIDC-006, SPS-OIDC-007, SPS-OIDC-008, SPS-OIDC-009, SPS-OIDC-010, SPS-OIDC-011, SPS-OIDC-014, SPS-OIDC-015]
+      x-sps-requirements: [SPS-OIDC-002, SPS-OIDC-004, SPS-OIDC-005, SPS-OIDC-006, SPS-OIDC-007, SPS-OIDC-008, SPS-OIDC-009, SPS-OIDC-010, SPS-OIDC-011, SPS-OIDC-014, SPS-OIDC-015, SPS-OIDC-016, SPS-OIDC-017, SPS-OIDC-018]
       responses:
         '302':
           description: |
@@ -93,3 +96,4 @@ paths:
           description: |
             A `state` this pod did not park, one already consumed, or an assertion that failed
             validation. Issuer, audience, nonce, expiry and signature are checked together.
+            A present equivalent-identity claim with an invalid value also fails validation.

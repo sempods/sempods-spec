@@ -2113,7 +2113,7 @@
       "id": "SPS-OIDC-005",
       "part": "oidc",
       "chapter": "spec/modules/oidc.md",
-      "summary": "The assertion MAY carry the equivalent identity URIs known for the person.",
+      "summary": "An issuer MAY carry the person's equivalent identities in the ID Token claim `https://schema.sempods.org/claims/equivalent-identities`, whose value MUST be a JSON array of WebID URI strings consistent with [`SPS-AUTH-049`](../core/auth.md#SPS-AUTH-049).",
       "withdrawn": false
     },
     {
@@ -2184,6 +2184,27 @@
       "part": "oidc",
       "chapter": "spec/modules/oidc.md",
       "summary": "The callback MUST reject a `state` it did not park, and MUST consume each one exactly once.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-OIDC-016",
+      "part": "oidc",
+      "chapter": "spec/modules/oidc.md",
+      "summary": "A relying party MUST reject the identity assertion if the equivalent-identity claim is present with a value other than the array of WebID URI strings defined by [`SPS-OIDC-005`](#SPS-OIDC-005), including `null` or an array containing any invalid entry.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-OIDC-017",
+      "part": "oidc",
+      "chapter": "spec/modules/oidc.md",
+      "summary": "A relying party MUST interpret a valid equivalent-identity claim as an unordered set of identities equivalent to `sub`, with omission or an empty array asserting no additional identities in this token.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-OIDC-018",
+      "part": "oidc",
+      "chapter": "spec/modules/oidc.md",
+      "summary": "A relying party MUST apply the claimed equivalent identities only from an issuer trusted to assert equivalence for this subject, and only where a grant or ownership is decided ([`SPS-AUTH-052`](../core/auth.md#SPS-AUTH-052)).",
       "withdrawn": false
     },
     {
