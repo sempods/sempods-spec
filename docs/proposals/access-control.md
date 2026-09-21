@@ -391,10 +391,9 @@ successful operations.
 For a valid authenticated caller whose operation is not authorized, recommend a uniform `403`
 without existence diagnostics, validators or a Location header. An invalid credential remains a
 `401`; data reads keep their absent/inaccessible `404` behavior. Determine authorization before
-returning an existence-dependent write result. This is the proposed generalization of
-[#45](https://github.com/sempods/sempods-spec/issues/45); that issue still owns the current
-Context-oracle repair. Syntax errors and unsupported media types retain their normal errors and
-must not depend on hidden facts.
+returning an existence-dependent write result. This generalizes the Context-existence protection of
+[`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018). Syntax errors and unsupported media types
+retain their normal errors and must not depend on hidden facts.
 
 Write authority need not imply read authority universally. For example, an explicitly authorized
 set addition can return the uniform `204` proposed below without revealing whether the value was

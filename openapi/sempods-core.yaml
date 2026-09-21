@@ -273,7 +273,7 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatch'
-      x-sps-requirements: [SPS-CRUD-007, SPS-CRUD-008, SPS-CRUD-010, SPS-CRUD-011, SPS-CRUD-012, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-033, SPS-CRUD-034, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-007, SPS-CRUD-008, SPS-CRUD-011, SPS-CRUD-012, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-033, SPS-CRUD-034, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -305,7 +305,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-CRUD-038, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-CRUD-038, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -317,7 +317,7 @@ paths:
         '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '404': { $ref: '#/components/responses/WriteTargetNotFound' }
         '412': { $ref: '#/components/responses/PreconditionFailed' }
     delete:
       tags: [resources]
@@ -326,13 +326,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-039, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-039, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Removed. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '404': { $ref: '#/components/responses/WriteTargetNotFound' }
         '412': { $ref: '#/components/responses/PreconditionFailed' }
 
   /_system/resources/{resourceIri}:
@@ -388,7 +388,7 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-002, SPS-CRUD-011, SPS-CRUD-031, SPS-CRUD-032, SPS-CRUD-043, SPS-AUTH-064]
       requestBody:
         required: true
         description: |
@@ -408,6 +408,7 @@ paths:
             Location: { schema: { type: string } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
         '412': { $ref: '#/components/responses/PreconditionFailed' }
     patch:
       tags: [resources]
@@ -416,7 +417,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-002, SPS-CRUD-035, SPS-CRUD-036, SPS-CRUD-037, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -427,6 +428,8 @@ paths:
         '200': { description: Patched. }
         '204': { description: Patched, no body. }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/WriteTargetNotFound' }
     delete:
       tags: [resources]
       operationId: deleteResourceByIri
@@ -434,11 +437,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-002, SPS-CRUD-039, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-002, SPS-CRUD-039, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '204': { description: Removed. }
-        '404': { $ref: '#/components/responses/NotFoundOrNotVisible' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/WriteTargetNotFound' }
 
   /_system/resources/{subjectIri}/{predicateIri}:
     description: A slot — every value of one `(subject, predicate)` pair within one context.
@@ -474,7 +478,7 @@ paths:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IfNoneMatchSlot'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-048, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-041, SPS-CRUD-048, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -488,6 +492,7 @@ paths:
             ETag: { schema: { type: string } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
         '412': { $ref: '#/components/responses/PreconditionFailed' }
     post:
       tags: [slots]
@@ -501,7 +506,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-044, SPS-CRUD-045, SPS-CRUD-047, SPS-CRUD-049, SPS-CRUD-052, SPS-CRUD-054, SPS-AUTH-064]
       requestBody:
         required: true
         description: One value, or several — SPS-CRUD-041 defines the verb as adding the given value or values.
@@ -533,6 +538,7 @@ paths:
               schema: { $ref: '#/components/schemas/Outcome' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
     delete:
       tags: [slots]
       operationId: clearSlot
@@ -540,7 +546,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WriteContext'
         - $ref: '#/components/parameters/IfMatch'
-      x-sps-requirements: [SPS-CRUD-041, SPS-CRUD-044, SPS-CRUD-052, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-041, SPS-CRUD-044, SPS-CRUD-052, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
@@ -551,6 +557,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Outcome' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
 
   /_system/resources/{subjectIri}/{predicateIri}/{targetIri}:
     description: One edge. Available only where the target is an IRI — a literal has no path encoding.
@@ -568,7 +575,7 @@ paths:
         "ensure this triple does not exist" without a prior read.
       parameters:
         - $ref: '#/components/parameters/WriteContext'
-      x-sps-requirements: [SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054, SPS-AUTH-064]
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
@@ -577,6 +584,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Outcome' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/UnknownContext' }
 
   /_system/sparql/query:
     post:
@@ -944,8 +952,8 @@ components:
       schema: { type: string, format: uri }
       description: |
         Exactly one, on every write. Missing or repeated is `400` — and repetition is judged on the
-        parameter's occurrence count, so `?context=valid&context=` is repeated. An unregistered
-        context is `404`; a registered one the caller may not write is `403`.
+        parameter's occurrence count, so `?context=valid&context=` is repeated. Write failures
+        follow `SPS-CORE-018`; an authorized request naming an unregistered context is `404`.
 
     ReadContext:
       name: context
@@ -1119,13 +1127,21 @@ components:
         indistinguishable.
 
     UnknownContext:
-      description: The named context is not registered.
+      description: The named context is not registered, and the caller's authority covers the target.
+
+    WriteTargetNotFound:
+      description: |
+        The caller's authority covers the target context, but that context is not registered or
+        the resource has no statements in it.
 
     BadRequest:
       description: Malformed request.
 
     Forbidden:
-      description: Authenticated, but lacking the grant or scope the operation requires.
+      description: |
+        Authenticated, but lacking the grant or scope the operation requires. When the caller lacks
+        the required authority on the target context, neither the status nor the response headers
+        or content distinguish whether that context exists (`SPS-CORE-018`).
 
     NotAcceptable:
       description: The `Accept` header cannot be satisfied.
