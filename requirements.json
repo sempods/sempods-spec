@@ -181,7 +181,7 @@
       "id": "SPS-AUTH-025",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "The implementation MUST use the authorization responses defined by [RFC 6749 §§4.1.2 and 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.2), redirecting only to the request's **validated** `redirect_uri` and echoing `state` unchanged only when supplied in the authorization request.",
+      "summary": "The implementation MUST handle authorization success and error responses per [RFC 6749 §§4.1.2 and 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.2), including validation of the client's `redirect_uri` and, in responses sent to that client, echoing `state` unchanged only when supplied in the authorization request.",
       "withdrawn": false
     },
     {

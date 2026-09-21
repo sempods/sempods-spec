@@ -688,6 +688,10 @@ paths:
       description: |
         The standard delegation flow takes no `scope` naming contexts — the authorizing person
         selects them at consent. `scope=public-read` is the exception.
+        For a missing or invalid `client_id`, or a missing, invalid or mismatching `redirect_uri`,
+        RFC 6749 §4.1.2.1 prohibits automatically redirecting to the invalid client URI.
+        How the server informs the resource owner is implementation-defined, including a
+        server-owned error page or a redirect to one; no particular status or media type is required.
       security: [{}]
       parameters:
         - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
@@ -699,7 +703,7 @@ paths:
           schema: { type: string }
           description: |
             Recommended by RFC 6749 §4.1.1. When supplied, echoed unchanged in success and
-            error redirects; omitted from both when absent (`SPS-AUTH-025`).
+            error responses sent to the client; omitted from both when absent (`SPS-AUTH-025`).
         - { name: code_challenge, in: query, required: false, schema: { type: string } }
         - { name: code_challenge_method, in: query, required: false, schema: { type: string, const: S256 } }
         - { name: scope, in: query, required: false, schema: { type: string } }
@@ -712,6 +716,8 @@ paths:
             (`SPS-AUTH-025`). Success carries `code`; failure carries `error`, with optional
             `error_description` and `error_uri`. Both echo `state` unchanged when supplied
             in the authorization request and omit it otherwise.
+            For failures that cannot be sent to the client, a redirect to a server-owned error
+            page is also possible; the client-response parameters and examples do not apply to it.
           headers:
             Location:
               schema: { type: string, format: uri }
@@ -724,16 +730,12 @@ paths:
                   value: https://app.example/cb?error=access_denied&state=s
                 errorWithoutState:
                   value: https://app.example/cb?error=access_denied
-        '200': { description: The consent screen. }
-        '400':
+        '200': { description: The consent screen or an implementation-defined local error page. }
+        default:
           description: |
-            Served directly rather than redirected when `client_id` is absent or invalid, or
-            `redirect_uri` is absent, not a usable address (`SPS-AUTH-018`, `SPS-AUTH-056`), or
-            not one this `client_id` may be answered at. RFC 6749 §4.1.2.1 forbids an error
-            redirect in these cases, so there is no `Location` to carry it.
-          content:
-            text/plain:
-              schema: { type: string }
+            Implementation-defined handling of failures that cannot be sent to the client.
+            The prohibition on redirecting to the invalid client URI still applies; this
+            specification does not select a status, representation or local error-page flow.
 
   /_system/auth/token:
     post:

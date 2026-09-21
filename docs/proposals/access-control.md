@@ -258,9 +258,9 @@ and challenges; and [RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.or
 for code-injection/CSRF protection and refresh-token replay. This selects those operations, not every
 optional OAuth extension or an unversioned OAuth 2.1 draft.
 
-The proposed changes below are coordinated under #70/#71 and reviewed before #74 adoption. This
-proposal allocates no identifiers, changes no normative endpoint and closes none of the linked
-current-contract issues. #65's removal of guaranteed refresh-token issuance remains intact.
+The remaining changes below are coordinated under #70/#71 and reviewed before #74 adoption.
+The conditional state echo is already covered by AUTH-025 through #10/PR #105; the remaining
+proposal adopts no normative changes. #65's removal of guaranteed refresh-token issuance remains intact.
 
 | Existing contract | Proposed disposition |
 |---|---|
