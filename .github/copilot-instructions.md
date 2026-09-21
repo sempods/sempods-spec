@@ -20,9 +20,8 @@ have bounded roles described in [repository checks](../docs/guides/repository-ch
 ## What decides here
 
 **This specification decides. An implementation that disagrees with it is the bug**, the reference
-implementation included. Two limits, and `GOVERNANCE.md` says when each ends: an identifier may
-still be deleted, renumbered, or come to mean something else; and a requirement a chapter records as
-wrong binds nobody.
+implementation included. An identifier may still be deleted, renumbered, or come to mean something
+else within the window [`GOVERNANCE.md`](../GOVERNANCE.md) defines.
 
 ## Non-negotiable invariants
 

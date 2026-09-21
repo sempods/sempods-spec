@@ -63,10 +63,24 @@ paths:
         '200':
           description: |
             A JSON-RPC response. A tool that failed reports it inside the result rather than as a
-            transport error.
+            transport error. An authenticated write lacking target-context authority is a tool
+            execution error with `result.isError: true` over HTTP `200` (`SPS-MCP-018`). Its headers
+            and result do not distinguish an existing context from a nonexistent one; validation
+            that depends on context existence does not replace that denial.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+              examples:
+                writeDenied:
+                  summary: The same denial for existing and nonexistent unauthorized contexts.
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    result:
+                      isError: true
+                      content:
+                        - type: text
+                          text: Write access denied.
         '202':
           description: A notification, which carries no id and gets no response body.
         '401':

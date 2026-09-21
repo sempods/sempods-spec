@@ -580,7 +580,7 @@
       "id": "SPS-CORE-018",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "For an otherwise valid authenticated **write**, an implementation MUST return `403` when the caller lacks the authority required on the target context, whether or not that context exists.",
+      "summary": "For an authenticated **write on the direct HTTP surface**, an implementation MUST return `403` when the caller lacks the authority required on the target context, whether or not that context exists.",
       "withdrawn": false
     },
     {
@@ -1679,7 +1679,7 @@
       "id": "SPS-MCP-004",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Error responses MUST use JSON-RPC codes: parse error, invalid request, method or tool not found, invalid params, internal error.",
+      "summary": "Protocol errors MUST use JSON-RPC codes: parse error, invalid request, method or tool not found, invalid params, internal error.",
       "withdrawn": false
     },
     {

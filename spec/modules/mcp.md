@@ -31,7 +31,7 @@ The empty answers are not placeholders. Several clients probe those methods on c
 `method not found` is noise a reader of the logs then has to learn to ignore.
 
 <a id="SPS-MCP-004"></a>
-**`SPS-MCP-004`** — Error responses MUST use JSON-RPC codes: parse error, invalid request, method or
+**`SPS-MCP-004`** — Protocol errors MUST use JSON-RPC codes: parse error, invalid request, method or
 tool not found, invalid params, internal error. A rejected bearer MUST be a distinct code paired with
 HTTP `401`.
 
@@ -181,7 +181,12 @@ read, resource write, and slot-level property editing:
 <a id="SPS-MCP-018"></a>
 **`SPS-MCP-018`** — Every tool MUST be a projection of the HTTP surface the core chapters define. An
 implementation MUST NOT give a tool an authority, a sandbox or a write path the HTTP surface does not
-have.
+have. The write denial specified by [`SPS-CORE-018`](../core/index.md#SPS-CORE-018) MUST be mapped to
+an MCP tool execution error over HTTP `200`, preserving its protection of context existence.
+
+The MCP tool execution error is a JSON-RPC result with `isError: true`. The HTTP `200` reports
+delivery of that result; the write has failed. Missing or rejected credentials retain the `401`
+challenge defined above.
 
 <a id="SPS-MCP-019"></a>
 **`SPS-MCP-019`** — The query tools MUST dispatch through the same validation and the same sandbox as

@@ -126,6 +126,10 @@ target context under the slash-delimited rule of [`SPS-GRANT-007`](../core/grant
 
 Authorization failures follow [`SPS-CORE-018`](../core/index.md#SPS-CORE-018).
 
+For example, an authenticated caller without `manage` on `apps/notes` receives `403` for a
+well-formed `PUT` whether that type root exists or not. The creation-only naming restriction does
+not turn the absent case into `400` for that caller.
+
 <a id="SPS-CTX-029"></a>
 **`SPS-CTX-029`** — `DELETE` MUST refuse to remove the only context **visible to the caller**, with
 `409`.

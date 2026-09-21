@@ -245,6 +245,7 @@ components:
         A valid token whose grants do not cover this operation. The pod owner, or a `#manage` grant
         covering the target under the slash-delimited rule, is what this route requires.
         Status, headers and content do not distinguish whether the target exists (`SPS-CORE-018`).
+        A creation-only naming rejection does not take precedence over this denial.
     NoSuchContext:
       description: No such context, for a caller whose authority covers the path.
     LastContext:

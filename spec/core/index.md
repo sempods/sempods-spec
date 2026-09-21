@@ -232,12 +232,15 @@ empty result then means is the chapter's business: a resource read answers `404`
 `find` answers success with nothing in it.
 
 <a id="SPS-CORE-018"></a>
-**`SPS-CORE-018`** — For an otherwise valid authenticated **write**, an implementation MUST return
-`403` when the caller lacks the authority required on the target context, whether or not that
-context exists. The response headers and content MUST NOT distinguish those two cases.
+**`SPS-CORE-018`** — For an authenticated **write on the direct HTTP surface**, an implementation
+MUST return `403` when the caller lacks the authority required on the target context, whether or not
+that context exists. Other request failures MAY take precedence only when their applicability is
+independent of target-context existence. The denial's headers and content MUST NOT distinguish an
+existing context from a nonexistent one.
 
 This applies to data writes and context-management operations. An authorized operation retains its
 specified missing-target behavior, including context creation and ensure-absent deletion.
+MCP tools map the denial through [`SPS-MCP-018`](../modules/mcp.md#SPS-MCP-018).
 
 ## 6. Standards profiled
 
