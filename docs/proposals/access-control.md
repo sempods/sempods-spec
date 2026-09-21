@@ -1,6 +1,9 @@
 # Access control
 
-Status: **Proposed; non-normative.**
+Status: **Partly adopted; remaining design is proposed and non-normative.**
+The conditional `state` echo is specified by [SPS-AUTH-025](../../spec/core/auth.md#SPS-AUTH-025)
+under [#10](https://github.com/sempods/sempods-spec/issues/10), with normative adoption in
+[PR #105](https://github.com/sempods/sempods-spec/pull/105).
 Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
 The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
 not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
@@ -71,8 +74,8 @@ It can be accepted only once. Cancellation, replay or swapping transactions cann
 permission. A browser login alone is not approval. Existing `prompt` rules and interactive `dyn:`
 confirmation remain; implementations choose the UI, policy language and consent storage.
 
-For #10, return `state` unchanged when supplied and omit it otherwise (RFC 6749 §4.1.2). Clients
-still protect against CSRF and multi-issuer mix-up under RFC 9700, including when they omit `state`.
+Keep the [current state-echo contract](../../spec/core/auth.md#SPS-AUTH-025). The proposed RFC 9700
+profile protects against CSRF and multi-issuer mix-up, including when clients omit `state`.
 
 Each request checks the person and client separately. Identity assertions and browser sessions keep
 their pod/audience restrictions and cannot replace a pod API token. A person's external identifier
@@ -203,7 +206,7 @@ Contexts module, and MCP challenge cases add MCP. Installation of policy and the
 | X obtains U's approval for D read/write through Authorization Code, without a Context scope or registry call; exchanges the code, then PUTs nonempty RDF at a new LOD R | Code exchange `200`; PUT `201`, Location R; GET `200`. No Context identity, membership grant or ownership is required. Repeat with a non-owner who may delegate the same authority. |
 | X repeats authorization using its registered `dyn:` identity or its origin-bound `did:web:` identity | The respective existing client validation/consent rules apply; both use S256 PKCE and reach the same approved ordinary operations. |
 | A public client omits PKCE, or redeems a code with the wrong verifier | Missing challenge is refused at authorization (`invalid_request`); wrong verifier gives token endpoint `400 invalid_grant`. The failed step issues no access token and cannot enlarge legitimate consent. |
-| X supplies `state=s` versus omitting it in otherwise protected/valid authorization transactions | The response echoes exactly s versus no state parameter. No invented state value; the client still checks transaction and issuer binding. |
+| X supplies `state=s` versus omitting it in otherwise protected/valid authorization transactions | Keep the current state-echo contract for success and error redirects; the proposed client profile also checks transaction and issuer binding. |
 | U refuses consent, or an earlier consent submission is replayed after narrowing | Explicit refusal returns `access_denied`; replay is rejected without restoring the earlier permission. Neither case issues a code for that old authority. |
 | Y has a valid token naming U, but no private delegation; X's consent allows R | Y's private resource GET is `404`, its valid write `403`, regardless of X's authority. No subject-only grant lookup. |
 | Context-capable variant; U has consented only to independent A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
@@ -255,14 +258,14 @@ and challenges; and [RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.or
 for code-injection/CSRF protection and refresh-token replay. This selects those operations, not every
 optional OAuth extension or an unversioned OAuth 2.1 draft.
 
-The proposed changes below are coordinated under #70/#71 and reviewed before #74 adoption. This
-proposal allocates no identifiers, changes no normative endpoint and closes none of the linked
-current-contract issues. #65's removal of guaranteed refresh-token issuance remains intact.
+The remaining changes below are coordinated under #70/#71 and reviewed before #74 adoption.
+The conditional state echo is already covered by AUTH-025 through #10/PR #105; the remaining
+proposal adopts no normative changes. #65's removal of guaranteed refresh-token issuance remains intact.
 
 | Existing contract | Proposed disposition |
 |---|---|
 | AUTH-013/014/024, GRANT-013/014/028/029/030 | Express ordinary consent and service authority without Context prerequisites. Keep the Context-specific management boundary in the optional module; no pod-wide service administration follows from D data access. |
-| AUTH-009/022/023/025 | S256 PKCE for both user-facing client shapes; conditional state echo resolves #10. Preserve client/redirect validation while reviewing the remaining profile separately. |
+| AUTH-009/022/023 | S256 PKCE for both user-facing client shapes. Preserve client/redirect validation and AUTH-025's current response contract while reviewing the remaining profile separately. |
 | AUTH-026, GRANT-002/015/016/018/019, AUTH-052/061/062/063 | Retain client isolation, trusted-alias coverage, delegation ceilings and fresh-consent barriers; replace prescribed storage/lookups/write ordering with the tested outcomes above. Narrowing never silently restores removed authority. |
 | GRANT-020/021/022/031/032, AUTH-042/043/044 | Retain additive public-read and credential-free reads; generalize to public assertions in the requested scope and permit public-only issuance on an empty pod. Keep invalid-credential rejection. |
 | MCP-011/012/013/030 | Coordinate core-only authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact core-only result shape remains a module-view decision. |
