@@ -125,6 +125,12 @@ challenge loop.
 <a id="SPS-MCP-014"></a>
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
 
+<a id="SPS-MCP-031"></a>
+**`SPS-MCP-031`** — *Withdrawn in 0.1-dev without replacement.*
+Some clients treat the MCP URL itself as the protected-resource identifier. An
+implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
+and it MUST return the **pod-level** document.
+
 <a id="SPS-MCP-032"></a>
 **`SPS-MCP-032`** — *Withdrawn in 0.1-dev without replacement.*
 An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
