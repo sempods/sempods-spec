@@ -125,6 +125,10 @@ challenge loop.
 <a id="SPS-MCP-014"></a>
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
 
+<a id="SPS-MCP-032"></a>
+**`SPS-MCP-032`** — *Withdrawn in 0.1-dev without replacement.*
+An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
+
 ### Discovery limits
 
 The [pod-local OAuth profile](../core/auth.md#10-discovery) assumes the client already knows the

@@ -1858,6 +1858,14 @@
       "withdrawn": false
     },
     {
+      "id": "SPS-MCP-032",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.",
+      "withdrawn": true,
+      "withdrawnNote": "Withdrawn in 0.1-dev without replacement."
+    },
+    {
       "id": "SPS-MEDIA-001",
       "part": "media",
       "chapter": "spec/modules/media.md",
