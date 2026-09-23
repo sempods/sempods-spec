@@ -1,7 +1,6 @@
 openapi: 3.1.0
 
-# The MCP module's HTTP surface: one JSON-RPC route, and the metadata address a client builds
-# from it.
+# The MCP module's HTTP surface is one JSON-RPC route; OAuth metadata belongs to the pod.
 #
 # There is little for OpenAPI to say here, and that is the honest shape of it — the contract is in
 # the methods, the tool catalogue and the authentication modes, none of which a path-and-schema
@@ -100,28 +99,6 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
 
-  # The append form on the MCP URL. No Authorization Server Metadata stands beside it: the MCP URL
-  # is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves to match
-  # the URL it was fetched from (`SPS-MCP-032`). A description can add a route; it has no way to
-  # forbid one.
-  /_system/mcp/.well-known/oauth-protected-resource:
-    get:
-      operationId: mcpProtectedResourceMetadata
-      summary: RFC 9728 Protected Resource Metadata, at the MCP URL.
-      description: |
-        An alias for the pod-level metadata, with resource and sole authorization server equal
-        to the canonical pod base URL. SPS-AUTH-067/068 define the pod-local address and
-        validation exceptions. Generic RFC 9728 clients matching resource to the MCP URL may
-        reject this document.
-      security: [{}]
-      x-sps-requirements: [SPS-MCP-031, SPS-AUTH-065, SPS-AUTH-067, SPS-AUTH-068]
-      responses:
-        '200':
-          description: The pod-level metadata document.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ProtectedResourceMetadata' }
-
 components:
 
   securitySchemes:
@@ -178,34 +155,3 @@ components:
                 Parse error, invalid request, method or tool not found, invalid params, internal
                 error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }
-
-    # The core description's schema, copied rather than cross-referenced — an OpenAPI description
-    # stands alone. The route above serves the pod-level document, so this is its schema.
-    ProtectedResourceMetadata:
-      type: object
-      required: [resource, authorization_servers, bearer_methods_supported]
-      properties:
-        resource:
-          type: string
-          format: uri
-          description: The canonical pod base URL, including at the MCP alias.
-        authorization_servers:
-          type: array
-          minItems: 1
-          maxItems: 1
-          items: { type: string, format: uri }
-          description: The sole value is the canonical pod base URL.
-        bearer_methods_supported:
-          type: array
-          items: { type: string }
-          contains: { const: header }
-        scopes_supported:
-          type: array
-          items: { type: string }
-          description: >-
-            OAuth scope values advertised by the pod. Per-context permissions are grants and do
-            not appear here.
-        name: { type: string }
-        public_contexts:
-          type: integer
-          description: A count. Never the URIs.

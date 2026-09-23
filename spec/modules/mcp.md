@@ -126,20 +126,28 @@ challenge loop.
 **`SPS-MCP-014`** — A recorded challenge MUST expire, and MUST be consumable exactly once.
 
 <a id="SPS-MCP-031"></a>
-**`SPS-MCP-031`** — Some clients treat the MCP URL itself as the protected-resource identifier. An
+**`SPS-MCP-031`** — *Withdrawn in 0.1-dev without replacement.*
+Some clients treat the MCP URL itself as the protected-resource identifier. An
 implementation MUST therefore serve Protected Resource Metadata at the append form on the MCP URL,
 and it MUST return the **pod-level** document.
 
-This is a metadata alias for the pod. The pod-local address and resource-validation exceptions
-are defined by [SPS-AUTH-067/068](../core/auth.md#SPS-AUTH-067). A generic RFC 9728 client that
-requires `resource` to equal the MCP URL may reject this document; the alias does not promise
-compatibility with that client.
-
 <a id="SPS-MCP-032"></a>
-**`SPS-MCP-032`** — An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
+**`SPS-MCP-032`** — *Withdrawn in 0.1-dev without replacement.*
+An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
 
-The MCP URL is not an issuer identifier, and RFC 8414 §3.3 requires the `issuer` a document serves
-to match the URL it was fetched from. There is no document that could satisfy both.
+### Discovery limits
+
+The [pod-local OAuth profile](../core/auth.md#10-discovery) assumes the client already knows the
+canonical pod base. It does not define how a generic client configured only with the MCP endpoint
+establishes that identity. Anonymous initialization still needs no OAuth round trip.
+
+The discovery addresses and resource matching differ from
+[MCP 2025-11-25 authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-server-discovery).
+An extra metadata address below the MCP endpoint does not resolve those differences or establish
+generic-client compatibility. The pod's issuer validation remains in
+[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068). Endpoint-only interoperability is open under
+[#99](https://github.com/sempods/sempods-spec/issues/99); this comparison introduces no additional
+MCP revision requirements.
 
 ## 4. Client registration
 

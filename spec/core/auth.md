@@ -567,14 +567,12 @@ base URL it intended to access, not a base inferred from returned metadata. It M
 challenge whose `resource_metadata` differs from that pod's append-form URL, resource metadata
 whose `resource` or sole `authorization_servers` entry differs from that pod URL, or authorization
 server metadata whose `issuer` differs from it. In RFC 9728 §3.3 validation, clients MUST use this
-pod URL as the expected resource for data and MCP endpoints, accepting the MCP append alias
-(SPS-MCP-031) as an additional metadata location for that pod. This replaces endpoint-URL
-comparison and the alias's resource-to-location mapping. A client MUST NOT use rejected metadata
-to start authorization or send credentials; the standards' exact string comparison and TLS checks
-still apply.
+pod URL as the expected resource for data and MCP endpoints. This replaces endpoint-URL
+comparison. A client MUST NOT use rejected metadata to start authorization or send credentials;
+the standards' exact string comparison and TLS checks still apply.
 
 The known pod identity supplies the boundary: Alice's challenge cannot redirect a client to Bob's
-issuer. The MCP alias still describes Alice's pod; it does not create an MCP-specific issuer.
+issuer. The MCP endpoint does not create an MCP-specific issuer.
 
 ### Cases to check
 
@@ -590,5 +588,5 @@ These are contract examples, not results from a running implementation.
 | A challenge from Alice names Bob's metadata, or Alice's document names Bob's resource/issuer | Reject discovery; do not authorize against Bob. |
 | Metadata for Alice names `https://example.org/alice/_system/auth` as issuer | Reject: the issuer is the pod base, even though the auth routes live below it. |
 | Host-rooted routes are unavailable for a path-scoped pod | The sempods client uses the required pod-local addresses. |
-| MCP challenge or MCP append alias | The same pod identity and checks apply; a client applying unmodified RFC 9728 endpoint matching may reject this profile. |
+| MCP challenge | The same known pod identity and checks apply; a client applying unmodified RFC 9728 endpoint matching may reject this profile. Endpoint-only interoperability remains open under [#99](https://github.com/sempods/sempods-spec/issues/99). |
 | Required metadata is unavailable or fails validation | Discovery has not completed; the failure supplies no authority to use another pod's metadata. |

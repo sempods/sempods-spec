@@ -1862,14 +1862,16 @@
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
       "summary": "Some clients treat the MCP URL itself as the protected-resource identifier.",
-      "withdrawn": false
+      "withdrawn": true,
+      "withdrawnNote": "Withdrawn in 0.1-dev without replacement."
     },
     {
       "id": "SPS-MCP-032",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
       "summary": "An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.",
-      "withdrawn": false
+      "withdrawn": true,
+      "withdrawnNote": "Withdrawn in 0.1-dev without replacement."
     },
     {
       "id": "SPS-MEDIA-001",

@@ -1497,7 +1497,7 @@ components:
         resource:
           type: string
           format: uri
-          description: The canonical pod base URL, including at the MCP alias.
+          description: The canonical pod base URL.
         authorization_servers:
           type: array
           minItems: 1
