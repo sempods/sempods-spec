@@ -196,6 +196,8 @@ Vision, proposals and fixture explanation:
   adoption, based on the completed #90 recommendation
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design
+- [Protocol profiles](docs/proposals/protocol-profiles.md) — remaining #69 standards/profile
+  recommendations, registration and MCP error/transport cases; adopted discovery and #99 evidence boundary
 - [Context registry representations](docs/guides/context-registry.md) — RDF examples and HTTP
   verification cases; the representation checker validates shapes and RDF, not a running server
 - [ACP fixture guide](docs/guides/acp-fixtures.md) — supplied model assumptions and what the examples
