@@ -55,7 +55,7 @@ These are recommended inputs to normative preparation. “Retain” preserves th
 |---|---|---|
 | Shared HTTP profile and chapter-local HTTP references | Already supplied by CORE-020/021. Retain RFC 9110 for selected HTTP operations, including optional media and management. No duplicate obligations. | Core §6; media and context-management profile introductions. |
 | OAuth 2.1 draft-13 overriding RFC 6749 | Revise: use RFC 6749 §§2–7 for selected code, service, refresh and token operations, RFC 7636 for PKCE, RFC 6750 §§2.1/3 for Bearer presentation/challenges, and the security scope below. Retain the implicit/password-grant prohibitions. Remove the unversioned OAuth 2.1 claim rather than adopt the draft wholesale. The observable choices are the grant types, client binding and protections; importing unrelated draft changes has no demonstrated need. | Auth profile, AUTH-001/018/023/027 and core profile overview. |
-| Browser and native clients | Retain RFC 10017 for browser clients' selected authorization-code/token handling, not a required backend or browser architecture; RFC 8252 §7.3 supplies loopback redirects. Keep HTTPS/loopback and did:web origin/path constraints as explicit sempods choices. Private-use URI schemes are not added by this selection. | AUTH-003–009/018–023/055–057; MCP redirect references. |
+| Browser and native clients | Select the [bounded RFC 10017 profile below](#browser-client-profile); RFC 8252 §7.3 supplies native loopback redirects. Keep HTTPS/loopback and did:web origin/path constraints as explicit sempods choices. Private-use URI schemes are not added by this selection. | Auth profile; AUTH-003–009/018–023/033/055–057/059 and browser-facing endpoint views, including CORS; MCP redirect references. |
 | Dynamic registration | Retain RFC 7591 §§2–3, including defaults, actual registered metadata and error responses. The unauthenticated public profile stays separate from protected service registration in the [service-client recommendation](access-control.md#service-clients-and-registration-authority). Software statements, registration management and metadata fetching do not become required capabilities. | AUTH-008/009/011; registration OpenAPI under #77/#71. |
 | Service refresh-token prohibition | Reject the candidate's unconditional ban; retain RFC 6749 §4.4.3's recommendation against issuance. An exception needs the bounded credential behavior below. This deliberately generalizes the current code-seeded family rule rather than silently treating service refresh as already specified. | AUTH-017/027/031–034/063; TokenResponse. Never reuse current AUTH-064 for this candidate. |
 | OAuth `prompt` | Retain OpenID Connect Core 1.0 errata set 2 §3.1.2.1 only for the parameter selected by AUTH-039–041. This does not make the pod OAuth surface an OIDC provider. | Auth profile; no new `openid` scope or ID Token. |
@@ -90,6 +90,24 @@ Primary profile sources: [RFC 6749](https://www.rfc-editor.org/rfc/rfc6749.html)
 [JSON-LD 1.1](https://www.w3.org/TR/2020/REC-json-ld11-20200716/),
 [SPARQL Query](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/) and
 [SPARQL Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/).
+
+## Browser-client profile
+
+Select [RFC 10017 §§6.3.2–6.3.3](https://www.rfc-editor.org/rfc/rfc10017.html#section-6.3.2)
+for public browser OAuth clients and their authorization/resource-server counterparts:
+code/PKCE, CSRF, optional refresh, client authentication/impersonation, conditional cross-window
+messaging and CORS on exposed browser endpoints. These obligations apply to the actor named by
+the RFC; client-internal behavior is not a pod-server test.
+
+Retain AUTH-033's rotation choice. Preserve §6.3.2.3's lifetime limits and obligation levels,
+including its session-linkage recommendation; refresh issuance stays optional under #65.
+The did:web rule is an explicit exception to §6.3.3.2.1's registered exact redirect matching.
+It supplies no authenticated-client proof for automatic consent.
+
+Other RFC 10017 sections are informative for this selection. In particular, §§6.1–6.2 and §8
+impose no backend architecture or browser storage mechanism; §9.2 adds no DPoP requirement.
+The separately selected OAuth/security profile governs prohibited flows and mix-up protection.
+This scoped profile makes no whole-BCP conformance claim.
 
 ## Service credentials and registration metadata
 
@@ -166,7 +184,12 @@ transport rejection separately from a response to an identifiable method call. O
 permission to drop the ID from an ordinary method error. #77 owns schema/tests; adopting the dated
 message profile and this explicit distinction belongs to #70/#71. Keep MCP-004's bearer error code
 and the adopted MCP-009 challenge. Preserve the upstream obligation levels: invalid Origin requires
-`403`, while session DELETE permits `405`; transport error bodies remain optional.
+`403`, while session DELETE permits `405`; transport error bodies remain optional. Malformed JSON
+with otherwise valid request conditions gives `400` under
+[SPS-CORE-014](../../spec/core/index.md#SPS-CORE-014). This is the sempods error-model selection,
+not a claim that Streamable HTTP's example `400` fixes every transport rejection to that status.
+Adoption must reconcile MCP-004 with optional transport error bodies; identifiable method errors
+retain their required codes and IDs.
 
 ## Proposed request and response cases
 
@@ -192,7 +215,7 @@ otherwise valid input, correct authority and an independent state unless stated 
 | P14 | OIDC pod client uses its permitted origin for code callback; token exchange changes that original callback URI | Authorization can succeed without preregistration; exchange fails with `invalid_grant` under OIDC Core §3.1.3.2. The origin exception does not extend to code redemption. |
 | P15 | Valid MCP `initialize` proposes `2025-11-25` | Negotiates that supported revision and capabilities. This module does not require support for every earlier or future revision. |
 | P16 | MCP call with `id:7` names an unknown method | JSON-RPC error `-32601`, `id:7`; no result. An ID-less error is invalid for this identifiable method failure. |
-| P17 | MCP POST contains truncated JSON with unreadable ID and is rejected before message acceptance | HTTP error; an empty body is permitted. If the server includes a JSON-RPC error body, use parse error `-32700` without `id`; neither `id:null` nor a result is a valid proposed MCP error envelope. |
+| P17 | MCP POST contains truncated JSON with unreadable ID and is rejected before message acceptance | HTTP `400` under CORE-014; an empty body is permitted. If the server includes a JSON-RPC error body, use parse error `-32700` without `id`; neither `id:null` nor a result is a valid proposed MCP error envelope. |
 | P18 | Valid `notifications/initialized`, without ID | Accepted notification: HTTP `202`, empty body. It does not receive a JSON-RPC result. |
 | P19 | Present, invalid Origin at M | HTTP `403`, required by the selected transport's security rule; the optional transport error body can omit ID even if the unprocessed body contains one. |
 | P20 | GET M on a server without SSE; DELETE of a session whose server declines client termination | GET requires `405`. For DELETE, `405` is permitted, not required; do not fail the case solely for another response allowed by the selected profile. Any `405` includes `Allow` under RFC 9110. Neither SSE nor client-requested session deletion becomes mandatory. |
@@ -207,6 +230,8 @@ otherwise valid input, correct authority and an independent state unless stated 
 | P29 | Authorized CONSTRUCT or DESCRIBE, first without a format preference, then accepting `application/n-quads`; repeat all query forms over empty data | Graph responses use JSON-LD by default and N-Quads when requested (SPARQL-016). Empty results retain a well-formed representation of the selected type (SPARQL-018); SELECT/ASK retain their JSON result document. Preserve SPARQL-018's nonempty-body constraint: for N-Quads an empty graph can use a comment-only document; JSON-LD uses an empty graph representation and SELECT/ASK use their result documents. |
 | P30 | Direct query POST has an empty body; repeat with a nonempty malformed query | Both return `400` under SPARQL-017 and the protocol's failure rules, without executing a query. An authorized valid empty result remains a success as in P29. |
 | P31 | Service issuance takes effect first; only its D write authority is withdrawn before the response arrives. Registration, access/refresh credentials and D read authority remain valid; repeat the former PUT and a permitted GET, then refresh | PUT returns `403` without mutation; GET still returns `200`. Valid retained refresh authorization can yield `200` and rotated credentials, but another PUT remains `403`. If refresh authorization is separately revoked, refresh gives `400 invalid_grant` instead. Explicit later write assignment can allow a write using still-valid credentials; renewal alone cannot restore rights. |
+| P32 | Public browser client completes a valid cross-origin code/PKCE exchange | `200` readable by that browser through CORS; no shared client secret required. Test preflight where applicable. |
+| P33 | Browser refresh family has a fixed expiry T; rotate before T, then present the latest token after T | Rotation cannot move expiry past T; after T, `400 invalid_grant`. An inactivity-expiry policy is the permitted alternative to a fixed maximum lifetime. |
 
 D, independent A/B assertions, empty catalogues, computed views and lifecycle/media cases remain
 in the existing proposals. This profile selection does not replace them or add general write-through,
