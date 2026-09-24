@@ -237,11 +237,17 @@ outcomes remains an implementation choice.
 After authentication and syntax checks, authorize unregistration independently of hidden source
 contents. Existing authorized C gives `204`, absent C gives `404`; outside management authority
 both give `403`. A successful response completes C's removal and withdrawal of its authority.
-A rejected operation leaves both unchanged. An interrupted request may have committed or not;
-without intervening recreation, a retry and current discovery resolve the outcome. A lost response
-does not imply rollback, and an unconditional retry is not guaranteed to address the same view
-after recreation. This proposal adds no generation identifier or new conditional lifecycle API.
-No storage transaction or policy-deletion order is prescribed.
+Each retry checks current management authority. A caller whose only authority was bound to C
+receives `403` after removal, whether C stays absent or is recreated without new authority for that
+caller. Only independently retained management authority, such as owner or covering parent-prefix
+authority, permits the absent-target `404`.
+
+A rejected operation leaves both unchanged. An interrupted request may have committed or not.
+With retained management authority and no intervening recreation, a retry distinguishes an existing
+C (`204`, now removed) from an already removed C (`404`). A `403` does not establish which outcome
+occurred. A lost response does not imply rollback, and an unconditional retry is not guaranteed to
+address the same view after recreation. This proposal adds no generation identifier or new
+conditional lifecycle API. No storage transaction or policy-deletion order is prescribed.
 
 Apply the existing proposed revocation boundary to in-flight requests. A request whose authorization
 decision follows completed removal cannot use C's former authority, even with a cached catalogue,
@@ -324,14 +330,14 @@ from a surviving name. Each row begins from its stated setup.
 | Setup and operation | Expected observation |
 |---|---|
 | Manager can remove C but cannot read or edit its sources; delete C with and without hidden data | Both `204`; C disappears and source data stays. Catalogue omits C, description `404`, C-selected resource read `404`, find empty, selected writes `403`. |
-| Same manager repeats deletion; caller outside management authority deletes existing or absent C | Manager gets `404`; other caller gets `403` in both states, with no source or policy change. |
+| After deletion, a manager with retained independent owner/parent-prefix authority retries absent C; a former manager whose only authority was C-bound retries absent or recreated C without new authority | Independently authorized manager gets `404`; former manager gets `403` in both states, with no source or policy change. |
 | C and C/sub project the same sources independently; remove C | C/sub's definition, independently authorized data and management remain. The path does not cause cascading deletion. |
 | E reads C's published projection, while F independently reads C's retained sources; remove C | E loses that input, F retains its authorized result; neither rule is rewritten and D is not substituted. |
 | C is a membership-backed view outside D and is the only access path to R; remove C | R survives but is not accessible through C or ordinary D. No implicit public, native-graph or recovery fallback. |
 | C exposes D and is the last Context; a different client has independent D authority | Deletion `204`, catalogue empty; ordinary GET/PUT/PATCH/DELETE and default-graph query continue in the same D. No Context setup is required. |
 | Same setup, but an app's authority depends only on C | Its C access ends; it gains no D authority. A still-valid credential with independent E authority retains only that applicable access. |
 | C used a policy also independently applied to E; remove C and recreate its IRI | E remains authorized; old C consent/grants/service assignments authorize neither the new C nor retained sources. New C starts empty with its newly supplied metadata/settings. |
-| Removal is denied, interrupted before commit, or its response is lost after commit; no intervening recreation | Denial changes nothing; interruption exposes either complete state. A permitted retry yields `204` if still present or `404` if removed, never partial authority withdrawal. |
+| Removal is denied, interrupted before commit, or its response is lost after commit; no intervening recreation | Denial changes nothing; interruption exposes either complete state. With retained independent management authority, retry gives `204` if still present or `404` if removed. Without current authority it gives `403`, which does not disclose the outcome; no partial authority withdrawal. |
 | A selected RDF write or media assignment races C removal | Commit wholly before removal, or reject the admitted conflict with `409` and no change. A request admitted after removal gets `403`; no write to D or recreated C. |
 | Empty catalogue and no management; media client has D read/write authority | Upload without Context returns `201`, including deduplication; metadata lists no Contexts, content is readable, ordinary unassignment addresses D and succeeds on repetition. Media operations need no registry bootstrap. |
 | Media M has independent assignments in C and E; remove C | E's authorized metadata/content remain readable with E's type. C is omitted; no source association is deleted and no collection timer starts. |
