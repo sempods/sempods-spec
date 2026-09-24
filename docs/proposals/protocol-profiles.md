@@ -58,14 +58,14 @@ These are recommended inputs to normative preparation. “Retain” preserves th
 | Browser and native clients | Retain RFC 10017 for browser clients' selected authorization-code/token handling, not a required backend or browser architecture; RFC 8252 §7.3 supplies loopback redirects. Keep HTTPS/loopback and did:web origin/path constraints as explicit sempods choices. Private-use URI schemes are not added by this selection. | AUTH-003–009/018–023/055–057; MCP redirect references. |
 | Dynamic registration | Retain RFC 7591 §§2–3, including defaults, actual registered metadata and error responses. The unauthenticated public profile stays separate from protected service registration in the [service-client recommendation](access-control.md#service-clients-and-registration-authority). Software statements, registration management and metadata fetching do not become required capabilities. | AUTH-008/009/011; registration OpenAPI under #77/#71. |
 | Service refresh-token prohibition | Reject the candidate's unconditional ban; retain RFC 6749 §4.4.3's recommendation against issuance. An exception needs the bounded credential behavior below. This deliberately generalizes the current code-seeded family rule rather than silently treating service refresh as already specified. | AUTH-017/027/031–034/063; TokenResponse. Never reuse current AUTH-064 for this candidate. |
-| OAuth `prompt` | Retain OpenID Connect Core 1.0 errata set 2 §3.1.2.1 only for the parameter selected by AUTH-038–040. This does not make the pod OAuth surface an OIDC provider. | Auth profile; no new `openid` scope or ID Token. |
+| OAuth `prompt` | Retain OpenID Connect Core 1.0 errata set 2 §3.1.2.1 only for the parameter selected by AUTH-039–041. This does not make the pod OAuth surface an OIDC provider. | Auth profile; no new `openid` scope or ID Token. |
 | OIDC bridge and redirect exception | Select OIDC Core and Discovery 1.0, both errata set 2, for the code flow, ID Token issuance/validation and provider metadata in OIDC-002–010. Retain the registration-free origin rule as an explicit deviation from pre-registered exact redirect matching, with exact code-to-redirect binding at token exchange. Neither implicit/hybrid flows nor WebFinger discovery become mandatory. | OIDC profile and OIDC-010; core AUTH-004/005/007 redirect exception. |
 | MCP revision, lifecycle and messages | Select MCP 2025-11-25 basic messages, initialization/version/capability negotiation and the server operations selected by the module. Keep JSON-RPC 2.0 as the base with the explicit MCP error-ID distinction below. Extra client features and transports are not required. Existing empty resource/prompt lists and anonymous public access remain sempods choices. | MCP profile, MCP-001–005; message schemas. |
 | MCP Streamable HTTP | Select that revision's Streamable HTTP behavior at the existing endpoint. A server may use JSON responses with GET returning 405, without persistent sessions or SSE. If it offers streams or sessions, their conditional rules apply. POST notifications use 202; version and Origin validation apply. This adds observable transport obligations beyond the current explicit POST surface and needs normative adoption. | MCP-001/002/004/007/009; GET/DELETE and header/response views under #71. |
 | MCP authorization exclusion | Reject the candidate's blanket exclusion: #111 already selects discovery, resource and token portions of MCP 2025-11-25 authorization. Preserve that bounded selection; neither its whole OAuth draft nor Client ID Metadata Documents is imported. | MCP-033–038 and current profile; no rollback of #111. |
 | RDF named-graph model | Retain RDF 1.1 Concepts, Recommendation 2014-02-25, §§3–4. RDF supplies graphs/datasets, not storage partitions, grants, the contents of D or exclusive statement membership. Those choices are owned by the [data-access proposal](data-access.md). | Context/grant profile introductions; CTX-001 and related impact map. |
 | OAuth scope definition | Retain RFC 6749 §3.3 for feature-scope syntax/semantics; it does not define the server's data-grant representation. | Grants profile and GRANT-001–003. |
-| CRUD and media representations/validators | Retain RFC 7396, RFC 4648 §5 and JSON-LD 1.1 Recommendation 2020-07-16 within selected operations and existing canonical-shape deviations. Use RFC 9110 §§8.8/13 for validators instead of the superseded RFC 7232 reference. Keep Linked Data principles informative. Optional edit links already use RFC 8288 §3/RFC 5023 §16.4 through CRUD-058. | Core overview, CRUD/media introductions and CRUD-030's incorrect section citation; no full JSON-LD expansion requirement. |
+| CRUD and media representations/validators | Retain RFC 7396, RFC 4648 §5 and JSON-LD 1.1 Recommendation 2020-07-16 within selected operations and existing canonical-shape deviations. Use RFC 9110 §§8.8/13 and [§9.3.4](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.4) for validator fields, preconditions and the prohibition on PUT response validators after transformation instead of the superseded RFC 7232 reference. Keep Linked Data principles informative. Optional edit links already use RFC 8288 §3/RFC 5023 §16.4 through CRUD-058. | Core overview, CRUD/media introductions and CRUD-030's citation correction from §10.2.3 (Retry-After) to §9.3.4 (PUT); no full JSON-LD expansion requirement. |
 | SPARQL revision and transport exclusions | Select Query and Protocol Recommendations 2013-03-21: Query semantics subject to the sandbox; Protocol §1, [§2.1.3 (direct POST)](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-via-post-direct), §§2.1.4–2.1.7 (datasets/responses), §2.3 and §4. Form POST is §2.1.2, outside this selection. Full-protocol §5 conformance is not claimed. GET/form POST are not required; Update and SERVICE remain expressly forbidden. | SPARQL profile; SPARQL-001–014 for input/datasets, SPARQL-015–018 for result media types, 406, empty input and well-formed empty results, and SPARQL-019/020 for bounded execution/shared validation. Audit those SPS constraints against the inherited response rules; preserve them and optional dataset-parameter support pending the coordinated selector changes. |
 | Response quoting, schema validation and CI | Keep with #77. These are independent fidelity/tooling candidates, not justification to add protocol restrictions. The two semantic findings have the dispositions below; the remaining validators and operation repairs still need their own current-main audit. | OpenAPI descriptions and repository tooling; no new core capability. |
 
@@ -107,22 +107,34 @@ it; do not imply consent for a service. AUTH-032's rejection of `scope` on Clien
 This is proposed new permission under the current family contract, with corresponding tests and
 migration review required at adoption. Clients cannot demand refresh issuance or a particular lifetime.
 
-Service issuance and withdrawal follow the [credential-race outcome](access-control.md#consent-and-credential-races)
-with the live service registration and assigned authority replacing a person's consent decision.
-An issuance decision is bound to that registration instance, its current client authentication and
-its authority/revocation generation. If removal or withdrawal wins, the in-flight decision cannot
-issue usable credentials or leave a refresh family. If issuance wins, later withdrawal covers its
-credentials even when the response arrives afterwards. Recreating the same client identifier or
-restoring permissions does not revive the old decision. A fresh request can obtain newly authorized
-credentials; it cannot reuse the withdrawn lineage.
+Service issuance is admitted against the live registration instance, current client authentication,
+assigned authority and credential-revocation state. Removal, revocation or an authority change that
+wins before admission invalidates the old issuance decision; a fresh request uses the new state.
+Recreating the same identifier or restoring permissions cannot revive a pending old decision or a
+revoked credential. A logical generation can distinguish these states without prescribing storage.
+
+For credentials issued before a change, distinguish authentication from current data authority:
+
+- Service removal or revocation of the issued credentials makes their subsequent use fail
+  authentication. A late successful issuance response cannot revive them.
+- With only data authority withdrawn, otherwise valid credentials still authenticate. The server
+  resolves current rights for each request: a previously allowed write is now `403`, while an
+  independently retained read still succeeds. Refresh may succeed if its authorization survives,
+  but cannot restore the withdrawn rights. If the refresh authorization itself was revoked,
+  refresh fails. Explicit later assignment can grant new data authority to the still-valid service;
+  that administrative action does not revive a revoked credential or an old issuance decision.
+
+This preserves the [service-client cases](access-control.md#service-client-cases-for-review).
+The [credential-race outcome](access-control.md#consent-and-credential-races) applies when service
+credentials are revoked; data-authority changes alone do not imply that all credentials are revoked.
 
 For a seed-then-recheck implementation, creation rechecks the same live registration instance,
-client-authentication validity and assigned-authority/revocation generation **after** seeding. A
-failed check invalidates the seeded family and associated access credentials. The final check and
-admission also need a transaction, conditional generation binding or equivalent coordination with
-withdrawal: a sweep between the check and admission cannot leave a usable family. Other designs
-may enforce the same ordering without seeding first. This is an implementation path, not a required
-storage algorithm; a check of code consent cannot protect a service exchange that has no code.
+client-authentication validity, current assigned authority and credential-revocation state **after**
+seeding. A failed check invalidates that unadmitted family and its access credentials. The final
+check and admission also need a transaction, conditional generation binding or equivalent
+coordination: a sweep between them cannot leave credentials valid against an obsolete decision.
+Other designs may enforce the same ordering without seeding first. This is an implementation path,
+not a required storage algorithm; checking code consent cannot protect a service exchange with no code.
 
 For registration, [RFC 7591 §§2 and 2.1](https://www.rfc-editor.org/rfc/rfc7591.html#section-2.1)
 defines defaults and the relationship between grant and response types. A missing `grant_types`
@@ -167,7 +179,7 @@ otherwise valid input, correct authority and an independent state unless stated 
 | P01 | Valid service `POST token`, `grant_type=client_credentials`, no scope | `200` service access token; normally no refresh token. Another authenticated Client Credentials request remains usable without refresh. |
 | P02 | Same exchange under a justified service-refresh policy; then authenticated refresh by that service | `200`; optional refresh issuance, then rotation, service subject/class and unchanged authority ceiling. No person/public-read/OIDC authority appears. |
 | P03 | A different authenticated service presents P02's refresh token | `400 invalid_grant`; no replacement credentials. Invalid client authentication instead follows the token endpoint's client-authentication error. |
-| P04 | Service disabled, then its old refresh token presented with no valid client authentication | Client authentication fails; no token. If client authentication remains valid but the underlying grant was withdrawn, `400 invalid_grant`. |
+| P04 | Service disabled, then its old refresh token presented with no valid client authentication | Client authentication fails; no token. If client authentication remains valid but the refresh authorization was revoked, `400 invalid_grant`; withdrawing data rights alone is the separate P31 case. |
 | P05 | Service requests `scope=public-read` on Client Credentials | `400 invalid_scope`; refresh support does not relax AUTH-032. |
 | P06 | Service refresh token is reused after rotation | `400 invalid_grant` and family revocation; a concurrent exchange cannot preserve withdrawn authority. |
 | P07 | Public registration with `redirect_uris`, method `none`, grant/response types omitted | `201` if accepted; defaults are code flow. Return actual registered metadata; no service credentials or promise of refresh issuance. |
@@ -189,11 +201,12 @@ otherwise valid input, correct authority and an independent state unless stated 
 | P23 | SPARQL POST with `SERVICE` or an Update form | Rejected without executing it; this proposal leaves the specified rejection/error contract unchanged. |
 | P24 | Permitted resource GET has a matching `If-None-Match` | `304` under RFC 9110; mutation authorization/not-found checks still precede preconditions as covered by the existing mutation cases. |
 | P25 | Service Client Credentials request authenticates and reads authority; removal or withdrawal completes its sweep; the request then seeds a refresh family | The old issuance decision fails (`400 invalid_grant` after otherwise successful client authentication); no usable access token or refresh family survives. A seed-then-recheck path observes the changed registration/authority generation and invalidates its seed. Repeat with authority narrowing and with withdrawal between the final check and admission. |
-| P26 | Service issuance takes effect first; removal or withdrawal completes before the successful exchange response reaches the caller | The response cannot revive authority: subsequent use of its access token is rejected (`401`), and refresh issues no credentials (`invalid_client` if current client authentication fails, otherwise `400 invalid_grant`). The withdrawn family stays unusable. |
-| P27 | Removal and recreation of the same service identifier, or withdrawal and restoration of its permissions, complete while an old issuance decision is pending | The old decision/family remains invalid. A fresh authenticated Client Credentials request can return `200` under the new registration/authority; it neither revives old credentials nor inherits their former authority. |
+| P26 | Service issuance takes effect first; service removal or revocation of the issued access/refresh credentials completes before the successful exchange response reaches the caller | The late response cannot revive those credentials: access-token use fails authentication (`401`), and refresh issues no credentials (`invalid_client` if current client authentication fails, otherwise `400 invalid_grant`). The revoked family stays unusable. Authority-only withdrawal is P31. |
+| P27 | Removal and recreation of the same service identifier, or withdrawal and restoration of its permissions, complete while an old issuance decision is pending | The old pending decision and any unadmitted family remain invalid. A fresh authenticated Client Credentials request can return `200` under the new registration/authority. Revoked credentials never revive; the distinct case of already-issued credentials that remain valid is P31. |
 | P28 | Authorized SELECT or ASK accepts only `application/sparql-results+xml` | `406` under SPARQL-015. The incorporated protocol's list of possible result formats does not add XML support to the selected sempods contract. |
 | P29 | Authorized CONSTRUCT or DESCRIBE, first without a format preference, then accepting `application/n-quads`; repeat all query forms over empty data | Graph responses use JSON-LD by default and N-Quads when requested (SPARQL-016). Empty results retain a well-formed representation of the selected type (SPARQL-018); SELECT/ASK retain their JSON result document. Preserve SPARQL-018's nonempty-body constraint: for N-Quads an empty graph can use a comment-only document; JSON-LD uses an empty graph representation and SELECT/ASK use their result documents. |
 | P30 | Direct query POST has an empty body; repeat with a nonempty malformed query | Both return `400` under SPARQL-017 and the protocol's failure rules, without executing a query. An authorized valid empty result remains a success as in P29. |
+| P31 | Service issuance takes effect first; only its D write authority is withdrawn before the response arrives. Registration, access/refresh credentials and D read authority remain valid; repeat the former PUT and a permitted GET, then refresh | PUT returns `403` without mutation; GET still returns `200`. Valid retained refresh authorization can yield `200` and rotated credentials, but another PUT remains `403`. If refresh authorization is separately revoked, refresh gives `400 invalid_grant` instead. Explicit later write assignment can allow a write using still-valid credentials; renewal alone cannot restore rights. |
 
 D, independent A/B assertions, empty catalogues, computed views and lifecycle/media cases remain
 in the existing proposals. This profile selection does not replace them or add general write-through,
