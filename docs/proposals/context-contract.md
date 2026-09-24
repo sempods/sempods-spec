@@ -296,6 +296,17 @@ Treat an assignment as an association of a media object and declared content typ
 scope. Its exposed Context name is a way to address that scope, not its lifetime. Ordinary media
 upload, assignment and unassignment use D without a Context parameter. Explicit selection addresses
 one membership-writable Context, with the same no-fallback and read-only-view limits as RDF writes.
+For media writes, C's projection and mutations address one fixed, independently mutable logical
+assignment scope, with at most one association per media object. Its source scope does not depend
+on the media ID, current assignments or caller visibility. A Context alias of D can satisfy this
+contract; RDF writability alone does not establish it.
+
+A projection combining independent assignment scopes is read-only for media upload, assignment and
+unassignment. Return uniform `403`, including when zero or one association is currently present or
+visible, when projected metadata entries coincide, and for ensure-absent/no-op requests. Do not
+choose one projected source, delete all sources or write a separate direct C association behind
+the projection. This restriction adds no source identifier or write-through protocol.
+
 An explicit empty or multiple write target is invalid; omitting the target means D. Assigning an
 existing object still needs target-write authority and current read authority through an existing
 assignment; knowledge of its content hash or a retired C assignment is insufficient. Uploading the
@@ -345,9 +356,12 @@ assignment. Conditional responses use the newly authorized representation and se
 old `ETag` authorizes a read. Existing content-type defaults, disposition rules, private caching,
 `Vary`, `nosniff`, sandbox and fetched-source protections continue to apply.
 
-Explicit authorized media unassignment removes the addressed source association. An ordinary D
-unassignment does not remove independent E associations; removing a computed projection is not
-source unassignment. Only when no source association remains, including retained associations
+Explicit authorized media unassignment removes the object's association in that one writable
+source scope, or succeeds without a change if it is already absent there. A C-selected deletion
+therefore removes C's projection of that association and any other aliases of the same association.
+Independent associations of the same object in E survive; metadata equality does not merge their
+identity or collection effects. An ordinary D unassignment likewise leaves independent E intact.
+Removing a computed projection is not source unassignment. Only when no source association remains, including retained associations
 without an exposed view, does removal of an association make the object unreferenced and begin its
 grace period. Reassignment clears that state. Separately authorized source disposal may remove
 retained associations, but view removal and reconciliation cannot do so implicitly. Preserve delayed collection, retryability
@@ -397,6 +411,8 @@ from a surviving name. Each row begins from its stated setup.
 | C is a public name for D; M has one source assignment in D, also visible through C; remove C | Independent D authority still reads M with the same declared type, but metadata retains the context-less D entry with its type/filename and omits C. Ordinary unassignment can remove that retained D association. |
 | M has D and C assignments with different types; caller reads both, then only C | Type first comes from D, then from C; content validators/disposition follow the chosen type. Metadata includes D with `context` omitted and C with its IRI while both are readable, then only C. Hidden assignments never supply metadata or the type. |
 | Computed C projects two readable source assignments for M with different types, and no D assignment is readable | Select the lowest readable Context IRI, then the lowest declared type within it. Hiding one source removes its type from consideration; hidden state never breaks a tie. |
+| C combines assignments from independent A/B scopes; selected media upload/PUT/DELETE, with zero, one or two current/visible assignments for M | Uniform `403`, including identical projected metadata and absent-assignment DELETE. A/B associations, bytes and collection eligibility remain unchanged; hiding one source does not make C writable. |
+| C exposes one writable source scope A; M has associations in A and independent E; delete M's assignment through C, then repeat | Remove only A's association; C and other aliases of A no longer project it. E survives and prevents collection. Repetition succeeds without a change after normal admission, even if only E's association remains readable. |
 | Readable computed C contains an RDF link to M but exposes no authorized media assignment | Metadata/content `404`; selected assignment/unassignment `403` when C lacks membership-write support. |
 | Ordinary RDF deletion removes the last link to M | Source media assignments and bytes remain; RDF references do not control collection. |
 | Authorized unassignment removes the last source association, versus leaving one retained after view removal | First starts the grace period; second does not. Reassignment before collection cancels the unreferenced state. |
