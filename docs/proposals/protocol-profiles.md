@@ -66,7 +66,7 @@ These are recommended inputs to normative preparation. “Retain” preserves th
 | RDF named-graph model | Retain RDF 1.1 Concepts, Recommendation 2014-02-25, §§3–4. RDF supplies graphs/datasets, not storage partitions, grants, the contents of D or exclusive statement membership. Those choices are owned by the [data-access proposal](data-access.md). | Context/grant profile introductions; CTX-001 and related impact map. |
 | OAuth scope definition | Retain RFC 6749 §3.3 for feature-scope syntax/semantics; it does not define the server's data-grant representation. | Grants profile and GRANT-001–003. |
 | CRUD and media representations/validators | Retain RFC 7396, RFC 4648 §5 and JSON-LD 1.1 Recommendation 2020-07-16 within selected operations and existing canonical-shape deviations. Use RFC 9110 §§8.8/13 for validators instead of the superseded RFC 7232 reference. Keep Linked Data principles informative. Optional edit links already use RFC 8288 §3/RFC 5023 §16.4 through CRUD-058. | Core overview, CRUD/media introductions and CRUD-030's incorrect section citation; no full JSON-LD expansion requirement. |
-| SPARQL revision and transport exclusions | Select Query and Protocol Recommendations 2013-03-21: Query semantics subject to the sandbox; Protocol §1, §§2.1.3–2.1.7, §2.3 and §4 for direct POST, datasets and responses. Full-protocol §5 conformance is not claimed. GET/form POST are not required; Update and SERVICE remain expressly forbidden. | SPARQL profile and SPARQL-001–011; preserve optional dataset-parameter support pending the coordinated selector changes. |
+| SPARQL revision and transport exclusions | Select Query and Protocol Recommendations 2013-03-21: Query semantics subject to the sandbox; Protocol §1, [§2.1.3 (direct POST)](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-via-post-direct), §§2.1.4–2.1.7 (datasets/responses), §2.3 and §4. Form POST is §2.1.2, outside this selection. Full-protocol §5 conformance is not claimed. GET/form POST are not required; Update and SERVICE remain expressly forbidden. | SPARQL profile; SPARQL-001–014 for input/datasets, SPARQL-015–018 for result media types, 406, empty input and well-formed empty results, and SPARQL-019/020 for bounded execution/shared validation. Audit those SPS constraints against the inherited response rules; preserve them and optional dataset-parameter support pending the coordinated selector changes. |
 | Response quoting, schema validation and CI | Keep with #77. These are independent fidelity/tooling candidates, not justification to add protocol restrictions. The two semantic findings have the dispositions below; the remaining validators and operation repairs still need their own current-main audit. | OpenAPI descriptions and repository tooling; no new core capability. |
 
 The security scope is [RFC 9700 §§2.1, 4.4, 4.5, 4.7, 4.8 and 4.14](https://www.rfc-editor.org/rfc/rfc9700.html)
@@ -106,6 +106,23 @@ Generalize AUTH-033's family origin from only code exchange to whichever authori
 it; do not imply consent for a service. AUTH-032's rejection of `scope` on Client Credentials stays.
 This is proposed new permission under the current family contract, with corresponding tests and
 migration review required at adoption. Clients cannot demand refresh issuance or a particular lifetime.
+
+Service issuance and withdrawal follow the [credential-race outcome](access-control.md#consent-and-credential-races)
+with the live service registration and assigned authority replacing a person's consent decision.
+An issuance decision is bound to that registration instance, its current client authentication and
+its authority/revocation generation. If removal or withdrawal wins, the in-flight decision cannot
+issue usable credentials or leave a refresh family. If issuance wins, later withdrawal covers its
+credentials even when the response arrives afterwards. Recreating the same client identifier or
+restoring permissions does not revive the old decision. A fresh request can obtain newly authorized
+credentials; it cannot reuse the withdrawn lineage.
+
+For a seed-then-recheck implementation, creation rechecks the same live registration instance,
+client-authentication validity and assigned-authority/revocation generation **after** seeding. A
+failed check invalidates the seeded family and associated access credentials. The final check and
+admission also need a transaction, conditional generation binding or equivalent coordination with
+withdrawal: a sweep between the check and admission cannot leave a usable family. Other designs
+may enforce the same ordering without seeding first. This is an implementation path, not a required
+storage algorithm; a check of code consent cannot protect a service exchange that has no code.
 
 For registration, [RFC 7591 §§2 and 2.1](https://www.rfc-editor.org/rfc/rfc7591.html#section-2.1)
 defines defaults and the relationship between grant and response types. A missing `grant_types`
@@ -171,6 +188,12 @@ otherwise valid input, correct authority and an independent state unless stated 
 | P22 | Authorized direct SPARQL POST of `SELECT ?s WHERE { ?s ?p ?o }` | `200`, authorized query results. A server need not expose GET/form POST; their absence does not fail this selected profile. |
 | P23 | SPARQL POST with `SERVICE` or an Update form | Rejected without executing it; this proposal leaves the specified rejection/error contract unchanged. |
 | P24 | Permitted resource GET has a matching `If-None-Match` | `304` under RFC 9110; mutation authorization/not-found checks still precede preconditions as covered by the existing mutation cases. |
+| P25 | Service Client Credentials request authenticates and reads authority; removal or withdrawal completes its sweep; the request then seeds a refresh family | The old issuance decision fails (`400 invalid_grant` after otherwise successful client authentication); no usable access token or refresh family survives. A seed-then-recheck path observes the changed registration/authority generation and invalidates its seed. Repeat with authority narrowing and with withdrawal between the final check and admission. |
+| P26 | Service issuance takes effect first; removal or withdrawal completes before the successful exchange response reaches the caller | The response cannot revive authority: subsequent use of its access token is rejected (`401`), and refresh issues no credentials (`invalid_client` if current client authentication fails, otherwise `400 invalid_grant`). The withdrawn family stays unusable. |
+| P27 | Removal and recreation of the same service identifier, or withdrawal and restoration of its permissions, complete while an old issuance decision is pending | The old decision/family remains invalid. A fresh authenticated Client Credentials request can return `200` under the new registration/authority; it neither revives old credentials nor inherits their former authority. |
+| P28 | Authorized SELECT or ASK accepts only `application/sparql-results+xml` | `406` under SPARQL-015. The incorporated protocol's list of possible result formats does not add XML support to the selected sempods contract. |
+| P29 | Authorized CONSTRUCT or DESCRIBE, first without a format preference, then accepting `application/n-quads`; repeat all query forms over empty data | Graph responses use JSON-LD by default and N-Quads when requested (SPARQL-016). Empty results retain a well-formed representation of the selected type (SPARQL-018); SELECT/ASK retain their JSON result document. Preserve SPARQL-018's nonempty-body constraint: for N-Quads an empty graph can use a comment-only document; JSON-LD uses an empty graph representation and SELECT/ASK use their result documents. |
+| P30 | Direct query POST has an empty body; repeat with a nonempty malformed query | Both return `400` under SPARQL-017 and the protocol's failure rules, without executing a query. An authorized valid empty result remains a success as in P29. |
 
 D, independent A/B assertions, empty catalogues, computed views and lifecycle/media cases remain
 in the existing proposals. This profile selection does not replace them or add general write-through,
