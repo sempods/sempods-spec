@@ -46,6 +46,7 @@ The current core uses Contexts as its authorization boundary, per-Context grants
 Context selection on writes. Only the Context lifecycle HTTP surface is optional. The
 [chapter map](../spec/README.md#core) identifies the current core and modules.
 
-[Authorized data access](proposals/data-access.md) proposes a smaller core with an optional Context
-contract. Its adoption is tracked in [#68](https://github.com/sempods/sempods-spec/issues/68).
+[Authorized data access](proposals/data-access.md) proposes ordinary access without Context setup,
+core Context discovery/selection and optional management. Its adoption is tracked in
+[#68](https://github.com/sempods/sempods-spec/issues/68).
 That proposal remains distinct from both this selection test and the requirements in force.

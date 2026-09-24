@@ -14,8 +14,9 @@ LOD CRUD, SPARQL and `find`. An application can use that interface without adopt
 storage layout or permission model. A single RDF graph and a platform with several independent
 policy conditions can implement the same data operations.
 
-The proposal reduces core and adds one optional `contexts` module for selection, discovery and
-lifecycle. The default-access decision below fixes one coherent ordinary data surface and states
+The proposal keeps Context discovery and selection in core, with creation and deletion in the
+optional `context-management` module. Ordinary clients need no Context knowledge or setup.
+The default-access decision below fixes one coherent ordinary data surface and states
 its acceptance cases for review under #69. The examples and requirement impact allocate no
 identifiers and make no conformance claim. Requirement selection follows
 [the vision](../vision.md#what-belongs-in-the-contract).
@@ -48,12 +49,14 @@ boundaries; this document owns the core/module split.
 | Stable resource identities and defined CRUD effects | Physical storage and internal partitions |
 | A caller-authorized RDF dataset for SPARQL and retrieval | How policies produce that authorized view |
 | Bounded delegation, revocation and non-disclosing errors | How authorization state is represented |
+| Context discovery and optional client selection | Which named views it exposes, including none |
 | Discovery of optional client-facing contracts | Which additional contracts it implements |
 
-Core does not require a Context IRI, a context registry, a context selector, a default-context
-designation or a global grant catalogue. There is no `implicitWriteContext` flag: data requests
-without a Context selector are the ordinary core interface. Native RDF named graphs do not become
-sempods permission objects merely by being present. SPARQL's ordinary dataset model also permits a
+Every pod implements the Context catalogue and selector contract. The catalogue may be empty;
+ordinary clients need neither a Context IRI nor discovery, selection or management. No public name
+for the default data scope or global policy catalogue is required. There is no `implicitWriteContext`
+flag: data requests without a Context selector are the ordinary core interface, including writes.
+Native RDF named graphs do not become sempods permission objects merely by being present. SPARQL's ordinary dataset model also permits a
 default graph with no named graphs ([SPARQL 1.1 §13](https://www.w3.org/TR/sparql11-query/#rdfDataset)).
 
 This is a reduction of required structure, not permission to vary the meaning of an authorized
@@ -70,14 +73,14 @@ evaluate those policies. An implementation can expose its own management interfa
 standardized optional one.
 
 An internal ACP evaluator or an additional document restriction does not itself require a module
-declaration. A declaration promises a client-facing contract, such as Context selection or policy
-management. ACP is a describable language, but its extensible attributes and matching rules need not
-be understood by a generic sempods client ([ACP](https://solidproject.org/TR/acp)).
+declaration. A module declaration promises an additional client-facing contract, such as Context
+creation and deletion. ACP is a describable language, but its extensible attributes and matching
+rules need not be understood by a generic sempods client ([ACP](https://solidproject.org/TR/acp)).
 
 Permission introspection is also distinct from enforcement. A statement such as "this data space is
 writable" cannot describe every resource- or payload-dependent policy. Core therefore does not
-promise a universal effective-grant list. Any optional rights hint needs a defined target, operation
-and scope; it never substitutes for authorizing the later request.
+promise a universal effective-grant list. The [Context access summary](context-contract.md#caller-access-summary)
+reports bounded mode eligibility; it never substitutes for authorizing the later request.
 
 ### Logical dataset and operation scope
 
@@ -116,11 +119,11 @@ its matching algorithm, ranking or a result for every newly written resource.
 Registering additional Contexts does not enlarge D. A separately selected A or B can hold statements
 about the same resource IRI without contributing them to ordinary reads or mutations. The resource
 IRI still identifies the same thing; its returned description depends on the requested scope.
-A module may expose D under a Context IRI, but core requires neither that name nor its registration.
+A pod may expose D under a Context IRI, but core requires neither that name nor its registration.
 Explicit independent scopes and computed projections have the effects described below.
 
-The tradeoff is deliberate: a core-only client does not automatically search every Context merely
-because it may read them. It gets one coherent ordinary data surface. The alternative of reading
+A client omitting selection does not automatically search every Context merely because it may read
+them. It gets one coherent ordinary data surface. The alternative of reading
 all Contexts while writing only a default target can leave old values after PUT; globally replacing
 all those scopes broadens the write effect. The four cases below define the proposed resolution
 for #69. Accepting these cases settles this data-scope choice; authentication, delegation and full Context
@@ -159,7 +162,7 @@ named graph can see separately authorized data outside D.
 
 | Initial state | Requests and proposed observations |
 |---|---|
-| D has no outgoing R statements; no Context is registered | PUT `p="new"` → `201`, Location R. GET → `200`, exactly `p="new"`; query probe → `"new"`. Repeat PUT with `p="changed"` → replacement success; GET/query contain only `"changed"`. No registry request, Context IRI or Context-module support is required. |
+| D has no outgoing R statements; no Context is registered | PUT `p="new"` → `201`, Location R. GET → `200`, exactly `p="new"`; query probe → `"new"`. Repeat PUT with `p="changed"` → replacement success; GET/query contain only `"changed"`. No registry request, Context IRI or management-module support is required. |
 | D has no outgoing R statements; A has `p="a"` | GET → `404`; query probe → no rows; resource DELETE → `404`. PUT `p="new"` → `201`, Location R. GET/query now expose only `"new"`. Authorized A-selected GET still exposes `"a"`. The earlier DELETE has not changed A. |
 | D has `p="old"` and the incoming link; A has `p="a"`, B has `p="b"` | PUT `p="new"` → replacement success. GET/query expose only `"new"`; A/B still expose `"a"`/`"b"`. Resource DELETE → `204`; GET → `404`, query probe → no rows. The incoming link and A/B assertions remain; repeating resource DELETE → `404`. |
 | D has the incoming link but no outgoing R statements; A has `p="a"`; computed C selects all outgoing statements of D subjects with `a=Alice` | PUT `p="new", a=Alice` → `201`. Ordinary and C-selected GET expose those two triples. PATCH `a=Bob` → success; ordinary GET exposes `p="new", a=Bob`, C-selected GET → `404`, and `GRAPH <C>` has no outgoing R statements. Resource DELETE → `204`; ordinary GET → `404`. The incoming link and A's independent assertion remain. |
@@ -212,15 +215,16 @@ ordinary requests, the selected view for explicit Context requests. It prevents 
 method or hidden collisions from silently changing the operation's target.
 
 Run the ordinary sequences on a single graph, an internal default Context and an area/document-policy
-implementation configured with equivalent D and authority. A/B/C cases require the optional Context
-contract; a core-only implementation is tested without those surfaces. Physical partition counts,
+implementation configured with equivalent D and authority. Test catalogue and selector behavior on
+all three, including empty catalogues. A/B/C cases use implementations exposing those scopes;
+creation/deletion cases additionally require context-management. Physical partition counts,
 policy languages, indexes and view materialization strategies are free. The same IRI may occur in
 independent scopes without requiring copies to be reconciled or all scopes to be searched.
 
 These are acceptance cases for [#72](https://github.com/sempods/sempods-spec/issues/72), not an
 executed HTTP suite. Logical RDF/query checks can verify the stated projections; they do not prove
 HTTP outcomes, find behavior, authorization, atomic mutation or cache isolation. Reviewing this
-decision does not allocate requirement IDs, change the adopted registry, advertise `contexts`, or
+decision does not allocate requirement IDs, change the adopted registry, or
 settle the remaining authentication and lifecycle decisions in #69.
 
 #### Query projections
@@ -228,7 +232,7 @@ settle the remaining authentication and lifecycle decisions in #69.
 A Context identifies a logical RDF view whose membership may be stored or computed. Computed views
 select existing source statements without adding independent assertions; several views may contain
 the same statement. Query evaluation or ACP-based selection needs no physical named graph. Context
-IRIs name their query projections, not their storage or policy rules. Core-only pods may expose
+IRIs name their query projections, not their storage or policy rules. Pods may expose
 native RDF named graphs without assigning them sempods Context semantics.
 
 For the caller, the ordinary SPARQL default graph is D's authorized RDF graph, also used by ordinary
@@ -300,7 +304,7 @@ representation is not invalidated solely through a shared internal revision coun
 #### Query dataset selection
 
 Recommend accepting `FROM`, `FROM NAMED`, `default-graph-uri` and `named-graph-uri` as selectors
-over the caller's named graph projection, independently of Context-module support. Resolve IRIs
+over the caller's named graph projection, independently of management-module support. Resolve IRIs
 locally; never fetch a graph from the network or fall back to another pod. D has no mandatory
 public graph IRI. Only an actually exposed named projection can be selected by IRI.
 
@@ -358,58 +362,52 @@ area/document-policy store. Use equivalent D/source assertions, view definitions
 authority. Compare computed projections against the authorized source fixture, including overlap
 and source/definition changes. Blank-node cases compare RDF identity up to consistent renaming.
 
-## Optional Context contracts
+## Core Context selection
 
-A Context module exposes addressable logical views with stored or computed membership, explicit
-selection and caller access discovery. A pod can have internal areas
-without offering this contract. An implementation advertising it provides the whole declared
-contract; internal terminology alone is insufficient.
+Core exposes addressable logical views with stored or computed membership, explicit selection
+and caller access discovery. A pod can expose no named Contexts while still implementing this
+contract with an empty catalogue. Internal areas and policy-rule IRIs do not automatically become
+public Context names. [Discoverable Contexts](context-contract.md) owns their discovery,
+[access summary](context-contract.md#caller-access-summary) and optional lifecycle boundary.
 
-[Discoverable Contexts and RDF registry descriptions](context-contract.md) recommends the module
-identity/version, integrated lifecycle, implicit access and caller-rights discovery under
-[#69](https://github.com/sempods/sempods-spec/issues/69) and
-[#90](https://github.com/sempods/sempods-spec/issues/90). It owns the remaining module and lifecycle recommendations. The RDF registry surface is specified
-by [Contexts](../../spec/core/contexts.md#SPS-CTX-031) and
-[creation responses](../../spec/modules/context-management.md#SPS-CTX-037), under #92. The proposed
-selector contract remains below.
-
-The module preserves [ordinary implicit access](#recommended-implicit-scope). An implementation
-can expose D as a Context, but clients need not discover or select it for ordinary operations.
-Additional Contexts expose separate source scopes or computed views. Internal storage names and
-policy-rule IRIs do not automatically become public graph names. The module includes lifecycle and
-discovery as one contract; individual Contexts may be read-only, with independently evaluated modes.
+Selection is optional for a client. Ordinary requests retain the [implicit D scope](#recommended-implicit-scope).
+Additional Contexts expose independent source scopes or computed views. A view over D is a filter
+on that data; an independent Context can contain separately authorized data outside D. Selection
+therefore does not always narrow the no-selector result. It never increases authority, changes D,
+or requires the management module. Nor does a request filter establish a durable delegation ceiling;
+[authorization](access-control.md#request-selection-and-delegation) enforces that independently.
 
 Recommend the following selector outcomes after normal authentication and syntax checks:
 
 | Request | Recommended selection and outcome |
 |---|---|
-| Ordinary CRUD or find without Context fields | Implicit D scope, on both core-only and Context-capable pods. |
-| A core-only pod receives a Context selector or Context-output field, including an empty value or `include_contexts=false` | `400` for unsupported Context input; never silently ignore it. |
-| Context-capable pod; resource/slot read or find with one or more valid Context IRIs | Union of the requested authorized graph projections; absent/unreadable Contexts contribute nothing. Empty resource selection gives `404`; find gives its ordinary successful empty result. Selection also bounds find expansion. |
-| Context-capable pod; resource/slot read or find GET with exactly one empty `context=` parameter, or find POST with `contexts: []` | Explicit empty selection: resource GET is `404`, slot GET is `200` with an empty representation (an array by default), and find returns its successful empty result. No fallback to D. |
-| Context-capable pod; write with exactly one valid Context IRI | With the membership-write contract and complete authority, change that scope's assertions and reevaluate dependent views. Otherwise uniform `403`; never reinterpret it as a source/default-scope write. |
-| Context-capable pod; malformed nonempty Context IRI, or empty/repeated selector on a write | `400`; write repetition counts occurrences, even identical or empty ones. Nonempty read repetition remains set selection; comma-separated lists are not decoded. |
-| Context-capable pod; read with `context=&context=A` or repeated empty values; find POST with an empty array member, such as `contexts: ["", "A"]` or `contexts: [""]`, or with `contexts: null` | `400`. A sole empty GET value encodes the empty list; an empty IRI inside a nonempty list is invalid. Do not drop invalid entries to produce a broader successful request. |
-| Context-capable pod; well-formed unknown or unauthorized write selector | Uniform `403`, no mutation or Context registration; a data write does not provision a selected Context. |
-| SPARQL query request with a `context` parameter | `400`; use the standard query dataset selectors, whose behavior is independent of Context support. |
+| Ordinary CRUD or find without Context fields | Implicit D scope on every pod, independently of management support or catalogue contents. |
+| Pod with no exposed Contexts receives a valid read selector | Empty selected projection with the normal resource/slot/find outcomes below; no fallback to D and no unsupported-feature error. |
+| Resource/slot read or find with one or more valid Context IRIs | Union of the requested authorized graph projections; absent/unreadable Contexts contribute nothing. Empty resource selection gives `404`; find gives its ordinary successful empty result. Selection also bounds find expansion. |
+| Resource/slot read or find GET with exactly one empty `context=` parameter, or find POST with `contexts: []` | Explicit empty selection: resource GET is `404`, slot GET is `200` with an empty representation (an array by default), and find returns its successful empty result. No fallback to D. |
+| Write with exactly one valid Context IRI | With the membership-write contract and complete authority, change that scope's assertions and reevaluate dependent views. Otherwise uniform `403`; never reinterpret it as a source/default-scope write. |
+| Malformed nonempty Context IRI, or empty/repeated selector on a write | `400`; write repetition counts occurrences, even identical or empty ones. Nonempty read repetition remains set selection; comma-separated lists are not decoded. |
+| Read with `context=&context=A` or repeated empty values; find POST with an empty array member, such as `contexts: ["", "A"]` or `contexts: [""]`, or with `contexts: null` | `400`. A sole empty GET value encodes the empty list; an empty IRI inside a nonempty list is invalid. Do not drop invalid entries to produce a broader successful request. |
+| Well-formed unknown or unauthorized write selector | Uniform `403`, no mutation or Context registration; a data write does not provision a selected Context. |
+| SPARQL query request with a `context` parameter | `400`; use the standard query dataset selectors, whose behavior is independent of management support. |
 
 For otherwise identical valid find requests, `GET ...?text=note&context=` and
 `POST {"text":"note","contexts":[]}` select no data; omitting `context` or `contexts` selects the
 implicit D scope in both forms. This preserves
 [`SPS-FIND-004`](../../spec/core/find.md#SPS-FIND-004)'s equivalence. The empty GET encoding is shared
 by resource and slot reads; writes still require a nonempty target when a selector is present.
-The unsupported-input rule still applies on core-only pods, including these empty forms.
+These selector and output fields are core on every pod, including one with an empty catalogue.
 
 Context-grouped output labels only disclosable projection membership, whether stored or computed.
 An assertion outside all disclosed projections remains unlabelled. A label reports view membership,
 not physical provenance or an independent copy; it never exposes a hidden graph name.
 The representation needs alignment with the existing find output at normative adoption.
 
-Context IRIs resolve consistently across the module's surfaces. Canonical IRIs remain accepted;
-any supported relative Context paths resolve before selection. SPARQL dataset IRIs follow the
+Context IRIs resolve consistently across discovery, data and optional management surfaces. Canonical
+IRIs remain accepted; any supported relative Context paths resolve before selection. SPARQL dataset IRIs follow the
 standard's IRI resolution and identify those same logical graphs by absolute IRI. Knowing a graph
 name, or seeing a Context rights hint, never substitutes for authorizing an operation. The
-[module proposal](context-contract.md) supplies their discovery and lifecycle boundary; it allocates
+[Context proposal](context-contract.md) supplies their discovery and lifecycle boundary; it allocates
 no normative identifier or additional discovery field.
 
 ## Two implementation examples
@@ -477,33 +475,35 @@ evidence of deletion. No sync route, timestamp property or module is standardize
 ## Requirement changes to prepare
 
 The entries below identify the coordinated normative change, not changes applied by this document.
-Move only the Context-specific parts: general authentication and authorization guarantees remain
-core. The table identifies affected contracts; it is not a completed dependency inventory.
+Keep discovery, selection and general authentication/authorization guarantees in core; Context
+creation and deletion remain in the optional management module. The table identifies affected
+contracts; it is not a completed dependency inventory.
 The [normative preparation issue](https://github.com/sempods/sempods-spec/issues/70) requires a full
 chapter and cross-reference sweep before the normative patch is complete.
 
 | Current contract | Proposed disposition |
 |---|---|
-| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)–[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) | Keep indivisible core and modules; move all Context selection, discovery and lifecycle into one optional contexts module; preserve ordinary implicit access. |
-| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001)–[`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) | Define optional Contexts as stored or computed logical views. Separate explicit assertion membership from computed projection, preserve ordinary access and permit other policy models. |
-| [`Contexts`](../../spec/core/contexts.md) namespace and discovery requirements | Move Context naming, selection support and the permissions catalogue to the module. No synthetic Context requirement in core. |
+| [`SPS-CORE-004`](../../spec/core/index.md#SPS-CORE-004)–[`SPS-CORE-006`](../../spec/core/index.md#SPS-CORE-006) | Keep indivisible core with Context discovery/selection and ordinary implicit access. Retain context-management for optional lifecycle, its existing identity and filenames; allocate no module/contexts identity. |
+| [`SPS-CTX-001`](../../spec/core/contexts.md#SPS-CTX-001)–[`SPS-CTX-003`](../../spec/core/contexts.md#SPS-CTX-003) | Define Contexts as exposed stored or computed logical views, with no minimum count. Separate explicit assertion membership from computed projection, preserve ordinary access and permit other policy models. |
+| [`Contexts`](../../spec/core/contexts.md) namespace and discovery requirements | Keep Context naming, selection and caller-access discovery in core. No synthetic Context, physical registry or Context-based policy engine is required. Reconcile namespace restrictions with externally provisioned views. |
+| [`SPS-CTX-021`](../../spec/core/contexts.md#SPS-CTX-021)–[`SPS-CTX-024`](../../spec/core/contexts.md#SPS-CTX-024), [`SPS-CTX-031`](../../spec/core/contexts.md#SPS-CTX-031)–[`SPS-CTX-036`](../../spec/core/contexts.md#SPS-CTX-036) | Retain core RDF catalogue/description reads, empty success and non-disclosing cache/validator behavior. Generalize mode summaries to the proposed eligibility contract; discovery works without management, while manageableContext requires that surface. Align vocabulary meanings and examples in the same normative change. |
 | [`SPS-CTX-017`](../../spec/modules/context-management.md#SPS-CTX-017)–[`SPS-CTX-019`](../../spec/modules/context-management.md#SPS-CTX-019) | At full adoption, deleting a Context unregisters its view and withdraws Context-bound authority, retaining source assertions and independent authority. Preserve current destructive deletion in the earlier response-only RDF delivery. |
-| [`SPS-CTX-028`](../../spec/core/contexts.md#SPS-CTX-028) | Remove the remaining minimum registered count for pods without context-management when adopting the Context-free core. |
+| [`SPS-CTX-028`](../../spec/core/contexts.md#SPS-CTX-028) | Remove the remaining minimum registered count for pods without context-management when adopting ordinary access without Context setup. |
 | [`SPS-CTX-025`](../../spec/core/contexts.md#SPS-CTX-025), [`SPS-CTX-026`](../../spec/core/contexts.md#SPS-CTX-026), [`SPS-CTX-030`](../../spec/core/contexts.md#SPS-CTX-030) | Preserve core protection of control-plane authority and explicit public access; generalize their subjects beyond Contexts. Data about a control-plane IRI remains data. |
-| [`Grants`](../../spec/core/grants.md) grammar, `manage` expansion and mode implications | Separate Context read, data-write and view-management authority. Keep legacy mode implications in their compatibility scope, without inferring write ability from management of a computed view. Retain core delegation, revocation and enforcement independently of stored grant grammar. |
+| [`Grants`](../../spec/core/grants.md) grammar, `manage` expansion and mode implications | Separate Context read, data-write and view-management authority, with explicit scope eligibility and further target checks. Keep legacy mode implications in their compatibility scope, without inferring write ability from management of a computed view. Retain core delegation, revocation and enforcement independently of stored grant grammar. |
 | [`SPS-GRANT-020`](../../spec/core/grants.md#SPS-GRANT-020)–[`SPS-GRANT-022`](../../spec/core/grants.md#SPS-GRANT-022), [`SPS-GRANT-031`](../../spec/core/grants.md#SPS-GRANT-031), [`SPS-GRANT-032`](../../spec/core/grants.md#SPS-GRANT-032), [`SPS-AUTH-042`](../../spec/core/auth.md#SPS-AUTH-042)–[`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044) | Apply the [public-read recommendation](access-control.md#public-access-and-public-read): retain the additive scope, public reads without credentials and invalid-credential rejection; permit public-only issuance without currently public data. Bound public access by the requested data scope and coordinate credential migration, discovery and OpenAPI. |
 | [`SPS-GRANT-002`](../../spec/core/grants.md#SPS-GRANT-002), [`SPS-GRANT-018`](../../spec/core/grants.md#SPS-GRANT-018), [`SPS-AUTH-063`](../../spec/core/auth.md#SPS-AUTH-063) | Apply the [consent/credential race guarantee](access-control.md#consent-and-credential-races) to session-only tokens and refresh families, including forced reauthorization. Retain client/subject isolation while freeing storage lookup and write/check sequencing. |
 | [`SPS-GRANT-025`](../../spec/core/grants.md#SPS-GRANT-025), [`SPS-CRUD-007`](../../spec/core/lod-crud.md#SPS-CRUD-007)–[`SPS-CRUD-014`](../../spec/core/lod-crud.md#SPS-CRUD-014) | Define ordinary source-data mutations and view reevaluation; selected writes use the explicit membership-write contract, with read-only computed views otherwise. Replace the blanket multi-Context write prohibition with complete effects within D or the explicitly selected scope. Keep invalid selectors from being ignored. |
-| [`SPS-CRUD-015`](../../spec/core/lod-crud.md#SPS-CRUD-015)–[`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017), [`SPS-CORE-017`](../../spec/core/index.md#SPS-CORE-017) | Move Context downscoping, silent exclusion of unreadable Contexts and selector syntax to the module. Retain the core resource-read `404` and indistinguishability of absent and inaccessible data, expressed without a Context prerequisite. |
+| [`SPS-CRUD-015`](../../spec/core/lod-crud.md#SPS-CRUD-015)–[`SPS-CRUD-017`](../../spec/core/lod-crud.md#SPS-CRUD-017), [`SPS-CORE-017`](../../spec/core/index.md#SPS-CORE-017) | Keep Context selection, silent exclusion of unreadable Contexts and selector syntax in core on every pod. Retain the core resource-read `404` and indistinguishability of absent and inaccessible data, expressed without a Context prerequisite. |
 | [`SPS-CRUD-020`](../../spec/core/lod-crud.md#SPS-CRUD-020)–[`SPS-CRUD-022`](../../spec/core/lod-crud.md#SPS-CRUD-022), [`SPS-CRUD-031`](../../spec/core/lod-crud.md#SPS-CRUD-031), [`SPS-CRUD-035`](../../spec/core/lod-crud.md#SPS-CRUD-035), [`SPS-CRUD-039`](../../spec/core/lod-crud.md#SPS-CRUD-039) | Apply the implicit/selected operation scopes and the mutation recommendations, including partial visibility and hidden collisions. |
 | [`SPS-CRUD-002`](../../spec/core/lod-crud.md#SPS-CRUD-002), [`SPS-CRUD-029`](../../spec/core/lod-crud.md#SPS-CRUD-029), [`SPS-CRUD-034`](../../spec/core/lod-crud.md#SPS-CRUD-034), [`SPS-CRUD-050`](../../spec/core/lod-crud.md#SPS-CRUD-050)–[`SPS-CRUD-052`](../../spec/core/lod-crud.md#SPS-CRUD-052), [`SPS-CRUD-057`](../../spec/core/lod-crud.md#SPS-CRUD-057) | Keep resource/slot representation and validator agreement, including graph-aware variants; separate Context-specific provenance and selection rules. Preserve the existing edge DELETE surface. |
 | [`SPS-SPARQL-006`](../../spec/core/sparql.md#SPS-SPARQL-006)–[`SPS-SPARQL-009`](../../spec/core/sparql.md#SPS-SPARQL-009), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-014`](../../spec/core/find.md#SPS-FIND-014) | Specify an authorized view across query and retrieval; replace the rewrite prohibition with outcome equivalence. Keep supported SPARQL read-only and dataset clauses unable to widen access; review the blanket ban on other implementation write interfaces. |
 | [`SPS-SPARQL-007`](../../spec/core/sparql.md#SPS-SPARQL-007), [`SPS-SPARQL-010`](../../spec/core/sparql.md#SPS-SPARQL-010)–[`SPS-SPARQL-014`](../../spec/core/sparql.md#SPS-SPARQL-014) | Apply the implicit default graph, independent named projections, implementation-supplied placement within D and local query dataset selection. Replace the empty-result shortcut with standard evaluation on empty datasets; align protocol precedence and empty selections in the chapter and OpenAPI. |
-| [`SPS-FIND-004`](../../spec/core/find.md#SPS-FIND-004), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-010`](../../spec/core/find.md#SPS-FIND-010), [`SPS-FIND-013`](../../spec/core/find.md#SPS-FIND-013) | Keep equivalent GET/POST forms and strict parsing in core. Put `context`/`contexts` fields and downscoping through expansion in the module. Preserve GET/POST equivalence for absent, empty and nonempty selections, and reject unsupported Context fields on core-only pods. |
-| [`SPS-FIND-019`](../../spec/core/find.md#SPS-FIND-019), [`SPS-FIND-024`](../../spec/core/find.md#SPS-FIND-024) | Move `include_contexts` and Context-grouped output rules to the module. Retain the separation of transient result metadata from stored facts in core, without requiring named-graph provenance. |
-| [`SPS-FIND-015`](../../spec/core/find.md#SPS-FIND-015), [`SPS-FIND-021`](../../spec/core/find.md#SPS-FIND-021) | Preserve successful empty search results and caller-sensitive cache isolation in core using the authorized data view. Apply empty Context downscopes only where the module supplies that selector. |
+| [`SPS-FIND-004`](../../spec/core/find.md#SPS-FIND-004), [`SPS-FIND-009`](../../spec/core/find.md#SPS-FIND-009), [`SPS-FIND-010`](../../spec/core/find.md#SPS-FIND-010), [`SPS-FIND-013`](../../spec/core/find.md#SPS-FIND-013) | Keep equivalent GET/POST forms and strict parsing in core. Keep `context`/`contexts` fields and selection through expansion in core. Preserve GET/POST equivalence for absent, empty and nonempty selections on every pod, including empty catalogues. |
+| [`SPS-FIND-019`](../../spec/core/find.md#SPS-FIND-019), [`SPS-FIND-024`](../../spec/core/find.md#SPS-FIND-024) | Keep `include_contexts` and Context-grouped output rules in core, including data with no disclosed named membership. Retain the separation of transient result metadata from stored facts in core, without requiring named-graph provenance. |
+| [`SPS-FIND-015`](../../spec/core/find.md#SPS-FIND-015), [`SPS-FIND-021`](../../spec/core/find.md#SPS-FIND-021) | Preserve successful empty search results and caller-sensitive cache isolation in core using the authorized data view. Apply explicit empty Context selection on every pod. |
 | [`Auth`](../../spec/core/auth.md), especially [`SPS-AUTH-008`](../../spec/core/auth.md#SPS-AUTH-008), [`SPS-AUTH-011`](../../spec/core/auth.md#SPS-AUTH-011)–[`SPS-AUTH-013`](../../spec/core/auth.md#SPS-AUTH-013), [`SPS-AUTH-024`](../../spec/core/auth.md#SPS-AUTH-024) | Apply the remaining [authorization recommendation and impact map](access-control.md#authorization-without-context-setup), including Context-free consent/service authority and S256 PKCE. Use the [service-client boundary](access-control.md#service-clients-and-registration-authority) instead of prescribing an operator, provisioning interface or fixed registration-time grants; preserve the unauthenticated profile's exclusion from service access. Preserve the current conditional state echo in [`SPS-AUTH-025`](../../spec/core/auth.md#SPS-AUTH-025), adopted separately by [PR #105](https://github.com/sempods/sempods-spec/pull/105), and the equivalent-identity claim in [`SPS-OIDC-005`](../../spec/modules/oidc.md#SPS-OIDC-005). Complete the remaining identity/discovery/profile decisions before adoption. |
-| [`SPS-MCP-017`](../../spec/modules/mcp.md#SPS-MCP-017), [`SPS-MCP-020`](../../spec/modules/mcp.md#SPS-MCP-020), [`SPS-MEDIA-006`](../../spec/modules/media.md#SPS-MEDIA-006), [`SPS-MEDIA-009`](../../spec/modules/media.md#SPS-MEDIA-009) | Align optional tools and media with the new core; do not make either implicitly require the Context module. Specify Context-specific integration where both are advertised. |
+| [`SPS-MCP-017`](../../spec/modules/mcp.md#SPS-MCP-017), [`SPS-MCP-020`](../../spec/modules/mcp.md#SPS-MCP-020), [`SPS-MEDIA-006`](../../spec/modules/media.md#SPS-MEDIA-006), [`SPS-MEDIA-009`](../../spec/modules/media.md#SPS-MEDIA-009) | Align optional tools and media with core discovery/selection and ordinary D access; neither requires context-management. Review their integration with optional lifecycle separately. |
 | [`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018) | Generalize context-existence protection to the proposed policy-independent write scope, including hidden-resource collisions. |
 
 The refresh-token baseline includes [#65](https://github.com/sempods/sempods-spec/pull/65):
@@ -523,7 +523,8 @@ external adoption can close it before the tag.
 
 - Review the [default-access resolution and acceptance sequences](#four-default-access-decisions)
   together with the [mutation recommendations](access-control.md#mutations-and-partial-representations)
-  and remaining dataset/selector cases. Preserve coherent D access, independent assertions and
+  and remaining dataset/selector cases, including the [three deployment configurations](context-contract.md#request-cases).
+  Preserve coherent D access, independent assertions and
   computed projections when preparing their coordinated requirements. General write-through computed
   views remain deferred until their discoverable update contract is defined.
 - Review the [authorization cases](access-control.md#authorization-request-cases) for consent, bounded
@@ -531,10 +532,11 @@ external adoption can close it before the tag.
   [identity/discovery/profile decisions](access-control.md#adoption-impact-and-remaining-profile-work)
   and coordinate the credential transition before claiming a complete interoperable profile.
 - Review the [Context registry and lifecycle recommendations](context-contract.md) with the
-  [selection behavior](#optional-context-contracts). The authentication profile must realize their
-  ordinary bootstrap outcome without requiring a core client to create or select a Context. Review
+  [selection behavior](#core-context-selection). The authentication profile must realize their
+  ordinary bootstrap outcome without requiring a client to discover, create or select a Context.
+  Review access summaries, external-space changes and request filtering versus delegation alongside
   independent view-management/data authority and non-destructive unregistration, including retained
-  source authorization and media lifecycle, before the full module adoption.
+  source authorization and media lifecycle, before coordinated core and management adoption.
 - Define conformance fixtures with known allowed and denied data for both implementation models.
   Always returning `403` or an empty graph is not evidence of conformance. Test query semantics and
   revocation using implementation-specific setup but the same public operations.

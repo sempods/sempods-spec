@@ -36,10 +36,10 @@ useful; a maintained guide describes the adopted revision and links to its contr
   conformance and service bindings, with external endpoints and stable local reservations. Design and
   adoption planning belong to [#96](https://github.com/sempods/sempods-spec/issues/96).
 - [Authorized data access](data-access.md) and [access control](access-control.md) — one proposal
-  for a smaller core, optional Context contracts and policy-independent guarantees. Normative
-  adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
-- [Discoverable Contexts and RDF registry descriptions](context-contract.md) — the Context module
-  boundary, default-access and full lifecycle recommendations under #69/#68. #92/PR #93 owns the
+  for ordinary access without Context setup, core selection, optional management and policy-independent
+  guarantees. Normative adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
+- [Discoverable Contexts and RDF registry descriptions](context-contract.md) — the core selection/optional
+  management boundary, default-access and lifecycle recommendations under #69/#68. #92/PR #93 owns the
   separate RDF registry adoption from the completed #90 recommendation; its normative chapters and
   maintained examples own those details.
 - [Authorization implementation support](authorization-implementation/README.md) — a possible ACP
