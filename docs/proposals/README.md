@@ -39,7 +39,8 @@ useful; a maintained guide describes the adopted revision and links to its contr
   for ordinary access without Context setup, core selection, optional management and policy-independent
   guarantees. Normative adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
 - [Discoverable Contexts and RDF registry descriptions](context-contract.md) — the core selection/optional
-  management boundary, default-access and lifecycle recommendations under #69/#68. #92/PR #93 owns the
+  management boundary, default-access and lifecycle recommendations under #69/#68, including retained
+  source/media authority, last-Context removal and collection eligibility. #92/PR #93 owns the
   separate RDF registry adoption from the completed #90 recommendation; its normative chapters and
   maintained examples own those details.
 - [Authorization implementation support](authorization-implementation/README.md) — a possible ACP

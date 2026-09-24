@@ -400,8 +400,9 @@ metadata and pod-base identities. External service identities remain proposed un
 The equivalent-identity wire claim is specified separately under #5; the remaining #82
 transport/registration/token-profile candidates and #77's validation issues retain their ownership.
 This iteration does not settle those remaining choices or claim a complete federation profile.
-The full Context lifecycle, independent view/data authority and retained-source/media behavior
-also need the integrated review recorded in #69/#68.
+The proposed [Context lifecycle](context-contract.md#adopted-rdf-surface-and-proposed-lifecycle),
+independent view/data authority and retained-source/media behavior also need the integrated review
+recorded in #69/#68.
 
 Validation compares these cases on a Context-backed store and a policy-based store with equivalent
 authority, including empty D and future creation. Existing ACP fixtures demonstrate their supplied
@@ -653,9 +654,12 @@ on every write interface beyond sempods CRUD would prevent legitimate administra
 
 Bulk administration has a distinct authorization question from editing one resource. The
 [Context lifecycle recommendation](context-contract.md#adopted-rdf-surface-and-proposed-lifecycle) separates unregistering a view
-from deleting its source data. Full adoption withdraws Context-bound authority without cascading
-into source assertions or independent views; current destructive deletion survives only in the
-initial response-only RDF delivery.
+from deleting its source data. Full adoption withdraws Context-bound authority while retaining
+source assertions, media associations and independent authority. Retention grants no access and
+recreating the IRI restores no revoked authority. Its [completion and race boundary](context-contract.md#lifecycle-authorization-and-completion)
+also covers selected media writes; its [acceptance cases](context-contract.md#lifecycle-acceptance-cases)
+cover independent D access and loss of the last public view. Current destructive deletion remains
+binding until coordinated normative adoption.
 
 ## Context access modes
 
