@@ -254,9 +254,22 @@ decision follows completed removal cannot use C's former authority, even with a 
 old description validator or still-valid credential. Earlier-authorized reads may have disclosed
 data that cannot be recalled. A selected write that races removal either commits wholly before
 removal or makes no source/assignment change; it cannot recreate C, attach to a new C at the same
-IRI or redirect to D. If removal wins after admission, return `409` for that conflict; a new request
-selecting the now unavailable C gives `403`. Collection observes the same completed source effects.
-These outcomes apply to media assignment/upload as well as RDF mutation.
+IRI or redirect to D. If removal wins after admission, return `409` for that conflict. These outcomes
+cover RDF mutation and media upload, assignment and unassignment. A losing unassignment leaves its
+source association and collection eligibility unchanged; ensure-absent success applies only after
+admission to a live writable source scope. It cannot report success through a retired projection.
+Upload preparation that loses this race follows the [cleanup rule](#media-associations-and-collection)
+below, including any new bytes and media-registry state.
+
+A new data/media write selecting the now absent C gives `403` under the proposed
+[unknown-write-selector rule](data-access.md#core-context-selection), even with independently retained
+owner or prefix authority. The selected membership-write surface is unavailable; that authority
+cannot create it through a data operation. This deliberately replaces the current `404` for
+authorized RDF/media writes to an unknown Context under
+[`SPS-CORE-018`](../../spec/core/index.md#SPS-CORE-018) and their OpenAPI responses. It does not
+change the lifecycle DELETE distinction above: independently authorized removal of an absent
+Context still gives `404`. A missing resource inside a live writable scope retains its own operation's
+response. Current normative behavior remains binding until coordinated adoption.
 
 There is no minimum registered Context count or replacement requirement. Removing the last Context,
 including a public name for D, leaves D's identity and placement unchanged. Ordinary operations
@@ -301,9 +314,30 @@ When C was the sole access path, both media metadata and content return the usua
 referenced for collection; disappearance of the last readable or named projection does not start
 a grace period. Recreating C at its former IRI exposes none of those associations automatically.
 
-Metadata lists only currently readable, exposed Context assignments; it invents no Context name
-for D and omits retired names. An object readable only through D therefore has an empty Context
-list. Choose the declared type from the readable D association first, if present; otherwise use the
+Metadata uses the existing `Media.assignments` array. Include the readable D association as one
+entry with `context` **omitted**, its `contentType`, and `filename` if recorded. Absence of `context`
+means D; neither `null`, an empty string nor a synthetic Context IRI represents it. There is at most
+one logical association of an object with D, irrespective of internal storage. D-only access thus
+produces one context-less assignment, not an empty assignments array. For example, its assignments
+member can be:
+
+```json
+{
+  "assignments": [
+    { "contentType": "image/png", "filename": "photo.png" }
+  ]
+}
+```
+
+A readable named projection contributes entries with its actual `context` IRI and the projected
+source assignments' `contentType` and recorded `filename`. If several sources project into C,
+include each distinct exposed metadata entry once; differing metadata can produce multiple entries
+with the same Context IRI. Omit hidden assignments and retired names. If C aliases D, include both
+the context-less D entry and the C entry only when each is independently readable; C access alone
+does not reveal a D association. This proposes a wire meaning for the existing fields and requires
+coordinated media schema/example changes.
+
+Choose the declared type from the readable D association first, if present; otherwise use the
 lowest readable Context IRI as today. A computed projection carries its source assignment's type;
 if multiple source assignments appear under one name, choose the lexicographically lowest declared
 type among the readable candidates. These deterministic tie-breaks use no hidden or retired
@@ -314,11 +348,25 @@ old `ETag` authorizes a read. Existing content-type defaults, disposition rules,
 Explicit authorized media unassignment removes the addressed source association. An ordinary D
 unassignment does not remove independent E associations; removing a computed projection is not
 source unassignment. Only when no source association remains, including retained associations
-without an exposed view, does the object become unreferenced and begin its grace period. Reassignment
-clears that state. Separately authorized source disposal may remove retained associations, but
-view removal and reconciliation cannot do so implicitly. Preserve delayed collection, retryability
+without an exposed view, does removal of an association make the object unreferenced and begin its
+grace period. Reassignment clears that state. Separately authorized source disposal may remove
+retained associations, but view removal and reconciliation cannot do so implicitly. Preserve delayed collection, retryability
 and pod-local unavailability after collection; this proposal does not redesign the collector's
 storage order or solve its independently documented upload/collection race.
+
+An upload may prepare bytes or media-registry state before committing its association. If Context
+removal wins, leave no assignment from that upload. Roll back newly prepared state, or put any new
+durable object left without source associations into the unreferenced collection lifecycle, with
+its grace period starting when the attempt is abandoned. This includes objects that never had an
+association: eligibility cannot depend on an earlier unassignment. An interrupted failed attempt
+needs recoverable cleanup rather than an untracked object that only report-only reconciliation
+could find. Neither the failed upload nor retained preparation state grants read access.
+
+Cleanup applies only to the failed attempt's disposable state. It must not delete shared bytes,
+remove another operation's committed association, mark a referenced object unreferenced or reset an
+existing collection deadline merely because a deduplicated upload failed. Disposal respects current
+source associations, including retained ones; a newly committed association clears unreferenced state. The implementation chooses staging, rollback or retryable collection bookkeeping.
+This closes orphan creation by a losing upload without selecting a general collector algorithm.
 
 ### Lifecycle acceptance cases
 
@@ -338,12 +386,16 @@ from a surviving name. Each row begins from its stated setup.
 | Same setup, but an app's authority depends only on C | Its C access ends; it gains no D authority. A still-valid credential with independent E authority retains only that applicable access. |
 | C used a policy also independently applied to E; remove C and recreate its IRI | E remains authorized; old C consent/grants/service assignments authorize neither the new C nor retained sources. New C starts empty with its newly supplied metadata/settings. |
 | Removal is denied, interrupted before commit, or its response is lost after commit; no intervening recreation | Denial changes nothing; interruption exposes either complete state. With retained independent management authority, retry gives `204` if still present or `404` if removed. Without current authority it gives `403`, which does not disclose the outcome; no partial authority withdrawal. |
-| A selected RDF write or media assignment races C removal | Commit wholly before removal, or reject the admitted conflict with `409` and no change. A request admitted after removal gets `403`; no write to D or recreated C. |
-| Empty catalogue and no management; media client has D read/write authority | Upload without Context returns `201`, including deduplication; metadata lists no Contexts, content is readable, ordinary unassignment addresses D and succeeds on repetition. Media operations need no registry bootstrap. |
+| A selected RDF write or media upload/assignment/unassignment races C removal | Commit wholly before removal, or reject the admitted conflict with `409` and no source/assignment change. Failed upload preparation follows the cleanup rule; no write to D or recreated C. |
+| After removal, caller with former C-only authority or retained independent owner/prefix authority makes a new C-selected RDF/media write | Both get `403` under the proposed unknown-write-selector rule. Separately, an independently authorized lifecycle DELETE gets `404`. No data-write registration or fallback. |
+| Upload of new bytes loses to C removal after storing bytes or creating media-registry state | `409`, no new association or access; prepared state is rolled back or durably tracked as unreferenced from abandonment and eligible for delayed cleanup even though it never had an association. Repeat with an interrupted attempt. |
+| Deduplicated upload loses to C removal; object is referenced by another current/retained association, or was already unreferenced before this attempt | `409`; in the referenced case, shared bytes and other associations survive without marking the object unreferenced. In the already-unreferenced case, the original grace deadline remains unchanged. |
+| Selected media unassignment races removal of its C projection; C addresses the final source association | Unassignment commits first: remove the association and start the grace period. Removal wins after admission: `409`, retain the association and do not start collection. No ensure-absent success through the retired projection. |
+| Empty catalogue and no management; media client has D read/write authority | Upload without Context returns `201`, including deduplication; metadata contains one D assignment with `context` omitted and its recorded type/filename, content is readable, ordinary unassignment addresses D and succeeds on repetition. Media operations need no registry bootstrap. |
 | Media M has independent assignments in C and E; remove C | E's authorized metadata/content remain readable with E's type. C is omitted; no source association is deleted and no collection timer starts. |
 | M is assigned only through C; remove C, wait longer than the collection grace period | Metadata/content `404`, including old conditional reads; bytes and association remain retained. Recreating C does not expose M, and knowing M's hash cannot authorize assignment elsewhere. |
-| C is a public name for D; M has one source assignment in D, also visible through C; remove C | Independent D authority still reads M with the same declared type, but metadata omits C. Ordinary unassignment can remove that retained D association. |
-| M has D and C assignments with different types; caller reads both, then only C | Type first comes from D, then from C; content validators/disposition follow the chosen type. Hidden assignments never supply the type. |
+| C is a public name for D; M has one source assignment in D, also visible through C; remove C | Independent D authority still reads M with the same declared type, but metadata retains the context-less D entry with its type/filename and omits C. Ordinary unassignment can remove that retained D association. |
+| M has D and C assignments with different types; caller reads both, then only C | Type first comes from D, then from C; content validators/disposition follow the chosen type. Metadata includes D with `context` omitted and C with its IRI while both are readable, then only C. Hidden assignments never supply metadata or the type. |
 | Computed C projects two readable source assignments for M with different types, and no D assignment is readable | Select the lowest readable Context IRI, then the lowest declared type within it. Hiding one source removes its type from consideration; hidden state never breaks a tie. |
 | Readable computed C contains an RDF link to M but exposes no authorized media assignment | Metadata/content `404`; selected assignment/unassignment `403` when C lacks membership-write support. |
 | Ordinary RDF deletion removes the last link to M | Source media assignments and bytes remain; RDF references do not control collection. |
