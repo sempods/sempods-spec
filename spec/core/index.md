@@ -76,7 +76,9 @@ The modules defined by this specification are `context-management`, `oidc`, `med
 
 <a id="SPS-CORE-007"></a>
 **`SPS-CORE-007`** — A pod is addressed under a base URL. Every resource, context and control-plane
-route of that pod lives under that base URL.
+route of that pod lives under that base URL, except the host-rooted discovery metadata addresses
+explicitly defined by [SPS-AUTH-067](auth.md#SPS-AUTH-067) and the
+[MCP module](../modules/mcp.md#discovery-and-resource-binding).
 
 This specification does not prescribe how the base URL decomposes. A path segment under a shared
 origin, a host of the pod's own, and an origin that is a single pod are the same pod as far as every

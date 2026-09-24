@@ -4,6 +4,9 @@ Status: **Proposed; non-normative.**
 Owning issue: [#96](https://github.com/sempods/sempods-spec/issues/96).
 Adoption: no normative adoption PR yet. This first design covers the entry point and a SPARQL
 service binding, against revision `6fa7b6b87204c5bd6a53c522554b196336547a5b`.
+The current [MCP endpoint discovery contract](../../spec/modules/mcp.md#discovery-and-resource-binding)
+separately supplies standard metadata paths and MCP-bound credentials. It does not adopt this
+proposal's general catalogue or external service locations.
 
 ## Start with a pod address
 

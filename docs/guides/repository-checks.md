@@ -5,6 +5,8 @@ This informative guide describes the checks in this repository's revision: the
 [example runner](../../.github/scripts/check-examples.py),
 [Context representation checker](../../.github/scripts/check-context-registry.py) and
 [site builder](../../site/build.py).
+The [MCP experiment](#mcp-endpoint-discovery-experiment) separately records bounded client behavior
+and known validation failures.
 Read it at the same Git revision as those sources.
 
 ## What a passing run establishes
@@ -23,6 +25,70 @@ These are repository checks and example execution, not product conformance claim
 establish that a pod satisfies the specification. Implementation-specific conformance reports
 belong with their implementation; ownership of a future implementation-neutral suite is a
 separate decision. Normative adoption and publication follow [governance](../../GOVERNANCE.md).
+
+## MCP endpoint discovery experiment
+
+[`probe-mcp-endpoint.mjs`](../../.github/scripts/probe-mcp-endpoint.mjs) exercises the
+[MCP discovery and resource contract](../../spec/modules/mcp.md#discovery-and-resource-binding)
+with the **unmodified official TypeScript SDK 1.30.1**, Node **22.19.0** and MCP **2025-11-25**.
+It is a bounded interoperability experiment, separate from the required repository checks and
+from a conformance suite. It installs no sempods-specific discovery, resource-validation or fetch
+hook. Provider callbacks only store client information, tokens and the PKCE verifier, and receive
+the authorization redirect. The SDK is configured with only the MCP endpoint.
+
+The fixture listens on an ephemeral IPv4 loopback port with TLS certificate verification enabled.
+It supplies synthetic resource/issuer metadata, registration, PKCE code exchange, signed tokens,
+refresh and two MCP tools. The harness follows the authorization URL and reads the redirect;
+consent is a fixture decision, not an exercised browser screen. After code exchange it explicitly
+retries the challenged tool call through the SDK. It does not establish automatic desktop-client
+retry behavior, real grants, browser consent, production TLS deployment or Kotlin conformance.
+
+The six positive flows cover a root pod, Alice and Bob on one origin, each with anonymous access
+followed by authorization and with proactive authorization. They reach an authenticated tool call
+and token refresh. The fixture uses a shared signing key so that its issuer/audience rejection
+cases cannot pass solely because pods happen to use different keys. These server checks validate
+the fixture model; they do not prove an implementation enforces those boundaries.
+
+**Client validation is incomplete.** The SDK rejects sibling-resource metadata, but accepts a
+parent resource, the origin resource and mismatching issuer metadata as far as the authorization
+redirect. The output labels all three `CLIENT_LIMITATION`, not `PASS`. A successful process exit
+means these recorded observations were reproduced, not that the client satisfies SPS-MCP-035.
+An SDK behavior change fails an assertion so that the evidence is reconsidered. Full acceptance
+remains open in [#99](https://github.com/sempods/sempods-spec/issues/99).
+
+Run from the repository root with Node 22.19.0, npm and OpenSSL. Installation is temporary; the
+specification acquires no npm build or dependency tree. Preserve the generated `package-lock.json`
+with the output when recording a run: the SDK is pinned, but npm resolves its transitive ranges at
+installation time. Reuse that lock with `npm ci --prefix "$mcp_probe_dir" --ignore-scripts` to
+repeat the exact dependency resolution.
+
+```bash
+mcp_probe_dir=$(mktemp -d)
+npm install --prefix "$mcp_probe_dir" --ignore-scripts --no-audit --no-fund @modelcontextprotocol/sdk@1.30.1
+cat > "$mcp_probe_dir/tls.cnf" <<'EOF'
+[req]
+distinguished_name=dn
+x509_extensions=extensions
+prompt=no
+[dn]
+CN=127.0.0.1
+[extensions]
+subjectAltName=IP:127.0.0.1
+basicConstraints=critical,CA:TRUE
+keyUsage=critical,digitalSignature,keyCertSign
+extendedKeyUsage=serverAuth
+EOF
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+  -keyout "$mcp_probe_dir/key.pem" -out "$mcp_probe_dir/cert.pem" \
+  -config "$mcp_probe_dir/tls.cnf"
+MCP_SDK_ROOT="$mcp_probe_dir/node_modules/@modelcontextprotocol/sdk" \
+MCP_TLS_KEY="$mcp_probe_dir/key.pem" MCP_TLS_CERT="$mcp_probe_dir/cert.pem" \
+NODE_EXTRA_CA_CERTS="$mcp_probe_dir/cert.pem" \
+  node .github/scripts/probe-mcp-endpoint.mjs > "$mcp_probe_dir/result.json"
+cat "$mcp_probe_dir/result.json"
+```
+
+The generated key and certificate are temporary fixture material, not deployment credentials.
 
 ## Set up the tools
 
