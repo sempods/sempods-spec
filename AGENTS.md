@@ -189,10 +189,10 @@ Vision, proposals and fixture explanation:
   proposing a requirement. The site publishes it as informative guidance.
 - [Pod and service discovery](docs/proposals/pod-discovery.md) — proposed entry link, conformance
   description and service bindings under #96, with external endpoints and stable local reserved paths
-- [Authorized data access](docs/proposals/data-access.md) — proposed smaller core and optional
-  Context contract, operation cases, mirroring boundaries and requirement impact; adoption belongs to #68
-- [Context registry](docs/proposals/context-contract.md) — remaining optional-module, default-access,
-  bootstrap and lifecycle recommendations under #69/#68; #92/PR #93 owns the separate RDF registry
+- [Authorized data access](docs/proposals/data-access.md) — proposed ordinary access without Context
+  setup, core selection and optional management, operation cases and requirement impact under #68
+- [Context registry](docs/proposals/context-contract.md) — remaining core discovery/selection, default-access,
+  bootstrap and optional lifecycle recommendations under #69/#68; #92/PR #93 owns the separate RDF registry
   adoption, based on the completed #90 recommendation
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design

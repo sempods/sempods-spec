@@ -35,15 +35,15 @@ awaiting disposition under #64; it describes no verified implementation.
 ## Policy-independent enforcement
 
 A request's authority follows from the verified caller and client, the requested operation, the
-applicable delegation and the pod's current policy. Core does not prescribe Contexts, role
-hierarchies, policy storage or one evaluator. An implementation can combine area and document
-conditions, use resource policies alone, or have a small fixed permission model.
+applicable delegation and the pod's current policy. Core discovery and selection do not prescribe
+Context-based authorization, role hierarchies, policy storage or one evaluator. An implementation
+can combine area and document conditions, use resource policies alone, or have a small fixed permission model.
 
 Where a deployment uses two independent restrictions, both constrain the operation. For example,
 area access and a document policy can compose by intersection. This is one implementation's design,
 not an obligation to give every pod two policy layers. Internal use of ACP or of document-level
 conditions requires no feature declaration. A module declaration is needed for an additional
-client-facing contract, such as Context selection or interoperable policy management.
+client-facing contract, such as Context creation/deletion or interoperable policy management.
 
 An implementation's own administrative UI can manage policies without a core policy API. Reading
 policy syntax, evaluating a request and editing permissions are separate capabilities. A generic
@@ -213,6 +213,38 @@ its previous codes, refresh credentials and API tokens; presenting such a token 
 than silently becoming anonymous. Reconnecting creates a new authorization basis; it cannot make
 old credentials usable again. An independently obtained public-only credential is separate.
 
+#### Request selection and delegation
+
+A Context selector addresses data for one request; it creates no delegation ceiling. A client
+holding broad D authority can omit a selector later and still use that authority. A client with a
+bounded C delegation cannot escape it by omitting C, selecting E, or using SPARQL. Those requests
+are evaluated inside their addressed scope and the same delegation ceiling. Ordinary access does
+not widen D to reach C's sources outside it, and C's authority alone does not authorize D mutations.
+
+For a CMS-derived space, distinguish a source-data membership change inside an approved dynamic
+boundary from a change to authority or to the boundary itself. New matching data can enter the
+projection; removal of the person's space membership narrows dependent delegations. Reinstating
+that membership does not restore revoked app authority without fresh consent. Redefining C to
+include an additional space is a ceiling expansion even when its IRI is unchanged. Naming C in a
+request or consent record cannot stand in for recording the agreed boundary's meaning.
+
+These proposed cases assume valid credentials, ordinary response preconditions and independent
+public access disabled, so public-read cannot mask private authority failures. C is a view of D;
+R is in C and private S is in D outside C. Unless stated otherwise, the client has read authority
+bounded to C and no mutation authority. The credential itself remains valid when data authority
+is narrowed; a terminated connection instead follows the `401` rule above.
+
+| Request or transition | Proposed observation |
+|---|---|
+| GET R with C, ordinary GET R, find and SPARQL with or without C | Each sees only its addressed data within the same C-bound authority. Omission does not reveal S, including through find expansion or query paths. |
+| Ordinary GET S or E-selected GET S; E would expose S to the person outside this app's consent | `404`; neither selecting E nor omitting selection supplies app authority. |
+| Ordinary or C-selected mutation using the read-only delegation | `403` with no data change; a selector cannot grant a mode. |
+| Different client has broad D read authority and requests C, then omits the selector | First request selects C; the ordinary request may also see S. This is filtering under existing authority, not a persistent downscope. |
+| An explicitly approved dynamic C gains a matching task through an independently authorized source write | The next authorized C projection can include that task; a fixed-resource consent remains limited to its original IRIs. |
+| Person loses C authority, then regains CMS membership | The next request loses the withdrawn private projection; restoring membership alone does not restore the old app delegation. Fresh consent can establish new authority. |
+| CMS changes C's definition to include another space | Existing consent does not expand to the additional space. If its old boundary cannot be enforced, suspend its dependent authority pending fresh consent. |
+| C disappears and is recreated at the same IRI | No revival of old C-bound authority; apply the [external-space rule](context-contract.md#externally-changing-spaces). |
+
 #### Consent and credential races
 
 Recommend replacing GRANT-018/AUTH-063's prescribed write/check order with this outcome: concurrent
@@ -282,11 +314,13 @@ The current no-public-Context issuance refusal remains binding until normative a
 
 ### Authorization request cases
 
-These are proposed acceptance cases for #72, not executed HTTP or race tests. Use a core-only pod
-P, empty implicit D, person U and clients X/Y. U can delegate read and complete resource creation/
-replacement in D unless a row narrows it. Valid test requests use the existing media types, a
-validated redirect and fresh S256 PKCE; table rows reset state. The independent-A case adds the
-Contexts module, and MCP challenge cases add MCP. Installation of policy and the consent UI are implementation-specific; public protocol requests and observations are shared.
+These are proposed acceptance cases for #72, not executed HTTP or race tests. Use a pod P without
+management or exposed Contexts, empty implicit D, person U and clients X/Y. U can delegate read and
+complete resource creation/replacement in D unless a row narrows it. Valid test requests use the
+existing media types, a validated redirect and fresh S256 PKCE; table rows reset state. The
+independent-A case configures P to expose A through core Context discovery and selection, without
+management. MCP challenge cases add MCP. Installation of policy and the consent UI are
+implementation-specific; public protocol requests and observations are shared.
 
 | Setup and request | Proposed result |
 |---|---|
@@ -296,7 +330,7 @@ Contexts module, and MCP challenge cases add MCP. Installation of policy and the
 | X supplies `state=s` versus omitting it in otherwise protected/valid authorization transactions | Keep the current state-echo contract for success and error redirects; the proposed client profile also checks transaction and issuer binding. |
 | U refuses consent, or an earlier consent submission is replayed after narrowing | Explicit refusal returns `access_denied`; replay is rejected without restoring the earlier permission. Neither case issues a code for that old authority. |
 | Y has a valid token naming U, but no private delegation; X's consent allows R | Y's private resource GET is `404`, its valid write `403`, regardless of X's authority. No subject-only grant lookup. |
-| Context-capable variant; U has consented only to independent A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
+| P exposes independent A through core; U has consented only to A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
 | Service S is provisioned with D read/write; uses Client Credentials and then ordinary PUT | Token response `200`; allowed nonempty creation `201`. Subject is S and no person/Context setup is fabricated. A `dyn:` client cannot obtain this service authority. |
 | U approves a fixed selection containing R; later gains access to unrelated private R2 | X's R2 GET remains `404`, write `403`; fresh consent is required. |
 | U can delegate the project-X data space and approves its dynamic read selection; a new task joins that project | X can read that task. A task in project Y remains hidden; changing the agreed selection to include Y requires fresh consent. |
@@ -359,7 +393,7 @@ proposal adopts no normative changes. #65's removal of guaranteed refresh-token 
 | AUTH-009/022/023 | S256 PKCE for both user-facing client shapes. Preserve client/redirect validation and AUTH-025's current response contract while reviewing the remaining profile separately. |
 | AUTH-026, GRANT-002/015/016/018/019, AUTH-052/061/062/063 | Retain client isolation, trusted-alias coverage, delegation ceilings and fresh-consent barriers; replace prescribed storage/lookups/write ordering with the tested outcomes above. Narrowing never silently restores removed authority. |
 | GRANT-020/021/022/031/032, AUTH-042/043/044 | Retain additive public-read and credential-free reads; generalize to public assertions in the requested scope and permit public-only issuance on an empty pod. Keep invalid-credential rejection. |
-| MCP-011/012/013/030 | Coordinate core-only authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact core-only result shape remains a module-view decision. |
+| MCP-011/012/013/030 | Coordinate ordinary data-access authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact MCP result shape remains a module-view decision. |
 
 The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies pod-local
 metadata and pod-base identities. External service identities remain proposed under #96.
@@ -428,7 +462,7 @@ of response filtering; dependent views are reevaluated after mutation. A filtere
 permission to redefine a later PUT as replacement of just that visible subset.
 
 The [default-access acceptance sequences](data-access.md#default-access-acceptance-sequences)
-apply this boundary to core-only, independent-Context and computed-view cases. Their
+apply this boundary to single-graph, independent-Context and computed-view cases. Their
 [authorization and conditional cases](data-access.md#authorization-and-conditional-boundaries)
 exercise the guarantees below against the same D scope, including hidden collisions and revocation.
 
@@ -623,18 +657,18 @@ from deleting its source data. Full adoption withdraws Context-bound authority w
 into source assertions or independent views; current destructive deletion survives only in the
 initial response-only RDF delivery.
 
-## Optional Context permissions
+## Context access modes
 
-A Context identifies a logical view of RDF data; membership may be stored or computed. The module
-provides selection and observable access modes without requiring a physical named graph or stored
-grant strings. Read, data-write and view-management authority are distinct: managing a computed
-view does not make its source data writable. Core-only implementations need no Context catalogue.
+Core provides Context discovery, selection and access summaries without requiring physical named
+graphs or stored grant strings. A pod can return an empty catalogue. Ordinary clients need no
+Context-related request. Read, data-write and view-management authority are independent; the last
+requires the optional management surface, and managing a view does not authorize source writes.
 
-Where a pod adds finer restrictions, a reported Context grant describes that level's authority.
-It is not a guarantee that every resource operation succeeds. The
-[registry contract](../../spec/core/contexts.md#SPS-CTX-034) defines the caller-scoped
-summary and its cache boundary. Any more precise permission hint needs an explicit target and
-operation; the later request is still authorized.
+The [proposed caller-access summary](context-contract.md#caller-access-summary) defines scope-level
+eligibility and its limits under target/payload policies. It changes the current grant-based
+[`SPS-CTX-034`](../../spec/core/contexts.md#SPS-CTX-034) at adoption. Keep current response-relative
+interpretation, cache isolation and authorization of every later request. No copied RDF relationship
+or old validator confers authority; a writable hint does not make a hidden collision observable.
 
 ## Who may share, and why there is no chain
 
@@ -683,8 +717,8 @@ than one that exists — which is what makes leaving it out a decision instead o
 The ACP fixtures check the listed access decisions under their supplied assumptions.
 The resharing case compares supplied end states; it does not execute the revocation process.
 The runner's self-tests verify its guards, not the security of an implementation's query engine.
-A green run is therefore evidence about those fixtures, not conformance of either proposed core or
-a future Context module.
+A green run is therefore evidence about those fixtures, not conformance of the proposed core or
+optional Context management.
 
 ## Validation before adoption
 
@@ -702,7 +736,8 @@ matches, ranking and expansion. Cover public reads without credentials, tokens w
 An enforcement mechanism earns conformance from these observable properties, not its name.
 
 Review the authorization cases and their [remaining profile work](#adoption-impact-and-remaining-profile-work)
-alongside the mutation/dataset recommendations and optional Context contracts before adoption. Rewrite correctness is an implementation obligation.
+alongside the mutation/dataset recommendations and core Context/optional management boundary before
+adoption. Rewrite correctness is an implementation obligation.
 Installation of an implementation's policies is a deployment concern unless a client-facing
 management contract is being specified.
 
