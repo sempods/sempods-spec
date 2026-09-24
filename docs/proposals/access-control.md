@@ -315,10 +315,12 @@ The current no-public-Context issuance refusal remains binding until normative a
 ### Authorization request cases
 
 These are proposed acceptance cases for #72, not executed HTTP or race tests. Use a pod P without
-management or exposed Contexts, empty implicit D, person U and clients X/Y. U can delegate read and complete resource creation/
-replacement in D unless a row narrows it. Valid test requests use the existing media types, a
-validated redirect and fresh S256 PKCE; table rows reset state. The independent-A case adds the
-Contexts module, and MCP challenge cases add MCP. Installation of policy and the consent UI are implementation-specific; public protocol requests and observations are shared.
+management or exposed Contexts, empty implicit D, person U and clients X/Y. U can delegate read and
+complete resource creation/replacement in D unless a row narrows it. Valid test requests use the
+existing media types, a validated redirect and fresh S256 PKCE; table rows reset state. The
+independent-A case configures P to expose A through core Context discovery and selection, without
+management. MCP challenge cases add MCP. Installation of policy and the consent UI are
+implementation-specific; public protocol requests and observations are shared.
 
 | Setup and request | Proposed result |
 |---|---|
@@ -328,7 +330,7 @@ Contexts module, and MCP challenge cases add MCP. Installation of policy and the
 | X supplies `state=s` versus omitting it in otherwise protected/valid authorization transactions | Keep the current state-echo contract for success and error redirects; the proposed client profile also checks transaction and issuer binding. |
 | U refuses consent, or an earlier consent submission is replayed after narrowing | Explicit refusal returns `access_denied`; replay is rejected without restoring the earlier permission. Neither case issues a code for that old authority. |
 | Y has a valid token naming U, but no private delegation; X's consent allows R | Y's private resource GET is `404`, its valid write `403`, regardless of X's authority. No subject-only grant lookup. |
-| Context-capable variant; U has consented only to independent A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
+| P exposes independent A through core; U has consented only to A; X attempts an ordinary write to D | `403`, no fallback, new Context or write into A. A default mapping creates no authority. |
 | Service S is provisioned with D read/write; uses Client Credentials and then ordinary PUT | Token response `200`; allowed nonempty creation `201`. Subject is S and no person/Context setup is fabricated. A `dyn:` client cannot obtain this service authority. |
 | U approves a fixed selection containing R; later gains access to unrelated private R2 | X's R2 GET remains `404`, write `403`; fresh consent is required. |
 | U can delegate the project-X data space and approves its dynamic read selection; a new task joins that project | X can read that task. A task in project Y remains hidden; changing the agreed selection to include Y requires fresh consent. |
