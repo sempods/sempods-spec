@@ -88,7 +88,7 @@ got has no contract.
 | [`modules/context-management.md`](modules/context-management.md) — creating and deleting contexts: the management route, what it validates at creation, lifecycle | `CTX` | **present** | `spec/core/contexts.md`, split |
 | [`modules/oidc.md`](modules/oidc.md) — the OIDC bridge: identity assertions, how a pod obtains one, federation | `OIDC` | **present** | `docs/auth/identity.md`, split |
 | [`modules/media.md`](modules/media.md) — pod-owned binaries: content addressing, the context-bound registry, delivery, lifecycle | `MEDIA` | **present** | `docs/media.md` |
-| [`modules/mcp.md`](modules/mcp.md) — the per-pod MCP endpoint, authentication modes, the tool catalogue, closed schemas | `MCP` | **present** | `docs/mcp/endpoint.md`, `tools.md`, `authentication.md` |
+| [`modules/mcp.md`](modules/mcp.md) — the per-pod MCP endpoint, endpoint-only OAuth discovery, resource-bound credentials, authentication modes, tools and closed schemas | `MCP` | **present** | `docs/mcp/endpoint.md`, `tools.md`, `authentication.md` |
 
 ## OpenAPI
 

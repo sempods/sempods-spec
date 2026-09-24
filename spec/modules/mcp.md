@@ -13,6 +13,18 @@ exist to preserve.
 Profiles: the Model Context Protocol, JSON-RPC 2.0, RFC 9728, RFC 8252 §7.3. Error codes are
 [`../core/index.md`](../core/index.md) §5.
 
+For HTTP authorization, this chapter selects
+[MCP 2025-11-25 Authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization):
+the Authorization Server Discovery, Resource Parameter Implementation and Access Token Usage
+sections, and Token Audience Binding and Validation. Within those capabilities it profiles
+[RFC 9728 §§2–7](https://www.rfc-editor.org/rfc/rfc9728.html#section-2),
+[RFC 8414 §§2–4 and 6](https://www.rfc-editor.org/rfc/rfc8414.html#section-2) and
+[RFC 8707 §§2–3](https://www.rfc-editor.org/rfc/rfc8707.html#section-2).
+SPS-MCP-033–038 select the resource identity, discovery addresses and single-resource credentials.
+This selection does not incorporate the rest of that authorization revision, its draft OAuth 2.1
+profile, Client ID Metadata Documents or additional transports. Registration and consent remain
+the flows in [core auth](../core/auth.md) and §4 below.
+
 ## 1. The endpoint
 
 <a id="SPS-MCP-001"></a>
@@ -58,11 +70,11 @@ implementation MUST NOT silently downgrade it to anonymous.
 
 <a id="SPS-MCP-009"></a>
 **`SPS-MCP-009`** — Every `401` MUST carry `WWW-Authenticate: Bearer` naming the pod's realm and the
-pod-level Protected Resource Metadata URL.
+absolute endpoint-specific Protected Resource Metadata URL required by [SPS-MCP-033](#SPS-MCP-033)
+in `resource_metadata`.
 
-The metadata hint follows [SPS-AUTH-064](../core/auth.md#SPS-AUTH-064); this module also requires
-the pod's realm.
-[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068) validates it against the caller's known pod identity.
+The realm remains the pod base. It is a challenge label, not a discovery input: a standard client
+starts from its configured MCP URL and the metadata hint.
 
 ## 3. The `authorize` tool
 
@@ -135,19 +147,97 @@ and it MUST return the **pod-level** document.
 **`SPS-MCP-032`** — *Withdrawn in 0.1-dev without replacement.*
 An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.
 
-### Discovery limits
+### Discovery and resource binding
 
-The [pod-local OAuth profile](../core/auth.md#10-discovery) assumes the client already knows the
-canonical pod base. It does not define how a generic client configured only with the MCP endpoint
-establishes that identity. Anonymous initialization still needs no OAuth round trip.
+Let `P` be the canonical pod base and `M` its MCP URL, `P` followed by `/_system/mcp`.
+`M` identifies the protected MCP resource; `P` remains the authorization-server issuer under
+[SPS-AUTH-028](../core/auth.md#SPS-AUTH-028). A client configured with `M` learns the issuer from
+resource metadata. It does not strip a path suffix, parse the realm or need a second configuration
+field for `P`.
 
-The discovery addresses and resource matching differ from
-[MCP 2025-11-25 authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-server-discovery).
-An extra metadata address below the MCP endpoint does not resolve those differences or establish
-generic-client compatibility. The pod's issuer validation remains in
-[SPS-AUTH-068](../core/auth.md#SPS-AUTH-068). Endpoint-only interoperability is open under
-[#99](https://github.com/sempods/sempods-spec/issues/99); this comparison introduces no additional
-MCP revision requirements.
+<a id="SPS-MCP-033"></a>
+**`SPS-MCP-033`** — The server MUST serve unauthenticated Protected Resource Metadata for `M` at
+the RFC 9728 §3.1 URL, inserting `/.well-known/oauth-protected-resource` before `M`'s path.
+The document MUST set `resource` to exactly `M`, `authorization_servers` to `[P]`, and include
+`header` in `bearer_methods_supported`. [SPS-AUTH-046](../core/auth.md#SPS-AUTH-046)'s prohibition
+on enumerating context IRIs applies to this document too.
+
+<a id="SPS-MCP-034"></a>
+**`SPS-MCP-034`** — The server MUST also serve the pod's Authorization Server Metadata at the
+RFC 8414 §3.1 URL for issuer `P`, inserting `/.well-known/oauth-authorization-server` before
+its path, or using that origin-root path for a pathless `P`. This unauthenticated document MUST
+be the same as the one required by [SPS-AUTH-066](../core/auth.md#SPS-AUTH-066), including
+`issuer: P` and the pod's authorization, token, registration and signing-key URLs.
+
+These routes require cooperation from the host of a path-scoped pod. A deployment that controls
+only `/alice` can still implement core; advertising MCP additionally requires these host-rooted
+routes. A root pod and several path pods can share an origin because their metadata URLs differ.
+The pod's append-form resource document continues to describe `P`; it is not the MCP document.
+
+<a id="SPS-MCP-035"></a>
+**`SPS-MCP-035`** — An MCP client MUST use the selected MCP discovery rules with its configured
+canonical endpoint `M` as the expected resource, including when it initiates authorization after
+successful anonymous initialization. It MUST validate resource metadata against exactly `M`
+under RFC 9728 §3.3, and authorization-server metadata against the issuer selected from that
+validated resource document under RFC 8414 §3.3. The pod-local deviations in
+[SPS-AUTH-067](../core/auth.md#SPS-AUTH-067) and [SPS-AUTH-068](../core/auth.md#SPS-AUTH-068)
+MUST NOT be applied to MCP. Rejected metadata MUST NOT be used to start authorization or send
+credentials, including by falling back to a parent resource or another issuer.
+
+The client validates the issuer it discovered, without inferring a pod boundary from URL paths.
+The server's `[P]` choice is a separate requirement. A client cannot detect a trusted resource
+server's false declaration merely by comparing two mutually consistent documents. Server-side
+credential binding supplies the boundary even when origins or signing keys are shared.
+
+<a id="SPS-MCP-036"></a>
+**`SPS-MCP-036`** — A client requesting MCP access MUST send exactly one RFC 8707 `resource`
+parameter equal to `M` in authorization and token requests, including refresh and supported
+service-client token requests. The pod's authorization server MUST support that resource and
+MUST reject any supplied resource set other than that single `M` with `invalid_target` under
+RFC 8707. Requests with no resource parameter retain the core flow, subject to SPS-MCP-037
+for an already resource-bound credential.
+
+<a id="SPS-MCP-037"></a>
+**`SPS-MCP-037`** — The authorization server MUST bind an MCP authorization code and any resulting
+refresh credential to `M`, in addition to their existing client and subject binding. Exchanging
+either MUST require the same single `resource=M`; missing or different resource values MUST
+fail with `invalid_target`. An authorization code or refresh credential issued without that
+binding MUST NOT be exchanged for MCP access; that attempt MUST fail with `invalid_target`.
+
+<a id="SPS-MCP-038"></a>
+**`SPS-MCP-038`** — An MCP access token MUST have `iss=P` and a JWT `aud` identifying only `M`,
+as a string or a single-element array. The MCP server MUST reject tokens with a missing or
+different issuer or audience with `401` and the SPS-MCP-009 challenge, even if their signature
+is valid. A pod advertising this module MUST NOT accept a token bound to `M` at its other
+protected-resource endpoints; it MUST reject such a bearer with the endpoint's normal `401`
+challenge. Existing grant resolution and scope limits remain in force.
+
+This is an audience distinction, not an additional grant or an MCP-specific issuer. A code,
+refresh credential or access token for Alice cannot authorize Bob. Existing pod-wide credentials
+do not acquire MCP access merely because the module is enabled; clients obtain a new MCP-bound
+authorization. Token lifetime, revocation and refresh rotation remain in core auth.
+
+### Discovery cases
+
+These are contract examples, not claims about a running implementation. All URLs below share
+the origin `https://example.org`; paths are shown for readability.
+
+| Pod `P` | MCP resource `M` | Resource metadata path | Issuer metadata path |
+|---|---|---|---|
+| `https://example.org` | `https://example.org/_system/mcp` | `/.well-known/oauth-protected-resource/_system/mcp` | `/.well-known/oauth-authorization-server` |
+| `https://example.org/alice` | `https://example.org/alice/_system/mcp` | `/.well-known/oauth-protected-resource/alice/_system/mcp` | `/.well-known/oauth-authorization-server/alice` |
+| `https://example.org/bob` | `https://example.org/bob/_system/mcp` | `/.well-known/oauth-protected-resource/bob/_system/mcp` | `/.well-known/oauth-authorization-server/bob` |
+
+| Case | Expected result |
+|---|---|
+| Anonymous initialization and public read | Success without OAuth; a later protected call supplies the MCP metadata hint. |
+| Proactive authorization, without a `401` | Standard discovery starts from `M` and finds its path-specific resource metadata. |
+| Alice's resource document names the origin, the parent pod or Bob's MCP endpoint | Reject: none is the configured `M`. |
+| Issuer metadata fetched for Alice names Bob or Alice's `/_system/auth` URL | Reject: neither is the advertised issuer. |
+| Alice's authorization or token request names Bob's `M` | Alice's authorization server rejects `invalid_target`. |
+| Alice's code or refresh credential is used at Bob | Reject under the core credential binding; no Bob token is issued. |
+| Validly signed bearer names another issuer, the pod audience, another MCP endpoint, or multiple audiences | MCP rejects with `401`; no anonymous fallback. |
+| Alice's MCP token is sent to Alice's ordinary HTTP data surface or Bob's MCP endpoint | Reject with the receiving endpoint's `401` challenge. |
 
 ## 4. Client registration
 

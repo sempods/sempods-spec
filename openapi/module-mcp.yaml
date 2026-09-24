@@ -1,11 +1,7 @@
 openapi: 3.1.0
 
-# The MCP module's HTTP surface is one JSON-RPC route; OAuth metadata belongs to the pod.
-#
-# There is little for OpenAPI to say here, and that is the honest shape of it — the contract is in
-# the methods, the tool catalogue and the authentication modes, none of which a path-and-schema
-# description can express. What this file pins is the envelope, the challenge, and the pointer at
-# the requirements that carry the rest.
+# MCP transport and its public RFC 9728/8414 discovery routes. Metadata paths use the
+# origin server override; the JSON-RPC route continues to use the canonical pod base.
 
 info:
   title: sempods — MCP module
@@ -52,7 +48,7 @@ paths:
         tool does not declare is refused before dispatch, never silently dropped. The caller is a
         language model, and ignoring an invented argument executes a different operation than the
         one it asked for — broader on a read, wrong on a write — and returns success.
-      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028, SPS-AUTH-064]
+      x-sps-requirements: [SPS-MCP-001, SPS-MCP-002, SPS-MCP-003, SPS-MCP-004, SPS-MCP-005, SPS-MCP-006, SPS-MCP-007, SPS-MCP-008, SPS-MCP-009, SPS-MCP-010, SPS-MCP-011, SPS-MCP-012, SPS-MCP-013, SPS-MCP-017, SPS-MCP-018, SPS-MCP-019, SPS-MCP-020, SPS-MCP-021, SPS-MCP-022, SPS-MCP-023, SPS-MCP-024, SPS-MCP-025, SPS-MCP-027, SPS-MCP-028, SPS-MCP-035, SPS-MCP-038, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -85,19 +81,147 @@ paths:
         '401':
           description: |
             The bearer was rejected, or the operation needs one. The challenge names the pod's realm
-            and its Protected Resource Metadata URL — the pod is the protected resource for an MCP
-            caller exactly as for an HTTP caller.
+            and the endpoint-specific Protected Resource Metadata URL (SPS-MCP-033).
+            A token for the pod or another audience is rejected, even with a valid signature.
           headers:
             WWW-Authenticate:
               required: true
               description: >-
-                RFC 6750 Bearer challenge with realm required by SPS-MCP-009 and the pod-local
-                resource_metadata URL required by SPS-AUTH-064.
+                RFC 6750 Bearer challenge with the pod realm and endpoint-specific
+                resource_metadata URL required by SPS-MCP-009.
               schema: { type: string }
-              example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+              example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
+
+  /.well-known/oauth-protected-resource/_system/mcp:
+    get:
+      operationId: mcpResourceMetadataRoot
+      summary: MCP Protected Resource Metadata for a root pod.
+      servers:
+        - url: '{podOrigin}'
+          variables:
+            podOrigin: { default: 'https://example.org' }
+      security: [{}]
+      x-sps-requirements: [SPS-MCP-033, SPS-MCP-035, SPS-AUTH-046, SPS-AUTH-047]
+      responses:
+        '200':
+          description: Public metadata; no authentication required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/McpProtectedResourceMetadata' }
+              example:
+                resource: https://example.org/_system/mcp
+                authorization_servers:
+                - https://example.org
+                bearer_methods_supported:
+                - header
+
+  /.well-known/oauth-protected-resource/{podPath}/_system/mcp:
+    get:
+      operationId: mcpResourceMetadataPath
+      summary: MCP Protected Resource Metadata for a path-scoped pod.
+      servers:
+        - url: '{podOrigin}'
+          variables:
+            podOrigin: { default: 'https://example.org' }
+      security: [{}]
+      parameters:
+        - name: podPath
+          in: path
+          required: true
+          description: >-
+            The canonical pod's path without its initial slash. It can contain further slashes;
+            OpenAPI tooling that encodes it as one segment cannot express those nested paths.
+          schema: { type: string, minLength: 1 }
+          example: alice
+      x-sps-requirements: [SPS-MCP-033, SPS-MCP-035, SPS-AUTH-046, SPS-AUTH-047]
+      responses:
+        '200':
+          description: Public metadata; no authentication required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/McpProtectedResourceMetadata' }
+              example:
+                resource: https://example.org/alice/_system/mcp
+                authorization_servers:
+                - https://example.org/alice
+                bearer_methods_supported:
+                - header
+
+  /.well-known/oauth-authorization-server:
+    get:
+      operationId: mcpIssuerMetadataRoot
+      summary: Pod Authorization Server Metadata for a root pod.
+      servers:
+        - url: '{podOrigin}'
+          variables:
+            podOrigin: { default: 'https://example.org' }
+      security: [{}]
+      x-sps-requirements: [SPS-MCP-034, SPS-MCP-035, SPS-AUTH-048, SPS-AUTH-066]
+      responses:
+        '200':
+          description: Public metadata; no authentication required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthorizationServerMetadata' }
+              example:
+                issuer: https://example.org
+                authorization_endpoint: https://example.org/_system/auth/authorize
+                token_endpoint: https://example.org/_system/auth/token
+                registration_endpoint: https://example.org/_system/auth/register
+                jwks_uri: https://example.org/_system/auth/jwks.json
+                response_types_supported:
+                - code
+                grant_types_supported:
+                - authorization_code
+                - refresh_token
+                token_endpoint_auth_methods_supported:
+                - none
+                code_challenge_methods_supported:
+                - S256
+
+  /.well-known/oauth-authorization-server/{podPath}:
+    get:
+      operationId: mcpIssuerMetadataPath
+      summary: Pod Authorization Server Metadata for a path-scoped pod.
+      servers:
+        - url: '{podOrigin}'
+          variables:
+            podOrigin: { default: 'https://example.org' }
+      security: [{}]
+      parameters:
+        - name: podPath
+          in: path
+          required: true
+          description: >-
+            The canonical pod's path without its initial slash. It can contain further slashes;
+            OpenAPI tooling that encodes it as one segment cannot express those nested paths.
+          schema: { type: string, minLength: 1 }
+          example: alice
+      x-sps-requirements: [SPS-MCP-034, SPS-MCP-035, SPS-AUTH-048, SPS-AUTH-066]
+      responses:
+        '200':
+          description: Public metadata; no authentication required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthorizationServerMetadata' }
+              example:
+                issuer: https://example.org/alice
+                authorization_endpoint: https://example.org/alice/_system/auth/authorize
+                token_endpoint: https://example.org/alice/_system/auth/token
+                registration_endpoint: https://example.org/alice/_system/auth/register
+                jwks_uri: https://example.org/alice/_system/auth/jwks.json
+                response_types_supported:
+                - code
+                grant_types_supported:
+                - authorization_code
+                - refresh_token
+                token_endpoint_auth_methods_supported:
+                - none
+                code_challenge_methods_supported:
+                - S256
 
 components:
 
@@ -106,11 +230,12 @@ components:
     oauth2:
       type: oauth2
       description: |
-        The same pod-issued token the core surface uses, obtained the same way — this module adds
-        no authorization surface of its own. `spec/core/auth.md` is where the flow is specified.
-        It is repeated here because an OpenAPI description stands alone: a client that authorized
-        against the core description holds a credential this one has to name before it may be
-        attached, and without that its operations stay anonymous.
+        Tokens come from the pod's core OAuth endpoints, with exactly one resource parameter
+        equal to the canonical MCP endpoint on authorization and token requests, including refresh.
+        They retain the pod issuer and identify only the MCP endpoint in aud (SPS-MCP-036–038).
+        A core-surface token is not an MCP credential, and an MCP token cannot be used directly at
+        the pod's other protected-resource endpoints. Generic OpenAPI OAuth UI support may not
+        supply resource; configure it before using an interactive authorization flow.
 
         The endpoint URLs name the same placeholder pod as `servers` and do not follow it —
         substitute your pod here as well as there. The core description says why.
@@ -155,3 +280,81 @@ components:
                 Parse error, invalid request, method or tool not found, invalid params, internal
                 error — plus a distinct code for a rejected bearer, paired with HTTP 401.
             message: { type: string }
+
+    AuthorizationServerMetadata:
+      type: object
+      required:
+      - issuer
+      - authorization_endpoint
+      - token_endpoint
+      - registration_endpoint
+      - jwks_uri
+      - response_types_supported
+      - grant_types_supported
+      - token_endpoint_auth_methods_supported
+      - code_challenge_methods_supported
+      description: RFC 8414 fields describing the chapter's endpoints and supported capabilities.
+        Issuer equals the canonical pod base URL. client_credentials is listed only if
+        service clients are registered (SPS-AUTH-048). Unknown fields remain permitted.
+      properties:
+        issuer:
+          type: string
+          format: uri
+        authorization_endpoint:
+          type: string
+          format: uri
+        token_endpoint:
+          type: string
+          format: uri
+        registration_endpoint:
+          type: string
+          format: uri
+        jwks_uri:
+          type: string
+          format: uri
+        response_types_supported:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        grant_types_supported:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        token_endpoint_auth_methods_supported:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        code_challenge_methods_supported:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    McpProtectedResourceMetadata:
+      type: object
+      required: [resource, authorization_servers, bearer_methods_supported]
+      properties:
+        resource:
+          type: string
+          format: uri
+          description: Exactly the canonical MCP endpoint URL, not its parent pod.
+        authorization_servers:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { type: string, format: uri }
+          description: The canonical pod base URL is the sole issuer.
+        bearer_methods_supported:
+          type: array
+          items: { type: string }
+          contains: { const: header }
+        scopes_supported:
+          type: array
+          items: { type: string }
+          description: OAuth feature scopes; never context grants or IRIs.
+        public_contexts:
+          type: integer
+          description: A count; never the context IRIs (SPS-AUTH-046).

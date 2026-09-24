@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -59,6 +60,7 @@ INSTALL_RENDERER = (
 # decomposes (`SPS-CORE-007`). Switching to a different demo pod is an edit to this line —
 # including to a demo pod that is a host of its own rather than a path.
 DEMO_POD_BASE_URL = "https://sempods.org/aaltra"
+DEMO_POD_ORIGIN = "{0.scheme}://{0.netloc}".format(urlsplit(DEMO_POD_BASE_URL))
 
 # The site's own host, named once because three copies of a hostname agree right up until the
 # site moves and one of them does not. It is the `CNAME` GitHub Pages serves from, the origin
@@ -75,16 +77,15 @@ DEMO_CLIENT = f"did:web:{SITE_HOST}"
 # than "anything on the demo origin": `https://sempods.org/wrong` is on the origin too, and
 # Scalar would send every request in that description to a base the pod does not serve.
 #
-# One entry, and that is the point of the change that made it one. It used to hold a second, the
-# host-rooted well-known base `sempods-core.yaml` declared for protected resource metadata — a
-# route on the origin that no single pod can serve, which is why the requirement behind it was
-# deleted rather than kept.
+# The MCP module also describes public metadata at the origin's well-known paths
+# (SPS-MCP-033/034). OAuth flow destinations remain confined to the demo pod below.
 #
 # A chapter that introduces a genuinely new server shape fails the build until it is added here.
 # That is the intent: this list decides where a reader's requests go, including authenticated
 # ones, so a new destination should be a decision somebody made rather than one that arrived.
 ALLOWED_ADDRESSES = {
     DEMO_POD_BASE_URL,
+    DEMO_POD_ORIGIN,
 }
 
 # Chapters, in reading order. The nav in `mkdocs.yml` repeats this order; a chapter added
@@ -343,19 +344,21 @@ def stage() -> None:
             raise SystemExit(f"error: the staged try-it page does not offer {name!r}")
 
 
-# The pod every description is written against, and the only string the staging substitution
-# looks for. It is one value on both sides now: a server variable's default and an OAuth flow URL
-# both name the pod by its base URL, so both are the same replacement.
+# Placeholder addresses stay in normative sources and examples. Staging substitutes only
+# server-variable defaults and OAuth flow URLs for the interactive copy.
 PLACEHOLDER_POD = "https://example.org/alice"
 
 POD_BASE_URL_DEFAULT = re.compile(
     r"""(default:\s*)['"]?https://example\.org/alice['"]?(?![\w/-])"""
 )
+POD_ORIGIN_DEFAULT = re.compile(
+    r"""(default:\s*)['"]?https://example\.org['"]?(?![\w/'\"])(?=\s|\}|$)"""
+)
 
 
-# The only value the substitution is allowed to change. Everything else in a description, a
+# The server variables the substitution may change. Everything else in a description, a
 # server variable's own `description` and `enum` included, has to survive staging untouched.
-REWRITABLE = ("podBaseUrl",)
+REWRITABLE = ("podBaseUrl", "podOrigin")
 
 
 # Where OpenAPI 3.1 permits a `servers` field, and nowhere else: the document root, a Path
@@ -423,8 +426,8 @@ def rewritable_default_lines(text: str) -> set:
     key was too coarse in the other direction, because a `servers` key in an example is not a
     server declaration.
 
-    What comes back is the position of one scalar per declared server — the default of
-    `podBaseUrl` — so prose and payloads anywhere are left as they were written.
+    Only the defaults of `podBaseUrl` and `podOrigin` are selected, so prose and payloads
+    anywhere are left as they were written.
     """
     import yaml
 
@@ -461,6 +464,9 @@ def with_demo_pod(yaml_text: str) -> str:
         if index < len(lines):
             lines[index] = POD_BASE_URL_DEFAULT.sub(
                 lambda m: m.group(1) + f"'{DEMO_POD_BASE_URL}'", lines[index]
+            )
+            lines[index] = POD_ORIGIN_DEFAULT.sub(
+                lambda m: m.group(1) + f"'{DEMO_POD_ORIGIN}'", lines[index]
             )
 
     # The OAuth flow URLs name the same placeholder pod the `servers` block defaults to, and have
@@ -545,7 +551,7 @@ def _dict_get(value, key):
 
 
 def without_rewritable_defaults(document):
-    """A copy with `servers[].variables.{origin,pod}.default` blanked, and nothing else.
+    """A copy with rewritable server defaults and OAuth flow URLs blanked.
 
     Masking every `servers` the document contains would hide the case this exists to catch, in
     both directions: a variable's own `description` is a scalar like any other, and a `servers`
@@ -787,7 +793,8 @@ def check() -> int:
                         f"the demo pod serves ({', '.join(sorted(ALLOWED_ADDRESSES))}). "
                         f"Whatever a reader presses in that description goes there")
                 for name, value in variables.items():
-                    wanted = {"podBaseUrl": DEMO_POD_BASE_URL}.get(name)
+                    wanted = {"podBaseUrl": DEMO_POD_BASE_URL,
+                              "podOrigin": DEMO_POD_ORIGIN}.get(name)
                     if wanted is not None and value != wanted:
                         problems.append(
                             f"{where} sets {name!r} to {value!r} rather than {wanted!r}")

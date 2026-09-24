@@ -88,6 +88,24 @@ class StagedNavigationTest(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "requires a clean checkout"):
                 build.main()
 
+    def test_mcp_origin_routes_stage_without_rewriting_metadata_examples(self):
+        original = (build.ROOT / "openapi/module-mcp.yaml").read_text()
+        staged = build.with_demo_pod(original)
+        self.assertTrue(build.unchanged_outside_servers(original, staged))
+        addresses = build.server_addresses(staged)
+        self.assertEqual({build.DEMO_POD_BASE_URL, build.DEMO_POD_ORIGIN},
+                         {resolved for _, resolved, _ in addresses})
+        self.assertIn("resource: https://example.org/alice/_system/mcp", staged)
+        self.assertNotIn("https://example.org/alice/_system/auth/token'", staged)
+
+    def test_origin_substitution_does_not_allow_another_origin_or_extra_path(self):
+        original = (build.ROOT / "openapi/module-mcp.yaml").read_text()
+        for wrong in ["https://other.example", "https://example.org/wrong"]:
+            changed = original.replace("default: 'https://example.org'", f"default: '{wrong}'")
+            addresses = build.server_addresses(build.with_demo_pod(changed))
+            self.assertIn(wrong, {resolved for _, resolved, _ in addresses})
+            self.assertNotIn(wrong, build.ALLOWED_ADDRESSES)
+
 
 if __name__ == "__main__":
     unittest.main()

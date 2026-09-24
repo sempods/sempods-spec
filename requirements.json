@@ -426,7 +426,7 @@
       "id": "SPS-AUTH-064",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "Every Bearer challenge from a pod's protected-resource endpoint, in core or a module, MUST carry `resource_metadata` equal to the absolute URL `{pod}/.well-known/oauth-protected-resource`.",
+      "summary": "Every Bearer challenge from a pod's protected-resource endpoint, in core or a module other than MCP, MUST carry `resource_metadata` equal to the absolute URL `{pod}/.well-known/oauth-protected-resource`.",
       "withdrawn": false
     },
     {
@@ -454,7 +454,7 @@
       "id": "SPS-AUTH-068",
       "part": "core",
       "chapter": "spec/core/auth.md",
-      "summary": "A client using this profile MUST validate discovery against the canonical pod base URL it intended to access, not a base inferred from returned metadata.",
+      "summary": "A client using this pod-local profile for a surface other than MCP MUST validate discovery against the canonical pod base URL it intended to access, not a base inferred from returned metadata.",
       "withdrawn": false
     },
     {
@@ -1707,7 +1707,7 @@
       "id": "SPS-MCP-009",
       "part": "mcp",
       "chapter": "spec/modules/mcp.md",
-      "summary": "Every `401` MUST carry `WWW-Authenticate: Bearer` naming the pod's realm and the pod-level Protected Resource Metadata URL.",
+      "summary": "Every `401` MUST carry `WWW-Authenticate: Bearer` naming the pod's realm and the absolute endpoint-specific Protected Resource Metadata URL required by [SPS-MCP-033](#SPS-MCP-033) in `resource_metadata`.",
       "withdrawn": false
     },
     {
@@ -1872,6 +1872,48 @@
       "summary": "An implementation MUST NOT serve Authorization Server Metadata for the MCP URL.",
       "withdrawn": true,
       "withdrawnNote": "Withdrawn in 0.1-dev without replacement."
+    },
+    {
+      "id": "SPS-MCP-033",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "The server MUST serve unauthenticated Protected Resource Metadata for `M` at the RFC 9728 §3.1 URL, inserting `/.well-known/oauth-protected-resource` before `M`'s path.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-MCP-034",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "The server MUST also serve the pod's Authorization Server Metadata at the RFC 8414 §3.1 URL for issuer `P`, inserting `/.well-known/oauth-authorization-server` before its path, or using that origin-root path for a pathless `P`.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-MCP-035",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "An MCP client MUST use the selected MCP discovery rules with its configured canonical endpoint `M` as the expected resource, including when it initiates authorization after successful anonymous initialization.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-MCP-036",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "A client requesting MCP access MUST send exactly one RFC 8707 `resource` parameter equal to `M` in authorization and token requests, including refresh and supported service-client token requests.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-MCP-037",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "The authorization server MUST bind an MCP authorization code and any resulting refresh credential to `M`, in addition to their existing client and subject binding.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-MCP-038",
+      "part": "mcp",
+      "chapter": "spec/modules/mcp.md",
+      "summary": "An MCP access token MUST have `iss=P` and a JWT `aud` identifying only `M`, as a string or a single-element array.",
+      "withdrawn": false
     },
     {
       "id": "SPS-MEDIA-001",
