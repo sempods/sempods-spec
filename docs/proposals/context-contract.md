@@ -356,6 +356,21 @@ assignment. Conditional responses use the newly authorized representation and se
 old `ETag` authorizes a read. Existing content-type defaults, disposition rules, private caching,
 `Vary`, `nosniff`, sandbox and fetched-source protections continue to apply.
 
+When `PUT /_system/media/{id}` creates an association in D or a selected writable scope, persist the
+type selected by that same content-response rule from the caller's readable assignments **before**
+creation. Source authorization, type selection and target creation use one decision state consistent
+with completed changes. A prior GET, stale catalogue or hidden/retired assignment cannot supply the
+type. The new association stores that value; later source metadata or access changes do not rewrite
+it. No readable source means the source-read prerequisite fails, not that a default type is invented.
+This PUT supplies no type or filename input: the new association has no filename. Existing source
+assignments keep their metadata; upload remains the path that records a submitted type/filename.
+
+If the target association already exists, an otherwise authorized PUT is a no-op preserving its
+stored type and filename, even when a different readable assignment now wins content-type selection.
+The normal source-read and target-write checks still apply. Concurrent creation cannot turn the
+losing PUT into a metadata overwrite; evaluate it against the committed association. Type defaults
+for uploads do not apply to assignment PUT, and the proposal adds no new input field.
+
 Explicit authorized media unassignment removes the object's association in that one writable
 source scope, or succeeds without a change if it is already absent there. A C-selected deletion
 therefore removes C's projection of that association and any other aliases of the same association.
@@ -410,6 +425,9 @@ from a surviving name. Each row begins from its stated setup.
 | M is assigned only through C; remove C, wait longer than the collection grace period | Metadata/content `404`, including old conditional reads; bytes and association remain retained. Recreating C does not expose M, and knowing M's hash cannot authorize assignment elsewhere. |
 | C is a public name for D; M has one source assignment in D, also visible through C; remove C | Independent D authority still reads M with the same declared type, but metadata retains the context-less D entry with its type/filename and omits C. Ordinary unassignment can remove that retained D association. |
 | M has D and C assignments with different types; caller reads both, then only C | Type first comes from D, then from C; content validators/disposition follow the chosen type. Metadata includes D with `context` omitted and C with its IRI while both are readable, then only C. Hidden assignments never supply metadata or the type. |
+| M is readable through C (`text/plain`, filename `note.txt`) and E (`image/png`), with C's IRI sorting first; no D association; ordinary assignment PUT, then change or remove C | New D association stores `text/plain` and no filename. Later C changes do not rewrite it; D-authorized content uses the copied type for headers, validators and disposition. The assignment PUT leaves source metadata unchanged. |
+| M has readable D (`image/png`) and an existing writable E association (`text/plain`, filename `note.txt`); PUT selecting E, then repeat | Both leave E's type and filename unchanged even though D wins content-type selection. Normal read/write admission still applies. Repeat with E initially absent and concurrent PUTs: the association that commits first keeps its metadata. |
+| Source type/access changes after a prior read but before assignment PUT's decision | Use the currently selected readable type. If all source-read authority was withdrawn, refuse creation; do not use the stale type or an upload default. No new association is created on denial. |
 | Computed C projects two readable source assignments for M with different types, and no D assignment is readable | Select the lowest readable Context IRI, then the lowest declared type within it. Hiding one source removes its type from consideration; hidden state never breaks a tie. |
 | C combines assignments from independent A/B scopes; selected media upload/PUT/DELETE, with zero, one or two current/visible assignments for M | Uniform `403`, including identical projected metadata and absent-assignment DELETE. A/B associations, bytes and collection eligibility remain unchanged; hiding one source does not make C writable. |
 | C exposes one writable source scope A; M has associations in A and independent E; delete M's assignment through C, then repeat | Remove only A's association; C and other aliases of A no longer project it. E survives and prevents collection. Repetition succeeds without a change after normal admission, even if only E's association remains readable. |
