@@ -556,11 +556,11 @@ An otherwise applicable condition that tests unreadable state, or would validate
 unreadable facts, receives uniform `403`, with no mutation or validator. This includes `If-Match`
 and `If-None-Match: *`; do not evaluate a hidden-state predicate and distinguish true from false.
 For a slot mutation that evaluates a complete-slot condition, the caller therefore needs complete
-slot visibility. Unconditional authorized additions, replacements and clearing remain available.
-Empty slot POST and empty resource PUT follow the same condition rule. Existing prescribed
-ignoring of conditions, such as edge DELETE's `If-Match`, remains separate from evaluation and
-introduces no state test. The proposal changes CRUD-034/052/053/054's applicability and needs
-matching OpenAPI wording at adoption.
+slot visibility. Unconditional authorized additions, replacements, clearing and edge removal remain
+available. Empty slot POST, empty resource PUT and conditional edge DELETE, which tests the
+complete slot ([`SPS-CRUD-059`](../../spec/core/lod-crud.md#SPS-CRUD-059)), follow the same
+condition rule. The proposal changes CRUD-034/052–054/059's applicability and needs matching
+OpenAPI wording at adoption.
 
 The current Context-specific slot-tag rules continue to bind until normative adoption;
 [#9](https://github.com/sempods/sempods-spec/issues/9) can repair their current OpenAPI view

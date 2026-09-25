@@ -369,8 +369,9 @@ holds at least one statement there.
 representation is a union of snapshots that no single tag can validate.
 
 <a id="SPS-CRUD-052"></a>
-**`SPS-CRUD-052`** — `PUT`, `POST` and slot `DELETE` MUST echo the slot's new `ETag`, so a client can
-chain conditional writes without an intervening `GET`.
+**`SPS-CRUD-052`** — `PUT`, `POST`, slot `DELETE` and single-edge `DELETE` MUST echo the slot's new
+`ETag`, so a client can chain conditional writes without an intervening `GET`. A single-edge
+`DELETE` that leaves the slot empty MUST echo the tag a slot `DELETE` of that slot would echo.
 
 <a id="SPS-CRUD-053"></a>
 **`SPS-CRUD-053`** — `If-None-Match: *` on a slot MUST mean *the slot holds no statement for
@@ -382,9 +383,70 @@ subject that certainly "exists" elsewhere, and a local subject that already has 
 predicates.
 
 <a id="SPS-CRUD-054"></a>
-**`SPS-CRUD-054`** — `PUT` MUST honour `If-Match`, with `412` on mismatch. `POST` MUST honour it
-where provided and MUST NOT require it. Single-edge `DELETE` MUST ignore it — the operation names a
-statement by identity, so the outcome is the same whether or not it was there.
+**`SPS-CRUD-054`** — `PUT` MUST honour `If-Match`, with `412` on mismatch. `POST` and single-edge
+`DELETE` MUST honour it where provided and MUST NOT require it.
+
+<a id="SPS-CRUD-059"></a>
+**`SPS-CRUD-059`** — Single-edge `DELETE` MUST evaluate `If-Match` and `If-None-Match` against the
+slot `(subject, predicate)` in the write context ([`SPS-CRUD-007`](#SPS-CRUD-007)). A tag is
+compared with that slot's entity tag ([`SPS-CRUD-050`](#SPS-CRUD-050),
+[`SPS-CRUD-052`](#SPS-CRUD-052)); `*` asks whether that slot holds a statement, as in
+[`SPS-CRUD-053`](#SPS-CRUD-053). Statements in other contexts MUST NOT affect the result. When the
+edge is absent, the answer MUST be `200` with `already_absent` if the preconditions hold, and `412`
+if they do not.
+
+<a id="SPS-CRUD-060"></a>
+**`SPS-CRUD-060`** — Single-edge `DELETE` MUST evaluate its preconditions and remove the edge as
+one atomic step with respect to every other write that changes the same slot, through any route.
+
+<a id="SPS-CRUD-061"></a>
+**`SPS-CRUD-061`** — Single-edge `DELETE` MUST evaluate preconditions only after authorizing the
+write. An authenticated caller without write authority on the write context MUST get the denial of
+[`SPS-CORE-018`](index.md#SPS-CORE-018) whatever preconditions it sends: never `412`, and never the
+slot's tag.
+
+Write authority on a context implies read authority there
+([`SPS-GRANT-009`](grants.md#SPS-GRANT-009)), and the tag covers that context alone. Neither the
+tag nor the outcome shows a caller anything it could not read.
+
+| Edge `DELETE` in context X | Result |
+|---|---|
+| No precondition | `200`, `removed` or `already_absent`, the slot's new tag |
+| `If-Match` with the slot's current tag in X, edge present | `200`, `removed`, the slot's new tag |
+| `If-Match` with the slot's current tag in X, edge absent | `200`, `already_absent`, the same tag |
+| `If-Match` with any other tag, edge present or absent | `412`, no change |
+| `If-None-Match: *`, slot empty in X | `200`, `already_absent` |
+| `If-None-Match: *`, slot holds a value in X | `412`, no change |
+| Any precondition, caller cannot write X | `403` under [`SPS-CORE-018`](index.md#SPS-CORE-018) |
+
+The case this serves is a caller that projects an external set into edges: group membership from a
+relational database, say, with one `POST` or edge `DELETE` per change. The caller reads the slot in
+the write context (`GET` with that `?context=`) **before** it reads the source, and sends that tag
+with the write it derives. If the slot is empty the read carries no tag, and the caller sends
+`If-None-Match: *` instead. A `412` means the slot changed in between; the caller reads both again.
+Read in the other order, the tag could already include a write based on newer source data, and a
+stale write would pass.
+
+This catches a stale removal:
+
+| Step | Slot in X | Result |
+|---|---|---|
+| A reads tag `e0`, then the source: `u2` is not a member | `e0`: `u1` | |
+| `u2` joins. B reads `e0`, then the source (a member), and adds `u2` with `If-Match: e0` | `e1`: `u1`, `u2` | `201` |
+| A removes `u2` with `If-Match: e0` | `e1`: `u1`, `u2` | `412`; A reads again and keeps `u2` |
+
+What the condition cannot do is order the source's revisions. The tag describes what the slot
+holds. A write that changes nothing, or a change and its reversal, can leave the tag as it was, and
+a stale addition then still lands:
+
+| Step | Slot in X | Result |
+|---|---|---|
+| A reads tag `e0`, then the source: `u2` is a member | `e0`: `u1` | |
+| `u2` leaves. B reads `e0`, then the source (not a member), and removes `u2` with `If-Match: e0` | `e0`: `u1` | `200`, `already_absent` |
+| A adds `u2` with `If-Match: e0` | `e1`: `u1`, `u2` | `201`; the pod keeps an edge the source no longer has |
+
+Ordering writes by source revision needs the pod to compare a monotonic revision the caller
+supplies, a fencing token. That would be a separate protocol extension; this chapter defines none.
 
 ## 6. What this layer does not do
 
