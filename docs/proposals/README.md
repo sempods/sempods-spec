@@ -38,6 +38,9 @@ useful; a maintained guide describes the adopted revision and links to its contr
 - [Authorized data access](data-access.md) and [access control](access-control.md) — one proposal
   for ordinary access without Context setup, core selection, optional management and policy-independent
   guarantees. Normative adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
+- [Protocol profiles](protocol-profiles.md) — recommended standards scope, OAuth/OIDC redirects,
+  service refresh, registration and MCP transport/error cases under #69. Records the adopted MCP
+  discovery input and the independent client evidence remaining in #99.
 - [Discoverable Contexts and RDF registry descriptions](context-contract.md) — the core selection/optional
   management boundary, default-access and lifecycle recommendations under #69/#68, including retained
   source/media authority, last-Context removal and collection eligibility. #92/PR #93 owns the

@@ -141,8 +141,8 @@ the promised common contract. No protected-registration route, scope literal, ma
 credential lifetime, number of consent screens or new module is selected here. If a common
 installer contract is later needed, define a discoverable optional profile. Supporting Client
 Credentials remains required by AUTH-002/027 in this iteration; whether that capability should
-be optional is a separate decision. The remaining token-profile candidates from #82, including
-its proposed service refresh-token prohibition, also remain open.
+be optional is a separate decision. The [protocol-profile recommendation](protocol-profiles.md#service-credentials-and-registration-metadata)
+rejects a blanket service refresh-token ban and records the required family-contract change.
 
 #### Service-client cases for review
 
@@ -371,13 +371,10 @@ This authorization recommendation for [#69](https://github.com/sempods/sempods-s
 is based on revision `721b109342a2031500038850a80718d3d707fb75`. Current auth/grant requirements
 remain binding until coordinated normative adoption.
 
-The proposed OAuth profile uses [RFC 6749 §§4.1, 4.4, 5.2 and 6](https://www.rfc-editor.org/rfc/rfc6749.html)
-for code exchange, service authentication, errors and refresh;
-[RFC 7636 §4](https://www.rfc-editor.org/rfc/rfc7636.html#section-4) for PKCE;
-[RFC 6750 §§2.1 and 3](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1) for Bearer presentation
-and challenges; and [RFC 9700 §§2.1, 2.1.1 and 4.14](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.1)
-for code-injection/CSRF protection and refresh-token replay. This selects those operations, not every
-optional OAuth extension or an unversioned OAuth 2.1 draft.
+The [protocol-profile recommendation](protocol-profiles.md#selected-standards-and-candidate-dispositions)
+selects the dated standards, operation scope and redirect exceptions for these cases. It retains
+RFC 6749 code/service/refresh operations, S256 PKCE and Bearer presentation while applying the
+selected security protections. It imports neither every OAuth extension nor an unversioned draft.
 
 The remaining changes below are coordinated under #70/#71 and reviewed before #74 adoption.
 The conditional state echo is already covered by AUTH-025 through #10/PR #105; the remaining
@@ -388,21 +385,23 @@ proposal adopts no normative changes. #65's removal of guaranteed refresh-token 
 | AUTH-008/009/010/011 | Preserve the unauthenticated public `dyn:` profile, PKCE/consent and its exclusion from service access. Narrow the endpoint-wide prefix and registration-response restrictions to that profile; protected service registration, if offered, is a distinct authorized profile even at the same route. |
 | AUTH-012 | Replace mandatory out-of-band host-operator provisioning and the blanket ban on pod-token/dynamic provisioning with operation-, target- and pod-bounded service administration. Ordinary data authority is insufficient; no common installer API is selected. |
 | AUTH-013/017 | Remove fixed-at-registration and mandatory per-Context grant form. Preserve the service identity/class, independently authorized assignment changes, and the public-read/OIDC exclusions. |
-| AUTH-002/027/032 | Retain Client Credentials support and the current service token endpoint contract in this iteration. Making service access optional and the remaining #82 token-profile choices need separate decisions. |
+| AUTH-002/027/032 | Retain Client Credentials support and the current service token endpoint contract in this iteration. Making service access optional remains separate. The [protocol recommendation](protocol-profiles.md#service-credentials-and-registration-metadata) retains the standard recommendation against service refresh issuance and proposes bounded exceptions with matching family semantics. |
+| AUTH-033/034/037/063 | Apply the [service-refresh recommendation](protocol-profiles.md#service-credentials-and-registration-metadata): retain rotation, client binding and revocation; generalize code-only family seeding and revise AUTH-037's grant-only authentication dispatch for confidential service refresh. Preserve its network-address rate-limit tier. Check live registration, current authority and credential-revocation state at issuance. Distinguish credential revocation from authority-only withdrawal: valid authentication still uses current rights, including after late responses and refresh. No guaranteed issuance. |
 | AUTH-014/024, GRANT-013/014/028/029/030 | Express ordinary consent and service data authority without Context prerequisites. Keep the Context-specific management boundary in the optional module; no pod-wide service administration follows from D data access. |
-| AUTH-009/022/023 | S256 PKCE for both user-facing client shapes. Preserve client/redirect validation and AUTH-025's current response contract while reviewing the remaining profile separately. |
+| AUTH-009/022/023 | S256 PKCE for both user-facing client shapes. Preserve client/redirect validation and AUTH-025's current response contract; use the [selected profile and explicit redirect exceptions](protocol-profiles.md#selected-standards-and-candidate-dispositions). |
 | AUTH-026, GRANT-002/015/016/018/019, AUTH-052/061/062/063 | Retain client isolation, trusted-alias coverage, delegation ceilings and fresh-consent barriers; replace prescribed storage/lookups/write ordering with the tested outcomes above. Narrowing never silently restores removed authority. |
 | GRANT-020/021/022/031/032, AUTH-042/043/044 | Retain additive public-read and credential-free reads; generalize to public assertions in the requested scope and permit public-only issuance on an empty pod. Keep invalid-credential rejection. |
 | MCP-011/012/013/030 | Coordinate ordinary data-access authorization acknowledgement and forced reauthorization. Replace issuance-time evidence with challenge-bound fresh consent (#49); do not require Context grants or a writable-Context list to acknowledge core authority. The exact MCP result shape remains a module-view decision. |
 
-The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies pod-local
-metadata and pod-base identities. External service identities remain proposed under #96.
-The equivalent-identity wire claim is specified separately under #5; the remaining #82
-transport/registration/token-profile candidates and #77's validation issues retain their ownership.
-This iteration does not settle those remaining choices or claim a complete federation profile.
-The proposed [Context lifecycle](context-contract.md#adopted-rdf-surface-and-proposed-lifecycle),
-independent view/data authority and retained-source/media behavior also need the integrated review
-recorded in #69/#68.
+The current [OAuth discovery profile](../../spec/core/auth.md#10-discovery) supplies core pod-local
+metadata. The [MCP profile](../../spec/modules/mcp.md#discovery-and-resource-binding), adopted by
+[PR #111](https://github.com/sempods/sempods-spec/pull/111), uses the MCP endpoint as resource and
+audience and the pod base as issuer. #99 retains its incomplete client-validation evidence;
+external service identities remain proposed under #96.
+The [protocol-profile recommendation](protocol-profiles.md) supplies the remaining #82 dispositions,
+registration/error-ID cases and #77 handoff. Its proposed changes, the authorization cases here and
+the [Context lifecycle recommendation](context-contract.md#adopted-rdf-surface-and-proposed-lifecycle)
+need coordinated normative adoption; their proposal merges do not change the current contract.
 
 Validation compares these cases on a Context-backed store and a policy-based store with equivalent
 authority, including empty D and future creation. Existing ACP fixtures demonstrate their supplied
