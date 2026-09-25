@@ -570,21 +570,31 @@ paths:
       operationId: removeEdge
       summary: Remove exactly one edge, leaving the slot's other values in place.
       description: |
-        Idempotent, and `If-Match` is ignored: the operation names a statement by identity, so the
-        outcome is the same whether or not it was there. Safe to retry, and safe for
-        "ensure this triple does not exist" without a prior read.
+        Without a precondition, idempotent: safe to retry, and safe for "ensure this triple does not
+        exist" without a prior read. `If-Match` and `If-None-Match` are optional and test the slot
+        `(subject, predicate)` in the write context, with the tag a slot read or write there
+        returns; `*` asks whether that slot holds a statement. A precondition that does not hold is
+        `412`, also when the edge is already absent. Authorization comes first: a caller who may
+        not write the context gets `403` whatever it sends.
       parameters:
         - $ref: '#/components/parameters/WriteContext'
-      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-054, SPS-AUTH-064]
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      x-sps-requirements: [SPS-CORE-018, SPS-CRUD-042, SPS-CRUD-044, SPS-CRUD-052, SPS-CRUD-053, SPS-CRUD-054, SPS-CRUD-059, SPS-CRUD-060, SPS-CRUD-061, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200':
-          description: '`removed`, or `already_absent`.'
+          description: |
+            `removed`, or `already_absent`. Carries the slot's new entity tag; once the slot is
+            empty, the tag a slot `DELETE` would echo.
+          headers:
+            ETag: { schema: { type: string } }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Outcome' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/UnknownContext' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
 
   /_system/sparql/query:
     post:
