@@ -3,7 +3,7 @@
 Check the repository's text against its contract sources and the
 [writing rules](documentation-strategy.md#the-writing-rules) for one target: your own change, a
 pull request or a path. The review reports findings; with `--fix` it applies them. Without
-`--fix`, every "fix", "delete" or "remove" below is a finding for the report, and no file changes.
+`--fix`, every step below that would change a file is a finding for the report, and no file changes.
 `--fix` on a pull request edits its branch, so check it out first: `gh pr checkout 123`. Before
 requesting review, run it with `--fix` on your own change — it is the working half of the
 [definition of done](documentation-strategy.md#definition-of-done), on every PR, including partial
@@ -34,7 +34,17 @@ misses the commits, a bare `git diff` also the staged part. A new chapter arrive
 file, and a chapter is the thing this procedure most needs to look at. Every command here names the
 base `origin/main`; in a checkout without an `origin` remote, use `main`.
 
-For a path, steps 2–5 and 7 check the text as it stands, and steps 6 and 8 do not apply.
+For a path, the steps check the text as it stands, and there is no diff:
+
+| Step | For a path |
+|---|---|
+| 2 | Every obligation has an ID and a matching anchor; `check-requirements.py origin/main` replaces the diff check |
+| 3 | The path's row in the chapter table |
+| 4 | The chapter agrees with its OpenAPI description, whether or not anything moved |
+| 5 | Everything except the proposal-disposition and wording-only checks |
+| 6, 8 | Do not apply |
+| 7 | Reachability and the repository checks |
+| 9 | The report is the result; there is no work record to write to |
 
 ## 2. Requirement IDs
 
