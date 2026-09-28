@@ -1,26 +1,40 @@
-# Procedure: sync the documentation
+# Procedure: review the documentation
 
-Bring the repository back into internal agreement after a change. This is the working half of the
-definition of done in [`documentation-strategy.md`](documentation-strategy.md) — run it before
-requesting review on every PR, including partial work.
+Check the repository's text against its contract sources and the
+[writing rules](documentation-strategy.md#the-writing-rules) for one target: your own change, a
+pull request or a path. The review reports findings; with `--fix` it applies them. Without
+`--fix`, every "fix", "delete" or "remove" below is a finding for the report, and no file changes.
+`--fix` on a pull request edits its branch, so check it out first: `gh pr checkout 123`. Before
+requesting review, run it with `--fix` on your own change — it is the working half of the
+[definition of done](documentation-strategy.md#definition-of-done), on every PR, including partial
+work.
 
-Wrapped for Claude Code as the `sync-docs` skill; any other agent can be pointed at this file
-directly.
+Wrapped for Claude Code as the `doc-review` skill. Any other agent: *"Follow
+`docs/agents/doc-review.md` for `<target>`."*
 
-## 1. What changed
+## 1. Target
+
+| Call | Target | Read |
+|---|---|---|
+| `doc-review` | your branch | the commands below |
+| `doc-review #123`, `doc-review <branch>` | a pull request | `gh pr diff 123` or `git diff origin/main...<branch>`, and the PR description |
+| `doc-review spec/modules/media.md`, `doc-review docs/guides/` | a path | the chapter, guide or proposal as it stands |
+
+For your branch:
 
 ```bash
-git status --short                        # everything, new and untracked files included
-git diff HEAD                             # the change itself, staged or not
-git ls-files --others --exclude-standard  # the new files, which no diff shows — read them
+git status --short
+git diff --merge-base origin/main          # committed, staged and unstaged, in one diff
+git diff --cached --merge-base origin/main # what is staged, even where the working tree hides it
+git ls-files --others --exclude-standard   # new files, which no diff shows — read them
 ```
 
-Against `HEAD`, not the index. A bare `git diff` compares the working tree with the index, so a
-change that has already been staged shows nothing — and staging before proposing a commit is exactly
-what this repository's procedures ask for.
+Against the merge base, so committed work counts as much as uncommitted work: `git diff HEAD`
+misses the commits, a bare `git diff` also the staged part. A new chapter arrives as an untracked
+file, and a chapter is the thing this procedure most needs to look at. Every command here names the
+base `origin/main`; in a checkout without an `origin` remote, use `main`.
 
-The third command exists because the second cannot see an untracked file at all. A new chapter
-arrives as an untracked file, and a chapter is the thing this procedure most needs to look at.
+For a path, steps 2–5 and 7 check the text as it stands, and steps 6 and 8 do not apply.
 
 ## 2. Requirement IDs
 
@@ -35,10 +49,11 @@ get wrong.
   ```
 
 - **No ID was reused, renumbered or deleted.** A deleted ID is the failure mode this step exists to
-  catch, and `git diff` shows it as an ordinary removed line.
+  catch, and `git diff` shows it as an ordinary removed line. Run this over the target's diff; shown
+  for your branch:
 
   ```bash
-  git diff HEAD -- spec/ | grep '^-' | grep -o 'SPS-[A-Z]*-[0-9]\{3\}' | sort -u
+  git diff --merge-base origin/main -- spec/ | grep '^-' | grep -o 'SPS-[A-Z]*-[0-9]\{3\}' | sort -u
   ```
 
   Every ID that appears there must also appear in the new text — as a withdrawal, or unchanged
@@ -130,7 +145,8 @@ before this specification PR can be reviewed or merged.
 
 ## 9. Report
 
-Name what was updated, what was **deleted** and why, which requirement IDs were added or withdrawn,
-and any remaining acceptance. Record the commands, results and skipped checks in the applicable
+List each finding as `file:line — rule — correction`. With `--fix`, apply them and name what was
+updated, what was **deleted** and why, which requirement IDs were added or withdrawn, and any
+remaining acceptance. Record the commands, results and skipped checks in the applicable
 work record. A specific no-change reason, such as “The existing guide still describes the same
 standards profile”, is a valid documentation outcome.

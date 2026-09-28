@@ -26,8 +26,8 @@
 - [ ] `spec/README.md`'s chapter table still reflects reality
 - [ ] The applicable work record has check and documentation evidence, with remaining scope
       visible under [Issue planning](https://github.com/sempods/sempods-spec/blob/main/docs/agents/documentation-strategy.md#issue-planning)
-- [ ] Documentation-sync is complete for this diff; affected documents are current or a specific
-      no-change reason is recorded
+- [ ] `doc-review` ran on this PR; affected documents are current or a specific no-change reason
+      is recorded
 - [ ] Proposal, adoption and publication claims match the delivered scope; standards-profile
       edits have been reviewed for semantic effects
 - [ ] The applicable [repository checks](https://github.com/sempods/sempods-spec/blob/main/docs/guides/repository-checks.md#before-requesting-review)

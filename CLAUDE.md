@@ -12,8 +12,8 @@ Three things Claude Code has no automatic trigger for, so they are stated here:
 - **When editing any `*.md`**, also read
   [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md), and — for
   anything under `spec/` — [`docs/agents/spec-authoring.md`](docs/agents/spec-authoring.md).
-- **Before proposing a commit**, walk the definition of done in the documentation strategy; the
-  `sync-docs` skill is the procedure.
+- **Before proposing a commit**, run the `doc-review` skill with `--fix` on your change. It walks the
+  definition of done in the documentation strategy.
 
 Skills in [`.claude/skills/`](.claude/skills/) are thin wrappers. The procedures themselves live in
 `docs/agents/` so every agent can follow them.
