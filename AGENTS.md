@@ -173,7 +173,7 @@ Agent instructions — [`docs/agents/`](docs/agents/):
 - [`spec-authoring.md`](docs/agents/spec-authoring.md) — how a normative statement is formed,
   identified, numbered and withdrawn
 - [`doc-review.md`](docs/agents/doc-review.md) — the documentation review for a change, a pull
-  request or a path, run with `--fix` before a commit
+  request or a path, run before a commit
 - [`issue-work.md`](docs/agents/issue-work.md) — scope, bounded delivery and completion evidence
 - [`docs/guides/repository-checks.md`](docs/guides/repository-checks.md) — check commands, setup and
   evidence boundaries
@@ -226,7 +226,7 @@ here rather than copied.
 
 1. Run the [repository checks](docs/guides/repository-checks.md#before-requesting-review), including
    the base-ref comparison and full site render. That guide owns setup, commands and evidence limits.
-2. Run [doc-review](docs/agents/doc-review.md) with `--fix` on this PR's change. Record checks,
+2. Run [doc-review](docs/agents/doc-review.md) on this PR's change. Record checks,
    affected documentation or a specific no-change reason, and remaining acceptance in the applicable
    work record under [Issue planning](docs/agents/documentation-strategy.md#issue-planning).
 3. `git commit -s`. The DCO workflow fails the pull request without a `Signed-off-by` line. Work
