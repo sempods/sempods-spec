@@ -2,14 +2,12 @@
 
 Check the repository's text against its contract sources and the
 [writing rules](documentation-strategy.md#the-writing-rules) for one target: your own change, a
-pull request or a path. It applies every step below that would change a file, except steps 2
-(Requirement IDs) and 4 (OpenAPI), which always report instead: assigning or renumbering a
-normative requirement ID and hand-authoring a normative OpenAPI change both want a human decision,
-not a silent rewrite. `--report-only` lists every other finding instead, without touching a file.
-Applying on a pull request edits its branch, so check it out first: `gh pr checkout 123`. Run it
-on your own change before requesting review — it is the working half of the
-[definition of done](documentation-strategy.md#definition-of-done), on every PR, including partial
-work.
+pull request or a path. On your own change, the review applies every step below that would change
+a file. On a pull request or a path, it reports them as findings and no file changes; with `--fix`,
+it applies them. `--fix` on a pull request edits its branch, so check it out first:
+`gh pr checkout 123`. Before requesting review, run it on your own change — it is the working half
+of the [definition of done](documentation-strategy.md#definition-of-done), on every PR, including
+partial work.
 
 Wrapped for Claude Code as the `doc-review` skill. Any other agent: *"Follow
 `docs/agents/doc-review.md` for `<target>`."*
@@ -51,9 +49,8 @@ For a path, the steps check the text as it stands, and there is no diff:
 ## 2. Requirement IDs
 
 The half that has no equivalent in the reference implementation, and the half that is expensive to
-get wrong. Always a finding for the report, never an automatic edit: assigning the next ID,
-withdrawing one inside the governance window, or repairing a mismatched anchor is a decision for
-the person who owns the change, not a rewrite this procedure applies by itself.
+get wrong. Report its findings even on your own change: assigning the next ID, withdrawing one
+inside the governance window or repairing a mismatched anchor is the author's decision.
 
 - **Every new sempods-authored obligation has an ID**, and the ID is higher than every ID ever
   issued in its area — withdrawn ones included. Check against the text, not against memory:
@@ -101,9 +98,8 @@ If the change moved the HTTP surface — a route, a parameter, a status code, a 
 OpenAPI description moves in the **same commit**. The two are one change.
 
 The description is hand-written and normative; it is not generated from any implementation. So
-nothing will tell you it has gone stale except this step. Always a finding for the report, never an
-automatic edit: external implementers read this file, and a rewrite gets a human read before it
-changes what they see.
+nothing will tell you it has gone stale except this step. Report its findings even on your own
+change: a normative edit is the author's decision.
 
 ## 5. Contract sources and informative documents
 
@@ -161,9 +157,8 @@ before this specification PR can be reviewed or merged.
 
 ## 9. Report
 
-List each finding as `file:line — rule — correction`, apply it, and name what was updated, what was
-**deleted** and why, which requirement IDs were added or withdrawn, and any remaining acceptance.
-With `--report-only`, list the findings without applying them. A step-2 or step-4 finding is always
-listed, never applied. Record the commands, results and skipped checks in the applicable
-work record. A specific no-change reason, such as “The existing guide still describes the same
-standards profile”, is a valid documentation outcome.
+List each finding as `file:line — rule — correction`. For each one applied, name what was updated,
+what was **deleted** and why. Name the requirement IDs added or withdrawn, and any remaining
+acceptance. Record the commands, results and skipped checks in the applicable work record. A
+specific no-change reason, such as “The existing guide still describes the same standards
+profile”, is a valid documentation outcome.
