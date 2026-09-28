@@ -18,7 +18,7 @@ Link the PR to its work record. Use `Refs #N` for partial work and `Closes #N` o
 satisfies all acceptance and required follow-up actions. Keep private evidence in the private record.
 
 Run the applicable [repository checks](../guides/repository-checks.md) and
-[doc-review](doc-review.md) with `--fix` before review. Record check results, skipped checks,
+[doc-review](doc-review.md) on your change before review. Record check results, skipped checks,
 updated documentation or a specific no-change reason, and remaining acceptance. Review normative
 semantics, including standards incorporation; unchanged requirement IDs alone do not prove equivalence.
 
