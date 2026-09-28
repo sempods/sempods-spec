@@ -108,16 +108,11 @@ already anticipates ("conformance markers").
 
 ## Documentation
 
-[`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) is the authority.
-The short version:
-
-- **Document ownership and lifecycle** distinguish normative text, the vision, proposals and
-  maintained guides. Issues own planning; milestones track agreed release conditions.
-- Read [the vision](docs/vision.md#what-belongs-in-the-contract) for requirement selection; follow
-  [spec authoring](docs/agents/spec-authoring.md) to apply it.
-- **No history and no decision log.** Keep only the reasoning a future reader needs in order not to
-  undo the decision; the rest is what commit messages are for.
-- **Every document is reachable through at least one `AGENTS.md` pointer.**
+[`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md) is the authority:
+document ownership, the writing rules and the definition of done. Read it before touching any
+`*.md`, and [spec authoring](docs/agents/spec-authoring.md) before touching `spec/`.
+[`docs/agents/doc-review.md`](docs/agents/doc-review.md) checks a change, a pull request or a path
+against them.
 
 ## Documentation map
 
@@ -177,7 +172,8 @@ Agent instructions — [`docs/agents/`](docs/agents/):
   the writing rules
 - [`spec-authoring.md`](docs/agents/spec-authoring.md) — how a normative statement is formed,
   identified, numbered and withdrawn
-- [`documentation-sync.md`](docs/agents/documentation-sync.md) — the procedure run before a commit
+- [`doc-review.md`](docs/agents/doc-review.md) — the documentation review for a change, a pull
+  request or a path, run with `--fix` before a commit
 - [`issue-work.md`](docs/agents/issue-work.md) — scope, bounded delivery and completion evidence
 - [`docs/guides/repository-checks.md`](docs/guides/repository-checks.md) — check commands, setup and
   evidence boundaries
@@ -230,7 +226,7 @@ here rather than copied.
 
 1. Run the [repository checks](docs/guides/repository-checks.md#before-requesting-review), including
    the base-ref comparison and full site render. That guide owns setup, commands and evidence limits.
-2. Run [documentation-sync](docs/agents/documentation-sync.md) for this PR's diff. Record checks,
+2. Run [doc-review](docs/agents/doc-review.md) with `--fix` on this PR's change. Record checks,
    affected documentation or a specific no-change reason, and remaining acceptance in the applicable
    work record under [Issue planning](docs/agents/documentation-strategy.md#issue-planning).
 3. `git commit -s`. The DCO workflow fails the pull request without a `Signed-off-by` line. Work
@@ -241,6 +237,28 @@ here rather than copied.
    change directly, in the fewest words that stay correct — writing rule 3 in
    [`docs/agents/documentation-strategy.md`](docs/agents/documentation-strategy.md). The body
    explains what was wrong and why the fix has the shape it does.
+
+## Code Review Rules
+
+Codex's pull-request review reads this section for every changed file, so it stands on its own.
+The canonical procedure is [`docs/agents/doc-review.md`](docs/agents/doc-review.md); this is its
+registered subset (see [`docs/agents/ai-instructions.md`](docs/agents/ai-instructions.md)
+§"Auto-injection constraints"). Links, anchors and the requirement index are checked in CI; these
+are the checks it cannot make.
+
+### Specification
+
+- A new sempods-authored obligation has no requirement ID.
+- An edit keeps a requirement's ID but changes its actor, obligation level, condition, exception or
+  outcome.
+- A requirement is removed instead of withdrawn, or deleted inside the `GOVERNANCE.md` window
+  without the description naming the ID and why.
+- The HTTP surface moved; the OpenAPI description or the vocabulary did not.
+- A standards-profile edit changes an inherited obligation without saying so.
+- `spec/README.md`'s chapter table no longer matches the chapters.
+- A proposal or guide reads as normative, or a guide no longer matches the revision it names.
+- A known implementation gap has no linked follow-up.
+- The description has no documentation evidence: the updates, or why none were needed.
 
 ## What this repository deliberately does not have
 

@@ -85,6 +85,8 @@ Full rules: [`docs/agents/spec-authoring.md`](../docs/agents/spec-authoring.md).
   private-security boundaries. Partial PRs leave unfinished issues open.
 
 Full rules: [`docs/agents/documentation-strategy.md`](../docs/agents/documentation-strategy.md).
+To review documentation — a change, a pull request or a path — follow
+[`docs/agents/doc-review.md`](../docs/agents/doc-review.md).
 
 ## Checks
 

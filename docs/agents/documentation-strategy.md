@@ -183,7 +183,7 @@ Every PR completes the following for its own diff before review:
   [Implementation follow-up](../../GOVERNANCE.md#implementation-follow-up), normally in a linked
   implementation issue. A companion implementation PR is not a prerequisite for this PR.
 
-[`documentation-sync.md`](documentation-sync.md) is the procedure that walks this list.
+[`doc-review.md`](doc-review.md) is the procedure that walks this list.
 
 Run the applicable [repository checks](../guides/repository-checks.md), including links/anchors
 and full site rendering, and report skipped checks. Their success does not replace semantic review.

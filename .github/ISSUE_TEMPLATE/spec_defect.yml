@@ -58,6 +58,6 @@ body:
     id: documentation
     attributes:
       label: Documentation completion
-      description: Name affected chapters, contract views or informative documents, or explain why none are affected. Each PR runs documentation-sync and records checks before review.
+      description: Name affected chapters, contract views or informative documents, or explain why none are affected. Each PR runs doc-review and records checks before review.
     validations:
       required: true
