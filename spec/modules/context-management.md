@@ -31,11 +31,10 @@ Profiles: RFC 9110. Error codes are [`../core/index.md`](../core/index.md) §5; 
 <a id="SPS-CTX-005"></a>
 **`SPS-CTX-005`** — The management route and the context IRI MUST be the same string:
 `PUT {pod}/_system/contexts/apps/notes/public` manages exactly the context
-`{pod}/_system/contexts/apps/notes/public`. An implementation MUST NOT decompose the path into an
-identifier on either side.
+`{pod}/_system/contexts/apps/notes/public`.
 
-Identity and route are one string so they cannot drift apart. There is no mapping table to get wrong
-and nothing to migrate when the route changes shape.
+Internally, a pod can use its own identifiers. The client interface uses full IRIs under
+[`SPS-CTX-002`](../core/contexts.md#SPS-CTX-002).
 
 ## 2. What a context may be called
 

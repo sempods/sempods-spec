@@ -100,15 +100,13 @@ paths:
       - bearerAuth: []
       - oauth2: []
       summary: The contexts visible to the caller, with effective permissions.
-      description: 'The authoritative client-visible view of effective context permissions. A token''s `scope`
-
-        claim is not a context catalogue, and a client never constructs a context IRI itself.
-
-
-        Returns registry RDF; application/json is a request alias for application/ld+json, not the legacy JSON envelope. Every response, including errors, satisfies the authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data and caller-independent descriptions remain separate from the catalogue access summary.
-
-        '
-      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-023, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036, SPS-AUTH-064]
+      description: |
+        The authoritative client-visible view of effective context permissions.
+        Returns registry RDF; application/json is a request alias for application/ld+json,
+        not the legacy JSON envelope. Every response, including errors, satisfies the
+        authorization isolation and freshness guarantees of SPS-CTX-036. Ordinary data
+        and caller-independent descriptions remain separate from the catalogue access summary.
+      x-sps-requirements: [SPS-CTX-021, SPS-CTX-022, SPS-CTX-031, SPS-CTX-033, SPS-CTX-034, SPS-CTX-035, SPS-CTX-036, SPS-AUTH-064]
       responses:
         '200':
           description: The authorized registry representation.

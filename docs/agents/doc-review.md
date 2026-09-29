@@ -116,6 +116,8 @@ Apply [the writing rules](documentation-strategy.md#the-writing-rules) to prose,
 code comments:
 
 - Can each sentence be understood on first reading? Split dense sentences and use familiar words.
+- Does the section help someone building their first pod? Put useful orientation before details
+  and keep the tone natural and welcoming.
 - Would a concrete input and outcome make a consequence clearer? Keep the example informative and
   link its requirement.
 - Does explanatory text repeat a contract? Link its source and explain only what the reader needs here.

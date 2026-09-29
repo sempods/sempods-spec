@@ -119,9 +119,9 @@ lists what the caller may reach and what they may write to
 ([`SPS-CTX-021`](../spec/core/contexts.md#SPS-CTX-021)). Ben sees `recipes` and `trip`, and can write
 to `trip`. He never learns that `finances` exists.
 
-That listing is what makes the choice usable — a client picks a write target from it and names it with
-`?context=` ([`SPS-CRUD-007`](../spec/core/lod-crud.md#SPS-CRUD-007)) rather than constructing an IRI
-of its own ([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)).
+Following the [discovery guidance](../spec/core/contexts.md#3-discovery), Ben's client can take
+`trip`'s full IRI from the catalogue and use it as the write target in `?context=`
+([`SPS-CRUD-007`](../spec/core/lod-crud.md#SPS-CRUD-007)).
 
 Still no policy anywhere on a single recipe or a single note. Every audience Anna has lines up with an
 area, so an area is all she needs.
