@@ -127,10 +127,9 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # purpose — so a composed decision could otherwise pair a protected subject with an unrelated public
 # context, expect a read, and certify one that never met the sandbox.
 #
-# `registered` is a service client's grants, fixed when it was registered. They are not policy — no
-# ACR carries them — and they take the place of both the ceiling and the context decision, so a
-# request whose subject *is* its client is answered from them. Without the block the runner would
-# quietly apply the formula for a person, which is a different answer.
+# `registered` supplies a snapshot of a service client's current server-side grants (SPS-GRANT-002).
+# No ACR carries them. For a service request, they replace the ceiling and context decision.
+# Without the block the runner would apply the formula for a person.
 KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
          "grant", "holds", "registered", "aside")
 # SPS-AUTH-017 asks for two things, and one of them is a marker: a token's subject being its client
@@ -1053,7 +1052,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 if predicate not in (CLIENT, IN, GRANTS):
                     failures.append(
                         f"{where}: a registered block says {short(predicate)}, and an entry is a "
-                        "client, a context and the modes it was registered with"
+                        "client, a context and its current modes"
                     )
             for node in {sub for sub, _, _ in stated}:
                 client, context = one(stated, node, CLIENT, where), one(stated, node, IN, where)
@@ -1067,13 +1066,13 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     continue
                 modes = set(stated.objects(node, GRANTS))
                 failures += inspect_modes(modes, where, "registration", notes)
-                # A registration grants like a policy does, so it closes like one: SPS-GRANT-009
+                # Service grants close like policy grants: SPS-GRANT-009
                 # has write covering read, and a write-only context is a state the model forbids
                 # rather than a narrower one.
                 if ACL_CONTROL in modes:
                     failures.append(
                         f"{where}: a registration grants acl:Control, which is management of an "
-                        "access control resource — SPS-AUTH-013 gives a service per-context grants, "
+                        "access control resource — SPS-AUTH-013 limits services to per-context grants, "
                         "and context management has a sempods term of its own that is not named yet"
                     )
                 for mode, implied in ((ACL_WRITE, {ACL_READ}), (ACL_CONTROL, {ACL_READ, ACL_WRITE})):
@@ -1085,7 +1084,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                 if context in registered.get(client, {}):
                     failures.append(
                         f"{where}: a second registration for {short(client)} in {short(context)} — "
-                        "grants fixed at registration are fixed once"
+                        "a fixture supplies one current grant set per client and context"
                     )
                 registered.setdefault(client, {})[context] = modes
 
@@ -1400,9 +1399,8 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     pending = None
                     continue
                 # SPS-AUTH-017: for a service token there is no person and the subject *is* the
-                # client. Its grants were fixed at registration and stand in for both the ceiling
-                # and the context decision, so answering it with the person formula would deny
-                # authority it was registered with or grant authority it was not.
+                # client. This fixture's current service grants replace both the ceiling and the
+                # context decision; the person formula would evaluate a different authority.
                 service = any(c.service for c in halves)
                 # A lone `context` block is one evaluation and says so. A `decision` claims the
                 # whole answer, and the formula intersects the delegated ceiling into it — so a
@@ -1432,7 +1430,7 @@ def check_scenario(path: Path, ids: set[str]) -> tuple[list[str], list[str]]:
                     if holder is None:
                         failures.append(
                             f"{where}: the subject is its own client, so this is a service token — "
-                            "a registered block has to say what it was registered with"
+                            "a registered block has to supply the service's current grants"
                         )
                         pending = None
                         continue
@@ -1907,7 +1905,7 @@ BROKEN = [
       "[ acp:target <https://a.example/c> ; acp:agent <did:web:svc.example> ;\n"
       "  <https://example.invalid/runner#serviceToken> true ;\n"
       "  acp:client <did:web:svc.example> ] .\n```"),
-     "a registered block has to say what it was registered with"),
+     "a registered block has to supply the service's current grants"),
     ("a registration granting write without read",
      ("```turtle context", "```turtle registered\n"
       "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
@@ -1949,7 +1947,7 @@ BROKEN = [
       "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"
       "  <https://example.invalid/runner#in> <https://a.example/c> ;\n"
       "  <https://example.invalid/runner#grants> acl:Read, acl:Write ] .\n```\n"
-      "```turtle context"), "grants fixed at registration are fixed once"),
+      "```turtle context"), "a fixture supplies one current grant set per client and context"),
     ("a registration granting acl:Control",
      ("```turtle context", "```turtle registered\n"
       "[ <https://example.invalid/runner#client> <did:web:svc.example> ;\n"

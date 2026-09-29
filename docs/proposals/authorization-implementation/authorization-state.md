@@ -57,13 +57,11 @@ context's public flag. Public write would be rejected. Its authorization and rou
 
 ## Service-client origins
 
-The current contract requires host-operator registration and fixed per-Context grants
-([`SPS-AUTH-012`](../../../spec/core/auth.md#SPS-AUTH-012),
-[`SPS-AUTH-013`](../../../spec/core/auth.md#SPS-AUTH-013)). A candidate store can keep those grants
-alongside ordinary rows, with an origin marker that prevents a pod-scoped management surface from
-changing operator-owned registration state. Separate stores are also possible; choosing shared rows
-avoids a separate source to assemble for the proposed view. The origin marker is an implementation
-choice, not part of the service-token contract.
+The current contract leaves registration and grant assignment to the implementation
+([service clients](../../../spec/core/auth.md#service-clients)). A candidate store can keep service
+grants alongside ordinary rows. An origin marker can distinguish who manages the credentials from
+who assigns data access: an operator might manage a service's secret while the pod owner changes
+its grants. Separate stores are also possible. Neither storage choice is part of the contract.
 
 ## Computing a sandbox
 

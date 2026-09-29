@@ -1,23 +1,23 @@
 # A client with no person behind it
 
-Current service-client identity and registration requirements are cited below. Their ACP encoding
+Current service-client identity and grant requirements are cited below. Their ACP encoding
 and combination with a proposed resource restriction are fixture assumptions, not a required policy
 architecture or an implemented service. See the
 [fixture assumptions](../docs/guides/acp-fixtures.md).
 
-A log shipper writes into a pod every few minutes. Nobody authorised it in a browser; an operator
-registered it out of band, and its grants were fixed at that moment
-([`SPS-AUTH-012`](../spec/core/auth.md#SPS-AUTH-012),
-[`SPS-AUTH-013`](../spec/core/auth.md#SPS-AUTH-013)).
+A log shipper writes into a pod every few minutes. It has read and write grants on the `logs`
+context ([`SPS-AUTH-013`](../spec/core/auth.md#SPS-AUTH-013)). How it was registered and who assigned
+those grants are implementation choices.
 
 That makes it the one caller the delegation formula does not describe. There is no person, the
 subject **is** the client ([`SPS-AUTH-017`](../spec/core/auth.md#SPS-AUTH-017)), and there is no
 ceiling to intersect because nobody delegated anything.
 
-## What it was registered with
+## Its current grants
 
-Not a policy. The fixture supplies registration state directly rather than encoding it as an ACR.
-In this model it takes the place of both the ceiling and the context decision.
+The fixture supplies one snapshot of the service's grants in a `registered` block. In this model,
+it replaces both the delegated ceiling and the context policy decision. Grants can change;
+each request uses the current set ([`SPS-GRANT-002`](../spec/core/grants.md#SPS-GRANT-002)).
 
 ```turtle registered
 [
@@ -85,21 +85,14 @@ An ordinary context policy, and one that does **not** name the shipper.
 [] acp:grant acl:Read, acl:Write .
 ```
 
-**The context policy never mentions the shipper and it writes anyway.** That is not the policy being
-bypassed — it is the registered grant standing where a context decision would stand for a person.
-Olga is admitted by a policy; the shipper is admitted by its registration, and the two are different
-routes to the same place.
+**The shipper can write because it holds a write grant.** The context policy grants Olga access;
+the supplied service grants give the shipper access.
 
-The resource decision still applies, and is the half that can still refuse. Take the shipper out of
-`#entry` and this case goes empty however generously it was registered: what registration replaces is
-the *context* decision, not every decision.
+The proposed resource restriction still applies. Remove the shipper from `#entry` and this fixture
+grants it nothing, even while its context grant remains.
 
-## Why this needs saying at all
+## Reading the result
 
-Read the effective-modes formula with a service token in mind and it asks for a ceiling that does not
-exist. Following it literally denies every service client — nobody delegated to them — or invents a
-per-principal delegation the contract does not define. Neither is what a pod should do, and neither
-is visible until somebody writes the request down.
-
-Which is what this file is: the branch, spelled out, with a runner that would otherwise have answered
-it with the formula for a person.
+The service acts as itself ([`SPS-AUTH-017`](../spec/core/auth.md#SPS-AUTH-017)). The runner therefore
+uses its supplied grants in place of a person's delegation. This checks the fixture's access
+decision, not a registration or consent flow.

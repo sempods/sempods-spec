@@ -3,7 +3,7 @@
 This informative guide describes the repository's [example fixtures](../../examples/README.md) and
 [runner](../../.github/scripts/check-examples.py). It explains their supplied model and its limits,
 not a deployed implementation. Current-contract references below describe revision
-[`3f5cfa7`](https://github.com/sempods/sempods-spec/tree/3f5cfa7958dc21b100437b032d4e3b76b2cca446).
+[`1c97415`](https://github.com/sempods/sempods-spec/tree/1c97415024a66419df617aba1a911e82c4ca84c9).
 The [access-control proposal](../proposals/access-control.md) remains non-normative.
 
 ## What is supplied and what is checked
@@ -64,8 +64,8 @@ OAuth scope validation. The current `public-read` profile remains in
 [`SPS-AUTH-042`](../../spec/core/auth.md#SPS-AUTH-042)–
 [`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044); the fixture is not evidence about those flows.
 
-Example 55 supplies registered service grants and a service marker. The current service-client
-identity and registration requirements are cited in that example. Replacing the person/context
+Example 55 supplies a snapshot of current service grants and a service marker. The service-client
+identity and grant requirements are cited in that example. Replacing the person/context
 branch with those supplied grants, while retaining a resource restriction, is this model's chosen
 representation rather than a specified ACP integration.
 

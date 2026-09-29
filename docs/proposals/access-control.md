@@ -8,6 +8,9 @@ The equivalent-identity claim is specified by [SPS-OIDC-005](../../spec/modules/
 and [SPS-OIDC-016](../../spec/modules/oidc.md#SPS-OIDC-016)–[018](../../spec/modules/oidc.md#SPS-OIDC-018) under
 [#5](https://github.com/sempods/sempods-spec/issues/5), with normative adoption in
 [PR #107](https://github.com/sempods/sempods-spec/pull/107).
+Service registration and grant timing follow the narrowed core contract from
+[#125](https://github.com/sempods/sempods-spec/issues/125), adopted in
+[PR #127](https://github.com/sempods/sempods-spec/pull/127).
 Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
 The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
 not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
@@ -95,54 +98,36 @@ placement remains proposed here.
 
 ### Service clients and registration authority
 
-This is a non-normative recommendation under [#69](https://github.com/sempods/sempods-spec/issues/69),
-against merged revision `99bac2095e1d11f5625fed0d3f927ed741877824`. It incorporates the corrected
-service-registration input from [Kotlin #124](https://github.com/sempods/sempods-kotlin/issues/124).
-AUTH-008/011/012/013 still bind until coordinated adoption; an implementation of this proposal
-does not thereby conform to those current requirements.
+The current [service-client contract](../../spec/core/auth.md#service-clients), revised under
+[#125](https://github.com/sempods/sempods-spec/issues/125), leaves registration and grant assignment
+to the implementation. The public `dyn:` profile remains separate from service clients. Optional
+self-registration and owner-consent profiles are proposed in
+[#122](https://github.com/sempods/sempods-spec/issues/122) and
+[#123](https://github.com/sempods/sempods-spec/issues/123).
 
-For example, Alice authorizes an installer to create a backup service for her pod. The installer
-does not thereby gain access to Alice's data or permission to rotate another service's secret.
-Alice can approve the backup's read access separately, or an authorized provisioning operation can
-assign it at creation. The backup subsequently authenticates and reads under its own identity.
-The common contract needs those authority boundaries, not a required installer or consent sequence.
+For example, a backup service can register without data access. Alice later grants it read access
+to her notes. An operator can also provision a service with initial grants. Neither approach needs
+to become the registration process for every pod.
 
-Use [RFC 7591 §§2, 3.1 and 3.2](https://www.rfc-editor.org/rfc/rfc7591.html#section-3) for dynamic
-registration metadata and messages, and [RFC 6749 §4.4](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.4)
-for confidential clients using Client Credentials. RFC 7591 distinguishes open registration from
-registration protected by an initial access token; it leaves that token's issuance and validation
-policy to the deployment. A presented token or a requested grant type alone proves no service
-creation authority. The proposed sempods boundary is:
+The remaining recommendation under [#68](https://github.com/sempods/sempods-spec/issues/68) concerns
+Context-independent service authority and administrative boundaries:
 
-- Keep the existing unauthenticated registration profile at `POST {pod}/_system/auth/register`:
-  public `dyn:` clients, `token_endpoint_auth_method=none`, and no service credentials or
-  `client_credentials` in accepted metadata. Registration grants no data access; user-facing
-  authorization, PKCE and consent rules still apply.
-- Scope AUTH-008's prefix and AUTH-011's registration-response restriction to that profile,
-  including when an implementation also offers protected registration at the same route. Keep
-  `dyn:` as the public-client class; a protected service registration uses a separate identity.
-  Changing the spelling alone is insufficient: both profile restrictions need revision, and
-  service eligibility is validated server-side rather than inferred from a caller-chosen prefix.
-- Creating a service client requires explicit authority for that operation in the target pod.
-  Assigning or widening its access, rotating its secret and managing an existing registration
-  each require authority covering the operation and target. Approval to create a new service
-  cannot be spent on an unrelated existing service. Ordinary data access, an owner-valued `sub`,
-  or a service's own credentials supply none of this administrative authority by themselves.
-  Assignment authority also bounds the data and operations being granted; permission to create
-  a client alone supplies no assignment authority.
-- Permit operator provisioning, owner-authorized installation and embedded configuration.
-  A service's effective data authority can be assigned or changed after registration under the
-  same authorization boundary. Neither immutable registration-time grants nor Context-shaped
-  grants belong in core. Keep the service subject/class distinction and the exclusions of
-  `public-read` and OIDC scopes; ordinary D access grants no Context or pod administration.
+- Keep the public `dyn:` profile, PKCE, consent and its exclusion from service tokens. Service
+  registration can be open or protected; it uses a separate identity. RFC 7591 governs dynamic
+  registration metadata and messages, and RFC 6749 §4.4 governs Client Credentials.
+- Assigning or widening access, rotating a secret and managing an existing registration each need
+  authority covering the operation and target. Ordinary data access, an owner-valued `sub`, or a
+  service's own credentials supply no administrative authority by themselves. Permission to create
+  a client alone supplies no assignment authority. Assignment stays within the data and operations
+  the administrator is authorized to grant.
+- Generalize service data authority beyond per-Context grants. Keep the service subject/class
+  distinction and the exclusions of `public-read` and OIDC scopes. Ordinary D access grants no
+  Context or pod administration.
 
-Owner installation is visible to an installer, but a portable installer protocol is not part of
-the promised common contract. No protected-registration route, scope literal, management API,
-credential lifetime, number of consent screens or new module is selected here. If a common
-installer contract is later needed, define a discoverable optional profile. Supporting Client
-Credentials remains required by AUTH-002/027 in this iteration; whether that capability should
-be optional is a separate decision. The [protocol-profile recommendation](protocol-profiles.md#service-credentials-and-registration-metadata)
-rejects a blanket service refresh-token ban and records the required family-contract change.
+No common service-administration route, scope literal or consent sequence is proposed here.
+Client Credentials remains required by AUTH-002/027. The
+[protocol-profile recommendation](protocol-profiles.md#service-credentials-and-registration-metadata)
+separately addresses service refresh tokens and their family contract.
 
 #### Service-client cases for review
 
@@ -154,10 +139,11 @@ surface. Their wire format and status are not standardized by this proposal.
 | Setup and request | Proposed response or effect |
 |---|---|
 | Valid unauthenticated registration for Authorization Code at P | RFC 7591 `201`, `dyn:` identity and public-client metadata; no service secret, service eligibility or private data access. |
-| Same profile requests `client_credentials` or a service authentication method | Reject the metadata or return the supported public-client metadata under RFC 7591 §3.2.1. Neither outcome creates service credentials or advertises `client_credentials`. |
+| Public registration with `token_endpoint_auth_method=none` requests `client_credentials` | Reject the metadata or return the supported public-client metadata under RFC 7591 §3.2.1. Neither outcome creates service credentials or advertises `client_credentials`. |
 | That public client calls the token endpoint with `grant_type=client_credentials` | OAuth error under RFC 6749 §5.2, no access token. Supplying a service-looking identifier cannot change the client's class. |
-| A valid data token naming P's owner requests service creation or grant assignment | Denied without the separate operation authority; no service credential or permission change. Owner identity does not turn app data consent into installation consent. |
-| P explicitly authorizes creation of S through a protected registration extension at the same route | Registration can succeed with a separate service identity and the accepted confidential-client metadata. The unauthenticated profile remains unchanged. |
+| A valid data token naming P's owner requests grant assignment or an operation requiring service-administration authority | Denied without the separate operation authority; no credential or permission change. Owner identity does not turn app data consent into administration consent. |
+| P offers open service registration; S registers without a bearer | Registration can succeed with a separate service identity and no data grants. The public `dyn:` profile remains unchanged. |
+| P offers protected service registration; an authorized installer creates S | Registration can succeed within that authority. It grants data access only if the authority also covers assignment. |
 | An installer authorized to create S attempts to rotate existing T's secret, assign T access, or create a service in pod Q | Denied unless its authority independently covers that operation and target; T and Q are unchanged. |
 | An assignment authorization covers S reading D; the caller attempts to give S write access or access to independent A | Denied without separate covering authority; S's permissions are unchanged. The assignment cannot exceed its approved data and operation boundary. |
 | S is registered without data authority; an authorized administrator later assigns D read access | Registration alone enables no private read. After assignment, S can authenticate and read approved D data without changing its identity or creating a Context. |
@@ -382,9 +368,9 @@ proposal adopts no normative changes. #65's removal of guaranteed refresh-token 
 
 | Existing contract | Proposed disposition |
 |---|---|
-| AUTH-008/009/010/011 | Preserve the unauthenticated public `dyn:` profile, PKCE/consent and its exclusion from service access. Narrow the endpoint-wide prefix and registration-response restrictions to that profile; protected service registration, if offered, is a distinct authorized profile even at the same route. |
-| AUTH-012 | Replace mandatory out-of-band host-operator provisioning and the blanket ban on pod-token/dynamic provisioning with operation-, target- and pod-bounded service administration. Ordinary data authority is insufficient; no common installer API is selected. |
-| AUTH-013/017 | Remove fixed-at-registration and mandatory per-Context grant form. Preserve the service identity/class, independently authorized assignment changes, and the public-read/OIDC exclusions. |
+| AUTH-008/009/010/011 | Retain the public `dyn:` profile, PKCE/consent and its exclusion from service access. [#125](https://github.com/sempods/sempods-spec/issues/125) scopes the prefix and response restrictions to public clients; service registration remains implementation-defined. |
+| AUTH-012 (removed) | [#125](https://github.com/sempods/sempods-spec/issues/125) leaves service registration to implementations. Do not restore an operator mandate or require authority merely to register a service without data access. |
+| AUTH-013/017 | [#125](https://github.com/sempods/sempods-spec/issues/125) removes fixed-at-registration grants. Removing the mandatory per-Context grant form remains proposed here. Preserve the service identity/class, independently authorized assignment changes, and the public-read/OIDC exclusions. |
 | AUTH-002/027/032 | Retain Client Credentials support and the current service token endpoint contract in this iteration. Making service access optional remains separate. The [protocol recommendation](protocol-profiles.md#service-credentials-and-registration-metadata) retains the standard recommendation against service refresh issuance and proposes bounded exceptions with matching family semantics. |
 | AUTH-033/034/037/063 | Apply the [service-refresh recommendation](protocol-profiles.md#service-credentials-and-registration-metadata): retain rotation, client binding and revocation; generalize code-only family seeding and revise AUTH-037's grant-only authentication dispatch for confidential service refresh. Preserve its network-address rate-limit tier. Check live registration, current authority and credential-revocation state at issuance. Distinguish credential revocation from authority-only withdrawal: valid authentication still uses current rights, including after late responses and refresh. No guaranteed issuance. |
 | AUTH-014/024, GRANT-013/014/028/029/030 | Express ordinary consent and service data authority without Context prerequisites. Keep the Context-specific management boundary in the optional module; no pod-wide service administration follows from D data access. |

@@ -791,9 +791,10 @@ paths:
       operationId: register
       summary: RFC 7591 dynamic client registration.
       description: |
-        Issues a `dyn:` identifier. Such a client registers with no token-endpoint authentication,
-        so PKCE is required of it, and it always sees the consent screen. Re-registering with the
-        same stable metadata returns the existing identifier rather than minting a new one.
+        Public clients registered with token_endpoint_auth_method=none receive a `dyn:` identifier.
+        They use PKCE and follow the consent rules in SPS-AUTH-010. Re-registering a public client
+        with the same stable metadata returns its existing identifier. Service registration is
+        implementation-defined; a response with a `dyn:` identifier never advertises client_credentials.
       security: [{}]
       x-sps-requirements: [SPS-AUTH-008, SPS-AUTH-009, SPS-AUTH-010, SPS-AUTH-011, SPS-AUTH-018, SPS-AUTH-056, SPS-AUTH-057, SPS-AUTH-019, SPS-AUTH-020]
       requestBody:
