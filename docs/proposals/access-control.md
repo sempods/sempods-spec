@@ -8,6 +8,9 @@ The equivalent-identity claim is specified by [SPS-OIDC-005](../../spec/modules/
 and [SPS-OIDC-016](../../spec/modules/oidc.md#SPS-OIDC-016)–[018](../../spec/modules/oidc.md#SPS-OIDC-018) under
 [#5](https://github.com/sempods/sempods-spec/issues/5), with normative adoption in
 [PR #107](https://github.com/sempods/sempods-spec/pull/107).
+Service registration and grant timing follow the narrowed core contract from
+[#125](https://github.com/sempods/sempods-spec/issues/125), adopted in
+[PR #127](https://github.com/sempods/sempods-spec/pull/127).
 Owning issue and adoption: [#68](https://github.com/sempods/sempods-spec/issues/68).
 The design was introduced by [#52](https://github.com/sempods/sempods-spec/pull/52); its merge did
 not adopt it. [#69](https://github.com/sempods/sempods-spec/issues/69) owns unresolved contract
