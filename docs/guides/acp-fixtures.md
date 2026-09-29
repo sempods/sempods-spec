@@ -64,8 +64,8 @@ OAuth scope validation. The current `public-read` profile remains in
 [`SPS-AUTH-042`](../../spec/core/auth.md#SPS-AUTH-042)–
 [`SPS-AUTH-044`](../../spec/core/auth.md#SPS-AUTH-044); the fixture is not evidence about those flows.
 
-Example 55 supplies registered service grants and a service marker. The current service-client
-identity and registration requirements are cited in that example. Replacing the person/context
+Example 55 supplies a snapshot of current service grants and a service marker. The service-client
+identity and grant requirements are cited in that example. Replacing the person/context
 branch with those supplied grants, while retaining a resource restriction, is this model's chosen
 representation rather than a specified ACP integration.
 

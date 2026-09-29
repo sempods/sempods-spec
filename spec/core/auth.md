@@ -31,7 +31,7 @@ about the client's *role*, not about its label.
 |---|---|---|
 | `did:web:*` | an application with a stable HTTPS origin | none — the identity *is* the origin |
 | `dyn:*` | an end-user client with no origin of its own | RFC 7591 dynamic registration |
-| service client | a backend acting inside its own sandbox | out-of-band, by the host operator |
+| service client | a backend acting inside its own sandbox | implementation-defined |
 
 ### `did:web:*` — origin-bound
 
@@ -72,7 +72,8 @@ route a code to whatever happens to be listening on that port on the user's mach
 
 <a id="SPS-AUTH-008"></a>
 **`SPS-AUTH-008`** — An implementation MUST offer RFC 7591 dynamic client registration at
-`POST {pod}/_system/auth/register`, and MUST issue identifiers prefixed `dyn:`.
+`POST {pod}/_system/auth/register`. A public client registered with
+`token_endpoint_auth_method=none` MUST receive an identifier prefixed `dyn:`.
 
 <a id="SPS-AUTH-009"></a>
 **`SPS-AUTH-009`** — A `dyn:` client registers with `token_endpoint_auth_method=none`. PKCE is
@@ -92,8 +93,8 @@ The resolution is already in [`SPS-AUTH-040`](#SPS-AUTH-040) — a `dyn:` client
 screen would have asked.
 
 <a id="SPS-AUTH-011"></a>
-**`SPS-AUTH-011`** — An implementation MUST NOT issue a service token to a `dyn:` client. Dynamic
-registration responses MUST NOT advertise `client_credentials`.
+**`SPS-AUTH-011`** — An implementation MUST NOT issue a service token to a `dyn:` client. A
+registration response with a `dyn:` identifier MUST NOT advertise `client_credentials`.
 
 The asymmetry with `did:web:` is deliberate. A dynamic client reaches `/authorize` only because the
 person just triggered the flow, so a confirmation is what they expect; an origin-bound client
@@ -101,14 +102,13 @@ reaches it from background-facing UI, where an unavoidable dialog is disruptive.
 
 ### Service clients
 
-<a id="SPS-AUTH-012"></a>
-**`SPS-AUTH-012`** — A service client MUST be registered out of band, through host-level operator
-authority. An implementation MUST NOT allow a service client to be created through dynamic
-registration or through any pod-scoped token.
+How a service is registered and who assigns its grants are implementation choices. For example,
+a service can register without grants and receive access later. Its current grants determine
+access on each request ([`SPS-GRANT-002`](grants.md#SPS-GRANT-002)).
 
 <a id="SPS-AUTH-013"></a>
-**`SPS-AUTH-013`** — A service client's grants MUST be fixed at registration and MUST consist only
-of per-context grants. An implementation MUST NOT accept `public-read` or an OIDC scope for one.
+**`SPS-AUTH-013`** — A service client's grants MUST consist only of per-context grants. An
+implementation MUST NOT accept `public-read` or an OIDC scope for one.
 
 <a id="SPS-AUTH-014"></a>
 **`SPS-AUTH-014`** — An implementation MUST refuse a service client's `#manage` root that sits at or
