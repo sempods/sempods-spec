@@ -16,10 +16,10 @@ No module carries its own `AGENTS.md` today. That is the normal case, not a gap 
 - [`docs/agents/spec-authoring.md`](docs/agents/spec-authoring.md) — how a normative statement is
   written: RFC 2119 keywords, the requirement-ID scheme, how a requirement is withdrawn.
 
-`GEMINI.md`, `.github/copilot-instructions.md` and `.cursor/rules/` are compatibility
-pointers back to this file — Codex, opencode and Claude Code (2.1.277+) read it directly. Decision and
-publication rules are in `GOVERNANCE.md`; work rules are here or under `docs/agents/`; a pointer that
-grows rules of its own is a pointer that drifts.
+`GEMINI.md`, `.github/copilot-instructions.md` and `.cursor/rules/` are compatibility pointers back
+to this file — Codex, opencode and Claude Code read it directly. Decision and publication rules are
+in `GOVERNANCE.md`; work rules are here or under `docs/agents/`; a pointer that grows rules of its
+own is a pointer that drifts.
 
 ## What decides here
 
