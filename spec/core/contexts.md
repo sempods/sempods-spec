@@ -143,15 +143,11 @@ the caller may write to.
 
 <a id="SPS-CTX-022"></a>
 **`SPS-CTX-022`** — This route is the authoritative client-visible view of effective context
-permissions. An implementation MUST NOT require a client to derive them from an access token, and a
-client MUST NOT treat a token's `scope` claim as a context catalogue.
+permissions. An implementation MUST NOT require a client to derive them from an access token.
 
-<a id="SPS-CTX-023"></a>
-**`SPS-CTX-023`** — A client MUST NOT construct a context IRI. Every context IRI a client uses MUST
-have come from this route or from the pod.
-
-The last two are what let the context namespace move without a client change, and they are why
-`?context=` takes a full IRI rather than a name.
+*Client guidance:* take context IRIs from the catalogue or another pod response, and pass the full
+IRI in `?context=`. This keeps client code independent of the namespace layout. Read effective
+permissions from the catalogue too; a token's `scope` claim is not a context catalogue.
 
 <a id="SPS-CTX-024"></a>
 **`SPS-CTX-024`** — `GET {pod}/_system/contexts/{path}` MUST return what the registry holds for that

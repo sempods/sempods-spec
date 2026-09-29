@@ -71,20 +71,15 @@ No rule was written to keep Mallory out. No policy is satisfied, an unsatisfied 
 contributes nothing, and nothing is what she gets. **A pod is private before anybody configures it**,
 and staying private takes no work.
 
-## What is not here
+## Using one context
 
-No policy on a recipe. Nothing for a client to choose between — but the catalogue is still there, and
-that is the point rather than an exception.
+Anna controls access to the whole context. Each recipe needs no separate policy.
 
-Anna's writes carry `?context=`, naming the one context, and the discovery route
-([`SPS-CTX-021`](../spec/core/contexts.md#SPS-CTX-021)) is where a client reads that name: it may not
-construct the IRI itself ([`SPS-CTX-023`](../spec/core/contexts.md#SPS-CTX-023)). So a listing of one
-is not a formality — it is the only specified way to learn the value the write must carry.
-
-The parameter looks like ceremony and is not: the invariant it serves forbids an implicit fallback,
-and a pod with a single candidate is precisely where a fallback would appear and never be noticed. It
-costs a client the same call it would make with fifty contexts, and it keeps the pod from acquiring a
-default it would later have to take away.
+Her writes name the context with `?context=`
+([`SPS-CRUD-007`](../spec/core/lod-crud.md#SPS-CRUD-007)). The catalogue gives a client that IRI and
+its effective permissions ([`SPS-CTX-021`](../spec/core/contexts.md#SPS-CTX-021)). Following the
+[discovery guidance](../spec/core/contexts.md#3-discovery) keeps the client independent of the
+namespace layout. The same approach works when there is one context or fifty.
 
 A pod can stay like this forever. The next two scenarios add one thing each: several contexts to
 choose between, and then a second, finer decision inside them.

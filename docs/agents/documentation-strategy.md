@@ -49,9 +49,12 @@ implementation proposal support. An implementation's behavior does not establish
 owns the framework direction. Use [spec authoring](spec-authoring.md#standards-incorporation) to
 select and declare standards profiles; implementation documentation is not a source of obligations.
 
-**3. Short, direct, plain.** Use familiar words and short sentences, with one main point per sentence.
-Keep the detail an implementer needs. Use defined protocol terms consistently.
+**3. Make it easy to read and use.** Write for someone building their first pod. Use a natural,
+welcoming tone, familiar words and short sentences, with one main point per sentence. Keep the
+detail an implementer needs and use defined protocol terms consistently.
 
+- **Guide the reader.** Start with what they can do or need to know, then add the details. Let a
+  concrete example make an unfamiliar idea clear. Keep conditions and exceptions precise.
 - **Name the actor and action.** "The server rejects the request" is clearer than "Rejection of
   the request is performed". For normative wording, follow [spec authoring](spec-authoring.md#2-write-it).
 - **Say what the thing is.** Use "Make context management optional" instead of "Stop requiring
