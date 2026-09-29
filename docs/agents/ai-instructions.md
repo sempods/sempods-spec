@@ -21,7 +21,7 @@ Start here, then read what this file points at. It is deliberately short.
    is formed.
 4. **Scoped `AGENTS.md` files** in subtrees. None exist today. A subtree without one takes the root
    file directly — that is the normal case, not a gap to fill.
-5. **Tool compatibility pointers** (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`,
+5. **Tool compatibility pointers** (`GEMINI.md`, `.github/copilot-instructions.md`,
    `.cursor/rules/`). They route back here and add nothing of their own, with one registered
    exception below.
 
@@ -43,7 +43,7 @@ its pointer file and add a row here.
 |---|---|---|
 | Codex | `AGENTS.md` | Native. Walks the tree itself; needs no pointer file. |
 | opencode | `AGENTS.md` | Native. Same. |
-| Claude Code | `CLAUDE.md` → `AGENTS.md` | Pointer. Skills in `.claude/skills/` wrap the procedures in this folder. |
+| Claude Code | `AGENTS.md` | Native from v2.1.277, [with conditions](https://code.claude.com/docs/en/memory#agents-md). A `CLAUDE.md` or `CLAUDE.local.md` in the working directory or above turns it off. Skills in `.claude/skills/` wrap the procedures in this folder. |
 | GitHub Copilot | `.github/copilot-instructions.md` | Auto-injected in isolation — see the constraint below. |
 | Gemini CLI | `GEMINI.md` → `AGENTS.md` | Pointer. |
 | Cursor | `.cursor/rules/sempods.mdc` → `AGENTS.md` | Pointer, `alwaysApply: true`. |
