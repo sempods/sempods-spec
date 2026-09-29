@@ -3,7 +3,7 @@
 This informative guide describes the repository's [example fixtures](../../examples/README.md) and
 [runner](../../.github/scripts/check-examples.py). It explains their supplied model and its limits,
 not a deployed implementation. Current-contract references below describe revision
-[`3f5cfa7`](https://github.com/sempods/sempods-spec/tree/3f5cfa7958dc21b100437b032d4e3b76b2cca446).
+[`1c97415`](https://github.com/sempods/sempods-spec/tree/1c97415024a66419df617aba1a911e82c4ca84c9).
 The [access-control proposal](../proposals/access-control.md) remains non-normative.
 
 ## What is supplied and what is checked

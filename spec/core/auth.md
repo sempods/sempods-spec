@@ -279,8 +279,8 @@ scopes and MUST NOT widen them.
 **`SPS-AUTH-032`** — An implementation MUST reject a `scope` parameter on a `client_credentials`
 exchange with `invalid_scope`.
 
-A service token carries no per-token state that could express a subset; it grants the client's
-registered set or nothing.
+A service token cannot select a subset of the client's grants. Each request uses the client's
+current server-side grants ([`SPS-GRANT-002`](grants.md#SPS-GRANT-002)).
 
 <a id="SPS-AUTH-062"></a>
 **`SPS-AUTH-062`** — An implementation MUST refuse an authorization code whose consent decision has

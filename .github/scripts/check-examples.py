@@ -127,10 +127,9 @@ PREAMBLE = f"@prefix acp: <{ACP}> .\n@prefix acl: <{ACL}> .\n"
 # purpose — so a composed decision could otherwise pair a protected subject with an unrelated public
 # context, expect a read, and certify one that never met the sandbox.
 #
-# `registered` is a service client's grants, fixed when it was registered. They are not policy — no
-# ACR carries them — and they take the place of both the ceiling and the context decision, so a
-# request whose subject *is* its client is answered from them. Without the block the runner would
-# quietly apply the formula for a person, which is a different answer.
+# `registered` supplies a snapshot of a service client's current server-side grants (SPS-GRANT-002).
+# No ACR carries them. For a service request, they replace the ceiling and context decision.
+# Without the block the runner would apply the formula for a person.
 KINDS = ("acr-context", "acr-resource", "acr-delegation", "acr", "policy", "context", "decision",
          "grant", "holds", "registered", "aside")
 # SPS-AUTH-017 asks for two things, and one of them is a marker: a token's subject being its client
