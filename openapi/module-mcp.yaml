@@ -89,7 +89,7 @@ paths:
               description: >-
                 RFC 6750 Bearer challenge with the pod realm and endpoint-specific
                 resource_metadata URL required by SPS-MCP-009. Under SPS-CORE-015, missing
-                credentials carry no error code; rejected credentials carry invalid_token.
+                credentials SHOULD NOT carry error information; rejected credentials carry invalid_token.
               schema: { type: string }
               examples:
                 missingToken:

@@ -252,8 +252,8 @@ components:
           required: true
           description: >-
             RFC 6750 Bearer challenge with the pod-local resource_metadata URL required by
-            SPS-AUTH-064. Under SPS-CORE-015, missing credentials carry no error code;
-            rejected credentials carry invalid_token.
+            SPS-AUTH-064. Under SPS-CORE-015, missing credentials SHOULD NOT carry error
+            information; rejected credentials carry invalid_token.
           schema: { type: string }
           examples:
             missingToken:
