@@ -74,7 +74,20 @@ absolute endpoint-specific Protected Resource Metadata URL required by [SPS-MCP-
 in `resource_metadata`.
 
 The realm remains the pod base. It is a challenge label, not a discovery input: a standard client
-starts from its configured MCP URL and the metadata hint.
+starts from its configured MCP URL and the metadata hint. For a write tool called without a
+bearer token, the challenge follows [SPS-CORE-015](../core/index.md#SPS-CORE-015):
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="https://example.org/alice", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"
+```
+
+With a rejected token, the challenge includes `invalid_token`:
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"
+```
 
 ## 3. The `authorize` tool
 

@@ -552,7 +552,7 @@
       "id": "SPS-CORE-015",
       "part": "core",
       "chapter": "spec/core/index.md",
-      "summary": "**On an operation that requires authentication**, a missing bearer token and a rejected bearer token MUST produce the same response: `401` with `invalid_token`.",
+      "summary": "**On an operation that requires authentication**, a request without an accepted bearer token gets `401` with a `Bearer` challenge as [RFC 6750 §3.1](https://www.rfc-editor.org/rfc/rfc6750#section-3.1) defines it: `invalid_token` for a rejected token, no error code for a missing one.",
       "withdrawn": false
     },
     {

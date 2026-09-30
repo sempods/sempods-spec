@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check actual Context OpenAPI examples/schemas and RDF semantics, not server conformance."""
+"""Check OpenAPI auth examples, Context schemas and RDF semantics, not server conformance."""
 import base64
 import copy
 import json
@@ -220,13 +220,42 @@ class RegistryRepresentations(unittest.TestCase):
                         payload[predicate] = [literal]
                         self.assertFalse(validator.is_valid(payload))
 
-    def assert_bearer_discovery(self, value):
+    def assert_bearer_discovery(self, value, error='invalid_token', metadata=None, realm=None):
         scheme, parameters = value.split(' ', 1)
         self.assertEqual(scheme, 'Bearer')
         fields = parse_keqv_list(parse_http_list(parameters))
-        self.assertEqual(fields['error'], 'invalid_token')
+        if error is None:
+            for field in ('error', 'error_description', 'error_uri'):
+                self.assertNotIn(field, fields)
+        else:
+            self.assertEqual(fields['error'], error)
         self.assertEqual(fields['resource_metadata'],
-                         'https://example.org/alice/.well-known/oauth-protected-resource')
+                         metadata or 'https://example.org/alice/.well-known/oauth-protected-resource')
+        if realm is not None:
+            self.assertEqual(fields['realm'], realm)
+
+    def assert_challenge_examples(self, challenge, **expected):
+        self.assertTrue(challenge['required'])
+        examples = challenge['examples']
+        for name, error in (('missingToken', None), ('rejectedToken', 'invalid_token')):
+            with self.subTest(example=name):
+                value = examples[name]['value']
+                self.assert_bearer_discovery(value, error=error, **expected)
+                Draft202012Validator(challenge['schema']).validate(value)
+
+    def test_protected_operations_document_missing_and_rejected_token_challenges(self):
+        for filename in ('sempods-core.yaml', 'module-context-management.yaml', 'module-media.yaml', 'module-mcp.yaml'):
+            with self.subTest(document=filename):
+                document = yaml.safe_load((ROOT / 'openapi' / filename).read_text())
+                expected = {}
+                if filename == 'module-mcp.yaml':
+                    challenge = document['paths']['/_system/mcp']['post']['responses']['401']['headers']['WWW-Authenticate']
+                    expected = {'realm': 'https://example.org/alice',
+                                'metadata': 'https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp'}
+                else:
+                    response = 'AuthenticationRequired' if filename == 'module-context-management.yaml' else 'BearerUnauthorized'
+                    challenge = document['components']['responses'][response]['headers']['WWW-Authenticate']
+                self.assert_challenge_examples(challenge, **expected)
 
     def test_creation_requires_authentication_and_documents_the_challenge(self):
         self.assertTrue(self.module['security'])
@@ -236,9 +265,7 @@ class RegistryRepresentations(unittest.TestCase):
         self.assertIn('SPS-CORE-015', put['x-sps-requirements'])
         response = self.registry.resolver(MODULE).lookup(put['responses']['401']['$ref']).contents
         challenge = response['headers']['WWW-Authenticate']
-        self.assertTrue(challenge['required'])
-        self.assert_bearer_discovery(challenge['example'])
-        Draft202012Validator(challenge['schema']).validate(challenge['example'])
+        self.assert_challenge_examples(challenge)
 
     def test_registry_reads_document_rejected_token_challenges_and_public_access(self):
         for path in ('/_system/contexts', '/_system/contexts/{contextPath}'):

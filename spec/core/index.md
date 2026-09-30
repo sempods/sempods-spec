@@ -204,9 +204,10 @@ The chapters that follow use these status codes with these meanings and do not r
 | `500` | Server error |
 
 <a id="SPS-CORE-015"></a>
-**`SPS-CORE-015`** — **On an operation that requires authentication**, a missing bearer token and a
-rejected bearer token MUST produce the same response: `401` with `invalid_token`. An implementation
-MUST NOT let a caller distinguish the two.
+**`SPS-CORE-015`** — **On an operation that requires authentication**, a request without an accepted
+bearer token gets `401` with a `Bearer` challenge as
+[RFC 6750 §3.1](https://www.rfc-editor.org/rfc/rfc6750#section-3.1) defines it: `invalid_token` for a
+rejected token, no error code for a missing one.
 
 The qualifier is load-bearing and was missing. A public read requires no authentication
 ([`SPS-GRANT-031`](grants.md#SPS-GRANT-031)), so a request carrying no token is not a failed

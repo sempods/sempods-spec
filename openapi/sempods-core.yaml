@@ -1089,9 +1089,16 @@ components:
           required: true
           description: >-
             RFC 6750 Bearer challenge with the pod-local resource_metadata URL required by
-            SPS-AUTH-064. Rejected credentials carry invalid_token.
+            SPS-AUTH-064. Under SPS-CORE-015, missing credentials carry no error code;
+            rejected credentials carry invalid_token.
           schema: { type: string }
-          example: 'Bearer error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+          examples:
+            missingToken:
+              summary: No bearer token on a protected operation.
+              value: 'Bearer resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
+            rejectedToken:
+              summary: The supplied bearer token was rejected.
+              value: 'Bearer error="invalid_token", resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"'
 
     RegistryNotModified:
       description: Authorized representation unchanged; no body. Authorization and visibility precede conditional evaluation.
