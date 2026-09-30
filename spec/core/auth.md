@@ -494,7 +494,14 @@ metadata URL specified by [SPS-MCP-009](../modules/mcp.md#SPS-MCP-009).
 
 This covers missing credentials on protected operations and rejected credentials on public reads.
 It does not turn a successful public request into a `401` (SPS-CORE-016), or change OAuth token
-endpoint errors into resource challenges. For example, a write requiring authentication returns:
+endpoint errors into resource challenges. For example, a write without a bearer token returns:
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://example.org/alice/.well-known/oauth-protected-resource"
+```
+
+With a rejected token, the challenge includes `invalid_token`:
 
 ```http
 HTTP/1.1 401 Unauthorized

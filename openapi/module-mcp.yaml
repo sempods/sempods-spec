@@ -88,9 +88,16 @@ paths:
               required: true
               description: >-
                 RFC 6750 Bearer challenge with the pod realm and endpoint-specific
-                resource_metadata URL required by SPS-MCP-009.
+                resource_metadata URL required by SPS-MCP-009. Under SPS-CORE-015, missing
+                credentials SHOULD NOT carry error information; rejected credentials carry invalid_token.
               schema: { type: string }
-              example: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"'
+              examples:
+                missingToken:
+                  summary: No bearer token for a write tool.
+                  value: 'Bearer realm="https://example.org/alice", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"'
+                rejectedToken:
+                  summary: The supplied bearer token was rejected.
+                  value: 'Bearer realm="https://example.org/alice", error="invalid_token", resource_metadata="https://example.org/.well-known/oauth-protected-resource/alice/_system/mcp"'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JsonRpcResponse' }
