@@ -25,7 +25,7 @@ a synonym:
 |---|---|
 | General content semantics | `https://schema.org/` |
 | RDF / RDFS / OWL primitives | the W3C namespaces |
-| Context graph and catalogue descriptions | SPARQL Service Description, RDFS and DCMI Terms |
+| Context graph, catalogue and SPARQL endpoint descriptions | SPARQL Service Description, RDFS and DCMI Terms |
 | Hypermedia affordances | `http://www.w3.org/ns/hydra/core#` |
 | Shapes and validation | `http://www.w3.org/ns/shacl#` |
 | Provenance | `http://www.w3.org/ns/prov#` |
@@ -68,6 +68,29 @@ Four terms describe the Context registry and its request-relative caller access:
 [`Contexts`](../spec/core/contexts.md#SPS-CTX-031) defines the response contract. These summaries
 are not stored policies or transferable capabilities; ordinary RDF assertions using these terms
 confer no authority. The related graph, label and timestamp terms reuse existing vocabularies.
+
+One property and thirteen feature names serve the SPARQL endpoint's
+[service description](../spec/core/sparql.md#SPS-SPARQL-021):
+
+| Term | Meaning |
+|---|---|
+| `sps:unsupportedFeature` | Links a service to a feature it refuses for the requesting client |
+| `sps:Union` | `UNION` |
+| `sps:AlternativePath` | property path alternative `a\|b` |
+| `sps:Minus` | `MINUS` |
+| `sps:Exists` | `EXISTS` and `NOT EXISTS` |
+| `sps:InlineData` | `VALUES` |
+| `sps:ArbitraryLengthPath` | property path `*` or `+` |
+| `sps:ZeroOrOnePath` | property path `?` |
+| `sps:Aggregation` | `GROUP BY`, `HAVING` and aggregate functions |
+| `sps:Subquery` | a nested `SELECT` |
+| `sps:NamedGraphPattern` | `GRAPH` |
+| `sps:AskQuery`, `sps:ConstructQuery`, `sps:DescribeQuery` | the non-`SELECT` query forms |
+
+The features are `sd:Feature` individuals with a neutral definition; `SERVICE` is the standard
+`sd:BasicFederatedQuery` and is not minted again. The vocabulary never says which features a service
+refuses, and naming one grants no permission to refuse it: that is stated per caller, in the
+description, under [`SPS-SPARQL-023`](../spec/core/sparql.md#SPS-SPARQL-023).
 
 Three further terms define metadata a `find` response **may** carry about each hit:
 

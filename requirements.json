@@ -2397,6 +2397,62 @@
       "chapter": "spec/core/sparql.md",
       "summary": "Where an implementation exposes the same query capability through another surface, both MUST dispatch through the same validation and the same sandbox.",
       "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-021",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "An implementation MUST answer `GET {pod}/_system/sparql/query` without a query string with a service description of that endpoint.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-022",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "The description MUST contain one `sd:Service`, identified by the absolute URL of the query endpoint and carrying exactly one `sd:endpoint` with that URL.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-023",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "The service MUST link with `sps:unsupportedFeature` to every **catalogued feature** the server refuses in a query from the requesting caller, and to no other catalogued feature.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-024",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "When a catalogued feature has no `sps:unsupportedFeature` link, a client MAY rely on the server not refusing it for that caller at the time the description was produced.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-025",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "The description MUST use the canonical JSON-LD shape and content negotiation of [`SPS-CRUD-023`](lod-crud.md#SPS-CRUD-023), [`SPS-CRUD-024`](lod-crud.md#SPS-CRUD-024), [`SPS-CRUD-026`](lod-crud.md#SPS-CRUD-026) and [`SPS-CRUD-027`](lod-crud.md#SPS-CRUD-027), with the service as the top-level object.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-026",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "Description responses, including errors, MUST NOT be reused across caller/client authorization contexts or without current authorization.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-027",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "The description MUST NOT name a context the caller cannot read.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-028",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "A `400` that refuses a query because it uses a catalogued feature MUST carry `Link: <{endpoint}>; rel=\"service-desc\"`, where `{endpoint}` is the absolute URL of the query endpoint.",
+      "withdrawn": false
     }
   ]
 }

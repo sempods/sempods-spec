@@ -279,5 +279,7 @@ contract that composes them.
 | RFC 9728 (Protected Resource Metadata) | `auth` |
 | RFC 8414 (Authorization Server Metadata) | `auth` |
 | SPARQL 1.1 Query | `sparql` |
+| SPARQL 1.1 Service Description §§2–3 | `sparql`, endpoint description ([SPS-SPARQL-021](sparql.md#SPS-SPARQL-021)); `contexts`, registry terms |
+| RFC 8631 §4.2 (`service-desc` relation) | `sparql`, feature refusals ([SPS-SPARQL-028](sparql.md#SPS-SPARQL-028)) |
 | JSON-LD 1.1 | `lod-crud` |
 | Linked Data Principles (Berners-Lee) | `lod-crud`, resource GET |

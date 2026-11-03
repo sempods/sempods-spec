@@ -162,8 +162,9 @@ An adoption needs actual format/profile identities and all bindings required by 
 For this example profile, the endpoint is the complete query URL and the OAuth resource equals
 that URL. POST accepts `application/sparql-query` and uses the existing read-only query and sandbox
 behavior; only location and authorization binding are proposed changes. It does not enable SPARQL
-Update, federation or a new dataset. SPARQL service descriptions can describe supported query
-features without copying them into this catalogue.
+Update, federation or a new dataset. The endpoint's own
+[service description](../../spec/core/sparql.md#SPS-SPARQL-021) states the query features it refuses
+for the caller; this catalogue does not copy them.
 
 The `oauth` object is part of this proposed service profile, not a requirement that every possible
 protocol use OAuth. It binds the intended token target and the issuers Alice's pod accepts for that
@@ -263,8 +264,9 @@ For the OAuth query binding, use [RFC 9728 §§2–5](https://www.rfc-editor.org
 [RFC 9700 §2.3](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3) for audience restrictions.
 Code exchange and PKCE use the bounded [authorization profile](access-control.md#adoption-impact-and-remaining-profile-work).
 Query transport uses [SPARQL 1.1 Protocol §2.1](https://www.w3.org/TR/sparql11-protocol/#query-operation).
-[SPARQL Service Description](https://www.w3.org/TR/sparql11-service-description/) is an informative
-reuse option for detailed feature discovery. These references do not adopt every optional feature.
+Core already serves a [SPARQL Service Description](https://www.w3.org/TR/sparql11-service-description/)
+on the query endpoint ([`SPS-SPARQL-021`](../../spec/core/sparql.md#SPS-SPARQL-021)); a service binding
+can link it rather than restate features. These references do not adopt every optional feature.
 
 | Current contract | Proposed impact |
 |---|---|

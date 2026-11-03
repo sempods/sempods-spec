@@ -23,14 +23,15 @@
 <https://schema.sempods.org/>
   a                              owl:Ontology ;
   dcterms:title                  "The sempods vocabulary"@en ;
-  dcterms:description            """Terms specific to sempods: Context registry state, request-relative Context access summaries
-    and optional metadata about `find` hits. Deliberately small — the model is expressed in RDF,
-    SPARQL, SHACL and schema.org, not in a vocabulary of its own."""@en ;
+  dcterms:description            """Terms specific to sempods: Context registry state, request-relative Context access summaries,
+    SPARQL query features a service can refuse, and optional metadata about `find` hits.
+    Deliberately small — the model is expressed in RDF, SPARQL, SHACL and schema.org, not in a
+    vocabulary of its own."""@en ;
   vann:preferredNamespacePrefix  "sps" ;
   vann:preferredNamespaceUri     "https://schema.sempods.org/" ;
-  dcterms:hasVersion             "0.2.0" ;
+  dcterms:hasVersion             "0.3.0" ;
   dcterms:issued                 "2026-08-12"^^xsd:date ;
-  dcterms:modified               "2026-09-15"^^xsd:date ;
+  dcterms:modified               "2026-11-03"^^xsd:date ;
   dcterms:license                <https://creativecommons.org/licenses/by/4.0/> ;
   dcterms:publisher              <https://sempods.org/> ;
   rdfs:seeAlso                   <https://sempods.org/> .
@@ -138,3 +139,113 @@ sps:manageableContext
   rdfs:domain sd:GraphCollection ;
   rdfs:range sd:NamedGraph ;
   rdfs:comment "Links a registry catalogue to a Context for which the requesting client has effective manage permission under the applicable Context contract. This is a response-relative summary, not a stored policy or a transferable capability. Later operations require current authorization."@en .
+
+
+##
+## SPARQL service description — features a service can refuse
+##
+## A service description (SPS-SPARQL-021) links the service to each catalogued feature it refuses
+## for the requesting client. The individuals after the property name SPARQL 1.1 Query features
+## neutrally, so that a refusal has the same name everywhere. Naming a feature grants no permission
+## to refuse it, and this file never says which features a service refuses. SERVICE is named by the
+## standard individual sd:BasicFederatedQuery and is not repeated here.
+##
+
+sps:unsupportedFeature
+  a rdf:Property, owl:ObjectProperty ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "unsupported feature"@en ;
+  rdfs:domain sd:Service ;
+  rdfs:range sd:Feature ;
+  rdfs:comment "Links a SPARQL service to a feature it refuses in a query from the requesting client. This is a response-relative summary, not a stored policy or a transferable capability. Which features a service refuses is stated only in its description, never in this vocabulary."@en .
+
+sps:Union
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "union"@en ;
+  rdfs:comment "A group graph pattern that combines alternatives with UNION."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#alternatives> .
+
+sps:AlternativePath
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "alternative path"@en ;
+  rdfs:comment "A property path with an alternative, written a|b."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#pp-language> .
+
+sps:Minus
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "MINUS"@en ;
+  rdfs:comment "A graph pattern that removes solutions with MINUS."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#neg-minus> .
+
+sps:Exists
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "EXISTS"@en ;
+  rdfs:comment "A filter that tests a pattern with EXISTS or NOT EXISTS."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#neg-pattern> .
+
+sps:InlineData
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "inline data"@en ;
+  rdfs:comment "Inline data supplied with VALUES, inside a pattern or after the query."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#inline-data> .
+
+sps:ArbitraryLengthPath
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "arbitrary-length path"@en ;
+  rdfs:comment "A property path with * or +, matching paths of any length."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#pp-language> .
+
+sps:ZeroOrOnePath
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "zero-or-one path"@en ;
+  rdfs:comment "A property path with ?, matching a path of length zero or one."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#pp-language> .
+
+sps:Aggregation
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "aggregation"@en ;
+  rdfs:comment "Grouping and aggregation: GROUP BY, HAVING or an aggregate function such as COUNT."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#aggregates> .
+
+sps:Subquery
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "subquery"@en ;
+  rdfs:comment "A SELECT query nested inside a graph pattern."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#subqueries> .
+
+sps:NamedGraphPattern
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "named graph pattern"@en ;
+  rdfs:comment "A graph pattern scoped to named graphs with the GRAPH keyword."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#queryDataset> .
+
+sps:AskQuery
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "ASK query"@en ;
+  rdfs:comment "The ASK query form."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#ask> .
+
+sps:ConstructQuery
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "CONSTRUCT query"@en ;
+  rdfs:comment "The CONSTRUCT query form."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#construct> .
+
+sps:DescribeQuery
+  a sd:Feature ;
+  rdfs:isDefinedBy <https://schema.sempods.org/> ;
+  rdfs:label "DESCRIBE query"@en ;
+  rdfs:comment "The DESCRIBE query form."@en ;
+  rdfs:seeAlso <https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#describe> .
