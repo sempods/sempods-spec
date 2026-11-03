@@ -17,7 +17,8 @@ Profiles: RDF 1.1 (named graphs). Registry representations use the graph vocabul
 [SPARQL Service Description, 21 March 2013, §3](https://www.w3.org/TR/2013/REC-sparql11-service-description-20130321/#vocab),
 [RDF Schema 1.1, 25 February 2014](https://www.w3.org/TR/2014/REC-rdf-schema-20140225/) and
 [DCMI Terms, 20 January 2020](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/2020-01-20/).
-Only their term meanings are used; no service-description endpoint is required.
+Only their term meanings are used; an optional description of the SPARQL endpoint is
+[`sparql.md`](sparql.md#SPS-SPARQL-021).
 [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) §§8.8, 12 and 13 govern negotiated registry
 representations, validators and conditional reads; [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html)
 governs caching. Error codes are [`index.md`](index.md) §5.

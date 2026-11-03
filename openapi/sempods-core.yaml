@@ -595,6 +595,42 @@ paths:
         '412': { $ref: '#/components/responses/PreconditionFailed' }
 
   /_system/sparql/query:
+    get:
+      tags: [query]
+      operationId: sparqlServiceDescription
+      security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous gets the anonymous description
+      summary: Optional. Describe the SPARQL endpoint and the features it refuses for this caller.
+      description: |
+        Optional. Without a query string, a pod may answer a SPARQL 1.1 Service Description of this
+        endpoint (SD §2), in an RDF serialization chosen by content negotiation. When it does, the
+        description is for the requesting caller, and `sps:unsupportedFeature` links the service to
+        exactly the catalogued features refused for that caller. A `GET` that carries a query is not
+        described here.
+      x-sps-requirements: [SPS-SPARQL-021, SPS-AUTH-064]
+      responses:
+        '200':
+          description: The service description for this caller.
+          content:
+            application/ld+json:
+              schema: { type: object }
+              example:
+                '@id': https://example.org/alice/_system/sparql/query
+                '@type':
+                - http://www.w3.org/ns/sparql-service-description#Service
+                http://www.w3.org/ns/sparql-service-description#endpoint:
+                - '@id': https://example.org/alice/_system/sparql/query
+                http://www.w3.org/ns/sparql-service-description#supportedLanguage:
+                - '@id': http://www.w3.org/ns/sparql-service-description#SPARQL11Query
+                http://www.w3.org/ns/sparql-service-description#resultFormat:
+                - '@id': http://www.w3.org/ns/formats/SPARQL_Results_JSON
+                - '@id': http://www.w3.org/ns/formats/JSON-LD
+                - '@id': http://www.w3.org/ns/formats/N-Quads
+                https://schema.sempods.org/unsupportedFeature:
+                - '@id': http://www.w3.org/ns/sparql-service-description#BasicFederatedQuery
+            text/turtle:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/BearerUnauthorized' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
     post:
       tags: [query]
       operationId: sparqlQuery

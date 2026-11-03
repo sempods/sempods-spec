@@ -2397,6 +2397,13 @@
       "chapter": "spec/core/sparql.md",
       "summary": "Where an implementation exposes the same query capability through another surface, both MUST dispatch through the same validation and the same sandbox.",
       "withdrawn": false
+    },
+    {
+      "id": "SPS-SPARQL-021",
+      "part": "core",
+      "chapter": "spec/core/sparql.md",
+      "summary": "An implementation that answers `GET {pod}/_system/sparql/query` without a query string with a service description MUST link the described `sd:Service` with `sps:unsupportedFeature` to exactly the catalogued features it refuses in a query from the requesting caller.",
+      "withdrawn": false
     }
   ]
 }
