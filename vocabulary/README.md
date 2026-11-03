@@ -69,7 +69,7 @@ Four terms describe the Context registry and its request-relative caller access:
 are not stored policies or transferable capabilities; ordinary RDF assertions using these terms
 confer no authority. The related graph, label and timestamp terms reuse existing vocabularies.
 
-One property and thirteen feature names serve the SPARQL endpoint's
+One property and thirteen feature names serve the SPARQL endpoint's optional
 [service description](../spec/core/sparql.md#SPS-SPARQL-021):
 
 | Term | Meaning |
@@ -90,7 +90,7 @@ One property and thirteen feature names serve the SPARQL endpoint's
 The features are `sd:Feature` individuals with a neutral definition; `SERVICE` is the standard
 `sd:BasicFederatedQuery` and is not minted again. The vocabulary never says which features a service
 refuses, and naming one grants no permission to refuse it: that is stated per caller, in the
-description, under [`SPS-SPARQL-023`](../spec/core/sparql.md#SPS-SPARQL-023).
+description, under [`SPS-SPARQL-021`](../spec/core/sparql.md#SPS-SPARQL-021).
 
 Three further terms define metadata a `find` response **may** carry about each hit:
 
