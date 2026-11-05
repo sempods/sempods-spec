@@ -49,12 +49,15 @@ authorization graphs that ordinary data writes cannot reach.
 For each query, the pod builds a dataset: the caller's visible area graphs as **named** graphs, and
 the authorization graphs as the **default** graph. It then rewrites the client's query in two steps:
 
-1. Every client pattern moves into `GRAPH ?g`, so it reads only content. Policy facts sit in the
-   default graph, where no client pattern can reach them. Each moved pattern keeps the multiplicity
-   it has in the caller's logical default graph: a triple that two areas hold still matches once.
-2. Every distinct subject gets one check: a `FILTER EXISTS` over the default graph that asks whether
-   a policy grants the caller read access to that document. A graph name the query binds gets a
-   check too: some statement in that graph must be readable.
+1. Sequence and inverse paths are expanded into plain triple patterns first, so `:a :p/:q ?v`
+   becomes `:a :p ?x . ?x :q ?v`. Every resulting pattern then moves into its own `GRAPH ?g`, so it
+   reads only content. Policy facts sit in the default graph, where no client pattern can reach
+   them. Each moved pattern keeps the multiplicity it has in the caller's logical default graph: a
+   triple that two areas hold still matches once.
+2. Every distinct subject gets one check, including the intermediate subjects an expanded path
+   introduces: a `FILTER EXISTS` over the default graph that asks whether a policy grants the caller
+   read access to that document. A graph name the query binds gets a check too: some statement in
+   that graph must be readable.
 
 A client sends:
 
@@ -97,6 +100,7 @@ found these pitfalls, and each one shapes the contract below:
 |---|---|
 | A join with the policy chain multiplies rows: a document that two policies grant appears twice. `FILTER EXISTS` decides without adding rows. | Equivalence covers row counts, not only row sets. |
 | A pattern moved into `GRAPH ?g` matches a triple once per area graph that holds it. The caller's default graph is an RDF merge and holds it once. `DISTINCT` on the whole result would also remove legitimate duplicates. | Equivalence follows the default graph's multiplicities; the rewrite removes per-graph duplicates of each pattern, not of the result. |
+| A path moved whole into one `GRAPH ?g` misses a path whose steps lie in different areas. | Paths are expanded into triple patterns before graph placement, and each step's subject is checked. |
 | A check placed above `LIMIT` pages through rows the caller cannot read and returns short pages. | `LIMIT` and `OFFSET` count authorized rows only. |
 | Blank node labels are scoped to one basic graph pattern. A check that reuses a client's blank node turns into "some readable document exists". | Blank nodes stay in the base level; the implementation renames them before checking. |
 | Above a `GROUP BY`, the subject is gone, and the check degenerates the same way. | Aggregation lies above the base level. Only tests of the outcome reveal such a mistake. |
@@ -223,6 +227,7 @@ authorized data.
 | Base level | A query whose variables use any prefix, including one the implementation uses internally | Answered like the same query with other variable names |
 | Base level | `FILTER` on string literals with escape sequences and quotes | Answered exactly; no literal changes what the caller may read |
 | Base level; two area graphs hold the same readable triple | `SELECT ?d ?t WHERE { ?d schema:name ?t }` | One row for that triple, as in the default graph |
+| Base level; readable `:a :p :b` in area A and readable `:b :q :c` in area B | `SELECT ?v WHERE { :a :p/:q ?v }` | `:c`, as against the default graph; with `:b` unreadable, no row |
 | Base level; the caller belongs to area A but can read none of its documents | `SELECT ?g WHERE { GRAPH ?g {} }` | A is not among the results |
 | Base level; the pod does not answer aggregation for this caller | `SELECT (COUNT(*) AS ?c) WHERE { ?d a schema:Article }` | `400`; the same response whether hidden articles exist or not |
 | Base level, announces `sps:Aggregation` | The same count, before and after a hidden article is added | `200` both times, with the same count |
