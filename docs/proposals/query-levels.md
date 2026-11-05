@@ -50,9 +50,11 @@ For each query, the pod builds a dataset: the caller's visible area graphs as **
 the authorization graphs as the **default** graph. It then rewrites the client's query in two steps:
 
 1. Every client pattern moves into `GRAPH ?g`, so it reads only content. Policy facts sit in the
-   default graph, where no client pattern can reach them.
+   default graph, where no client pattern can reach them. Each moved pattern keeps the multiplicity
+   it has in the caller's logical default graph: a triple that two areas hold still matches once.
 2. Every distinct subject gets one check: a `FILTER EXISTS` over the default graph that asks whether
-   a policy grants the caller read access to that document.
+   a policy grants the caller read access to that document. A graph name the query binds gets a
+   check too: some statement in that graph must be readable.
 
 A client sends:
 
@@ -70,7 +72,8 @@ PREFIX acp:    <http://www.w3.org/ns/solid/acp#>
 PREFIX acl:    <http://www.w3.org/ns/auth/acl#>
 
 SELECT ?doc ?title WHERE {
-  GRAPH ?__g0 { ?doc schema:name ?title }          # content, named graphs only
+  { SELECT DISTINCT ?doc ?title                    # each triple once, as in the default graph
+    WHERE { GRAPH ?__g0 { ?doc schema:name ?title } } }   # content, named graphs only
   FILTER EXISTS {                                  # policy, default graph only
     ?__acr acp:resource ?doc ; acp:accessControl ?__ac .
     ?__ac acp:apply ?__policy .
@@ -93,12 +96,14 @@ found these pitfalls, and each one shapes the contract below:
 | Pitfall | What it means for the contract |
 |---|---|
 | A join with the policy chain multiplies rows: a document that two policies grant appears twice. `FILTER EXISTS` decides without adding rows. | Equivalence covers row counts, not only row sets. |
+| A pattern moved into `GRAPH ?g` matches a triple once per area graph that holds it. The caller's default graph is an RDF merge and holds it once. `DISTINCT` on the whole result would also remove legitimate duplicates. | Equivalence follows the default graph's multiplicities; the rewrite removes per-graph duplicates of each pattern, not of the result. |
 | A check placed above `LIMIT` pages through rows the caller cannot read and returns short pages. | `LIMIT` and `OFFSET` count authorized rows only. |
 | Blank node labels are scoped to one basic graph pattern. A check that reuses a client's blank node turns into "some readable document exists". | Blank nodes stay in the base level; the implementation renames them before checking. |
 | Above a `GROUP BY`, the subject is gone, and the check degenerates the same way. | Aggregation lies above the base level. Only tests of the outcome reveal such a mistake. |
 | A rewritten query printed back to text is parsed a second time. A literal that does not survive that round trip can change the check. | Validation includes literals with escape sequences and quotes. |
 | A reserved variable prefix for the rewriter's own names leads it to refuse client queries using that prefix. | Internal names never cause a refusal; the implementation picks names the query does not use. |
 | `GRAPH` in a client query collides with the graph position the rewriter fills itself. | Reaching the base level needs `GRAPH` intersected with the content graphs. |
+| `GRAPH ?g {}` names graphs without a triple pattern, so no subject check runs. An area whose documents are all unreadable is still named. | A graph name is checked on its own: it appears only for a nonempty, disclosable authorized projection, as [data access](data-access.md#query-projections) requires. |
 | The same pod serves some callers through a plain dataset restriction, without rewriting. Those callers can use full SPARQL. | The level can differ per caller. |
 
 ## Proposed contract and cases
@@ -127,8 +132,8 @@ subqueries, grouping and aggregates, the path operators `|`, `!`, `?`, `*` and `
 `CONSTRUCT` and `DESCRIBE` forms.
 
 The line is drawn where a rewriting implementation can still be exact. Every data access in a
-base-level query is a triple pattern in the main group or in an `OPTIONAL` group, which the use case
-checks once per subject. `ASK` reports whether such a query has a row. `GRAPH` belongs to the base
+base-level query is either a triple pattern in the main group or in an `OPTIONAL` group, or a graph
+name bound by `GRAPH`. The use case checks each subject once and each graph name on its own. `ASK` reports whether such a query has a row. `GRAPH` belongs to the base
 level because the data-access proposal makes `GRAPH <C>` agree with a Context-selected read.
 
 Above the line, the reasons differ:
@@ -217,7 +222,9 @@ authorized data.
 | Base level | `SELECT ?p WHERE { ?x <http://www.w3.org/ns/solid/acp#allow> ?p }` | No rows: authorization facts are outside the caller's data view |
 | Base level | A query whose variables use any prefix, including one the implementation uses internally | Answered like the same query with other variable names |
 | Base level | `FILTER` on string literals with escape sequences and quotes | Answered exactly; no literal changes what the caller may read |
-| Base level, no `sd:feature sps:Aggregation` | `SELECT (COUNT(*) AS ?c) WHERE { ?d a schema:Article }` | `400`; the same response whether hidden articles exist or not |
+| Base level; two area graphs hold the same readable triple | `SELECT ?d ?t WHERE { ?d schema:name ?t }` | One row for that triple, as in the default graph |
+| Base level; the caller belongs to area A but can read none of its documents | `SELECT ?g WHERE { GRAPH ?g {} }` | A is not among the results |
+| Base level; the pod does not answer aggregation for this caller | `SELECT (COUNT(*) AS ?c) WHERE { ?d a schema:Article }` | `400`; the same response whether hidden articles exist or not |
 | Base level, announces `sps:Aggregation` | The same count, before and after a hidden article is added | `200` both times, with the same count |
 | Base level, announces `sps:Aggregation` | The same count is refused | Violates the announcement rule |
 | Full level | `SELECT ?b WHERE { <https://example.org/alice/me> schema:knows+ ?b }` | `200`; the path never steps over a hidden statement |
@@ -247,8 +254,8 @@ specification and conformance tests decide, not a rewriter's cleverness.
   per caller, so it is announced per caller rather than claimed as a pod-wide module.
 - *What must be observable?* Results under the equivalence, the refusal and the description.
 - *Can different implementations satisfy it?* A store that restricts its dataset answers the full
-  level. The per-document rewriter reaches the base level with `ASK`, `GRAPH` and renaming of its
-  internal variables. A small embedded store can do either.
+  level. The per-document rewriter reaches the base level with `ASK`, checked `GRAPH`, per-pattern
+  deduplication and renaming of its internal variables. A small embedded store can do either.
 
 **Compatibility.** Today a client may rely on full SPARQL 1.1 Query on every pod. After adoption it
 may rely on the base level, and on more where a pod announces it. This narrows the core guarantee
