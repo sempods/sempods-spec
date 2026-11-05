@@ -54,10 +54,11 @@ the authorization graphs as the **default** graph. It then rewrites the client's
    reads only content. Policy facts sit in the default graph, where no client pattern can reach
    them. Each moved pattern keeps the multiplicity it has in the caller's logical default graph: a
    triple that two areas hold still matches once.
-2. Every distinct subject gets one check, including the intermediate subjects an expanded path
-   introduces: a `FILTER EXISTS` over the default graph that asks whether a policy grants the caller
-   read access to that document. A graph name the query binds gets a check too: some statement in
-   that graph must be readable.
+2. Every subject gets a check, including the intermediate subjects an expanded path introduces: a
+   `FILTER EXISTS` over the default graph that asks whether a policy grants the caller read access
+   to that document. The check sits in every group that binds the subject: once in the main group
+   if that binds it, otherwise in each `OPTIONAL` group that does. A graph name the query binds gets
+   a check too: some statement in that graph must be readable.
 
 A client sends:
 
@@ -104,6 +105,7 @@ found these pitfalls, and each one shapes the contract below:
 | A pattern moved into `GRAPH ?g` matches a triple once per area graph that holds it. The caller's default graph is an RDF merge and holds it once. `DISTINCT` on the whole result would also remove legitimate duplicates. | Equivalence follows the default graph's multiplicities; the rewrite removes per-graph duplicates of each pattern, not of the result. |
 | A path moved whole into one `GRAPH ?g` misses a path whose steps lie in different areas. | Paths are expanded into triple patterns before graph placement, and each step's subject is checked. |
 | A check placed above `LIMIT` pages through rows the caller cannot read and returns short pages. | `LIMIT` and `OFFSET` count authorized rows only. |
+| Two `OPTIONAL` groups can each bind the same subject. A check in only one of them lets the other return unreadable subjects; a check outside both drops the row that empty optional parts should keep. | A subject is checked in every group that binds it, unless an enclosing group already checks it. |
 | Blank node labels are scoped to one basic graph pattern. A check that reuses a client's blank node turns into "some readable document exists". | Blank nodes stay in the base level; the implementation renames them before checking. |
 | Above a `GROUP BY`, the subject is gone, and the check degenerates the same way. | Aggregation lies above the base level. Only tests of the outcome reveal such a mistake. |
 | A rewritten query printed back to text is parsed a second time. A literal that does not survive that round trip can change the check. | Validation includes literals with escape sequences and quotes. |
@@ -230,6 +232,7 @@ authorized data.
 | Base level | `FILTER` on string literals with escape sequences and quotes | Answered exactly; no literal changes what the caller may read |
 | Base level; two area graphs hold the same readable triple | `SELECT ?d ?t WHERE { ?d schema:name ?t }` | One row for that triple, as in the default graph |
 | Base level; readable `:a :p :b` in area A and readable `:b :q :c` in area B | `SELECT ?v WHERE { :a :p/:q ?v }` | `:c`, as against the default graph; with `:b` unreadable, no row |
+| Base level; `:r :p 1` readable, `:h :q 1` hidden | `SELECT ?s WHERE { OPTIONAL { ?s :p ?x } OPTIONAL { ?s :q ?y } }` | One row, `?s = :r`; `:h` never appears. With `:r` hidden too, one row with `?s` unbound |
 | Base level; the caller belongs to area A but can read none of its documents | `SELECT ?g WHERE { GRAPH ?g {} }` | A is not among the results |
 | Base level; the pod does not answer aggregation for this caller | `SELECT (COUNT(*) AS ?c) WHERE { ?d a schema:Article }` | `400`; the same response whether hidden articles exist or not |
 | Base level, announces `sps:Aggregation` | The same count, before and after a hidden article is added | `200` both times, with the same count |
