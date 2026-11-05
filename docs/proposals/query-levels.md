@@ -67,7 +67,9 @@ PREFIX schema: <https://schema.org/>
 SELECT ?doc ?title WHERE { ?doc schema:name ?title }
 ```
 
-The pod evaluates, simplified to policies whose matchers all name agents:
+The pod evaluates the following. For brevity, the check covers only policies with one or more
+`acp:allOf` matchers that name agents, and no `acp:anyOf` or `acp:noneOf`; a full ACP check
+evaluates those conditions as well.
 
 ```sparql
 PREFIX schema: <https://schema.org/>
