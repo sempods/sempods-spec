@@ -38,6 +38,10 @@ useful; a maintained guide describes the adopted revision and links to its contr
 - [Authorized data access](data-access.md) and [access control](access-control.md) — one proposal
   for ordinary access without Context setup, core selection, optional management and policy-independent
   guarantees. Normative adoption belongs to [#68](https://github.com/sempods/sempods-spec/issues/68).
+- [Query levels](query-levels.md) — the base level of SPARQL queries every pod answers, a positive
+  per-caller service description for more, and the refusal rule. Defines the supported queries
+  that #68's query equivalence leaves open. Design and adoption planning belong to
+  [#143](https://github.com/sempods/sempods-spec/issues/143).
 - [Protocol profiles](protocol-profiles.md) — recommended standards scope, OAuth/OIDC redirects,
   service refresh, registration and MCP transport/error cases under #69. Records the adopted MCP
   discovery input and the independent client evidence remaining in #99.

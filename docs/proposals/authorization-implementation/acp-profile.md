@@ -165,4 +165,5 @@ Solid protocol interoperability remains separate: expressing policies in ACP doe
 resource semantics, containment, discovery or HTTP behavior. Query rewriting also remains a
 proposal; the current [`SPS-SPARQL-009`](../../../spec/core/sparql.md#SPS-SPARQL-009) prohibits using
 it to enforce the sandbox. The [access-control proposal](../access-control.md#queries-and-retrieval)
-records the outcome-equivalence questions a normative change would have to settle.
+records the outcome-equivalence questions a normative change would have to settle, and
+[query levels](../query-levels.md) proposes which queries a rewriter must answer.
