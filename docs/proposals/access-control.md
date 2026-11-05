@@ -401,7 +401,8 @@ An implementation path must show all relevant interleavings, not merely report a
 For fixed data and authorization state, a supported SPARQL query returns the result it would produce
 against the caller-authorized dataset. The dataset is a semantic model of what can be observed; the
 implementation need not materialize it. Views, native store restrictions and query rewriting are
-possible enforcement mechanisms if they preserve that result.
+possible enforcement mechanisms if they preserve that result. [Query levels](query-levels.md)
+proposes which queries are supported.
 
 The [logical dataset recommendation](data-access.md#logical-dataset-and-operation-scope) defines
 a coherent implicit default scope, authorized named projections, ordinary-write placement and explicit

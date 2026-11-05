@@ -193,6 +193,8 @@ Vision, proposals and fixture explanation:
   adoption, based on the completed #90 recommendation
 - [Access control](docs/proposals/access-control.md) — proposed policy-independent guarantees,
   delegation, revocation, query equivalence, mutation boundaries and sharing design
+- [Query levels](docs/proposals/query-levels.md) — proposed base level of SPARQL queries every pod
+  answers, per-caller service-description announcement of more, and the refusal rule
 - [Protocol profiles](docs/proposals/protocol-profiles.md) — remaining #69 standards/profile
   recommendations, registration and MCP error/transport cases; adopted discovery and #99 evidence boundary
 - [Context registry representations](docs/guides/context-registry.md) — RDF examples and HTTP

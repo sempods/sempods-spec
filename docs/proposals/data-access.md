@@ -450,7 +450,7 @@ document hidden, neither direct reads, `find` nor SPARQL expose it. With write a
 the same credential cannot mutate it. No grant catalogue is required to explain these decisions.
 
 The query implementation may enforce policy through SPARQL rewriting. Its results must be
-equivalent to evaluating the client's supported query against the same client-visible authorized
+equivalent to evaluating the client's [supported query](query-levels.md#two-levels) against the same client-visible authorized
 dataset, with the same implicit D scope, graph placement and names. Cases include aggregates, negation, subqueries
 and property paths. Testing compares those outcomes, not query
 strings. An implementation that merely filters completed results fails the cases in
