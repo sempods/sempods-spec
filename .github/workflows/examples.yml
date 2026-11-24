@@ -1,6 +1,6 @@
 name: Examples
 
-# Check the supplied ACP fixtures, including the proposed composition and deliberate counterexamples.
+# Check the ACP fixtures and the Context and Find representations.
 # A passing run establishes those expectations, not adoption, HTTP behavior or pod conformance.
 # Model assumptions and source boundaries: docs/guides/acp-fixtures.md. Future-contract validation
 # belongs to issue #72; this job does not replace it.
@@ -57,3 +57,8 @@ jobs:
           set -euo pipefail
           python3 -m pip install --quiet PyYAML==6.0.3 jsonschema==4.25.1 attrs==26.1.0 jsonschema-specifications==2025.9.1 referencing==0.37.0 rpds-py==2026.6.3 rfc3987-syntax==1.1.0 lark==1.3.1
           python3 .github/scripts/check-context-registry.py
+
+      - name: Find responses agree across representations
+        run: |
+          python3 -m pip install --quiet PyLD==3.3.0 cachetools==8.0.2 frozendict==2.5.1 lxml==6.1.3
+          python3 .github/scripts/check-find.py

@@ -144,7 +144,7 @@ The specification:
   the chapter tables. Six core chapters and four modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
-- [`examples/README.md`](examples/README.md) — worked access-control fixtures and their format;
+- [`examples/README.md`](examples/README.md) — worked access-control fixtures and paired Find responses;
   [repository checks](docs/guides/repository-checks.md) explains what their execution establishes
 
 The rendered site — [`site/`](site/):
