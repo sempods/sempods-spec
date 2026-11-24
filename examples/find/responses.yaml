@@ -61,9 +61,9 @@ bare:
   request: {"text": "harbour"}
   grouped:
     jsonld:
-      - "@id": "https://pod.example/_system/contexts/A"
-        "@graph":
-          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      "@id": "https://pod.example/_system/contexts/A"
+      "@graph":
+        - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
     nquads: |
       <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/A> .
   flat:

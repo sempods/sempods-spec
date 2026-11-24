@@ -1481,16 +1481,23 @@ components:
         agent-facing surface, so both report an event identically.
 
     FindContextGraphs:
-      type: array
-      description: Each group names a context in the effective selection. A node inside may be a resource or an observation blank node.
-      items:
-        type: object
-        required: ['@id', '@graph']
-        properties:
-          '@id': { type: string, format: iri }
-          '@graph':
-            type: array
-            items: { type: object }
+      description: One named graph object or an array of named graph objects.
+      oneOf:
+        - $ref: '#/components/schemas/FindContextGraph'
+        - type: array
+          items: { $ref: '#/components/schemas/FindContextGraph' }
+
+    FindContextGraph:
+      type: object
+      description: The graph name is a context IRI in the effective selection.
+      required: ['@id', '@graph']
+      properties:
+        '@id': { type: string, format: iri }
+        '@graph':
+          oneOf:
+            - type: object
+            - type: array
+              items: { type: object }
 
     FindRequest:
       type: object

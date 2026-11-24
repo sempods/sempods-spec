@@ -208,7 +208,15 @@ class FindResponses(unittest.TestCase):
         wire.validate(flat['jsonld'])
         self.assertFalse(grouped.is_valid(flat['jsonld']))
         self.assertFalse(wire.is_valid(invalid['jsonld']))
-        self.assertFalse(wire.is_valid(flat['jsonld'] | {'@id': str(A)}))
+        named_pair = CASES['bare']['grouped']
+        named = named_pair['jsonld']
+        self.assertEqual(named, flat['jsonld'] | {'@id': str(A)})
+        single_node = named | {'@graph': named['@graph'][0]}
+        for document in (named, [named], single_node, [single_node]):
+            grouped.validate(document)
+            wire.validate(document)
+            left, right = read_pair({'jsonld': document, 'nquads': named_pair['nquads']})
+            self.assertTrue(isomorphic(quad_graph(left), quad_graph(right)))
         bare = response('bare', 'flat').default_graph
         for mode, pair in (('flat', flat), ('invalid', invalid)):
             with self.subTest(mode=mode):
