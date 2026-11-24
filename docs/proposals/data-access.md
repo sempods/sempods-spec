@@ -401,7 +401,8 @@ These selector and output fields are core on every pod, including one with an em
 Context-grouped output labels only disclosable projection membership, whether stored or computed.
 An assertion outside all disclosed projections remains unlabelled. A label reports view membership,
 not physical provenance or an independent copy; it never exposes a hidden graph name.
-The representation needs alignment with the existing find output at normative adoption.
+[Grouped Find responses](../../spec/core/find.md#SPS-FIND-027) currently give every statement a
+graph name. Adoption needs a rule for returning facts and observations when no name can be disclosed.
 
 Context IRIs resolve consistently across discovery, data and optional management surfaces. Canonical
 IRIs remain accepted; any supported relative Context paths resolve before selection. SPARQL dataset IRIs follow the

@@ -70,8 +70,8 @@ the semantics of [`SPS-CRUD-014`](lod-crud.md#SPS-CRUD-014) and
 dropped in silence.
 
 <a id="SPS-FIND-010"></a>
-**`SPS-FIND-010`** — The downscope MUST apply to the whole operation, the expansion included. An
-implementation MUST NOT expand a hit with statements from a context outside it.
+**`SPS-FIND-010`** — The server MUST apply the read downscope throughout the search,
+including matching, ranking, observations and expansion.
 
 If the caller searches A and the only matching text is in B, the resource is absent even if
 its type is visible in A. If it also matches in A, the server can return it using only evidence
@@ -124,17 +124,16 @@ transfer of most of the pod, and a caller that wants depth already holds the IRI
 **`SPS-FIND-026`** — By default the server MUST return a flat RDF graph. A caller MUST NOT infer rank from statement order.
 
 <a id="SPS-FIND-027"></a>
-**`SPS-FIND-027`** — With `include_contexts=true`, the server MUST keep each pod statement in its source
-context. It MUST place each generated observation link or detail in one or more contexts in
-scope that hold the hit. The switch MUST affect only the representation.
+**`SPS-FIND-027`** — With `include_contexts=true`, the server MUST group every statement by context,
+using the context IRI as the graph name. Stored statements MUST keep their source context.
+The server MUST place each generated observation link or detail in one or more contexts in scope
+that hold the hit. Grouping MUST change only the representation.
 
 A context holds a hit when the pod has a statement there with the hit IRI as its subject.
 The server can place an observation where the match occurred. It can also repeat it in eligible
 contexts or place its link in one and its details in another. A link in A tells you where the
 server placed it. A search restricted to A can still come back empty.
 
-In [JSON-LD](https://www.w3.org/TR/2020/REC-json-ld11-20200716/) each group names its context.
-In [N-Quads](https://www.w3.org/TR/2014/REC-n-quads-20140225/) each statement has a fourth term.
 A stored statement keeps its source even when its predicate is `sps:findResult`.
 
 <a id="SPS-FIND-020"></a>

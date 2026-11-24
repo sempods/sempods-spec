@@ -1322,7 +1322,7 @@
       "id": "SPS-FIND-010",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The downscope MUST apply to the whole operation, the expansion included.",
+      "summary": "The server MUST apply the read downscope throughout the search, including matching, ranking, observations and expansion.",
       "withdrawn": false
     },
     {
@@ -1453,7 +1453,7 @@
       "id": "SPS-FIND-027",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "With `include_contexts=true`, the server MUST keep each pod statement in its source context.",
+      "summary": "With `include_contexts=true`, the server MUST group every statement by context, using the context IRI as the graph name.",
       "withdrawn": false
     },
     {
