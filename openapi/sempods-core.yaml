@@ -1164,7 +1164,8 @@ components:
 
     FindGraph:
       description: |
-        Hits are subject IRIs in the effective selection. Each hit appears in the graph with or without its type or label.
+        Hits are subject IRIs in the effective selection. Each hit IRI is the subject of at least one
+        statement in the response. Its type and label are optional.
         By default all statements are in the default graph.
         With include_contexts=true, every statement belongs to a named context.
         An empty search returns 200.

@@ -1490,7 +1490,7 @@
       "id": "SPS-FIND-032",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The server MUST identify each hit by its IRI in the response graph and MAY include its `rdf:type`, its label, or both.",
+      "summary": "Each hit IRI MUST be the subject of at least one statement in the response.",
       "withdrawn": false
     },
     {

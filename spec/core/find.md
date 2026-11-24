@@ -111,10 +111,11 @@ Both follow the [same visibility rule](index.md#SPS-CORE-017).
 ## 4. The response
 
 <a id="SPS-FIND-032"></a>
-**`SPS-FIND-032`** — The server MUST identify each hit by its IRI in the response graph and MAY
-include its `rdf:type`, its label, or both.
+**`SPS-FIND-032`** — Each hit IRI MUST be the subject of at least one statement in the response.
 
-A [stored statement](#SPS-FIND-030) about the hit or a [bare observation link](#SPS-FIND-028) is enough.
+Type and label are optional, even when both are available. A [stored statement](#SPS-FIND-030)
+about the hit or a [bare observation link](#SPS-FIND-028) is enough.
+A JSON-LD node with only `@id` contributes no statement on its own.
 
 <a id="SPS-FIND-017"></a>
 **`SPS-FIND-017`** — An implementation MUST NOT return a full `DESCRIBE`-style expansion by default.

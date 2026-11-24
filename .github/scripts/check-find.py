@@ -19,9 +19,12 @@ A, B = (POD['_system/contexts/' + label] for label in ('A', 'B'))
 STORE = Dataset().parse(data=CASES['pod'], format='nquads')
 
 
+def jsonld_to_nquads(document):
+    return jsonld.to_rdf(document, {'format': 'application/n-quads', 'processingMode': 'json-ld-1.1'})
+
+
 def read_pair(pair):
-    converted = jsonld.to_rdf(pair['jsonld'], {'format': 'application/n-quads', 'processingMode': 'json-ld-1.1'})
-    return (Dataset().parse(data=converted, format='nquads'),
+    return (Dataset().parse(data=jsonld_to_nquads(pair['jsonld']), format='nquads'),
             Dataset().parse(data=pair['nquads'], format='nquads'))
 
 
@@ -117,6 +120,15 @@ class FindResponses(unittest.TestCase):
         self.assertEqual(len(graph), 1)
         self.assertIsInstance(graph.value(DOC, LINK), BNode)
 
+    def test_id_only_node_contributes_no_hit_statement(self):
+        node = {'@id': str(DOC)}
+        for mode, document in (
+            ('flat', [node]),
+            ('grouped', [{'@id': str(A), '@graph': [node]}]),
+        ):
+            with self.subTest(mode=mode):
+                self.assertEqual(jsonld_to_nquads(document).strip(), '')
+
     def test_hits_with_both_one_or_neither_descriptive_fact(self):
         case = CASES['optional-description']
         self.assertEqual(selected_contexts(case), {A})
@@ -160,6 +172,7 @@ class FindResponses(unittest.TestCase):
                 self.assertEqual(selected_contexts(CASES[name]), contexts)
                 answer = union(response(name))
                 self.assertIn((DOC, SCHEMA.about, topic), answer)
+                self.assertEqual((topic, None, None) in answer, topic in expected_hits)
                 self.assertEqual(set(answer.subjects(LINK, None)), expected_hits)
 
     def test_repeated_and_split_observations(self):
