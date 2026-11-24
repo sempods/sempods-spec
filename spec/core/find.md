@@ -59,8 +59,8 @@ The server decides how to interpret the text.
 hits with any of the requested `rdf:type` values and exclude the rest.
 
 <a id="SPS-FIND-007"></a>
-**`SPS-FIND-007`** — The server MUST match type IRIs exactly and MUST NOT use subclass reasoning
-for this comparison.
+**`SPS-FIND-007`** — The server MUST match type IRIs exactly. A subclass alone MUST NOT satisfy
+the type filter.
 
 <a id="SPS-FIND-008"></a>
 **`SPS-FIND-008`** — The server MAY match through a linked resource. The type filter applies
@@ -93,7 +93,8 @@ It uses the [CRUD read filter](lod-crud.md#SPS-CRUD-014), including
 **`SPS-FIND-010`** — The server MUST apply the read downscope throughout the search,
 including matching, ranking, observations and expansion.
 
-If the only evidence for a match is in B, an A-only search omits the hit even if its type is visible in A.
+Suppose A identifies a resource as an article and only its title in B matches “harbour”.
+A search for “harbour” in A alone leaves out the article, even when the caller can read B.
 
 <a id="SPS-FIND-015"></a>
 **`SPS-FIND-015`** — If the caller can read nothing or the filter leaves an empty selection,
@@ -105,8 +106,8 @@ A search with no matches also succeeds with an empty graph. For request failures
 ## 4. The response
 
 <a id="SPS-FIND-016"></a>
-**`SPS-FIND-016`** — The response MUST contain the matched resources and SHOULD include at least
-the `rdf:type` and label of each hit.
+**`SPS-FIND-016`** — The response MUST include each hit. When the effective selection contains
+an `rdf:type` or a label for the hit, the server SHOULD include it.
 
 <a id="SPS-FIND-017"></a>
 **`SPS-FIND-017`** — An implementation MUST NOT return a full `DESCRIBE`-style expansion by default.

@@ -1301,7 +1301,7 @@
       "id": "SPS-FIND-007",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The server MUST match type IRIs exactly and MUST NOT use subclass reasoning for this comparison.",
+      "summary": "The server MUST match type IRIs exactly.",
       "withdrawn": false
     },
     {
@@ -1366,7 +1366,7 @@
       "id": "SPS-FIND-016",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The response MUST contain the matched resources and SHOULD include at least the `rdf:type` and label of each hit.",
+      "summary": "The response MUST include each hit.",
       "withdrawn": false
     },
     {
