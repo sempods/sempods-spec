@@ -110,9 +110,13 @@ Both follow the [same visibility rule](index.md#SPS-CORE-017).
 
 ## 4. The response
 
-<a id="SPS-FIND-016"></a>
-**`SPS-FIND-016`** — The response MUST include each hit. The server SHOULD include the hit's
-`rdf:type` if available in the effective selection and its label if available there.
+<a id="SPS-FIND-032"></a>
+**`SPS-FIND-032`** — The server MUST return each hit IRI as the subject of at least one statement
+in the response.
+
+Type and label are optional, even when both are available. A [stored statement](#SPS-FIND-030)
+about the hit or a [bare observation link](#SPS-FIND-028) is enough.
+A JSON-LD node with only `@id` contributes no statement on its own.
 
 <a id="SPS-FIND-017"></a>
 **`SPS-FIND-017`** — An implementation MUST NOT return a full `DESCRIBE`-style expansion by default.
@@ -176,6 +180,11 @@ The [response examples](../../examples/find/responses.yaml) show both flat and g
 **`SPS-FIND-011`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-025`](#SPS-FIND-025).*
 `limit` is OPTIONAL. An implementation MUST apply a default and MUST enforce a
 maximum.
+
+<a id="SPS-FIND-016"></a>
+**`SPS-FIND-016`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-032`](#SPS-FIND-032).*
+The response MUST include each hit. The server SHOULD include the hit's
+`rdf:type` if available in the effective selection and its label if available there.
 
 <a id="SPS-FIND-018"></a>
 **`SPS-FIND-018`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-026`](#SPS-FIND-026).*
