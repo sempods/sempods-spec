@@ -111,7 +111,8 @@ Both follow the [same visibility rule](index.md#SPS-CORE-017).
 ## 4. The response
 
 <a id="SPS-FIND-032"></a>
-**`SPS-FIND-032`** — Each hit IRI MUST be the subject of at least one statement in the response.
+**`SPS-FIND-032`** — The server MUST return each hit IRI as the subject of at least one statement
+in the response.
 
 Type and label are optional, even when both are available. A [stored statement](#SPS-FIND-030)
 about the hit or a [bare observation link](#SPS-FIND-028) is enough.

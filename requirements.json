@@ -1490,7 +1490,7 @@
       "id": "SPS-FIND-032",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "Each hit IRI MUST be the subject of at least one statement in the response.",
+      "summary": "The server MUST return each hit IRI as the subject of at least one statement in the response.",
       "withdrawn": false
     },
     {
