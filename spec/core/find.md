@@ -26,21 +26,23 @@ into their own graph. A custom result envelope MUST NOT replace it.
 ## 2. The request
 
 ```http
-GET {pod}/_system/find?text=harbour
+GET https://pod.example/_system/find?text=harbour&type=https://schema.org/Article&type=https://schema.org/Book&context=https://pod.example/_system/contexts/A&context=https://pod.example/_system/contexts/B
 ```
 
 ```http
-POST {pod}/_system/find
+POST https://pod.example/_system/find
 Content-Type: application/json
 
-{"text": "harbour"}
+{
+  "text": "harbour",
+  "type": ["https://schema.org/Article", "https://schema.org/Book"],
+  "contexts": ["https://pod.example/_system/contexts/A", "https://pod.example/_system/contexts/B"]
+}
 ```
 
 <a id="SPS-FIND-004"></a>
-**`SPS-FIND-004`** — The server MUST offer equivalent GET and POST forms. The POST body mirrors
-the query parameters, using `contexts` for the GET parameter `context`.
-
-In the [POST body](../../openapi/sempods-core.yaml), `type` and `contexts` are arrays.
+**`SPS-FIND-004`** — The server MUST offer equivalent GET and POST forms. The [POST body](../../openapi/sempods-core.yaml)
+mirrors the query parameters, using `contexts` for the GET parameter `context`.
 
 <a id="SPS-FIND-013"></a>
 **`SPS-FIND-013`** — The server MUST parse the POST body strictly and reject unknown members.
@@ -59,8 +61,10 @@ The server decides how to interpret the text.
 hits with any of the requested `rdf:type` values and exclude the rest.
 
 <a id="SPS-FIND-007"></a>
-**`SPS-FIND-007`** — The server MUST match type IRIs exactly. A subclass alone MUST NOT satisfy
-the type filter.
+**`SPS-FIND-007`** — The server MUST match type IRIs exactly. A hit's `rdf:type` MUST NOT match
+a requested type solely because it is a subclass of that type.
+
+Callers can list the subtypes they want to include.
 
 <a id="SPS-FIND-008"></a>
 **`SPS-FIND-008`** — The server MAY match through a linked resource. The type filter applies
@@ -90,24 +94,25 @@ It uses the [CRUD read filter](lod-crud.md#SPS-CRUD-014), including
 [silent omission of unreadable contexts](lod-crud.md#SPS-CRUD-015).
 
 <a id="SPS-FIND-010"></a>
-**`SPS-FIND-010`** — The server MUST apply the read downscope throughout the search,
+**`SPS-FIND-010`** — The server MUST apply the context filter throughout the search,
 including matching, ranking, observations and expansion.
 
 Suppose A identifies a resource as an article and only its title in B matches “harbour”.
 A search for “harbour” in A alone leaves out the article, even when the caller can read B.
 
 <a id="SPS-FIND-015"></a>
-**`SPS-FIND-015`** — If the caller can read nothing or the filter leaves an empty selection,
+**`SPS-FIND-015`** — If the caller can read nothing or the context filter leaves an empty selection,
 the server MUST return `200` with an empty graph.
 
-A search with no matches also succeeds with an empty graph. For request failures, see the
-[core error model](index.md#5-error-model).
+A search with no matches gets the same [`200` with an empty graph](../../openapi/sempods-core.yaml).
+A [resource read with no visible statements](lod-crud.md#SPS-CRUD-017) returns `404`.
+Both follow the [same visibility rule](index.md#SPS-CORE-017).
 
 ## 4. The response
 
 <a id="SPS-FIND-016"></a>
-**`SPS-FIND-016`** — The response MUST include each hit. When the effective selection contains
-an `rdf:type` or a label for the hit, the server SHOULD include it.
+**`SPS-FIND-016`** — The response MUST include each hit. The server SHOULD include the hit's
+`rdf:type` if available in the effective selection and its label if available there.
 
 <a id="SPS-FIND-017"></a>
 **`SPS-FIND-017`** — An implementation MUST NOT return a full `DESCRIBE`-style expansion by default.

@@ -1322,7 +1322,7 @@
       "id": "SPS-FIND-010",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The server MUST apply the read downscope throughout the search, including matching, ranking, observations and expansion.",
+      "summary": "The server MUST apply the context filter throughout the search, including matching, ranking, observations and expansion.",
       "withdrawn": false
     },
     {
@@ -1359,7 +1359,7 @@
       "id": "SPS-FIND-015",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "If the caller can read nothing or the filter leaves an empty selection, the server MUST return `200` with an empty graph.",
+      "summary": "If the caller can read nothing or the context filter leaves an empty selection, the server MUST return `200` with an empty graph.",
       "withdrawn": false
     },
     {
