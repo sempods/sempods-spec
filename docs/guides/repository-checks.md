@@ -19,7 +19,7 @@ Read it at the same Git revision as those sources.
 | ACP runner self-test | Deliberately failing and boundary cases check that the runner still detects errors. Run it before the scenarios. |
 | Worked scenarios | The supplied fixture expectations agree with the runner's ACP evaluations and model composition. A green run checks those cases; it neither prescribes ACP nor demonstrates a running implementation. [Examples](../../examples/README.md) owns the fixture format and assumptions. |
 | Context registry representations | Actual OpenAPI examples and guide JSON-LD validate against their schemas and preserve registry RDF through N-Quads round trips; malformed legacy shapes are rejected. Unicode IRIs and language-tagged text are accepted; invalid IRIs are rejected. The Context module's references resolve without core, and shared components agree. Protected-operation challenge examples distinguish missing from rejected credentials and retain discovery hints, including the MCP realm. Registry reads document rejected-token challenges; successful and error responses reference the same cache guarantee. Creation dates admit XSD forms beyond RFC 3339; the checker does not validate the full XSD lexical space. No HTTP, authorization, caching or lifecycle implementation is tested. |
-| Find responses | The [paired fixtures](../../examples/find/responses.yaml) check graph placement, observation identity, resource limits and selected evidence against a small stored dataset. They exercise the OpenAPI response shapes and RDF equivalence. |
+| Find responses | The [paired fixtures](../../examples/find/responses.yaml) check which subjects can match, where observations appear, and how ranks and limits apply to selected data. PyLD converts JSON-LD 1.1 to N-Quads. The checker compares whole RDF datasets and checks the OpenAPI shapes, including the invalid anonymous graph. |
 | Site navigation regression tests | Source-relative links survive relocation and select the build commit; dirty previews and snapshot metadata are distinguished. |
 | Full site build | Inputs, the demo-pod destination and staged links survive strict rendering. The destination check prevents the try-it page from sending requests, including authenticated ones, to another host. It does not exercise the live OAuth or request flow. |
 
@@ -113,6 +113,7 @@ The Context and Find representation checkers also need the validator stack pinne
 
 ```bash
 python3 -m pip install rdflib==7.6.0 pyparsing==3.3.2 PyYAML==6.0.3 jsonschema==4.25.1 attrs==26.1.0 jsonschema-specifications==2025.9.1 referencing==0.37.0 rpds-py==2026.6.3 rfc3987-syntax==1.1.0 lark==1.3.1
+python3 -m pip install PyLD==3.3.0 cachetools==8.0.2 frozendict==2.5.1 lxml==6.1.3
 ```
 
 The checker explicitly requires IRI format support at startup. Without that dependency,

@@ -1,10 +1,10 @@
 """Check the Find examples as RDF datasets and as OpenAPI response bodies."""
-import json
 from pathlib import Path
 import unittest
 
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
+from pyld import jsonld
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, RDF, URIRef
 from rdflib.compare import isomorphic
 
@@ -20,7 +20,8 @@ STORE = Dataset().parse(data=CASES['pod'], format='nquads')
 
 
 def read_pair(pair):
-    return (Dataset().parse(data=json.dumps(pair['jsonld']), format='json-ld'),
+    converted = jsonld.to_rdf(pair['jsonld'], {'format': 'application/n-quads', 'processingMode': 'json-ld-1.1'})
+    return (Dataset().parse(data=converted, format='nquads'),
             Dataset().parse(data=pair['nquads'], format='nquads'))
 
 
@@ -123,6 +124,21 @@ class FindResponses(unittest.TestCase):
         self.assertEqual(graph.value(observation, SCHEMA.text), STORE.graph(B).value(DOC, SCHEMA.description))
         self.assertFalse(list(data.graph(A).objects(DOC, LINK)))
 
+    def test_a_linked_topic_can_match_as_a_subject_in_its_own_context(self):
+        topic = POD['topics/climate']
+        self.assertIn((DOC, SCHEMA.about, topic), STORE.graph(A))
+        self.assertNotIn((topic, None, None), STORE.graph(A))
+        self.assertIn((topic, SCHEMA.name, Literal('Climate change')), STORE.graph(B))
+        for name, contexts, expected_hits in (
+            ('article-via-topic', {A}, {DOC}),
+            ('article-and-topic', {A, B}, {DOC, topic}),
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(selected_contexts(CASES[name]), contexts)
+                answer = union(response(name))
+                self.assertIn((DOC, SCHEMA.about, topic), answer)
+                self.assertEqual(set(answer.subjects(LINK, None)), expected_hits)
+
     def test_repeated_and_split_observations(self):
         for name in ('repeated', 'split'):
             with self.subTest(name=name):
@@ -134,10 +150,19 @@ class FindResponses(unittest.TestCase):
                 self.assertFalse(list(data.graph(A).objects(observation, SCHEMA.text)))
 
     def test_independent_observations_at_limit_one(self):
-        self.assertEqual(CASES['independent']['request']['limit'], 1)
+        case = CASES['independent']
+        self.assertEqual(case['request']['limit'], 1)
+        lists = {URIRef(context): list(map(URIRef, hits)) for context, hits in case['rankedLists'].items()}
+        self.assertEqual(set(lists), selected_contexts(case))
+        self.assertEqual(set(lists[A]).intersection(lists[B]), {DOC})
         data = response('independent')
         observations = []
         for context, position in ((A, 2), (B, 7)):
+            matching = {subject for subject, predicate, value in STORE.graph(context)
+                        if predicate in (SCHEMA.name, SCHEMA.description)
+                        and case['request']['text'] in str(value).lower()}
+            self.assertCountEqual(lists[context], matching)
+            self.assertEqual(lists[context].index(DOC) + 1, position)
             graph = data.graph(context)
             self.assertEqual(set(graph.subjects(LINK, None)), {DOC})
             [observation] = graph.objects(DOC, LINK)
@@ -175,14 +200,29 @@ class FindResponses(unittest.TestCase):
         self.assertTrue(list(data.graph(B).triples((DOC, None, None))))
         self.assertNotIn(fact, data.graph(B))
 
-    def test_anonymous_group_is_only_valid_flat(self):
-        pair = CASES['anonymous-group']['payload']
-        self.assertFalse(api_schema({'$ref': '#/components/schemas/FindContextGraphs'}).is_valid(pair['jsonld']))
-        wire = API['components']['responses']['FindGraph']['content']['application/ld+json']['schema']
-        api_schema(wire).validate(pair['jsonld'])
+    def test_default_graph_wrapper_and_anonymous_graph(self):
+        case = CASES['anonymous-group']
+        flat, invalid = case['flat'], case['invalid']
+        wire = api_schema(API['components']['responses']['FindGraph']['content']['application/ld+json']['schema'])
+        grouped = api_schema({'$ref': '#/components/schemas/FindContextGraphs'})
+        wire.validate(flat['jsonld'])
+        self.assertFalse(grouped.is_valid(flat['jsonld']))
+        self.assertFalse(wire.is_valid(invalid['jsonld']))
+        self.assertFalse(wire.is_valid(flat['jsonld'] | {'@id': str(A)}))
         bare = response('bare', 'flat').default_graph
-        for dataset in read_pair(pair):
-            self.assertTrue(isomorphic(dataset.default_graph, bare))
+        for mode, pair in (('flat', flat), ('invalid', invalid)):
+            with self.subTest(mode=mode):
+                left, right = read_pair(pair)
+                self.assertTrue(isomorphic(quad_graph(left), quad_graph(right)))
+                self.assertTrue(isomorphic(union(left), bare))
+                [(_, _, observation, graph)] = left.quads()
+                self.assertIsInstance(observation, BNode)
+                if mode == 'flat':
+                    self.assertEqual(graph, left.default_graph.identifier)
+                else:
+                    self.assertIsInstance(graph, BNode)
+                    self.assertNotEqual(graph, observation)
+                    self.assertNotIn(graph, selected_contexts(case))
 
 
 if __name__ == '__main__':

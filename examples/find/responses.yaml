@@ -1,6 +1,6 @@
 # Inputs and static Find responses for the eight cases in sempods-spec#147.
 # Each jsonld value is a JSON-LD document. Its nquads sibling describes the same dataset.
-# The fixture engine matches text in names and descriptions, case-insensitively.
+# These examples match text in names, descriptions and linked topic IRIs, case-insensitively.
 # The caller can read A and B unless a case specifies its readable contexts.
 pod: |
   <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
@@ -9,6 +9,17 @@ pod: |
   <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> <https://pod.example/_system/contexts/A> .
   <https://pod.example/articles/43> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
   <https://pod.example/articles/43> <https://schema.org/name> "Map legend" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/42> <https://schema.org/about> <https://pod.example/topics/climate> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/topics/climate> <https://schema.org/name> "Climate change" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/articles/42> <https://schema.org/description> "Quay chart" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/42> <https://schema.org/name> "Quay chart" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/guide> <https://schema.org/name> "Quay guide" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/quay/ferry> <https://schema.org/name> "Quay ferry" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/bridge> <https://schema.org/name> "Quay bridge" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/pier> <https://schema.org/name> "Quay pier" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/light> <https://schema.org/name> "Quay light" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/dock> <https://schema.org/name> "Quay dock" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/quay/crane> <https://schema.org/name> "Quay crane" <https://pod.example/_system/contexts/B> .
 
 plain:
   case: 1
@@ -88,6 +99,50 @@ known-match:
       <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
       _:m <https://schema.org/text> "Harbour lantern" .
 
+article-via-topic:
+  case: 3
+  request: {"text": "climate", "contexts": ["https://pod.example/_system/contexts/A"]}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.org/about": [{"@id": "https://pod.example/topics/climate"}], "https://schema.sempods.org/findResult": [{"@id": "_:article"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/about> <https://pod.example/topics/climate> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:article <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.org/about": [{"@id": "https://pod.example/topics/climate"}], "https://schema.sempods.org/findResult": [{"@id": "_:article"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/about> <https://pod.example/topics/climate> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:article .
+
+article-and-topic:
+  case: 3
+  request: {"text": "climate", "contexts": ["https://pod.example/_system/contexts/A", "https://pod.example/_system/contexts/B"]}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.org/about": [{"@id": "https://pod.example/topics/climate"}], "https://schema.sempods.org/findResult": [{"@id": "_:article"}]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "https://pod.example/topics/climate", "https://schema.org/name": [{"@value": "Climate change"}], "https://schema.sempods.org/findResult": [{"@id": "_:topic"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/about> <https://pod.example/topics/climate> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:article <https://pod.example/_system/contexts/A> .
+      <https://pod.example/topics/climate> <https://schema.org/name> "Climate change" <https://pod.example/_system/contexts/B> .
+      <https://pod.example/topics/climate> <https://schema.sempods.org/findResult> _:topic <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.org/about": [{"@id": "https://pod.example/topics/climate"}], "https://schema.sempods.org/findResult": [{"@id": "_:article"}]}
+      - {"@id": "https://pod.example/topics/climate", "https://schema.org/name": [{"@value": "Climate change"}], "https://schema.sempods.org/findResult": [{"@id": "_:topic"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/about> <https://pod.example/topics/climate> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:article .
+      <https://pod.example/topics/climate> <https://schema.org/name> "Climate change" .
+      <https://pod.example/topics/climate> <https://schema.sempods.org/findResult> _:topic .
+
 repeated:
   case: 4
   request: {"text": "harbour"}
@@ -136,7 +191,20 @@ split:
 
 independent:
   case: 5
-  request: {"text": "harbour", "limit": 1}
+  request: {"text": "quay", "limit": 1}
+  # The adapter chooses the subject common to its two lists before applying the response limit.
+  rankedLists:
+    "https://pod.example/_system/contexts/A":
+      - https://pod.example/quay/guide
+      - https://pod.example/articles/42
+    "https://pod.example/_system/contexts/B":
+      - https://pod.example/quay/ferry
+      - https://pod.example/quay/bridge
+      - https://pod.example/quay/pier
+      - https://pod.example/quay/light
+      - https://pod.example/quay/dock
+      - https://pod.example/quay/crane
+      - https://pod.example/articles/42
   grouped:
     jsonld:
       - "@id": "https://pod.example/_system/contexts/A"
@@ -227,13 +295,19 @@ stored-vocabulary:
       <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> .
       <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" .
 
-# The very same RDF is valid flat and invalid when include_contexts=true.
+# The top-level wrapper describes the default graph. Inside an array it names a graph by a blank node.
 anonymous-group:
   case: 8
   request: {"text": "harbour"}
-  payload:
+  flat:
+    jsonld:
+      "@graph":
+        - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+  invalid:
     jsonld:
       - "@graph":
           - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
     nquads: |
-      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m _:graph .

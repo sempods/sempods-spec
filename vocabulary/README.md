@@ -73,8 +73,8 @@ Three further terms define metadata a `find` response **may** carry about each h
 
 | Term | |
 |---|---|
-| `sps:FindResult` | the per-hit metadata node |
-| `sps:findResult` | links a matched resource to that node |
+| `sps:FindResult` | an observation about a hit |
+| `sps:findResult` | links a matched resource to an observation |
 | `sps:engine` | which search engine produced the hit |
 
 An observation can carry an excerpt (`schema:text`) or a 1-based place in the list that

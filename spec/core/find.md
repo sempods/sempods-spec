@@ -3,10 +3,21 @@
 Use `find` when you have words and want a resource IRI. The response is RDF, so you can
 follow a link from a hit to the rest of the pod.
 
+**Status: this text decides, and can still change.** See [governance](../../GOVERNANCE.md).
+
 Error codes are [`index.md`](index.md) §5; the read downscope is
 [`lod-crud.md`](lod-crud.md) §3; what a caller may read is [`grants.md`](grants.md).
 
 ## 1. What `find` is
+
+<a id="SPS-FIND-029"></a>
+**`SPS-FIND-029`** — Every hit MUST be an IRI that occurs as the subject of a stored statement
+in the effective selection.
+
+The effective selection is all contexts the caller may read, narrowed by any [context filter](#SPS-FIND-009).
+An article can match through its `schema:about` link to a topic. The server can return that link
+with the article. If another selected context describes the topic, the topic can match there
+as a subject in its own right.
 
 <a id="SPS-FIND-001"></a>
 **`SPS-FIND-001`** — `find` is a contract, not an algorithm. An implementation MUST be free to
@@ -121,20 +132,22 @@ Expansion is a payload-size decision. Returning everything reachable turns a ten
 transfer of most of the pod, and a caller that wants depth already holds the IRIs to ask for it.
 
 <a id="SPS-FIND-026"></a>
-**`SPS-FIND-026`** — By default the server MUST return a flat RDF graph. A caller MUST NOT infer rank from statement order.
+**`SPS-FIND-026`** — By default the server MUST return all statements in the default graph.
+A caller MUST NOT infer rank from statement order.
 
 <a id="SPS-FIND-027"></a>
 **`SPS-FIND-027`** — With `include_contexts=true`, the server MUST group every statement by context,
 using the context IRI as the graph name. Stored statements MUST keep their source context.
-The server MUST place each generated observation link or detail in one or more contexts in scope
-that hold the hit. Grouping MUST change only the representation.
+The server MUST place each generated observation link or detail in one or more contexts in the
+effective selection that hold the hit. Grouping MUST change only the representation.
 
 A context holds a hit when the pod has a statement there with the hit IRI as its subject.
 The server can place an observation where the match occurred. It can also repeat it in eligible
 contexts or place its link in one and its details in another. A link in A tells you where the
 server placed it. A search restricted to A can still come back empty.
 
-A stored statement keeps its source even when its predicate is `sps:findResult`.
+[`SPS-CTX-001`](contexts.md#SPS-CTX-001) governs stored statements. Even a stored
+`sps:findResult` link keeps its source context. A generated observation belongs to the response.
 
 <a id="SPS-FIND-020"></a>
 **`SPS-FIND-020`** — The response MUST be content-negotiated, with JSON-LD as the default and
@@ -161,14 +174,20 @@ A server can say that an article matched with a single link:
 ```
 
 <a id="SPS-FIND-028"></a>
-**`SPS-FIND-028`** — The server MAY annotate a hit. For each observation it supplies, it MUST link the hit IRI
-to a response-local blank node with `sps:findResult`. Other facts about the resource MUST come from pod data in scope.
-Find MUST NOT persist the observations it generates.
+**`SPS-FIND-028`** — The server MAY annotate a hit. For each observation it supplies, it MUST
+link the hit IRI to a response-local blank node with `sps:findResult`.
 
 A hit can have zero, one or several observations. The blank node can carry an excerpt
 (`schema:text`), the engine (`sps:engine`) or its place in the list that produced it
 (`schema:position`, starting at 1). A resource can be second in one list and seventh in another.
 The link works on its own, even without an explicit `sps:FindResult` type.
+
+<a id="SPS-FIND-030"></a>
+**`SPS-FIND-030`** — Apart from generated observation links, statements about the hit itself
+MUST come from pod data in the effective selection.
+
+<a id="SPS-FIND-031"></a>
+**`SPS-FIND-031`** — Find MUST NOT persist the observations it generates.
 
 A client that copies all outgoing statements about a hit also copies the links the search added.
 The same predicate can occur in stored data.
@@ -201,12 +220,12 @@ emit it only in a representation the client explicitly asked for, and this versi
 specification defines no such request.
 
 <a id="SPS-FIND-023"></a>
-**`SPS-FIND-023`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).*
+**`SPS-FIND-023`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-030`](#SPS-FIND-030).*
 Authoritative facts about a hit — its types, its labels, its timestamps — MUST
 come from the store during expansion and MUST NOT be asserted by the metadata node.
 
 <a id="SPS-FIND-024"></a>
-**`SPS-FIND-024`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).*
+**`SPS-FIND-024`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-031`](#SPS-FIND-031) and [`SPS-FIND-027`](#SPS-FIND-027).*
 Where such metadata is emitted, it is **transient**: it MUST NOT be written to
 the store, it MUST NOT appear in the named-graph grouping that `include_contexts=true` produces, and
 a caller MUST NOT expect to retrieve it again.

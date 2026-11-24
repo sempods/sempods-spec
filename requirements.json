@@ -1423,8 +1423,8 @@
       "chapter": "spec/core/find.md",
       "summary": "Authoritative facts about a hit — its types, its labels, its timestamps — MUST come from the store during expansion and MUST NOT be asserted by the metadata node.",
       "withdrawn": true,
-      "withdrawnNote": "Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).",
-      "supersededBy": "SPS-FIND-028"
+      "withdrawnNote": "Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-030`](#SPS-FIND-030).",
+      "supersededBy": "SPS-FIND-030"
     },
     {
       "id": "SPS-FIND-024",
@@ -1432,8 +1432,8 @@
       "chapter": "spec/core/find.md",
       "summary": "Where such metadata is emitted, it is **transient**: it MUST NOT be written to the store, it MUST NOT appear in the named-graph grouping that `include_contexts=true` produces, and a caller MUST NOT expect to retrieve it again.",
       "withdrawn": true,
-      "withdrawnNote": "Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).",
-      "supersededBy": "SPS-FIND-028"
+      "withdrawnNote": "Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-031`](#SPS-FIND-031) and [`SPS-FIND-027`](#SPS-FIND-027).",
+      "supersededBy": "SPS-FIND-031"
     },
     {
       "id": "SPS-FIND-025",
@@ -1446,7 +1446,7 @@
       "id": "SPS-FIND-026",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "By default the server MUST return a flat RDF graph.",
+      "summary": "By default the server MUST return all statements in the default graph.",
       "withdrawn": false
     },
     {
@@ -1461,6 +1461,27 @@
       "part": "core",
       "chapter": "spec/core/find.md",
       "summary": "The server MAY annotate a hit.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-FIND-029",
+      "part": "core",
+      "chapter": "spec/core/find.md",
+      "summary": "Every hit MUST be an IRI that occurs as the subject of a stored statement in the effective selection.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-FIND-030",
+      "part": "core",
+      "chapter": "spec/core/find.md",
+      "summary": "Apart from generated observation links, statements about the hit itself MUST come from pod data in the effective selection.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-FIND-031",
+      "part": "core",
+      "chapter": "spec/core/find.md",
+      "summary": "Find MUST NOT persist the observations it generates.",
       "withdrawn": false
     },
     {
