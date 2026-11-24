@@ -144,7 +144,7 @@ The specification:
   the chapter tables. Six core chapters and four modules are present; the tables say which source
   each was extracted from, and are what a visitor reads first
 - [`spec/core/`](spec/core/) and [`spec/modules/`](spec/modules/) — the normative text itself
-- [`examples/README.md`](examples/README.md) — worked access-control fixtures and their format;
+- [`examples/README.md`](examples/README.md) — worked access-control fixtures and paired Find responses;
   [repository checks](docs/guides/repository-checks.md) explains what their execution establishes
 
 The rendered site — [`site/`](site/):
@@ -240,6 +240,9 @@ here rather than copied.
    explains what was wrong and why the fix has the shape it does.
 
 ## Code Review Rules
+
+When asked to review a GitHub pull request, post each actionable finding in
+English as an inline review comment on the relevant lines of the current diff.
 
 Codex's pull-request review reads this section for every changed file, so it stands on its own.
 The canonical procedure is [`docs/agents/doc-review.md`](docs/agents/doc-review.md); this is its

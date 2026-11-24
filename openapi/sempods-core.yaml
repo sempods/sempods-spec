@@ -662,11 +662,13 @@ paths:
           description: Constrains the hits' `rdf:type`. Repeatable, OR-combined, matched exactly — no subclass reasoning.
         - $ref: '#/components/parameters/ReadContext'
         - $ref: '#/components/parameters/IncludeContexts'
+          description: Group pod facts and optional observations by context (SPS-FIND-027).
         - name: limit
           in: query
           required: false
+          description: Maximum number of distinct matched resource IRIs.
           schema: { type: integer, minimum: 1 }
-      x-sps-requirements: [SPS-FIND-004, SPS-FIND-005, SPS-FIND-006, SPS-FIND-007, SPS-FIND-008, SPS-FIND-009, SPS-FIND-010, SPS-FIND-011, SPS-FIND-012, SPS-FIND-014, SPS-FIND-015, SPS-FIND-016, SPS-FIND-018, SPS-FIND-019, SPS-FIND-020, SPS-FIND-021, SPS-AUTH-064]
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-005, SPS-FIND-006, SPS-FIND-007, SPS-FIND-008, SPS-FIND-009, SPS-FIND-010, SPS-FIND-012, SPS-FIND-014, SPS-FIND-015, SPS-FIND-020, SPS-FIND-021, SPS-FIND-025, SPS-FIND-026, SPS-FIND-027, SPS-FIND-028, SPS-FIND-029, SPS-FIND-030, SPS-FIND-031, SPS-FIND-032, SPS-AUTH-064]
       responses:
         '401': { $ref: '#/components/responses/BearerUnauthorized' }
         '200': { $ref: '#/components/responses/FindGraph' }
@@ -677,7 +679,7 @@ paths:
       security: [{}, { bearerAuth: [] }, { oauth2: [] }]   # anonymous sees the public contexts
       summary: The same operation, for a request that no longer fits in a URL.
       description: The body is parsed strictly — an unknown member is rejected, never ignored.
-      x-sps-requirements: [SPS-FIND-004, SPS-FIND-013, SPS-AUTH-064]
+      x-sps-requirements: [SPS-FIND-004, SPS-FIND-013, SPS-FIND-025, SPS-FIND-026, SPS-FIND-027, SPS-FIND-028, SPS-FIND-029, SPS-FIND-030, SPS-FIND-031, SPS-FIND-032, SPS-AUTH-064]
       requestBody:
         required: true
         content:
@@ -1162,12 +1164,28 @@ components:
 
     FindGraph:
       description: |
-        A subgraph the caller merges and traverses. Flat by default: no ordering, no score, and no
-        marker separating a hit from its expansion. An empty result is `200`, not `404` — a search
-        that matched nothing is an answer.
+        Hits are subject IRIs in the effective selection. Each hit IRI is the subject of at least one
+        statement in the response. Its type and label are optional.
+        By default all statements are in the default graph.
+        With include_contexts=true, every statement belongs to a named context.
+        An empty search returns 200.
       content:
         application/ld+json:
-          schema: { type: object }
+          schema:
+            description: These shapes describe the JSON document. Graph membership is determined by the RDF it encodes.
+            anyOf:
+              - title: Flat JSON-LD node or default graph object
+                type: object
+                if: { required: ['@graph'] }
+                then:
+                  properties: { '@context': {}, '@graph': {} }
+                  additionalProperties: false
+              - title: Flat JSON-LD node array
+                type: array
+                items:
+                  type: object
+                  not: { required: ['@graph'] }
+              - $ref: '#/components/schemas/FindContextGraphs'
         application/n-quads:
           schema: { type: string }
 
@@ -1464,6 +1482,25 @@ components:
         The distinction an idempotent status code cannot carry. The same words appear on the
         agent-facing surface, so both report an event identically.
 
+    FindContextGraphs:
+      description: One named graph object or an array of named graph objects.
+      oneOf:
+        - $ref: '#/components/schemas/FindContextGraph'
+        - type: array
+          items: { $ref: '#/components/schemas/FindContextGraph' }
+
+    FindContextGraph:
+      type: object
+      description: The graph name is a context IRI in the effective selection.
+      required: ['@id', '@graph']
+      properties:
+        '@id': { type: string, format: iri }
+        '@graph':
+          oneOf:
+            - type: object
+            - type: array
+              items: { type: object }
+
     FindRequest:
       type: object
       required: [text]
@@ -1473,7 +1510,7 @@ components:
         type: { type: array, items: { type: string, format: uri } }
         contexts: { type: array, items: { type: string, format: uri } }
         include_contexts: { type: boolean, default: false }
-        limit: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1, description: Maximum number of distinct matched resource IRIs. }
 
     TokenRequest:
       type: object
