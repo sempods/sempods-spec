@@ -1367,7 +1367,9 @@
       "part": "core",
       "chapter": "spec/core/find.md",
       "summary": "The response MUST include each hit.",
-      "withdrawn": false
+      "withdrawn": true,
+      "withdrawnNote": "Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-032`](#SPS-FIND-032).",
+      "supersededBy": "SPS-FIND-032"
     },
     {
       "id": "SPS-FIND-017",
@@ -1482,6 +1484,13 @@
       "part": "core",
       "chapter": "spec/core/find.md",
       "summary": "Find MUST NOT persist the observations it generates.",
+      "withdrawn": false
+    },
+    {
+      "id": "SPS-FIND-032",
+      "part": "core",
+      "chapter": "spec/core/find.md",
+      "summary": "The server MUST identify each hit by its IRI in the response graph and MAY include its `rdf:type`, its label, or both.",
       "withdrawn": false
     },
     {

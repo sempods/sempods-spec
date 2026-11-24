@@ -1,4 +1,4 @@
-# Inputs and static Find responses for the eight cases in sempods-spec#147.
+# Inputs and static Find responses for sempods-spec#147 and #152.
 # Each jsonld value is a JSON-LD document. Its nquads sibling describes the same dataset.
 # These examples match text in names, descriptions and linked topic IRIs, case-insensitively.
 # The caller can read A and B unless a case specifies its readable contexts.
@@ -20,6 +20,12 @@ pod: |
   <https://pod.example/quay/light> <https://schema.org/name> "Quay light" <https://pod.example/_system/contexts/B> .
   <https://pod.example/quay/dock> <https://schema.org/name> "Quay dock" <https://pod.example/_system/contexts/B> .
   <https://pod.example/quay/crane> <https://schema.org/name> "Quay crane" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/atlas/book> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Book> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/atlas/book> <https://schema.org/name> "World atlas" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/atlas/page> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/WebPage> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/atlas/page> <https://schema.org/description> "Atlas supplement" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/atlas/key> <https://schema.org/name> "Atlas key" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/atlas/draft> <https://schema.org/description> "Draft for an atlas" <https://pod.example/_system/contexts/A> .
 
 plain:
   case: 1
@@ -58,7 +64,7 @@ plain-array:
 
 bare:
   case: 2
-  request: {"text": "harbour"}
+  request: {"text": "harbour", "type": ["https://schema.org/Article"]}
   grouped:
     jsonld:
       "@id": "https://pod.example/_system/contexts/A"
@@ -294,6 +300,35 @@ stored-vocabulary:
     nquads: |
       <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> .
       <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" .
+
+optional-description:
+  request: {"text": "atlas", "contexts": ["https://pod.example/_system/contexts/A"]}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/atlas/book", "@type": ["https://schema.org/Book"], "https://schema.org/name": [{"@value": "World atlas"}]}
+          - {"@id": "https://pod.example/atlas/page", "@type": ["https://schema.org/WebPage"]}
+          - {"@id": "https://pod.example/atlas/key", "https://schema.org/name": [{"@value": "Atlas key"}]}
+          - {"@id": "https://pod.example/atlas/draft", "https://schema.org/description": [{"@value": "Draft for an atlas"}]}
+    nquads: |
+      <https://pod.example/atlas/book> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Book> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/atlas/book> <https://schema.org/name> "World atlas" <https://pod.example/_system/contexts/A> .
+      <https://pod.example/atlas/page> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/WebPage> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/atlas/key> <https://schema.org/name> "Atlas key" <https://pod.example/_system/contexts/A> .
+      <https://pod.example/atlas/draft> <https://schema.org/description> "Draft for an atlas" <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/atlas/book", "@type": ["https://schema.org/Book"], "https://schema.org/name": [{"@value": "World atlas"}]}
+      - {"@id": "https://pod.example/atlas/page", "@type": ["https://schema.org/WebPage"]}
+      - {"@id": "https://pod.example/atlas/key", "https://schema.org/name": [{"@value": "Atlas key"}]}
+      - {"@id": "https://pod.example/atlas/draft", "https://schema.org/description": [{"@value": "Draft for an atlas"}]}
+    nquads: |
+      <https://pod.example/atlas/book> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Book> .
+      <https://pod.example/atlas/book> <https://schema.org/name> "World atlas" .
+      <https://pod.example/atlas/page> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/WebPage> .
+      <https://pod.example/atlas/key> <https://schema.org/name> "Atlas key" .
+      <https://pod.example/atlas/draft> <https://schema.org/description> "Draft for an atlas" .
 
 # The top-level wrapper describes the default graph. Inside an array it names a graph by a blank node.
 anonymous-group:

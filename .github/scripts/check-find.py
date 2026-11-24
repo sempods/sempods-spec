@@ -110,10 +110,33 @@ class FindResponses(unittest.TestCase):
         self.assertFalse(list(multi.triples((None, LINK, None))))
 
     def test_bare_link(self):
-        self.assertTrue(list(STORE.graph(A).triples((DOC, None, None))))
+        self.assertEqual(CASES['bare']['request']['type'], [str(SCHEMA.Article)])
+        self.assertIn((DOC, RDF.type, SCHEMA.Article), STORE.graph(A))
+        self.assertIn((DOC, SCHEMA.name, Literal('Harbour map')), STORE.graph(A))
         graph = response('bare').graph(A)
         self.assertEqual(len(graph), 1)
         self.assertIsInstance(graph.value(DOC, LINK), BNode)
+
+    def test_hits_with_both_one_or_neither_descriptive_fact(self):
+        case = CASES['optional-description']
+        self.assertEqual(selected_contexts(case), {A})
+        source = STORE.graph(A)
+        answer = response('optional-description').graph(A)
+        expected = {
+            POD['atlas/book']: {RDF.type, SCHEMA.name},
+            POD['atlas/page']: {RDF.type},
+            POD['atlas/key']: {SCHEMA.name},
+            POD['atlas/draft']: set(),
+        }
+        matching = {s for s, p, o in source if p in (SCHEMA.name, SCHEMA.description)
+                    and case['request']['text'] in str(o).lower()}
+        self.assertEqual(matching, set(expected))
+        self.assertEqual(set(answer.subjects()), matching)
+        for hit, facts in expected.items():
+            with self.subTest(hit=hit):
+                for graph in (source, answer):
+                    self.assertEqual(set(graph.predicates(hit)) & {RDF.type, SCHEMA.name}, facts)
+        self.assertIn((POD['atlas/draft'], SCHEMA.description, Literal('Draft for an atlas')), answer)
 
     def test_known_match(self):
         data = response('known-match')
