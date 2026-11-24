@@ -1,12 +1,9 @@
 # Find
 
-Use `find` when you have words and want a resource IRI. The response is RDF, so you can
-follow a link from a hit to the rest of the pod.
+Use `find` when you have words and want a resource IRI. From a hit you can follow links
+into the rest of the pod.
 
 **Status: this text decides, and can still change.** See [governance](../../GOVERNANCE.md).
-
-Error codes are [`index.md`](index.md) §5; the read downscope is
-[`lod-crud.md`](lod-crud.md) §3; what a caller may read is [`grants.md`](grants.md).
 
 ## 1. What `find` is
 
@@ -15,121 +12,114 @@ Error codes are [`index.md`](index.md) §5; the read downscope is
 in the effective selection.
 
 The effective selection is all contexts the caller may read, narrowed by any [context filter](#SPS-FIND-009).
-An article can match through its `schema:about` link to a topic. The server can return that link
-with the article. If another selected context describes the topic, the topic can match there
-as a subject in its own right.
 
 <a id="SPS-FIND-001"></a>
-**`SPS-FIND-001`** — `find` is a contract, not an algorithm. An implementation MUST be free to
-satisfy it with any engine — substring matching, a lexical index, vectors, query rewriting, or
-several at once — and a caller MUST NOT be required to select one.
+**`SPS-FIND-001`** — An implementation MUST be free to use any search engine or combination of engines.
+A caller MUST NOT be required to choose one.
 
-<a id="SPS-FIND-002"></a>
-**`SPS-FIND-002`** — The request MUST NOT carry a mode, an engine name or a ranking strategy. A
-caller sends text.
-
-The name is deliberate. `search` implies a ranked engine and a relevance model; `find` promises only
-to locate something and give the caller a starting point. Two implementations with entirely
-different engines can both satisfy this chapter, and a caller written against one works against the
-other.
+One server might look up words in a text index. Another might also search by similarity.
 
 <a id="SPS-FIND-003"></a>
-**`SPS-FIND-003`** — The response MUST be RDF: a subgraph the caller can merge into a working graph
-and traverse. An implementation MUST NOT answer with a bespoke result envelope in place of it.
-
-The graph contains pod data and any [observations](#6-what-matched) the server offers about a hit.
+**`SPS-FIND-003`** — The server MUST return a traversable RDF subgraph that callers can merge
+into their own graph. A custom result envelope MUST NOT replace it.
 
 ## 2. The request
 
+```http
+GET https://pod.example/_system/find?text=harbour&type=https://schema.org/Article&type=https://schema.org/Book&context=https://pod.example/_system/contexts/A&context=https://pod.example/_system/contexts/B
 ```
-GET  {pod}/_system/find?text=…&type=…&context=…&include_contexts=…&limit=…
-POST {pod}/_system/find   { "text": …, "type": […], "contexts": […], "include_contexts": …, "limit": … }
+
+```http
+POST https://pod.example/_system/find
+Content-Type: application/json
+
+{
+  "text": "harbour",
+  "type": ["https://schema.org/Article", "https://schema.org/Book"],
+  "contexts": ["https://pod.example/_system/contexts/A", "https://pod.example/_system/contexts/B"]
+}
 ```
 
 <a id="SPS-FIND-004"></a>
-**`SPS-FIND-004`** — An implementation MUST offer both forms, and they MUST be equivalent. The
-`POST` body mirrors the query parameters, with the context downscope named `contexts`.
+**`SPS-FIND-004`** — The server MUST offer equivalent GET and POST forms. The [POST body](../../openapi/sempods-core.yaml)
+mirrors the query parameters, using `contexts` for the GET parameter `context`.
 
-The `POST` form exists for a request that no longer fits in a URL — most often a downscope naming
-many contexts.
+<a id="SPS-FIND-013"></a>
+**`SPS-FIND-013`** — The server MUST parse the POST body strictly and reject unknown members.
 
 <a id="SPS-FIND-005"></a>
-**`SPS-FIND-005`** — `text` is REQUIRED. It MAY be terms or a natural-language question, and how it
-is interpreted is the implementation's business.
+**`SPS-FIND-005`** — `text` is REQUIRED. The caller MAY send search terms or a natural-language
+question.
+
+<a id="SPS-FIND-002"></a>
+**`SPS-FIND-002`** — The request MUST NOT carry a mode, an engine name or a ranking strategy.
+
+The server decides how to interpret the text.
 
 <a id="SPS-FIND-006"></a>
-**`SPS-FIND-006`** — `type` is OPTIONAL, repeatable, and combines as OR. It MUST constrain the
-`rdf:type` of the returned hits.
+**`SPS-FIND-006`** — `type` is OPTIONAL and repeatable. When supplied, the filter MUST accept
+hits with any of the requested `rdf:type` values and exclude the rest.
 
 <a id="SPS-FIND-007"></a>
-**`SPS-FIND-007`** — `type` MUST be matched exactly. An implementation MUST NOT apply subclass
-reasoning; a caller that wants subtypes lists them.
+**`SPS-FIND-007`** — The server MUST match type IRIs exactly. A hit's `rdf:type` MUST NOT match
+a requested type solely because it is a subclass of that type.
+
+Callers can list the subtypes they want to include.
 
 <a id="SPS-FIND-008"></a>
-**`SPS-FIND-008`** — `type` constrains what comes back, not where matching happens. An
-implementation MAY match through a linked resource and still return only the requested types.
+**`SPS-FIND-008`** — The server MAY match through a linked resource. The type filter applies
+to the returned hit.
 
-`rdf:type` is the one structured facet in the core contract because every engine knows a resource's
-type cheaply. A general predicate filter is not part of it, and adding one would have to be
-fail-closed — a half-honoured filter reintroduces exactly the plausible-but-wrong result that
-structured retrieval exists to avoid.
-
-<a id="SPS-FIND-009"></a>
-**`SPS-FIND-009`** — `context` (GET, repeatable) and `contexts` (POST) are the read downscope, with
-the semantics of [`SPS-CRUD-014`](lod-crud.md#SPS-CRUD-014) and
-[`SPS-CRUD-015`](lod-crud.md#SPS-CRUD-015): intersection with the readable set, unreadable entries
-dropped in silence.
-
-<a id="SPS-FIND-010"></a>
-**`SPS-FIND-010`** — The server MUST apply the read downscope throughout the search,
-including matching, ranking, observations and expansion.
-
-If the caller searches A and the only matching text is in B, the resource is absent even if
-its type is visible in A. If it also matches in A, the server can return it using only evidence
-from A, including for excerpts and ranking.
+An article can match through its `schema:about` link to a topic. Find can include that link
+with the article. A topic described in a selected context can also be a hit in its own right.
 
 <a id="SPS-FIND-025"></a>
 **`SPS-FIND-025`** — `limit` is OPTIONAL. The server MUST cap the number of distinct matched resource
 IRIs at the effective limit, applying a default when omitted and enforcing a maximum.
 
 <a id="SPS-FIND-012"></a>
-**`SPS-FIND-012`** — There is no cursor and no pagination. An implementation MUST NOT require one to
-retrieve a complete answer within `limit`.
-
-<a id="SPS-FIND-013"></a>
-**`SPS-FIND-013`** — A `POST` body MUST be parsed strictly. An unknown member MUST be rejected rather
-than ignored.
-
-Ignoring an unknown member is how a caller's typo becomes a silently broader search. A rejected
-request is a bug report; an ignored filter is a data leak with a `200`.
+**`SPS-FIND-012`** — Find has no cursor or pagination. The complete answer within the effective
+limit MUST be available in one request.
 
 ## 3. The sandbox
 
 <a id="SPS-FIND-014"></a>
-**`SPS-FIND-014`** — The context sandbox MUST apply exactly as it does to CRUD and SPARQL. An
-anonymous caller sees the pod's public contexts; an authorized caller sees more. It is the same
-`find`, at a different depth.
+**`SPS-FIND-014`** — Find MUST apply the same context sandbox as CRUD and SPARQL.
+Anonymous callers search public contexts. For authenticated callers, the
+[grants and `public-read` rules](grants.md#7-public-read) determine the readable set.
+
+<a id="SPS-FIND-009"></a>
+**`SPS-FIND-009`** — The context filter is `context` on GET (repeatable) and `contexts` on POST.
+It uses the [CRUD read filter](lod-crud.md#SPS-CRUD-014), including
+[silent omission of unreadable contexts](lod-crud.md#SPS-CRUD-015).
+
+<a id="SPS-FIND-010"></a>
+**`SPS-FIND-010`** — The server MUST apply the context filter throughout the search,
+including matching, ranking, observations and expansion.
+
+Suppose A identifies a resource as an article and only its title in B matches “harbour”.
+A search for “harbour” in A alone leaves out the article, even when the caller can read B.
 
 <a id="SPS-FIND-015"></a>
-**`SPS-FIND-015`** — Where the caller can read nothing, or where the downscope resolves to nothing,
-the implementation MUST answer `200` with an empty graph. It MUST NOT answer `404` and MUST NOT
-answer `403`.
+**`SPS-FIND-015`** — If the caller can read nothing or the context filter leaves an empty selection,
+the server MUST return `200` with an empty graph.
 
-This is where `find` deliberately differs from a resource read. A resource read answers `404` for an
-empty result, because "no such resource" and "not for you" have to be indistinguishable. A search
-that matched nothing *is* an answer, and a caller can act on it.
+A search with no matches gets the same [`200` with an empty graph](../../openapi/sempods-core.yaml).
+A [resource read with no visible statements](lod-crud.md#SPS-CRUD-017) returns `404`.
+Both follow the [same visibility rule](index.md#SPS-CORE-017).
 
 ## 4. The response
 
 <a id="SPS-FIND-016"></a>
-**`SPS-FIND-016`** — The response MUST contain the matched resources, and SHOULD expand each with at
-least its `rdf:type` and its label.
+**`SPS-FIND-016`** — The response MUST include each hit. The server SHOULD include the hit's
+`rdf:type` if available in the effective selection and its label if available there.
 
 <a id="SPS-FIND-017"></a>
 **`SPS-FIND-017`** — An implementation MUST NOT return a full `DESCRIBE`-style expansion by default.
 
-Expansion is a payload-size decision. Returning everything reachable turns a ten-hit answer into a
-transfer of most of the pod, and a caller that wants depth already holds the IRIs to ask for it.
+<a id="SPS-FIND-020"></a>
+**`SPS-FIND-020`** — The response MUST be content-negotiated, with JSON-LD as the default and
+N-Quads available.
 
 <a id="SPS-FIND-026"></a>
 **`SPS-FIND-026`** — By default the server MUST return all statements in the default graph.
@@ -141,31 +131,22 @@ using the context IRI as the graph name. Stored statements MUST keep their sourc
 The server MUST place each generated observation link or detail in one or more contexts in the
 effective selection that hold the hit. Grouping MUST change only the representation.
 
-A context holds a hit when the pod has a statement there with the hit IRI as its subject.
-The server can place an observation where the match occurred. It can also repeat it in eligible
-contexts or place its link in one and its details in another. A link in A tells you where the
-server placed it. A search restricted to A can still come back empty.
-
-[`SPS-CTX-001`](contexts.md#SPS-CTX-001) governs stored statements. Even a stored
-`sps:findResult` link keeps its source context. A generated observation belongs to the response.
-
-<a id="SPS-FIND-020"></a>
-**`SPS-FIND-020`** — The response MUST be content-negotiated, with JSON-LD as the default and
-N-Quads available.
+A context holds a hit when a stored statement there has the hit IRI as its subject.
+Among those contexts, the server can use the one where the match occurred, repeat an observation,
+or put its link in one and its details in another. A link in A can appear even if an A-only search would find nothing.
+A stored `sps:findResult` link keeps its [source context](contexts.md#SPS-CTX-001).
 
 ## 5. Caching
 
 <a id="SPS-FIND-021"></a>
-**`SPS-FIND-021`** — A `find` response depends on the caller's readable contexts. An implementation
-MUST NOT allow a bearer-backed response to be stored in a shared cache without varying on the
-credential, and SHOULD mark such a response private.
-
-A `find` result is a permission-shaped view of the pod. A shared cache that keys only on the URL
-serves one caller's depth to the next one.
+**`SPS-FIND-021`** — The server MUST NOT allow shared caching of a bearer-backed response unless
+the cache varies on the credential. The server SHOULD mark such responses private.
 
 ## 6. What matched
 
-A server can say that an article matched with a single link:
+<a id="SPS-FIND-028"></a>
+**`SPS-FIND-028`** — The server MAY annotate a hit. For each observation it supplies, it MUST
+link the hit IRI to a response-local blank node with `sps:findResult`.
 
 ```turtle
 @prefix sps: <https://schema.sempods.org/> .
@@ -173,14 +154,10 @@ A server can say that an article matched with a single link:
 <https://pod.example/articles/42> sps:findResult [] .
 ```
 
-<a id="SPS-FIND-028"></a>
-**`SPS-FIND-028`** — The server MAY annotate a hit. For each observation it supplies, it MUST
-link the hit IRI to a response-local blank node with `sps:findResult`.
-
-A hit can have zero, one or several observations. The blank node can carry an excerpt
-(`schema:text`), the engine (`sps:engine`) or its place in the list that produced it
-(`schema:position`, starting at 1). A resource can be second in one list and seventh in another.
-The link works on its own, even without an explicit `sps:FindResult` type.
+A hit can have zero, one or several observations. The link works without an explicit
+`sps:FindResult` type. The node can give an excerpt (`schema:text`), an engine (`sps:engine`)
+or a 1-based position in the list that produced it (`schema:position`). One resource can be
+second in one list and seventh in another.
 
 <a id="SPS-FIND-030"></a>
 **`SPS-FIND-030`** — Apart from generated observation links, statements about the hit itself
@@ -189,10 +166,8 @@ MUST come from pod data in the effective selection.
 <a id="SPS-FIND-031"></a>
 **`SPS-FIND-031`** — Find MUST NOT persist the observations it generates.
 
-A client that copies all outgoing statements about a hit also copies the links the search added.
-The same predicate can occur in stored data.
-
-The [response examples](../../examples/find/responses.yaml) cover both representations.
+Copying all outgoing statements about a hit also copies its observation links.
+The [response examples](../../examples/find/responses.yaml) show both flat and grouped results.
 
 <details markdown="1">
 <summary>Withdrawn requirements</summary>

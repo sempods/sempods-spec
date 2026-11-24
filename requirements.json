@@ -1259,7 +1259,7 @@
       "id": "SPS-FIND-001",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "`find` is a contract, not an algorithm.",
+      "summary": "An implementation MUST be free to use any search engine or combination of engines.",
       "withdrawn": false
     },
     {
@@ -1273,14 +1273,14 @@
       "id": "SPS-FIND-003",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The response MUST be RDF: a subgraph the caller can merge into a working graph and traverse.",
+      "summary": "The server MUST return a traversable RDF subgraph that callers can merge into their own graph.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-004",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "An implementation MUST offer both forms, and they MUST be equivalent.",
+      "summary": "The server MUST offer equivalent GET and POST forms.",
       "withdrawn": false
     },
     {
@@ -1294,35 +1294,35 @@
       "id": "SPS-FIND-006",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "`type` is OPTIONAL, repeatable, and combines as OR.",
+      "summary": "`type` is OPTIONAL and repeatable.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-007",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "`type` MUST be matched exactly.",
+      "summary": "The server MUST match type IRIs exactly.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-008",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "`type` constrains what comes back, not where matching happens.",
+      "summary": "The server MAY match through a linked resource.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-009",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "`context` (GET, repeatable) and `contexts` (POST) are the read downscope, with the semantics of [`SPS-CRUD-014`](lod-crud.md#SPS-CRUD-014) and [`SPS-CRUD-015`](lod-crud.md#SPS-CRUD-015): intersection with the readable set, unreadable entries dropped in silence.",
+      "summary": "The context filter is `context` on GET (repeatable) and `contexts` on POST.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-010",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The server MUST apply the read downscope throughout the search, including matching, ranking, observations and expansion.",
+      "summary": "The server MUST apply the context filter throughout the search, including matching, ranking, observations and expansion.",
       "withdrawn": false
     },
     {
@@ -1338,35 +1338,35 @@
       "id": "SPS-FIND-012",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "There is no cursor and no pagination.",
+      "summary": "Find has no cursor or pagination.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-013",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "A `POST` body MUST be parsed strictly.",
+      "summary": "The server MUST parse the POST body strictly and reject unknown members.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-014",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The context sandbox MUST apply exactly as it does to CRUD and SPARQL.",
+      "summary": "Find MUST apply the same context sandbox as CRUD and SPARQL.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-015",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "Where the caller can read nothing, or where the downscope resolves to nothing, the implementation MUST answer `200` with an empty graph.",
+      "summary": "If the caller can read nothing or the context filter leaves an empty selection, the server MUST return `200` with an empty graph.",
       "withdrawn": false
     },
     {
       "id": "SPS-FIND-016",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "The response MUST contain the matched resources, and SHOULD expand each with at least its `rdf:type` and its label.",
+      "summary": "The response MUST include each hit.",
       "withdrawn": false
     },
     {
@@ -1405,7 +1405,7 @@
       "id": "SPS-FIND-021",
       "part": "core",
       "chapter": "spec/core/find.md",
-      "summary": "A `find` response depends on the caller's readable contexts.",
+      "summary": "The server MUST NOT allow shared caching of a bearer-backed response unless the cache varies on the credential.",
       "withdrawn": false
     },
     {
