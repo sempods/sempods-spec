@@ -1,0 +1,239 @@
+# Inputs and static Find responses for the eight cases in sempods-spec#147.
+# Each jsonld value is a JSON-LD document. Its nquads sibling describes the same dataset.
+# The fixture engine matches text in names and descriptions, case-insensitively.
+# The caller can read A and B unless a case specifies its readable contexts.
+pod: |
+  <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/42> <https://schema.org/name> "Harbour map" <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+  <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/43> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+  <https://pod.example/articles/43> <https://schema.org/name> "Map legend" <https://pod.example/_system/contexts/A> .
+
+plain:
+  case: 1
+  request: {"text": "harbour"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld: {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> .
+
+plain-array:
+  case: 1
+  request: {"text": "map"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"]}
+          - {"@id": "https://pod.example/articles/43", "@type": ["https://schema.org/Article"]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/43> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"]}
+      - {"@id": "https://pod.example/articles/43", "@type": ["https://schema.org/Article"]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> .
+      <https://pod.example/articles/43> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> .
+
+bare:
+  case: 2
+  request: {"text": "harbour"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+
+known-match:
+  case: 3
+  request: {"text": "lantern"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.org/description": [{"@value": "Harbour lantern"}], "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+          - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/B> .
+      _:m <https://schema.org/text> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "@type": ["https://schema.org/Article"], "https://schema.org/description": [{"@value": "Harbour lantern"}], "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Article> .
+      <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+      _:m <https://schema.org/text> "Harbour lantern" .
+
+repeated:
+  case: 4
+  request: {"text": "harbour"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+          - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/B> .
+      _:m <https://schema.org/text> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+      _:m <https://schema.org/text> "Harbour lantern" .
+
+split:
+  case: 4
+  request: {"text": "harbour"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/A> .
+      _:m <https://schema.org/text> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+      _:m <https://schema.org/text> "Harbour lantern" .
+
+independent:
+  case: 5
+  request: {"text": "harbour", "limit": 1}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:localA"}]}
+          - {"@id": "_:localA", "https://schema.org/position": [{"@value": 2}]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:localB"}]}
+          - {"@id": "_:localB", "https://schema.org/position": [{"@value": 7}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:localA <https://pod.example/_system/contexts/A> .
+      _:localA <https://schema.org/position> "2"^^<http://www.w3.org/2001/XMLSchema#integer> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:localB <https://pod.example/_system/contexts/B> .
+      _:localB <https://schema.org/position> "7"^^<http://www.w3.org/2001/XMLSchema#integer> <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:localA"}, {"@id": "_:localB"}]}
+      - {"@id": "_:localA", "https://schema.org/position": [{"@value": 2}]}
+      - {"@id": "_:localB", "https://schema.org/position": [{"@value": 7}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:localA .
+      _:localA <https://schema.org/position> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:localB .
+      _:localB <https://schema.org/position> "7"^^<http://www.w3.org/2001/XMLSchema#integer> .
+
+match-only-in-B:
+  case: 6
+  request: {"text": "lantern", "contexts": ["https://pod.example/_system/contexts/A"]}
+  grouped:
+    jsonld: []
+    nquads: ""
+  flat:
+    jsonld: []
+    nquads: ""
+
+match-also-in-A:
+  case: 6
+  request: {"text": "harbour", "contexts": ["https://pod.example/_system/contexts/A"]}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.org/name": [{"@value": "Harbour map"}], "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+          - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour map"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/name> "Harbour map" <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m <https://pod.example/_system/contexts/A> .
+      _:m <https://schema.org/text> "Harbour map" <https://pod.example/_system/contexts/A> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.org/name": [{"@value": "Harbour map"}], "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+      - {"@id": "_:m", "https://schema.org/text": [{"@value": "Harbour map"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.org/name> "Harbour map" .
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .
+      _:m <https://schema.org/text> "Harbour map" .
+
+empty-selection:
+  case: 6
+  readable: ["https://pod.example/_system/contexts/A"]
+  request: {"text": "harbour", "contexts": ["https://pod.example/_system/contexts/B"]}
+  grouped:
+    jsonld: []
+    nquads: ""
+  flat:
+    jsonld: []
+    nquads: ""
+
+stored-vocabulary:
+  case: 7
+  request: {"text": "harbour"}
+  grouped:
+    jsonld:
+      - "@id": "https://pod.example/_system/contexts/A"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "https://pod.example/notes/saved"}]}
+      - "@id": "https://pod.example/_system/contexts/B"
+        "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.org/description": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> <https://pod.example/_system/contexts/A> .
+      <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" <https://pod.example/_system/contexts/B> .
+  flat:
+    jsonld:
+      - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "https://pod.example/notes/saved"}], "https://schema.org/description": [{"@value": "Harbour lantern"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> <https://pod.example/notes/saved> .
+      <https://pod.example/articles/42> <https://schema.org/description> "Harbour lantern" .
+
+# The very same RDF is valid flat and invalid when include_contexts=true.
+anonymous-group:
+  case: 8
+  request: {"text": "harbour"}
+  payload:
+    jsonld:
+      - "@graph":
+          - {"@id": "https://pod.example/articles/42", "https://schema.sempods.org/findResult": [{"@id": "_:m"}]}
+    nquads: |
+      <https://pod.example/articles/42> <https://schema.sempods.org/findResult> _:m .

@@ -1,5 +1,9 @@
 # Worked examples
 
+The [Find examples](find/responses.yaml) show the same search results in JSON-LD and N-Quads.
+
+## Access control
+
 These informative fixtures illustrate an ACP-based authorization model. They combine references to
 the current specification, proposed behavior and counterexamples. The
 [fixture guide](../docs/guides/acp-fixtures.md) explains the supplied assumptions and their sources;

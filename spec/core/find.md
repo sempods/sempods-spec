@@ -1,12 +1,7 @@
 # Find
 
-The entry primitive: text in, a subgraph out. `find` is where a consumer that does not yet know an
-IRI gets a foothold, after which it traverses links like any other Linked Data client.
-
-**This chapter is new writing.** It existed in the reference implementation only as a concept
-document, which mixes what is built with what is planned. What follows is the built half.
-
-**Status: this text decides, and can still change.** See [`../../GOVERNANCE.md`](../../GOVERNANCE.md).
+Use `find` when you have words and want a resource IRI. The response is RDF, so you can
+follow a link from a hit to the rest of the pod.
 
 Error codes are [`index.md`](index.md) §5; the read downscope is
 [`lod-crud.md`](lod-crud.md) §3; what a caller may read is [`grants.md`](grants.md).
@@ -31,9 +26,7 @@ other.
 **`SPS-FIND-003`** — The response MUST be RDF: a subgraph the caller can merge into a working graph
 and traverse. An implementation MUST NOT answer with a bespoke result envelope in place of it.
 
-The retrieval unit is a resource, not a text fragment. An event is one entity with all its
-properties, and every IRI-valued property is an exact traversal path — which is what lets a consumer
-follow the data instead of guessing at it.
+The graph contains pod data and any [observations](#6-what-matched) the server offers about a hit.
 
 ## 2. The request
 
@@ -80,9 +73,13 @@ dropped in silence.
 **`SPS-FIND-010`** — The downscope MUST apply to the whole operation, the expansion included. An
 implementation MUST NOT expand a hit with statements from a context outside it.
 
-<a id="SPS-FIND-011"></a>
-**`SPS-FIND-011`** — `limit` is OPTIONAL. An implementation MUST apply a default and MUST enforce a
-maximum.
+If the caller searches A and the only matching text is in B, the resource is absent even if
+its type is visible in A. If it also matches in A, the server can return it using only evidence
+from A, including for excerpts and ranking.
+
+<a id="SPS-FIND-025"></a>
+**`SPS-FIND-025`** — `limit` is OPTIONAL. The server MUST cap the number of distinct matched resource
+IRIs at the effective limit, applying a default when omitted and enforcing a maximum.
 
 <a id="SPS-FIND-012"></a>
 **`SPS-FIND-012`** — There is no cursor and no pagination. An implementation MUST NOT require one to
@@ -123,14 +120,22 @@ least its `rdf:type` and its label.
 Expansion is a payload-size decision. Returning everything reachable turns a ten-hit answer into a
 transfer of most of the pod, and a caller that wants depth already holds the IRIs to ask for it.
 
-<a id="SPS-FIND-018"></a>
-**`SPS-FIND-018`** — By default the response MUST be a flat graph: no ordering, no score, and no
-marker distinguishing a hit from an expansion. A caller MUST NOT infer rank from statement order.
+<a id="SPS-FIND-026"></a>
+**`SPS-FIND-026`** — By default the server MUST return a flat RDF graph. A caller MUST NOT infer rank from statement order.
 
-<a id="SPS-FIND-019"></a>
-**`SPS-FIND-019`** — `include_contexts=true` MUST group the response by the context each statement
-came from — named-graph JSON-LD, or the fourth term in N-Quads. It MUST change only the
-representation, never which resources match.
+<a id="SPS-FIND-027"></a>
+**`SPS-FIND-027`** — With `include_contexts=true`, the server MUST keep each pod statement in its source
+context. It MUST place each generated observation link or detail in one or more contexts in
+scope that hold the hit. The switch MUST affect only the representation.
+
+A context holds a hit when the pod has a statement there with the hit IRI as its subject.
+The server can place an observation where the match occurred. It can also repeat it in eligible
+contexts or place its link in one and its details in another. A link in A tells you where the
+server placed it. A search restricted to A can still come back empty.
+
+In [JSON-LD](https://www.w3.org/TR/2020/REC-json-ld11-20200716/) each group names its context.
+In [N-Quads](https://www.w3.org/TR/2014/REC-n-quads-20140225/) each statement has a fourth term.
+A stored statement keeps its source even when its predicate is `sps:findResult`.
 
 <a id="SPS-FIND-020"></a>
 **`SPS-FIND-020`** — The response MUST be content-negotiated, with JSON-LD as the default and
@@ -146,44 +151,65 @@ credential, and SHOULD mark such a response private.
 A `find` result is a permission-shaped view of the pod. A shared cache that keys only on the URL
 serves one caller's depth to the next one.
 
-## 6. Result metadata is reserved, not specified
+## 6. What matched
 
-The sempods vocabulary defines terms for per-hit metadata — which engine produced a hit, where it
-ranked, and the excerpt that matched. **This chapter does not require them, because no
-implementation emits them.**
+A server can say that an article matched with a single link:
 
-They are recorded here so that an implementation does not mint competing terms for the same idea, and
-so that a later version of this chapter can specify them without a migration. Until then,
-`SPS-FIND-018` is the contract: the response is flat.
+```turtle
+@prefix sps: <https://schema.sempods.org/> .
+
+<https://pod.example/articles/42> sps:findResult [] .
+```
+
+<a id="SPS-FIND-028"></a>
+**`SPS-FIND-028`** — The server MAY annotate a hit. For each observation it supplies, it MUST link the hit IRI
+to a response-local blank node with `sps:findResult`. Other facts about the resource MUST come from pod data in scope.
+Find MUST NOT persist the observations it generates.
+
+A hit can have zero, one or several observations. The blank node can carry an excerpt
+(`schema:text`), the engine (`sps:engine`) or its place in the list that produced it
+(`schema:position`, starting at 1). A resource can be second in one list and seventh in another.
+The link works on its own, even without an explicit `sps:FindResult` type.
+
+A client that copies all outgoing statements about a hit also copies the links the search added.
+The same predicate can occur in stored data.
+
+The [response examples](../../examples/find/responses.yaml) cover both representations.
+
+<details markdown="1">
+<summary>Withdrawn requirements</summary>
+
+<a id="SPS-FIND-011"></a>
+**`SPS-FIND-011`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-025`](#SPS-FIND-025).*
+`limit` is OPTIONAL. An implementation MUST apply a default and MUST enforce a
+maximum.
+
+<a id="SPS-FIND-018"></a>
+**`SPS-FIND-018`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-026`](#SPS-FIND-026).*
+By default the response MUST be a flat graph: no ordering, no score, and no
+marker distinguishing a hit from an expansion. A caller MUST NOT infer rank from statement order.
+
+<a id="SPS-FIND-019"></a>
+**`SPS-FIND-019`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-027`](#SPS-FIND-027).*
+`include_contexts=true` MUST group the response by the context each statement
+came from — named-graph JSON-LD, or the fourth term in N-Quads. It MUST change only the
+representation, never which resources match.
 
 <a id="SPS-FIND-022"></a>
-**`SPS-FIND-022`** — Per-hit metadata MUST NOT appear in the default response. An implementation MAY
+**`SPS-FIND-022`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).*
+Per-hit metadata MUST NOT appear in the default response. An implementation MAY
 emit it only in a representation the client explicitly asked for, and this version of the
 specification defines no such request.
 
-The reserved terms link a matched resource to its metadata node, and that link *is* a marker
-separating a hit from an expansion — exactly what [`SPS-FIND-018`](#SPS-FIND-018) forbids. A `MAY`
-that could be exercised in the default response would therefore have contradicted the flat-graph
-contract rather than extended it. The terms stay reserved; what has to arrive before they can be
-emitted is a negotiated representation to emit them in.
+<a id="SPS-FIND-023"></a>
+**`SPS-FIND-023`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).*
+Authoritative facts about a hit — its types, its labels, its timestamps — MUST
+come from the store during expansion and MUST NOT be asserted by the metadata node.
 
 <a id="SPS-FIND-024"></a>
-**`SPS-FIND-024`** — Where such metadata is emitted, it is **transient**: it MUST NOT be written to
+**`SPS-FIND-024`** — *Withdrawn in 0.1-dev. Superseded by [`SPS-FIND-028`](#SPS-FIND-028).*
+Where such metadata is emitted, it is **transient**: it MUST NOT be written to
 the store, it MUST NOT appear in the named-graph grouping that `include_contexts=true` produces, and
 a caller MUST NOT expect to retrieve it again.
 
-This does not weaken [`SPS-CTX-001`](contexts.md#SPS-CTX-001), and the distinction is worth being
-exact about because the two look like they collide. That invariant governs **statements a pod
-stores** — every one of those belongs to exactly one context. A `find` response is a
-representation the server computes and hands over; the matched statements in it came from contexts
-and can be grouped by them, while a metadata node describes the *response* and was in no context to
-begin with. An implementation that stored one would be creating a statement with no context, which
-the invariant forbids — which is what `MUST NOT be written to the store` says.
-
-<a id="SPS-FIND-023"></a>
-**`SPS-FIND-023`** — Authoritative facts about a hit — its types, its labels, its timestamps — MUST
-come from the store during expansion and MUST NOT be asserted by the metadata node.
-
-The distinction is the same one [`contexts.md`](contexts.md) §6 makes for control-plane IRIs: what
-something *is* comes from whatever owns it, and what a response *says about* it is a claim with a
-narrower lifetime.
+</details>

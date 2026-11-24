@@ -77,20 +77,9 @@ Three further terms define metadata a `find` response **may** carry about each h
 | `sps:findResult` | links a matched resource to that node |
 | `sps:engine` | which search engine produced the hit |
 
-The excerpt and the rank on that node are `schema:text` and `schema:position` —
-schema.org terms, reused rather than duplicated here.
-
-**No implementation emits these find metadata terms yet**, including the reference implementation.
-[`SPS-FIND-022`](../spec/core/find.md#SPS-FIND-022) makes them optional and
-transient for that reason, and [`SPS-FIND-018`](../spec/core/find.md#SPS-FIND-018)
-is what the contract actually is today: a flat graph, with no ordering and no
-score.
-
-They are published anyway, and that is a deliberate choice rather than an
-oversight. The alternative is that the first implementation to want per-hit
-metadata mints its own terms for it, a second one mints different terms, and the
-idea has two vocabularies before it has one implementation. Publishing the names
-first costs nothing that the stability guarantees above do not already cover.
+An observation can carry an excerpt (`schema:text`) or a 1-based place in the list that
+produced it (`schema:position`). The [Find chapter](../spec/core/find.md#6-what-matched)
+shows how to attach one to a resource.
 
 The definitions live in [`sempods.ttl`](sempods.ttl).
 
@@ -152,10 +141,7 @@ useful:
 3. Nothing you already wrote has to be rewritten. Both IRIs resolve, both stay
    valid.
 
-Adoption favours terms with running implementations over terms with good
-arguments. The three terms above are the exception that shows the rule's edge:
-they were minted to reserve a name rather than to describe running behaviour, and
-they are marked as not-yet-emitted precisely because that is unusual here.
+Adoption favours terms with running implementations.
 
 ## Licence
 
